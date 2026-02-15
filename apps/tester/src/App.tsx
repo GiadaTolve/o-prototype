@@ -386,6 +386,7 @@ function App() {
             return (
               <div
                 key={def.id}
+                title={def.description ?? ''}
                 style={{
                   padding: '0.75rem 1rem',
                   background:
@@ -398,6 +399,7 @@ function App() {
                       : 'rgba(162,112,255,0.3)'
                   }`,
                   borderRadius: 8,
+                  cursor: def.description ? 'help' : 'default',
                 }}
               >
                 <div
