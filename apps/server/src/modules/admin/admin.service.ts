@@ -1,0 +1,616 @@
+import { eq, and, gte, lte, desc, asc, isNull, sql } from 'drizzle-orm'
+import { db } from '../../plugins/db'
+import { users, characters, zoneMessages, locations, banners, dailyEvents, sanctions, jobs, housingTypes, characterHousing } from '../../db/schema'
+import type { UserRole, BanState } from '@domain/security/jwt'
+
+/**
+ * Ottiene tutti gli utenti con i loro personaggi associati
+ */
+export async function getAllUsers() {
+  return db.query.users.findMany({
+    with: {
+      characters: true,
+    },
+  })
+}
+
+/**
+ * Aggiorna il ruolo di un utente
+ */
+export async function updateUserRole(userId: string, role: UserRole) {
+  const [updated] = await db
+    .update(users)
+    .set({ role })
+    .where(eq(users.id, userId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Utente non trovato')
+  }
+
+  return updated
+}
+
+/**
+ * Aggiorna lo stato di ban di un utente
+ */
+export async function updateUserBanState(userId: string, banState: BanState) {
+  const [updated] = await db
+    .update(users)
+    .set({ banState })
+    .where(eq(users.id, userId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Utente non trovato')
+  }
+
+  return updated
+}
+
+/**
+ * Aggiorna il nome di un personaggio
+ */
+export async function updateCharacterName(characterId: string, name: string) {
+  const [updated] = await db
+    .update(characters)
+    .set({ name })
+    .where(eq(characters.id, characterId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Personaggio non trovato')
+  }
+
+  return updated
+}
+
+/**
+ * Resetta le statistiche base di un personaggio a 0
+ */
+export async function resetCharacterStats(characterId: string) {
+  const [updated] = await db
+    .update(characters)
+    .set({
+      strength: 0,
+      constitution: 0,
+      dexterity: 0,
+      mind: 0,
+      empathy: 0,
+    })
+    .where(eq(characters.id, characterId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Personaggio non trovato')
+  }
+
+  return updated
+}
+
+// ==========================================
+// LOGS & CHAT ROOMS
+// ==========================================
+
+/**
+ * Ottiene tutte le chat rooms (zone uniche da zone_messages)
+ */
+export async function getChatRooms() {
+  const rooms = await db
+    .selectDistinct({ id: zoneMessages.zone, name: zoneMessages.zone })
+    .from(zoneMessages)
+    .orderBy(asc(zoneMessages.zone))
+  
+  return rooms.map(r => ({ id: r.id, name: r.name }))
+}
+
+/**
+ * Ottiene i log di una chat per una data specifica
+ */
+export async function getChatLogs(chatId: string, date: string) {
+  const startDate = new Date(date)
+  startDate.setHours(0, 0, 0, 0)
+  const endDate = new Date(date)
+  endDate.setHours(23, 59, 59, 999)
+
+  const logs = await db
+    .select({
+      id: zoneMessages.id,
+      timestamp: zoneMessages.createdAt,
+      autore: characters.name,
+      tipo: sql<string>`CASE 
+        WHEN ${zoneMessages.isGlobal} THEN 'GLOBALE'
+        ELSE 'CHAT'
+      END`,
+      testo: zoneMessages.content,
+    })
+    .from(zoneMessages)
+    .leftJoin(characters, eq(zoneMessages.characterId, characters.id))
+    .where(
+      and(
+        eq(zoneMessages.zone, chatId),
+        gte(zoneMessages.createdAt, startDate),
+        lte(zoneMessages.createdAt, endDate)
+      )
+    )
+    .orderBy(asc(zoneMessages.createdAt))
+
+  return logs
+}
+
+// ==========================================
+// LOCATIONS (Mappe e Chat)
+// ==========================================
+
+/**
+ * Ottiene tutte le locations
+ */
+export async function getAllLocations() {
+  return db.query.locations.findMany({
+    orderBy: [asc(locations.createdAt)],
+  })
+}
+
+/** Slug da nome mappa (es. "Ogon" -> "ogon") per match con GameMapId. */
+function mapNameToSlug(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '_')
+}
+
+/**
+ * Ritorna banner URL per mappa di gioco (root locations type MAP).
+ * Chiave = slug del nome (es. ogon, izayoi). Usabile da dashboard senza permesso admin.
+ */
+export type MapBannerEntry = { url: string; position?: string }
+
+export async function getMapBanners(): Promise<Record<string, MapBannerEntry>> {
+  const list = await db.query.locations.findMany({
+    columns: { name: true, bannerUrl: true, bannerForGameMap: true, bannerPosition: true },
+    where: and(isNull(locations.parentId), eq(locations.type, 'MAP')),
+  })
+  const out: Record<string, MapBannerEntry> = {}
+  for (const row of list) {
+    if (!row.bannerUrl) continue
+    const key = (row.bannerForGameMap && row.bannerForGameMap.trim()) || mapNameToSlug(row.name)
+    if (key) {
+      out[key] = {
+        url: row.bannerUrl,
+        ...(row.bannerPosition && row.bannerPosition.trim() ? { position: row.bannerPosition.trim() } : {}),
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * Crea una nuova location
+ */
+export async function createLocation(data: {
+  parentId?: string | null
+  name: string
+  type: 'MAP' | 'CHAT'
+  imageUrl?: string
+  bannerUrl?: string
+  bannerForGameMap?: string
+  bannerPosition?: string
+  description?: string
+  prefecture?: string
+  posX?: number
+  posY?: number
+}) {
+  const [location] = await db
+    .insert(locations)
+    .values({
+      parentId: data.parentId || null,
+      name: data.name,
+      type: data.type,
+      imageUrl: data.imageUrl,
+      bannerUrl: data.bannerUrl,
+      bannerForGameMap: data.bannerForGameMap,
+      bannerPosition: data.bannerPosition,
+      description: data.description,
+      prefecture: data.prefecture,
+      posX: data.posX ?? 50,
+      posY: data.posY ?? 50,
+    })
+    .returning()
+
+  return location
+}
+
+/**
+ * Aggiorna una location
+ */
+export async function updateLocation(locationId: string, data: {
+  name?: string
+  type?: 'MAP' | 'CHAT'
+  imageUrl?: string
+  bannerUrl?: string
+  bannerForGameMap?: string
+  bannerPosition?: string
+  description?: string
+  prefecture?: string
+  posX?: number
+  posY?: number
+}) {
+  const [updated] = await db
+    .update(locations)
+    .set(data)
+    .where(eq(locations.id, locationId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Location non trovata')
+  }
+
+  return updated
+}
+
+/**
+ * Aggiorna il parent di una location (per drag-and-drop)
+ */
+export async function updateLocationParent(locationId: string, newParentId: string | null) {
+  const [updated] = await db
+    .update(locations)
+    .set({ parentId: newParentId })
+    .where(eq(locations.id, locationId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Location non trovata')
+  }
+
+  return updated
+}
+
+/**
+ * Elimina una location
+ */
+export async function deleteLocation(locationId: string) {
+  await db.delete(locations).where(eq(locations.id, locationId))
+  return { success: true }
+}
+
+// ==========================================
+// BANNERS
+// ==========================================
+
+/**
+ * Ottiene tutti i banner
+ */
+export async function getAllBanners() {
+  return db.query.banners.findMany({
+    orderBy: [asc(banners.order), asc(banners.createdAt)],
+  })
+}
+
+/**
+ * Crea un nuovo banner
+ */
+export async function createBanner(data: {
+  title: string
+  imageUrl: string
+  linkUrl?: string
+  isActive?: boolean
+  order?: number
+}) {
+  const [banner] = await db
+    .insert(banners)
+    .values({
+      title: data.title,
+      imageUrl: data.imageUrl,
+      linkUrl: data.linkUrl,
+      isActive: data.isActive ?? true,
+      order: data.order ?? 0,
+    })
+    .returning()
+
+  return banner
+}
+
+/**
+ * Aggiorna un banner
+ */
+export async function updateBanner(bannerId: string, data: {
+  title?: string
+  imageUrl?: string
+  linkUrl?: string
+  isActive?: boolean
+  order?: number
+}) {
+  const [updated] = await db
+    .update(banners)
+    .set(data)
+    .where(eq(banners.id, bannerId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Banner non trovato')
+  }
+
+  return updated
+}
+
+/**
+ * Elimina un banner
+ */
+export async function deleteBanner(bannerId: string) {
+  await db.delete(banners).where(eq(banners.id, bannerId))
+  return { success: true }
+}
+
+// ==========================================
+// DAILY EVENTS
+// ==========================================
+
+/**
+ * Ottiene tutti gli eventi giornalieri
+ */
+export async function getAllDailyEvents() {
+  return db.query.dailyEvents.findMany({
+    orderBy: [asc(dailyEvents.eventDate)],
+  })
+}
+
+/**
+ * Crea un nuovo evento giornaliero
+ */
+export async function createDailyEvent(data: {
+  eventDate: string
+  title: string
+  description?: string
+}) {
+  const [event] = await db
+    .insert(dailyEvents)
+    .values({
+      eventDate: data.eventDate,
+      title: data.title,
+      description: data.description,
+    })
+    .returning()
+
+  return event
+}
+
+/**
+ * Aggiorna un evento giornaliero
+ */
+export async function updateDailyEvent(eventId: string, data: {
+  eventDate?: string
+  title?: string
+  description?: string
+}) {
+  const [updated] = await db
+    .update(dailyEvents)
+    .set(data)
+    .where(eq(dailyEvents.id, eventId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Evento non trovato')
+  }
+
+  return updated
+}
+
+/**
+ * Elimina un evento giornaliero
+ */
+export async function deleteDailyEvent(eventId: string) {
+  await db.delete(dailyEvents).where(eq(dailyEvents.id, eventId))
+  return { success: true }
+}
+
+// ==========================================
+// SANCTIONS
+// ==========================================
+
+/**
+ * Ottiene tutte le sanzioni per un utente
+ */
+export async function getUserSanctions(userId: string) {
+  return db.query.sanctions.findMany({
+    where: eq(sanctions.userId, userId),
+    orderBy: [desc(sanctions.createdAt)],
+    with: {
+      admin: {
+        columns: {
+          id: true,
+          email: true,
+        },
+        with: {
+          characters: {
+            columns: {
+              id: true,
+              name: true,
+            },
+            limit: 1,
+          },
+        },
+      },
+    },
+  })
+}
+
+/**
+ * Crea una nuova sanzione
+ */
+export async function createSanction(data: {
+  userId: string
+  type: 'BAN' | 'SHADOWBAN' | 'WARNING' | 'UNBAN'
+  reason?: string
+  adminId?: string
+}) {
+  const [sanction] = await db
+    .insert(sanctions)
+    .values({
+      userId: data.userId,
+      type: data.type,
+      reason: data.reason,
+      adminId: data.adminId,
+    })
+    .returning()
+
+  // Se è un BAN o SHADOWBAN, aggiorna anche lo stato ban dell'utente
+  if (data.type === 'BAN') {
+    await db.update(users).set({ banState: 'FULL' }).where(eq(users.id, data.userId))
+  } else if (data.type === 'SHADOWBAN') {
+    await db.update(users).set({ banState: 'SHADOW' }).where(eq(users.id, data.userId))
+  } else if (data.type === 'UNBAN') {
+    await db.update(users).set({ banState: 'NONE' }).where(eq(users.id, data.userId))
+  }
+
+  return sanction
+}
+
+// ==========================================
+// JOBS (Arubaito / Lavori)
+// ==========================================
+
+/**
+ * Ottiene tutti i lavori (per pannello Gestione).
+ */
+export async function getAdminJobs() {
+  return db.query.jobs.findMany({
+    orderBy: [asc(jobs.dailySalary)],
+  })
+}
+
+/**
+ * Crea un nuovo lavoro.
+ */
+export async function createJob(data: {
+  title: string
+  description?: string
+  dailySalary: number
+}) {
+  const [job] = await db
+    .insert(jobs)
+    .values({
+      title: data.title,
+      description: data.description ?? null,
+      dailySalary: data.dailySalary,
+    })
+    .returning()
+  return job
+}
+
+/**
+ * Aggiorna un lavoro.
+ */
+export async function updateJob(jobId: string, data: {
+  title?: string
+  description?: string
+  dailySalary?: number
+}) {
+  const [updated] = await db
+    .update(jobs)
+    .set(data)
+    .where(eq(jobs.id, jobId))
+    .returning()
+  if (!updated) {
+    throw new Error('Lavoro non trovato')
+  }
+  return updated
+}
+
+/**
+ * Elimina un lavoro.
+ */
+export async function deleteJob(jobId: string) {
+  await db.delete(jobs).where(eq(jobs.id, jobId))
+  return { success: true }
+}
+
+// ==========================================
+// HOUSING TYPES (Tipologie abitazione)
+// ==========================================
+
+/**
+ * Ottiene tutte le tipologie di abitazione (per pannello Gestione).
+ */
+export async function getAdminHousingTypes() {
+  return db.query.housingTypes.findMany({
+    orderBy: [asc(housingTypes.monthlyRent), asc(housingTypes.name)],
+  })
+}
+
+/**
+ * Crea una nuova tipologia di abitazione.
+ */
+export async function createHousingType(data: {
+  code: string
+  name: string
+  squareMeters: number
+  dailyRent?: number | null
+  monthlyRent?: number | null
+  hpBonus?: number
+  inventorySlotsBonus?: number
+  requirements?: { paradisePass?: boolean }
+}) {
+  const [row] = await db
+    .insert(housingTypes)
+    .values({
+      code: data.code.trim(),
+      name: data.name.trim(),
+      squareMeters: data.squareMeters,
+      dailyRent: data.dailyRent ?? null,
+      monthlyRent: data.monthlyRent ?? null,
+      hpBonus: data.hpBonus ?? 0,
+      inventorySlotsBonus: data.inventorySlotsBonus ?? 0,
+      requirements: data.requirements ?? {},
+    })
+    .returning()
+  return row
+}
+
+/**
+ * Aggiorna una tipologia di abitazione.
+ */
+export async function updateHousingType(
+  housingTypeId: string,
+  data: {
+    code?: string
+    name?: string
+    squareMeters?: number
+    dailyRent?: number | null
+    monthlyRent?: number | null
+    hpBonus?: number
+    inventorySlotsBonus?: number
+    requirements?: { paradisePass?: boolean }
+  }
+) {
+  const updates: Record<string, unknown> = {}
+  if (data.code !== undefined) updates.code = data.code.trim()
+  if (data.name !== undefined) updates.name = data.name.trim()
+  if (data.squareMeters !== undefined) updates.squareMeters = data.squareMeters
+  if (data.dailyRent !== undefined) updates.dailyRent = data.dailyRent
+  if (data.monthlyRent !== undefined) updates.monthlyRent = data.monthlyRent
+  if (data.hpBonus !== undefined) updates.hpBonus = data.hpBonus
+  if (data.inventorySlotsBonus !== undefined) updates.inventorySlotsBonus = data.inventorySlotsBonus
+  if (data.requirements !== undefined) updates.requirements = data.requirements
+
+  const [updated] = await db
+    .update(housingTypes)
+    .set(updates as Record<string, unknown>)
+    .where(eq(housingTypes.id, housingTypeId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Tipologia di abitazione non trovata')
+  }
+  return updated
+}
+
+/**
+ * Elimina una tipologia di abitazione. Fallisce se qualcuno la sta ancora usando.
+ */
+export async function deleteHousingType(housingTypeId: string) {
+  const inUse = await db.query.characterHousing.findFirst({
+    where: eq(characterHousing.housingTypeId, housingTypeId),
+  })
+  if (inUse) {
+    throw new Error('Non si può eliminare: almeno un personaggio ha questa abitazione assegnata.')
+  }
+  await db.delete(housingTypes).where(eq(housingTypes.id, housingTypeId))
+  return { success: true }
+}

@@ -1,0 +1,7 @@
+[loader]
+".ts" = "ts"
+
+[alias]
+"@domain/*" = "./packages/domain/src/*"
+"@shared/*" = "./packages/shared/src/*"
+"@config/*" = "./packages/config/src/*"

@@ -1,0 +1,36 @@
+{
+    "name": "server",
+    "version": "1.0.0",
+    "scripts": {
+        "dev": "bun run --watch src/server.ts",
+        "db:push": "bun drizzle-kit push",
+        "db:studio": "bun drizzle-kit studio",
+        "create-test-char": "bun run scripts/create-test-char.ts",
+        "seed-grades-levels": "bun run scripts/seed-grades-levels.ts",
+        "seed-meteo": "bun run scripts/seed-meteo.ts",
+        "fix-stats-column-types": "bun run scripts/fix-stats-column-types.ts",
+        "add-inventory-location-column": "bun run scripts/add-inventory-location-column.ts",
+        "add-locations-banner-url": "bun run scripts/add-locations-banner-url.ts",
+        "add-locations-banner-for-game-map": "bun run scripts/add-locations-banner-for-game-map.ts",
+        "add-locations-banner-position": "bun run scripts/add-locations-banner-position.ts",
+        "grant-botan-all-permissions": "bun run scripts/grant-botan-all-permissions.ts",
+        "add-music-tables": "bun run scripts/add-music-tables.ts",
+        "add-forum-tables": "bun run scripts/add-forum-tables.ts",
+        "add-admin-tables": "bun run scripts/add-admin-tables.ts",
+        "migrate-locations": "bun run scripts/migrate-locations-from-config.ts"
+    },
+    "dependencies": {
+        "@elysiajs/bearer": "^1.4.2",
+        "@elysiajs/cors": "latest",
+        "@elysiajs/jwt": "latest",
+        "dotenv": "^17.2.3",
+        "drizzle-orm": "latest",
+        "elysia": "latest",
+        "pg": "latest",
+        "postgres": "latest"
+    },
+    "devDependencies": {
+        "bun-types": "latest",
+        "drizzle-kit": "latest"
+    }
+}

@@ -1,0 +1,260 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-cinzel), serif;
+}
+
+:root {
+  /* Palette Dark Arcane — Oyasumi (Nero / Oro / Viola) */
+  --background: #050508;
+  --foreground: #e5e5e5;
+
+  --accent-red: #8a1c1c;
+  --accent-gold: #d4af37;
+  --accent-violet: #7c3aed;
+
+  --panel-bg: #0f0f12;
+  --border-color: #2a2a32;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-inter), system-ui, sans-serif;
+
+  background-image: radial-gradient(circle at 50% -20%, rgba(42, 5, 20, 0.6) 0%, transparent 45%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-cinzel), serif;
+}
+
+/* News Visor — marquee CRT anni '80 */
+@keyframes news-visor-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.news-visor-ticker {
+  display: flex;
+  width: max-content;
+  animation: news-visor-scroll 25s linear infinite;
+}
+
+.news-visor-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* Parsing Narrativo — formattazione parlati e tag (stile OYASUMI) */
+.parlato {
+  font-style: italic;
+  color: #60519b; /* Viola come nel vecchio progetto */
+  font-weight: bold;
+}
+
+.tag-narrativo {
+  font-weight: bold;
+  color: #bfc0d1; /* Grigio chiaro come nel vecchio progetto */
+}
+
+/* BBCode Styles per Forum */
+.bbcode-bold {
+  font-weight: bold;
+}
+
+.bbcode-italic {
+  font-style: italic;
+}
+
+.bbcode-underline {
+  text-decoration: underline;
+}
+
+.bbcode-strikethrough {
+  text-decoration: line-through;
+}
+
+.bbcode-quote {
+  border-left: 3px solid var(--accent-violet);
+  padding-left: 15px;
+  margin: 10px 0;
+  font-style: italic;
+  color: #b3b3c0;
+}
+
+.bbcode-quote-author {
+  font-weight: bold;
+  color: var(--accent-gold);
+  margin-bottom: 5px;
+}
+
+.bbcode-code {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  overflow-x: auto;
+}
+
+.bbcode-spoiler {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bbcode-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.bbcode-link {
+  color: var(--accent-violet);
+  text-decoration: underline;
+}
+
+.bbcode-link:hover {
+  color: var(--accent-gold);
+}
+
+.bbcode-color {
+  /* Colore applicato inline */
+}
+
+.bbcode-center {
+  text-align: center;
+}
+
+/* News Visor - Effetto Radio */
+@keyframes static {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Quest Start Animation */
+@keyframes quest-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1);
+    opacity: 0.5;
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.6), inset 0 0 30px rgba(212, 175, 55, 0.2);
+    opacity: 1;
+  }
+}
+
+@keyframes quest-symbol {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+  }
+  100% { 
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+@keyframes quest-text-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes quest-line {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  100% {
+    width: 16rem;
+    opacity: 1;
+  }
+}
+
+@keyframes quest-particle {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(0);
+  }
+}
+
+.quest-glow-border {
+  animation: quest-glow 2s ease-in-out infinite;
+}
+
+.quest-symbol-animation {
+  animation: quest-symbol 1.5s ease-out;
+}
+
+.quest-text-fade-1 {
+  animation: quest-text-fade 1s ease-out 0.3s both;
+}
+
+.quest-text-fade-2 {
+  animation: quest-text-fade 1s ease-out 0.5s both;
+}
+
+.quest-line-animation {
+  animation: quest-line 1s ease-out 0.7s both;
+}
+
+.quest-particle {
+  animation: quest-particle 2s ease-out infinite;
+}
+
+/* Toast Animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Skeleton Loader Animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

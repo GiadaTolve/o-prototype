@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "jsx": "react-jsx",
+    
+    // 👇 QUESTO È FONDAMENTALE: Dice a TS che Bun esiste!
+    "types": ["bun-types"], 
+
+    "baseUrl": ".",
+    "paths": {
+      "@domain/*": ["../../packages/domain/src/*"],
+      "@shared/*": ["../../packages/shared/src/*"],
+      "@config/*": ["../../packages/config/src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}

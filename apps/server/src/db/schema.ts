@@ -1,0 +1,792 @@
+import { pgTable, text, integer, uuid, boolean, jsonb, timestamp, date } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
+
+// ==========================================
+// 1. UTENTI (Account Globale)
+// ==========================================
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: text('email').unique().notNull(),
+  passwordHash: text('password_hash').notNull(),
+  
+  // Ruoli di sistema (non di gioco)
+  role: text('role').$type<'PLAYER' | 'ADMIN' | 'MASTER'>().default('PLAYER'),
+  
+  // Gestione Ban (Shadowban non invia messaggi in chat)
+  banState: text('ban_state').$type<'NONE' | 'SHADOW' | 'FULL'>().default('NONE'),
+  
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+// ==========================================
+// 2. LAVORI (Jobs)
+// ==========================================
+export const jobs = pgTable('jobs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  title: text('title').notNull(), 
+  description: text('description'),
+  dailySalary: integer('daily_salary').notNull().default(20), // Default 20 REM come da regole
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+// ==========================================
+// 3. PERSONAGGI (Identità & Progressione)
+// ==========================================
+export const characters = pgTable('characters', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(), 
+  
+  // --- IDENTITÀ VISIVA ---
+  name: text('name').notNull(),
+  surname: text('surname'), // Assegnato dopo la creazione
+  bio: text('bio'), 
+  avatar: text('avatar'),      // Immagine Grande (400x350)
+  miniAvatar: text('mini_avatar'), // Icona (100x100) per Chat/Forum
+  
+  // --- METADATI UI (Dark Arcane) ---
+  // Gestisce icone specifiche per l'interfaccia senza creare colonne infinite
+  uiMetadata: jsonb('ui_metadata').$type<{
+    roleIcon?: string;    // Icona del ruolo pixel-art
+    orderIcon?: string;   // Icona specifica dell'ordine
+    themeColor?: string;  // Eventuale override colore neon
+    /** Background personalizzato della scheda personaggio. */
+    backgroundImage?: string;
+    /** URL tema musicale (.mp3) per la scheda. */
+    themeMusicUrl?: string;
+  }>().default({}),
+
+  // --- RUOLO SOCIALE ---
+  order: text('order').$type<'MUGEN-TAI' | 'CHISEN-TAI' | 'NONE'>().default('NONE'),
+  grade: text('grade').default('Nemuribito'), // Grado gerarchico
+  jobId: uuid('job_id').references(() => jobs.id),
+
+  // --- ECONOMIA & VALUTE ---
+  rem: integer('rem').default(0).notNull(), // Valuta principale (Soldi)
+  
+  // Exp Totale: Determina il Livello (non cala mai)
+  experienceTotal: integer('experience_total').default(0).notNull(), 
+  // Exp Spendibile: Valuta per comprare Skill/Waza
+  experienceSpendable: integer('experience_spendable').default(0).notNull(),
+  
+  // Valute Rare (per Skill Tree)
+  keys: integer('keys').default(0).notNull(), // Sblocca rami (Appendici)
+  gems: integer('gems').default(0).notNull(), // Potenzia skill (Livello Waza)
+
+  // --- STATISTICHE BASE (I 5 Pilastri) ---
+  // Esplose in colonne per permettere calcoli nel Domain e Query veloci
+  strength: integer('strength').default(0).notNull(),     // Forza [F]
+  constitution: integer('constitution').default(0).notNull(), // Costituzione [C]
+  dexterity: integer('dexterity').default(0).notNull(),   // Destrezza [D]
+  mind: integer('mind').default(0).notNull(),             // Mente [M]
+  empathy: integer('empathy').default(0).notNull(),       // Empatia [E]
+  
+  // --- INVENTARIO BASE ---
+  // Slot "corporei" di default (Braccia, Gambe, Busto)
+  baseSlots: integer('base_slots').default(5).notNull(),
+
+  // --- FLAGS ---
+  // True = Utente appena registrato, deve ancora compilare la scheda
+  isRaw: boolean('is_raw').default(true).notNull(),
+  
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+// ==========================================
+// 4. IL GRIMOIRE (Sistema Skills)
+// ==========================================
+
+export const skills = pgTable('skills', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  
+  name: text('name').notNull(),
+  description: text('description'),
+  // Distinzione tra Passive (Skiru), Attive (Waza) e Patti (Path)
+  type: text('type').$type<'SKIRU' | 'WAZA' | 'PATH'>().notNull(), 
+  
+  // Costi di Apprendimento
+  costExp: integer('cost_exp').default(0),
+  costKeys: integer('cost_keys').default(0), // Richiede Keys per sbloccare il ramo?
+  
+  // Meccaniche di Gioco
+  costKotodama: integer('cost_kotodama').default(0), // Costo in Mana (Kotodama)
+  cooldown: integer('cooldown').default(0),
+  diceFormula: text('dice_formula'), // Es: "1d20 + $M"
+
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+export const characterSkills = pgTable('character_skills', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  characterId: uuid('character_id').references(() => characters.id).notNull(),
+  skillId: uuid('skill_id').references(() => skills.id).notNull(),
+  
+  // Livello della Skill (Upgradabile spendendo GEMS)
+  level: integer('level').default(1),
+  
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+// ==========================================
+// 5. INVENTARIO (Oggetti & Slot)
+// ==========================================
+
+export const items = pgTable('items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  iconUrl: text('icon_url'),
+  type: text('type').$type<'GENERIC' | 'WEAPON' | 'ARMOR' | 'BAG'>().default('GENERIC'),
+  
+  // Se è uno Zaino, quanti slot aggiunge all'inventario?
+  slotsBonus: integer('slots_bonus').default(0),
+  /** Prezzo in REM (null = non in vendita). */
+  price: integer('price'),
+  
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+export const inventory = pgTable('inventory', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  characterId: uuid('character_id').references(() => characters.id).notNull(),
+  itemId: uuid('item_id').references(() => items.id).notNull(),
+  
+  quantity: integer('quantity').default(1),
+  isEquipped: boolean('is_equipped').default(false), // Importante per applicare slotBonus
+  /** Dove si trova fisicamente l'oggetto: addosso/nel corpo (CARRY) o depositato in abitazione (HOUSING). */
+  location: text('location').$type<'CARRY' | 'HOUSING'>().default('CARRY').notNull(),
+  
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+// ==========================================
+// 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC §7)
+// ==========================================
+
+/** Gradi carriera (es. Analisti). Livelli Guida = range livello personaggio. */
+export const grades = pgTable('grades', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  definition: text('definition'),
+  levelMin: integer('level_min').notNull(),
+  levelMax: integer('level_max').notNull(), // use 999 per 48+
+  createdAt: timestamp('created_at').defaultNow(),
+})
+
+/** Lookup livelli 1–50: Exp Δ, Exp tot., fase. Per calcolo livello da EXP e requisiti Fetch. */
+export const levels = pgTable('levels', {
+  level: integer('level').primaryKey(),
+  expDelta: integer('exp_delta'),
+  expTotal: integer('exp_total').notNull(),
+  phase: text('phase').$type<'EARLY-GAME' | 'MID-GAME' | 'CORE'>(),
+})
+
+/** Meteo per prefettura (modificabile da admin/mod). */
+export const meteoPrefetture = pgTable('meteo_prefetture', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Prefettura ID (es. edo, kessen, kotowari). */
+  prefetturaId: text('prefettura_id').notNull().unique(),
+  temp: integer('temp').notNull(),
+  condition: text('condition').notNull(),
+  icon: text('icon').$type<'sun' | 'cloud' | 'cloud-sun' | 'rain'>().notNull(),
+  /** Chi ha aggiornato (admin/mod). */
+  updatedById: uuid('updated_by_id').references(() => characters.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// ==========================================
+// 6. RELAZIONI (Drizzle Relations)
+// ==========================================
+
+export const usersRelations = relations(users, ({ many }) => ({
+  characters: many(characters),
+}))
+
+export const charactersRelations = relations(characters, ({ one, many }) => ({
+  user: one(users, { fields: [characters.userId], references: [users.id] }),
+  job: one(jobs, { fields: [characters.jobId], references: [jobs.id] }),
+  skills: many(characterSkills),
+  inventory: many(inventory),
+  zoneMessages: many(zoneMessages),
+}))
+
+export const skillsRelations = relations(skills, ({ many }) => ({
+  learnedBy: many(characterSkills),
+}))
+
+export const characterSkillsRelations = relations(characterSkills, ({ one }) => ({
+  character: one(characters, { fields: [characterSkills.characterId], references: [characters.id] }),
+  skill: one(skills, { fields: [characterSkills.skillId], references: [skills.id] }),
+}))
+
+export const inventoryRelations = relations(inventory, ({ one }) => ({
+  character: one(characters, { fields: [inventory.characterId], references: [characters.id] }),
+  item: one(items, { fields: [inventory.itemId], references: [items.id] })
+}))
+
+// ==========================================
+// 7. CHAT DI ZONA (Play-by-Chat)
+// ==========================================
+
+export const zoneMessages = pgTable('zone_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  zone: text('zone').notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(),
+  /** Posizione del giocatore nel luogo (compilata dal giocatore). */
+  locationTag: text('location_tag'),
+  /** Caratteri netti (senza parlati) per calcolo EXP. */
+  netChars: integer('net_chars'),
+  /** EXP guadagnato da questo messaggio (calcolato da netChars). */
+  expGained: integer('exp_gained'),
+  /** Caratteri totali (content.length). 1 azione = messaggio con >500 totali (QUEST_AND_FETCH_SPEC §2). */
+  totalChars: integer('total_chars'),
+  /** Se true, è un messaggio globale (visibile in tutte le chat). */
+  isGlobal: boolean('is_global').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const zoneMessagesRelations = relations(zoneMessages, ({ one }) => ({
+  character: one(characters, { fields: [zoneMessages.characterId], references: [characters.id] }),
+}))
+
+// ==========================================
+// 7b. NOTE MASTER (per room/chat — modificabili solo da Shinigami)
+// ==========================================
+
+export const roomMasterNotes = pgTable('room_master_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Room ID (es. kessen__cosmicon__junk_town). Unique per room. */
+  roomId: text('room_id').notNull().unique(),
+  /** Note Master (modificabili solo da Shinigami). */
+  notes: text('notes'),
+  /** Chi ha aggiornato (Shinigami). */
+  updatedById: uuid('updated_by_id').references(() => characters.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const roomMasterNotesRelations = relations(roomMasterNotes, ({ one }) => ({
+  updatedBy: one(characters, { fields: [roomMasterNotes.updatedById], references: [characters.id] }),
+}))
+
+// ==========================================
+// 8. SMS (Messaggi privati — interfaccia stile WhatsApp)
+// ==========================================
+
+export const privateMessages = pgTable('private_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  senderId: uuid('sender_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  recipientId: uuid('recipient_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(),
+  readAt: timestamp('read_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const privateMessagesRelations = relations(privateMessages, ({ one }) => ({
+  sender: one(characters, { fields: [privateMessages.senderId], references: [characters.id], relationName: 'pmSender' }),
+  recipient: one(characters, { fields: [privateMessages.recipientId], references: [characters.id], relationName: 'pmRecipient' }),
+}))
+
+// ==========================================
+// 9. QUEST (Shinigami Suite)
+// ==========================================
+
+export const questTypeEnum = ['AMBIENT', 'TRAMA', 'BATTLE', 'ONE_SHOT'] as const
+
+export const quests = pgTable('quests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Shinigami che ha creato la quest. */
+  creatorId: uuid('creator_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  /** Tipo: Ambient, Trama, Battle, One-shot, Globale (QUEST_AND_FETCH_SPEC §1.1). */
+  type: text('type').$type<'AMBIENT' | 'TRAMA' | 'BATTLE' | 'ONE_SHOT' | 'GLOBALE'>().default('AMBIENT').notNull(),
+  /** Stato: OPEN, IN_PROGRESS, PAUSED, CLOSED */
+  status: text('status').$type<'OPEN' | 'IN_PROGRESS' | 'PAUSED' | 'CLOSED'>().default('OPEN').notNull(),
+  /** Room ID dove è stata registrata la quest (auto da chat). */
+  roomId: text('room_id'),
+  /** Trama a cui appartiene (opzionale). */
+  plotId: uuid('plot_id').references(() => plots.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  closedAt: timestamp('closed_at'),
+})
+
+/** Fetch Quest: missioni create da Shinigami, approvate da superiori. Requisiti, limiti frequenza. */
+export const fetches = pgTable('fetches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  creatorId: uuid('creator_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  /** PENDING_APPROVAL → APPROVED | REJECTED. Solo approvate in bacheca. */
+  status: text('status').$type<'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED'>().default('PENDING_APPROVAL').notNull(),
+  /** Stato completamento: null = non completata, 'AWAITING_REWARD' = completata in attesa premio/commento, 'COMPLETED' = completata e premiata. */
+  completionStatus: text('completion_status').$type<'AWAITING_REWARD' | 'COMPLETED' | null>().default(null),
+  /** Timestamp di completamento (quando la giocata è stata pubblicata). */
+  completedAt: timestamp('completed_at'),
+  /** Requisiti: levelMin/Max, gradeIds[], order[], plotIds[]; limitPerDay, limitPerWeek. */
+  requirements: jsonb('requirements').$type<{
+    levelMin?: number;
+    levelMax?: number;
+    gradeIds?: string[];
+    order?: ('MUGEN-TAI' | 'CHISEN-TAI')[];
+    plotIds?: string[];
+    limitPerDay?: number;
+    limitPerWeek?: number;
+  }>().default({}),
+  /** Configurazione premi: minActions, remReward, expReward. Se null, usa valori di default. */
+  rewardConfig: jsonb('reward_config').$type<{
+    minActions?: number; // Default: 4
+    remReward?: number; // REM per partecipante con >= minActions (default: 50)
+    expReward?: number; // EXP per partecipante con >= minActions (default: 0)
+  }>().default(null),
+  approvedById: uuid('approved_by_id').references(() => characters.id, { onDelete: 'set null' }),
+  approvedAt: timestamp('approved_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+/** Assegnazione Fetch: una per fetch, esclusiva. Chi si auto-assegna la prende. */
+export const fetchAssignments = pgTable('fetch_assignments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fetchId: uuid('fetch_id').references(() => fetches.id, { onDelete: 'cascade' }).notNull().unique(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+})
+
+/** Partecipanti a una quest. */
+export const questParticipants = pgTable('quest_participants', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  questId: uuid('quest_id').references(() => quests.id, { onDelete: 'cascade' }).notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Se la giocata è una Fetch assegnata al personaggio (QUEST_AND_FETCH_SPEC §4.2). */
+  fetchId: uuid('fetch_id').references(() => fetches.id, { onDelete: 'set null' }),
+  /** Quando ha partecipato (registrato giocata). */
+  registeredAt: timestamp('registered_at').defaultNow().notNull(),
+})
+
+/** Premi assegnati dopo una quest (tabellario). */
+export const questRewards = pgTable('quest_rewards', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  questId: uuid('quest_id').references(() => quests.id, { onDelete: 'cascade' }).notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Tipo: EXP, REM, ITEM, CUSTOM, DROP (materiali Common→Legendary). */
+  type: text('type').$type<'EXP' | 'REM' | 'ITEM' | 'CUSTOM' | 'DROP'>().notNull(),
+  /** Valore (EXP/REM) o descrizione. Per DROP: description = categoria (Common|Uncommon|Rare|Epic|Legendary). */
+  value: integer('value'),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+/** Voti segreti "Let this character shine!" per una quest. */
+export const questVotes = pgTable('quest_votes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  questId: uuid('quest_id').references(() => quests.id, { onDelete: 'cascade' }).notNull(),
+  /** Chi ha votato (anonimo, ma tracciato per evitare doppi voti). */
+  voterId: uuid('voter_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Chi è stato votato (il personaggio che "ha brillato"). */
+  votedFor: uuid('voted_for').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const questsRelations = relations(quests, ({ one, many }) => ({
+  creator: one(characters, { fields: [quests.creatorId], references: [characters.id] }),
+  participants: many(questParticipants),
+  rewards: many(questRewards),
+  votes: many(questVotes),
+}))
+
+export const questParticipantsRelations = relations(questParticipants, ({ one }) => ({
+  quest: one(quests, { fields: [questParticipants.questId], references: [quests.id] }),
+  character: one(characters, { fields: [questParticipants.characterId], references: [characters.id] }),
+  fetch: one(fetches, { fields: [questParticipants.fetchId], references: [fetches.id] }),
+}))
+
+export const fetchesRelations = relations(fetches, ({ one, many }) => ({
+  creator: one(characters, { fields: [fetches.creatorId], references: [characters.id] }),
+  approvedBy: one(characters, { fields: [fetches.approvedById], references: [characters.id], relationName: 'fetchApprover' }),
+  assignment: many(fetchAssignments),
+}))
+
+export const fetchAssignmentsRelations = relations(fetchAssignments, ({ one }) => ({
+  fetch: one(fetches, { fields: [fetchAssignments.fetchId], references: [fetches.id] }),
+  character: one(characters, { fields: [fetchAssignments.characterId], references: [characters.id] }),
+}))
+
+export const questRewardsRelations = relations(questRewards, ({ one }) => ({
+  quest: one(quests, { fields: [questRewards.questId], references: [quests.id] }),
+  character: one(characters, { fields: [questRewards.characterId], references: [characters.id] }),
+}))
+
+export const questVotesRelations = relations(questVotes, ({ one }) => ({
+  quest: one(quests, { fields: [questVotes.questId], references: [quests.id] }),
+  voter: one(characters, { fields: [questVotes.voterId], references: [characters.id], relationName: 'voteVoter' }),
+  votedFor: one(characters, { fields: [questVotes.votedFor], references: [characters.id], relationName: 'voteTarget' }),
+}))
+
+// ==========================================
+// 10. REGISTRAZIONI GIOCATA (Game Sessions)
+// ==========================================
+
+/** Registrazioni giocata: sessioni di gioco registrate, indipendenti dalle quest. */
+export const gameSessions = pgTable('game_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Chi ha avviato la registrazione. */
+  creatorId: uuid('creator_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Room ID dove è stata avviata la registrazione. */
+  roomId: text('room_id').notNull(),
+  /** Titolo della registrazione (opzionale). */
+  title: text('title'),
+  /** Fetch associata (opzionale). */
+  fetchId: uuid('fetch_id').references(() => fetches.id, { onDelete: 'set null' }),
+  /** Stato: ACTIVE, FROZEN, CLOSED, CANCELLED */
+  status: text('status').$type<'ACTIVE' | 'FROZEN' | 'CLOSED' | 'CANCELLED'>().default('ACTIVE').notNull(),
+  /** Timestamp di inizio registrazione. */
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  /** Timestamp di ultima modifica (per congelamento/riavvio). */
+  lastActiveAt: timestamp('last_active_at').defaultNow().notNull(),
+  /** Timestamp di chiusura (quando viene chiusa definitivamente). */
+  closedAt: timestamp('closed_at'),
+  /** Timestamp di annullamento. */
+  cancelledAt: timestamp('cancelled_at'),
+})
+
+/** Partecipanti a una registrazione giocata (con conteggio azioni). */
+export const gameSessionParticipants = pgTable('game_session_participants', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sessionId: uuid('session_id').references(() => gameSessions.id, { onDelete: 'cascade' }).notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Numero di azioni (messaggi con >500 caratteri totali) nella sessione. */
+  actionCount: integer('action_count').default(0).notNull(),
+  /** Timestamp di prima partecipazione. */
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+})
+
+export const gameSessionsRelations = relations(gameSessions, ({ one, many }) => ({
+  creator: one(characters, { fields: [gameSessions.creatorId], references: [characters.id], relationName: 'sessionCreator' }),
+  fetch: one(fetches, { fields: [gameSessions.fetchId], references: [fetches.id] }),
+  participants: many(gameSessionParticipants),
+}))
+
+export const gameSessionParticipantsRelations = relations(gameSessionParticipants, ({ one }) => ({
+  session: one(gameSessions, { fields: [gameSessionParticipants.sessionId], references: [gameSessions.id] }),
+  character: one(characters, { fields: [gameSessionParticipants.characterId], references: [characters.id] }),
+}))
+
+// ==========================================
+// 11. LEDGER (Registro Transazioni)
+// ==========================================
+
+/** Ledger centrale: tutte le transazioni REM (stipendio, affitto, acquisti, ecc.). */
+export const ledgerEntries = pgTable('ledger_entries', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Personaggio coinvolto. */
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Tipo di transazione. */
+  type: text('type').$type<'SALARY' | 'RENT' | 'PURCHASE' | 'SALE' | 'REWARD' | 'PENALTY' | 'TRANSFER'>().notNull(),
+  /** Importo (positivo = entrata, negativo = uscita). */
+  amount: integer('amount').notNull(),
+  /** Balance dopo la transazione. */
+  balanceAfter: integer('balance_after').notNull(),
+  /** Descrizione/ragione. */
+  description: text('description'),
+  /** Metadata aggiuntiva (JSON). */
+  metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}),
+  /** Timestamp della transazione. */
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const ledgerEntriesRelations = relations(ledgerEntries, ({ one }) => ({
+  character: one(characters, { fields: [ledgerEntries.characterId], references: [characters.id] }),
+}))
+
+// ==========================================
+// 12. HOUSING (Abitazioni)
+// ==========================================
+
+/** Tipi di abitazione disponibili. */
+export const housingTypes = pgTable('housing_types', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Codice univoco (es. 'order_room', 'container', 'monolocale', ecc.). */
+  code: text('code').notNull().unique(),
+  /** Nome descrittivo. */
+  name: text('name').notNull(),
+  /** Metri quadri. */
+  squareMeters: integer('square_meters').notNull(),
+  /** Affitto giornaliero (solo per Stanza dell'Ordine, altrimenti null). */
+  dailyRent: integer('daily_rent'),
+  /** Affitto mensile (per tutte le altre case). */
+  monthlyRent: integer('monthly_rent'),
+  /** Bonus punti ferita (pf). */
+  hpBonus: integer('hp_bonus').default(0).notNull(),
+  /** Bonus slot inventario. */
+  inventorySlotsBonus: integer('inventory_slots_bonus').default(0).notNull(),
+  /** Requisiti speciali (es. 'paradise_pass' per Proprietà nel Paradise). */
+  requirements: jsonb('requirements').$type<{
+    paradisePass?: boolean;
+  }>().default({}),
+  createdAt: timestamp('created_at').defaultNow(),
+})
+
+/** Abitazioni assegnate ai personaggi. */
+export const characterHousing = pgTable('character_housing', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Personaggio. */
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull().unique(),
+  /** Tipo di abitazione. */
+  housingTypeId: uuid('housing_type_id').references(() => housingTypes.id, { onDelete: 'restrict' }).notNull(),
+  /** Room ID per la chat personalizzata della casa (es. housing_container_123). */
+  chatRoomId: text('chat_room_id').unique(),
+  /** Data di inizio affitto. */
+  rentedAt: timestamp('rented_at').defaultNow().notNull(),
+  /** Prossima scadenza pagamento (15 del mese per affitti mensili). */
+  nextDueDate: timestamp('next_due_date'),
+  /** Se l'affitto mensile è stato pagato per il mese corrente. */
+  hasPaidCurrentMonth: boolean('has_paid_current_month').default(false).notNull(),
+  /** Giorni di ritardo nel pagamento. */
+  daysOverdue: integer('days_overdue').default(0).notNull(),
+  /** Se è stato sfrattato. */
+  evicted: boolean('evicted').default(false).notNull(),
+  /** Data di sfratto (se applicabile). */
+  evictedAt: timestamp('evicted_at'),
+})
+
+export const housingTypesRelations = relations(housingTypes, ({ many }) => ({
+  tenants: many(characterHousing),
+}))
+
+export const characterHousingRelations = relations(characterHousing, ({ one }) => ({
+  character: one(characters, { fields: [characterHousing.characterId], references: [characters.id] }),
+  housingType: one(housingTypes, { fields: [characterHousing.housingTypeId], references: [housingTypes.id] }),
+}))
+
+// ==========================================
+// 13. LORE (Trame e Proposte)
+// ==========================================
+
+/** Trame: insieme di quest con lo stesso tema. */
+export const plots = pgTable('plots', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Titolo della trama. */
+  title: text('title').notNull(),
+  /** Descrizione/tema della trama. */
+  description: text('description'),
+  /** Chi ha creato la trama (Shinigami). */
+  creatorId: uuid('creator_id').references(() => characters.id, { onDelete: 'set null' }),
+  /** Stato: ACTIVE (in corso), COMPLETED, ARCHIVED */
+  status: text('status').$type<'ACTIVE' | 'COMPLETED' | 'ARCHIVED'>().default('ACTIVE').notNull(),
+  /** Durata stimata (in giorni, opzionale). */
+  estimatedDuration: integer('estimated_duration'),
+  /** Data di inizio (prima quest collegata). */
+  startedAt: timestamp('started_at'),
+  /** Data di completamento. */
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+/** Proposte di trama: proposte visionabili dai vertici gestionali. */
+export const plotProposals = pgTable('plot_proposals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Titolo della proposta. */
+  title: text('title').notNull(),
+  /** Descrizione/tema della proposta. */
+  description: text('description'),
+  /** Chi ha proposto (Shinigami). */
+  proposerId: uuid('proposer_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Stato: PENDING (in attesa), APPROVED (accettata, diventa trama), REJECTED (rifiutata) */
+  status: text('status').$type<'PENDING' | 'APPROVED' | 'REJECTED'>().default('PENDING').notNull(),
+  /** Chi ha approvato/rifiutato (Admin/Mod/Capo). */
+  reviewedById: uuid('reviewed_by_id').references(() => characters.id, { onDelete: 'set null' }),
+  /** Commento del revisore. */
+  reviewComment: text('review_comment'),
+  /** Se approvata, ID della trama creata. */
+  plotId: uuid('plot_id').references(() => plots.id, { onDelete: 'set null' }),
+  /** Data di revisione. */
+  reviewedAt: timestamp('reviewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const plotsRelations = relations(plots, ({ one, many }) => ({
+  creator: one(characters, { fields: [plots.creatorId], references: [characters.id], relationName: 'plotCreator' }),
+  quests: many(quests),
+}))
+
+export const plotProposalsRelations = relations(plotProposals, ({ one }) => ({
+  proposer: one(characters, { fields: [plotProposals.proposerId], references: [characters.id] }),
+  reviewedBy: one(characters, { fields: [plotProposals.reviewedById], references: [characters.id], relationName: 'proposalReviewer' }),
+  plot: one(plots, { fields: [plotProposals.plotId], references: [plots.id] }),
+}))
+
+// ==========================================
+// 15. PLAYLISTS & MUSIC (Media Player)
+// ==========================================
+
+export const playlists = pgTable('playlists', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const songs = pgTable('songs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  playlistId: uuid('playlist_id').references(() => playlists.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  url: text('url').notNull(), // URL del file audio o YouTube
+  sourceType: text('source_type').$type<'youtube' | 'file' | 'url'>().default('url').notNull(),
+  coverImageUrl: text('cover_image_url'), // URL dell'immagine di copertina
+  order: integer('order').default(0).notNull(), // Ordine nella playlist
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const playlistsRelations = relations(playlists, ({ many }) => ({
+  songs: many(songs),
+}))
+
+export const songsRelations = relations(songs, ({ one }) => ({
+  playlist: one(playlists, { fields: [songs.playlistId], references: [playlists.id] }),
+}))
+
+// ==========================================
+// 16. FORUM (Sezioni, Bacheche, Topic, Post)
+// ==========================================
+
+export const forumSections = pgTable('forum_sections', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  order: integer('order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const forumBoards = pgTable('forum_boards', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sectionId: uuid('section_id').references(() => forumSections.id, { onDelete: 'cascade' }).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  order: integer('order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const forumTopics = pgTable('forum_topics', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  boardId: uuid('board_id').references(() => forumBoards.id, { onDelete: 'cascade' }).notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  isPinned: boolean('is_pinned').default(false).notNull(),
+  isLocked: boolean('is_locked').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const forumPosts = pgTable('forum_posts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  topicId: uuid('topic_id').references(() => forumTopics.id, { onDelete: 'cascade' }).notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(), // BBCode supportato
+  likeCount: integer('like_count').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const forumPostLikes = pgTable('forum_post_likes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  postId: uuid('post_id').references(() => forumPosts.id, { onDelete: 'cascade' }).notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const forumSectionsRelations = relations(forumSections, ({ many }) => ({
+  boards: many(forumBoards),
+}))
+
+export const forumBoardsRelations = relations(forumBoards, ({ one, many }) => ({
+  section: one(forumSections, { fields: [forumBoards.sectionId], references: [forumSections.id] }),
+  topics: many(forumTopics),
+}))
+
+export const forumTopicsRelations = relations(forumTopics, ({ one, many }) => ({
+  board: one(forumBoards, { fields: [forumTopics.boardId], references: [forumBoards.id] }),
+  author: one(characters, { fields: [forumTopics.characterId], references: [characters.id] }),
+  posts: many(forumPosts),
+}))
+
+export const forumPostsRelations = relations(forumPosts, ({ one, many }) => ({
+  topic: one(forumTopics, { fields: [forumPosts.topicId], references: [forumTopics.id] }),
+  author: one(characters, { fields: [forumPosts.characterId], references: [characters.id] }),
+  likes: many(forumPostLikes),
+}))
+
+export const forumPostLikesRelations = relations(forumPostLikes, ({ one }) => ({
+  post: one(forumPosts, { fields: [forumPostLikes.postId], references: [forumPosts.id] }),
+  character: one(characters, { fields: [forumPostLikes.characterId], references: [characters.id] }),
+}))
+
+// ==========================================
+// 17. LOCATIONS (Mappe e Chat)
+// ==========================================
+
+export const locations = pgTable('locations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  parentId: uuid('parent_id').references(() => locations.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  type: text('type').$type<'MAP' | 'CHAT'>().notNull(),
+  imageUrl: text('image_url'),
+  /** Banner nell'header della vista mappa (solo per type MAP). */
+  bannerUrl: text('banner_url'),
+  /** Per quale mappa mostrare il banner: ogon, izayoi, onimori, ezochi, altrove. Se null, si usa lo slug del nome. */
+  bannerForGameMap: text('banner_for_game_map'),
+  /** Posizione immagine nel ritaglio: center, top, bottom, left, right, left top, right top, left bottom, right bottom, o "x% y%" (es. 30% 20%). */
+  bannerPosition: text('banner_position'),
+  description: text('description'),
+  prefecture: text('prefecture'), // Solo per MAP
+  posX: integer('pos_x').default(50).notNull(), // Posizione X in %
+  posY: integer('pos_y').default(50).notNull(), // Posizione Y in %
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const locationsRelations = relations(locations, ({ one, many }) => ({
+  parent: one(locations, { fields: [locations.parentId], references: [locations.id], relationName: 'parentLocation' }),
+  children: many(locations, { relationName: 'childLocations' }),
+}))
+
+// ==========================================
+// 18. BANNERS
+// ==========================================
+
+export const banners = pgTable('banners', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  title: text('title').notNull(),
+  imageUrl: text('image_url').notNull(),
+  linkUrl: text('link_url'),
+  isActive: boolean('is_active').default(true).notNull(),
+  order: integer('order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// ==========================================
+// 19. DAILY EVENTS (Eventi Giornalieri)
+// ==========================================
+
+export const dailyEvents = pgTable('daily_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventDate: date('event_date').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// ==========================================
+// 20. SANCTIONS (Log Sanzioni Utenti)
+// ==========================================
+
+export const sanctions = pgTable('sanctions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  type: text('type').$type<'BAN' | 'SHADOWBAN' | 'WARNING' | 'UNBAN'>().notNull(),
+  reason: text('reason'),
+  adminId: uuid('admin_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const sanctionsRelations = relations(sanctions, ({ one }) => ({
+  user: one(users, { fields: [sanctions.userId], references: [users.id] }),
+  admin: one(users, { fields: [sanctions.adminId], references: [users.id], relationName: 'adminUser' }),
+}))
