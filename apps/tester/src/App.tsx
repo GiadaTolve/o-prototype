@@ -2,11 +2,7 @@ import { useState, useMemo } from 'react'
 import { calculateDerivedStats, type BaseStats } from '@domain/stats/calculator'
 import type { StatsMap } from './types'
 import { calcWazaFormulas } from './wazaFormulas'
-import {
-  GRADES,
-  getTotalStatPoints,
-  getGradesForLevel,
-} from './statPointsConfig'
+import { GRADES, getTotalStatPoints } from './statPointsConfig'
 import {
   CS_CAPACITY,
   CS_PER_TURN,
@@ -41,7 +37,6 @@ function App() {
   const [csLog, setCsLog] = useState<string[]>([])
   const [csConsumeAmount, setCsConsumeAmount] = useState('')
 
-  const gradesForLevel = useMemo(() => getGradesForLevel(characterLevel), [characterLevel])
   const totalStatPoints = useMemo(
     () => getTotalStatPoints(characterLevel, gradeId),
     [characterLevel, gradeId]
@@ -115,7 +110,7 @@ function App() {
           Livello e Grado
         </h2>
         <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
-          I punti stat distribuibili dipendono da livello e grado. Config in <code>statPointsConfig.ts</code>.
+          I punti stat dipendono dal livello. Il grado è libero (indicativo). Config in <code>statPointsConfig.ts</code>.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -128,10 +123,6 @@ function App() {
               onChange={(e) => {
                 const lvl = Math.max(1, Math.min(50, parseInt(e.target.value, 10) || 1))
                 setCharacterLevel(lvl)
-                const grades = getGradesForLevel(lvl)
-                if (!grades.some((g) => g.id === gradeId)) {
-                  setGradeId(grades[0]?.id ?? GRADES[0].id)
-                }
               }}
               style={{
                 width: 60,
@@ -157,9 +148,9 @@ function App() {
                 color: '#fff',
               }}
             >
-              {gradesForLevel.map((g) => (
+              {GRADES.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.name} (Lv.{g.levelMin}–{g.levelMax === 999 ? '∞' : g.levelMax})
+                  {g.name} — Vel ×{g.velMult} / Dmg ×{g.dmgMult}
                 </option>
               ))}
             </select>
