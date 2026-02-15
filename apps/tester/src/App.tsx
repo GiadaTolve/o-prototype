@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react'
 import { calculateDerivedStats, type BaseStats } from '@domain/stats/calculator'
-import type { StatsMap } from './types'
-import { calcWazaFormulas } from './wazaFormulas'
 import { GRADES, getTotalStatPoints } from './statPointsConfig'
 import {
   WAZA_POOL,
+  BRANCH_LABELS,
   calcVelocity,
   calcDamage,
   resolveDbw,
   type WazaDef,
+  type WazaBranch,
 } from './wazaPool'
 
 const STAT_LABELS: Record<keyof BaseStats, string> = {
@@ -37,6 +37,7 @@ function App() {
   const [tierY, setTierY] = useState(1)
   const [skillLevel, setSkillLevel] = useState(1)
   const [bonusDmg, setBonusDmg] = useState(0)
+  const [selectedBranch, setSelectedBranch] = useState<WazaBranch>('do')
 
   // Simulatore combattimento
   const [combatStarted, setCombatStarted] = useState(false)
@@ -60,15 +61,10 @@ function App() {
   const remainingStatPoints = Math.max(0, totalStatPoints - currentStatTotal)
 
   const derived = calculateDerivedStats(baseStats, tierY)
-  const statsMap: StatsMap = {
-    F: baseStats.strength,
-    C: baseStats.constitution,
-    D: baseStats.dexterity,
-    M: baseStats.mind,
-    E: baseStats.empathy,
-    LVL: skillLevel,
-  }
-  const wazaResults = calcWazaFormulas(statsMap)
+  const wazaByBranch = useMemo(
+    () => WAZA_POOL.filter((w) => w.branch === selectedBranch),
+    [selectedBranch]
+  )
 
   const handleStatChange = (key: keyof BaseStats, value: number) => {
     const v = Math.max(0, Math.min(99, value))
@@ -331,8 +327,28 @@ function App() {
 
       <section style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1rem', color: '#a270ff', marginBottom: '1rem' }}>
-          Waza — Ramo Dō (Le vie)
+          Waza — Pool Dō
         </h2>
+        <div style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {(Object.keys(BRANCH_LABELS) as WazaBranch[]).map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setSelectedBranch(b)}
+              style={{
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.8rem',
+                background: selectedBranch === b ? 'rgba(162,112,255,0.3)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${selectedBranch === b ? '#a270ff' : 'rgba(255,255,255,0.2)'}`,
+                borderRadius: 4,
+                color: selectedBranch === b ? '#fff' : '#888',
+                cursor: 'pointer',
+              }}
+            >
+              {BRANCH_LABELS[b]}
+            </button>
+          ))}
+        </div>
         <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
           Valori calcolati. Clicca per lanciare nel simulatore (se attivo).
         </p>
@@ -343,41 +359,41 @@ function App() {
             gap: '0.75rem',
           }}
         >
-          {wazaResults.map((w) => {
-            const def = WAZA_POOL.find((x) => x.name === w.name)
-            const vel =
-              def?.hasVelocity &&
-              calcVelocity(
-                baseStats.dexterity,
-                baseStats.mind,
-                def?.velBonus ?? 0,
-                grade.velMult
-              )
+          {wazaByBranch.map((def) => {
             const wazaStats = {
               D: baseStats.dexterity,
               M: baseStats.mind,
               E: baseStats.empathy,
               LVL: skillLevel,
             }
+            const cost = def.costJigo(wazaStats)
+            const vel =
+              def.hasVelocity &&
+              calcVelocity(
+                baseStats.dexterity,
+                baseStats.mind,
+                def.velBonus,
+                grade.velMult
+              )
             const dmg =
-              def?.hasDamage &&
+              def.hasDamage &&
               calcDamage(
                 baseStats.empathy,
-                def ? resolveDbw(def.dbw, wazaStats) : 0,
+                resolveDbw(def.dbw, wazaStats),
                 bonusDmg,
                 grade.dmgMult
               )
             return (
               <div
-                key={w.name}
+                key={def.id}
                 style={{
                   padding: '0.75rem 1rem',
                   background:
-                    w.type === 'passive'
+                    def.type === 'passive'
                       ? 'rgba(74,222,128,0.08)'
                       : 'rgba(162,112,255,0.08)',
                   border: `1px solid ${
-                    w.type === 'passive'
+                    def.type === 'passive'
                       ? 'rgba(74,222,128,0.3)'
                       : 'rgba(162,112,255,0.3)'
                   }`,
@@ -392,25 +408,20 @@ function App() {
                     marginBottom: '0.4rem',
                   }}
                 >
-                  <span style={{ fontWeight: 600, color: '#fff' }}>{w.name}</span>
+                  <span style={{ fontWeight: 600, color: '#fff' }}>{def.name}</span>
                   <span style={{ fontSize: '0.7rem', color: '#888' }}>
-                    {w.type === 'passive' ? 'Passiva' : 'Attiva'}
+                    {def.type === 'passive' ? 'Passiva' : 'Attiva'}
                   </span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#aaa' }}>
-                  {w.cost != null && (
+                  {cost > 0 && (
                     <div>
-                      Costo: <strong style={{ color: '#c9a84a' }}>{w.cost}</strong> Jigo-ka
+                      Costo: <strong style={{ color: '#c9a84a' }}>{cost}</strong> Jigo-ka
                     </div>
                   )}
-                  {w.x != null && (
+                  {def.costCs > 0 && (
                     <div>
-                      {w.xLabel}: <strong style={{ color: '#c9a84a' }}>{w.x}</strong>
-                    </div>
-                  )}
-                  {w.x2 != null && (
-                    <div>
-                      {w.x2Label}: <strong style={{ color: '#c9a84a' }}>{w.x2}</strong>
+                      CS: <strong style={{ color: '#c9a84a' }}>{def.costCs}</strong>
                     </div>
                   )}
                   {vel !== false && vel != null && (
@@ -424,14 +435,7 @@ function App() {
                     </div>
                   )}
                 </div>
-                {def &&
-                  def.costJigo({
-                    D: baseStats.dexterity,
-                    M: baseStats.mind,
-                    E: baseStats.empathy,
-                    LVL: skillLevel,
-                  }) > 0 &&
-                  combatStarted && (
+                {(cost > 0 || def.costCs > 0) && combatStarted && (
                   <button
                     type="button"
                     onClick={() => handleUseWaza(def)}
