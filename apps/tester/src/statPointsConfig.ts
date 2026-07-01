@@ -2,7 +2,7 @@
  * Configurazione Livello, Grado e Punti Stat Distribuibili
  *
  * Modifica questo file per cambiare la formula o i valori.
- * Il grado è scelto liberamente (non vincolato al livello).
+ * I gradi sono assegnati dal Consiglio di gestione a sua discrezione (non vincolati al livello).
  * I moltiplicatori Vel/Dmg sono da WAZA_CALCOLI.md.
  */
 
@@ -16,6 +16,8 @@ export const GRADES = [
   { id: 'g6', name: "G6 — Shin'enkan", definition: "Guardiano dell'Abisso.", velMult: 1.3, dmgMult: 1.6 },
   { id: 'g7', name: 'G7 — Akumu Zankyō', definition: "L'eco dell'Incubo.", velMult: 1.35, dmgMult: 1.7 },
 ] as const
+
+export type Grade = (typeof GRADES)[number]
 
 /** Punti base a livello 1. */
 const BASE_STAT_POINTS = 25

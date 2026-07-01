@@ -2,15 +2,65 @@
   box-sizing: border-box;
 }
 
+:root {
+  --accent-gold: #c9a84a;
+  --accent-violet: #a270ff;
+  --accent-violet-light: #c4b5fd;
+  --background: #0a0a0f;
+  --panel-bg: rgba(14, 12, 22, 0.88);
+  --panel-bg-elevated: rgba(22, 18, 34, 0.95);
+  --button-bg: rgba(162, 112, 255, 0.22);
+  --border-color: rgba(162, 112, 255, 0.32);
+  --border-subtle: rgba(162, 112, 255, 0.14);
+  --shadow-gold: 0 0 28px rgba(201, 168, 74, 0.1);
+  --shadow-violet: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --text-body: #e8e4f0;
+  --text-muted: #9ca3af;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate__animated {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #0a0a0f;
-  color: #e0e0e0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--background);
+  color: var(--text-body);
   min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
   padding: 1.5rem;
+}
+
+@keyframes levelUpBannerPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(212,175,55,0.3)) drop-shadow(0 0 24px rgba(162,112,255,0.15));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(212,175,55,0.5)) drop-shadow(0 0 40px rgba(162,112,255,0.25));
+    transform: scale(1.02);
+  }
+}
+
+@keyframes levelUpBannerGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.92; }
+}
+
+.level-up-banner-animated {
+  animation: levelUpBannerPulse 2.5s ease-in-out infinite;
+}
+
+/* Segmenti [tag] nel testo Waza (tool + browser) */
+.wit-bracket-tag {
+  font-weight: 700;
+  color: var(--accent-violet-light);
 }

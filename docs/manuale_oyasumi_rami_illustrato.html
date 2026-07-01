@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oyasumi - Manuale Illustrato dei Rami</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a1510;
+      --ink2: #3d3228;
+      --ink3: #6b5c4e;
+      --parch: #f5efe4;
+      --parch2: #ede4d3;
+      --parch3: #d9cdb8;
+      --gold: #b8860b;
+      --gold2: #d4a017;
+      --gold3: #f0e0a0;
+      --pur: #4a2a6b;
+      --pur2: #7a4a9b;
+      --pur3: #e8d8f8;
+      --teal: #1a5c5c;
+      --teal2: #2a8a8a;
+      --red: #8b1a1a;
+      --red2: #c0392b;
+      --jade: #1a5c2a;
+      --jade2: #2a8a4a;
+      --jade3: #d0f0d8;
+      --white: #fff;
+      --radius: 2px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--ink);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    a { color: inherit; }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 0 4rem;
+      background: var(--parch);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 2rem;
+      align-items: center;
+      padding: 3.5rem 2.5rem 2.5rem;
+      border-bottom: 3px solid var(--gold);
+      background: linear-gradient(160deg, #08060a 0%, #130f18 50%, #0e0c09 100%);
+    }
+    .hero-copy { max-width: 620px; }
+    .eyebrow {
+      margin: 0 0 .75rem;
+      color: var(--gold);
+      font-family: system-ui, sans-serif;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: "◎"; opacity: .55; margin-right: .55rem; }
+    h1, h2, h3 { line-height: 1.08; margin: 0; letter-spacing: 0; }
+    h1 {
+      max-width: 650px;
+      color: var(--gold);
+      font-family: "Palatino Linotype", Palatino, Georgia, serif;
+      font-size: clamp(2.2rem, 5.4vw, 4.6rem);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .subtitle {
+      max-width: 660px;
+      margin: 1rem 0 0;
+      color: #7a6858;
+      font-family: system-ui, sans-serif;
+      font-size: .82rem;
+      line-height: 1.8;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-top: 1.35rem;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 .85rem;
+      border: 1px solid #3d3228;
+      border-radius: 2px;
+      background: #0a0805;
+      color: var(--gold2);
+      font-family: system-ui, sans-serif;
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button.secondary { background: transparent; color: #b8a898; }
+
+    .seal {
+      min-height: 330px;
+      margin: 0;
+      border: 1px solid #3d3228;
+      border-radius: 3px;
+      background: radial-gradient(circle at 50% 48%, #181020 0 30%, transparent 31%),
+        conic-gradient(from 15deg, rgba(139,26,26,.2), rgba(26,92,92,.22), rgba(26,92,42,.18), rgba(184,134,11,.22), rgba(139,26,26,.2)),
+        #100c14;
+      overflow: hidden;
+    }
+    .seal svg { width: 100%; height: 100%; min-height: 330px; display: block; }
+    .seal-label { font-family: "Palatino Linotype", Palatino, Georgia, serif; font-weight: 700; }
+
+    .toc {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      border-bottom: 2px solid var(--gold);
+      background: #0a0805;
+    }
+    .toc a {
+      display: inline-block;
+      padding: .58rem .85rem;
+      border-bottom: 2px solid transparent;
+      color: #b8a898;
+      font-family: system-ui, sans-serif;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-decoration: none;
+    }
+    .toc a:hover { color: var(--gold2); border-bottom-color: var(--gold); }
+
+    section {
+      padding: 2.2rem 2.5rem 1rem;
+      border-bottom: 1px solid var(--parch3);
+    }
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.4rem;
+      margin: -2.2rem -2.5rem 2rem;
+      padding: 1.6rem 2.5rem;
+      border-bottom: 2px solid var(--gold);
+      background: linear-gradient(135deg, #1a1510, #241c14, #1a1510);
+    }
+    .section-head h2 {
+      color: var(--gold2);
+      font-family: "Palatino Linotype", Palatino, Georgia, serif;
+      font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+    }
+    .section-head p {
+      max-width: 520px;
+      margin: 0;
+      color: #a89888;
+      font-family: system-ui, sans-serif;
+      font-size: .82rem;
+      line-height: 1.65;
+    }
+
+    h3 {
+      color: var(--pur);
+      font-family: "Palatino Linotype", Palatino, Georgia, serif;
+      font-size: 1.08rem;
+      margin: 1.4rem 0 .6rem;
+      padding-bottom: .3rem;
+      border-bottom: 1px solid var(--parch3);
+    }
+    p {
+      margin: 0 0 .8rem;
+      color: var(--ink2);
+      font-size: .92rem;
+      line-height: 1.85;
+    }
+    ul { padding-left: 1.4rem; margin: .4rem 0 .8rem; }
+    li { color: var(--ink2); font-size: .89rem; line-height: 1.7; margin-bottom: .25rem; }
+    strong { color: var(--ink); }
+
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .visual-row { display: grid; grid-template-columns: minmax(280px, 390px) minmax(0, 1fr); gap: 1rem; align-items: stretch; }
+    .design-pillars { display: grid; grid-template-columns: 1.15fr .85fr; gap: .9rem; }
+    .skill-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .7rem; }
+    .conversion-flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .6rem; }
+    .level-strip, .results { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
+
+    .card, .calculator, .manifesto, .compact-list, .skill-tile, .level-band, .step {
+      border: 1px solid var(--parch3);
+      border-radius: 2px;
+      background: var(--white);
+    }
+    .card { min-height: 100%; padding: .9rem 1rem; border-left: 4px solid var(--teal); }
+    .card h3 {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin: 0 0 .45rem;
+      padding: 0 0 .35rem;
+      font-size: 1rem;
+    }
+    .card p, .skill-tile p, .compact-list p, .manifesto p { color: var(--ink2); font-size: .86rem; line-height: 1.75; }
+    .glyph {
+      width: 30px;
+      height: 30px;
+      display: inline-grid;
+      place-items: center;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      font-family: system-ui, sans-serif;
+      font-size: .78rem;
+      font-weight: 900;
+    }
+    .red { color: var(--red); }
+    .blue { color: var(--teal); }
+    .green { color: var(--jade); }
+    .gold { color: var(--gold); }
+    .violet { color: var(--pur); }
+    .callout, .source-note {
+      margin: .8rem 0;
+      padding: .75rem 1.1rem;
+      border: 1px solid var(--parch3);
+      border-left: 4px solid currentColor;
+      border-radius: 2px;
+      background: var(--parch2);
+      color: var(--ink2);
+      font-size: .86rem;
+      line-height: 1.7;
+    }
+    .source-note { border-left-color: var(--teal); }
+
+    .formula {
+      margin: .8rem 0;
+      padding: .9rem 1.1rem;
+      border: 1px solid var(--jade2);
+      border-left: 4px solid var(--jade2);
+      border-radius: 2px;
+      background: #0e1a14;
+      color: #a0e0b0;
+    }
+    .formula h3 { margin: 0 0 .4rem; border: 0; color: #a0e0b0; font-size: 1rem; }
+    .formula p { color: #cfe0d0; font-size: .84rem; }
+    .formula code, .result strong {
+      font-family: "Courier New", Courier, monospace;
+    }
+    .formula code {
+      display: block;
+      width: 100%;
+      margin: .45rem 0;
+      padding: .65rem .75rem;
+      overflow-x: auto;
+      border-radius: 2px;
+      background: rgba(0,0,0,.24);
+      color: #d8f0d8;
+      font-size: .82rem;
+      line-height: 1.6;
+    }
+
+    .diagram, .table-wrap {
+      border: 1px solid var(--parch3);
+      border-radius: 2px;
+      background: var(--white);
+      overflow: hidden;
+    }
+    .diagram { min-height: 340px; background: var(--parch2); }
+    .diagram svg { width: 100%; height: 100%; min-height: 340px; display: block; }
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      min-width: 680px;
+      border-collapse: collapse;
+      margin: .9rem 0;
+      font-family: system-ui, sans-serif;
+      font-size: .83rem;
+    }
+    th, td {
+      padding: .5rem .75rem;
+      border-bottom: 1px solid var(--parch3);
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    th {
+      background: var(--ink);
+      color: var(--gold2);
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    td { color: var(--ink2); }
+    tbody tr:nth-child(even) { background: var(--parch2); }
+    tr:last-child td { border-bottom: 0; }
+
+    .manifesto { padding: 1rem 1.1rem; border-left: 4px solid var(--pur); background: var(--parch2); }
+    .manifesto h3, .compact-list h3, .skill-tile h3, .calculator h3 {
+      margin: 0 0 .5rem;
+      padding-bottom: .3rem;
+      color: var(--pur);
+      font-size: 1.02rem;
+    }
+    .compact-list { padding: 1rem 1.1rem; border-left: 4px solid var(--teal); }
+    .skill-tile { min-height: 155px; padding: .85rem .95rem; border-left: 4px solid var(--pur); }
+    .tag-list { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .65rem; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 .55rem;
+      border-radius: 20px;
+      background: var(--gold3);
+      color: #7a5c00;
+      font-family: system-ui, sans-serif;
+      font-size: .68rem;
+      font-weight: 800;
+    }
+
+    .flow-node {
+      min-height: 128px;
+      padding: .8rem;
+      border: 1px solid var(--pur2);
+      border-radius: 2px;
+      background: #100c14;
+      color: #c0a8d8;
+    }
+    .flow-node span {
+      display: block;
+      margin-bottom: .35rem;
+      color: var(--pur2);
+      font-family: system-ui, sans-serif;
+      font-size: .66rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .flow-node strong { display: block; margin-bottom: .3rem; color: #e8d8f8; font-size: 1rem; line-height: 1.15; }
+    .flow-node p { margin: 0; color: #c0a8d8; font-size: .78rem; line-height: 1.55; }
+
+    .level-strip { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .level-band { padding: .75rem .85rem; border-top: 3px solid var(--gold); }
+    .level-band strong { display: block; margin-bottom: .3rem; color: var(--gold); font-family: system-ui, sans-serif; font-size: .8rem; }
+    .level-band span { color: var(--ink3); font-size: .78rem; line-height: 1.5; }
+
+    .calculator { padding: 1rem 1.1rem; border-left: 4px solid var(--gold); }
+    .control { display: grid; grid-template-columns: 155px minmax(150px, 1fr) 44px; gap: .75rem; align-items: center; margin: .7rem 0; }
+    label { color: var(--ink2); font-family: system-ui, sans-serif; font-size: .78rem; font-weight: 800; }
+    input[type="range"] { width: 100%; accent-color: var(--gold); }
+    .value {
+      min-width: 40px;
+      min-height: 30px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--parch3);
+      border-radius: 2px;
+      background: var(--parch2);
+      color: var(--teal);
+      font-family: "Courier New", Courier, monospace;
+      font-weight: 900;
+    }
+    .result {
+      padding: .7rem .8rem;
+      border-radius: 2px;
+      background: var(--ink);
+      color: var(--gold2);
+    }
+    .result span {
+      display: block;
+      color: #b8a898;
+      font-family: system-ui, sans-serif;
+      font-size: .65rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .result strong { display: block; margin-top: .25rem; font-size: 1.08rem; }
+
+    .timeline { display: grid; gap: .65rem; }
+    .step {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: .8rem;
+      align-items: start;
+      padding: .85rem 1rem;
+      border-left: 4px solid var(--red);
+    }
+    .step-number {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #3d3228;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--gold2);
+      font-family: system-ui, sans-serif;
+      font-weight: 900;
+    }
+    .step h3 { margin: 0 0 .25rem; border: 0; font-size: .98rem; }
+    .step p { margin: 0; color: var(--ink3); font-size: .84rem; }
+    .footer-note { padding: 1.5rem 2.5rem 0; color: var(--ink3); font-size: .84rem; }
+
+    @media (max-width: 880px) {
+      .hero, .visual-row, .section-head, .design-pillars, .skill-board, .conversion-flow, .level-strip, .grid, .grid.two, .results {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding: 2.6rem 1.5rem 1.8rem; }
+      .section-head { display: grid; }
+    }
+    @media (max-width: 560px) {
+      section { padding: 1.7rem 1.25rem .9rem; }
+      .section-head { margin: -1.7rem -1.25rem 1.4rem; padding: 1.25rem; }
+      .control { grid-template-columns: 1fr 54px; }
+      .control label { grid-column: 1 / -1; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .button { width: 100%; }
+    }
+    @media print {
+      body { background: white; }
+      .toc, .button, .calculator { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Manuale illustrato</p>
+        <h1>Oyasumi: Rami, Waza e Risorse Vitali</h1>
+        <p class="subtitle">
+          Una versione visiva del manuale sui rami di abilita: meno muro di testo,
+          piu mappe mentali, formule leggibili e calcoli automatici per capire subito
+          come HP, Chronostack, movimento e Riduzione Danno si tengono in equilibrio.
+        </p>
+        <div class="hero-actions">
+          <a class="button" href="#rami">Leggi i Rami</a>
+          <a class="button secondary" href="#calcolatore">Apri Calcolatore</a>
+          <button class="button secondary" type="button" onclick="window.print()">Stampa PDF</button>
+        </div>
+      </div>
+
+      <figure class="seal" aria-label="Schema illustrato dei rami di Oyasumi">
+        <svg viewBox="0 0 420 460" role="img">
+          <defs>
+            <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#2a2520" flood-opacity=".18"/>
+            </filter>
+          </defs>
+          <rect width="420" height="460" fill="transparent"/>
+          <circle cx="210" cy="225" r="158" fill="none" stroke="#d8cdbb" stroke-width="2"/>
+          <circle cx="210" cy="225" r="112" fill="none" stroke="#222028" stroke-width="2" stroke-dasharray="8 10"/>
+          <path d="M210 64 L350 306 H70 Z" fill="none" stroke="#b28732" stroke-width="4"/>
+          <path d="M210 386 L70 144 H350 Z" fill="none" stroke="#276b8d" stroke-width="4" opacity=".85"/>
+          <circle cx="210" cy="225" r="62" fill="#fffaf1" stroke="#222028" stroke-width="3" filter="url(#softShadow)"/>
+          <text x="210" y="218" text-anchor="middle" class="seal-label" fill="#222028" font-size="25">Scheda</text>
+          <text x="210" y="247" text-anchor="middle" fill="#645d68" font-size="14">sopravvivenza + waza</text>
+
+          <g filter="url(#softShadow)">
+            <circle cx="210" cy="64" r="45" fill="#fffaf1" stroke="#b94545" stroke-width="4"/>
+            <text x="210" y="60" text-anchor="middle" fill="#b94545" font-size="13" font-weight="800">TEMPRA</text>
+            <text x="210" y="80" text-anchor="middle" fill="#645d68" font-size="12">HP</text>
+          </g>
+          <g filter="url(#softShadow)">
+            <circle cx="70" cy="306" r="45" fill="#fffaf1" stroke="#276b8d" stroke-width="4"/>
+            <text x="70" y="302" text-anchor="middle" fill="#276b8d" font-size="13" font-weight="800">EGO</text>
+            <text x="70" y="322" text-anchor="middle" fill="#645d68" font-size="12">area</text>
+          </g>
+          <g filter="url(#softShadow)">
+            <circle cx="350" cy="306" r="45" fill="#fffaf1" stroke="#3f7b56" stroke-width="4"/>
+            <text x="350" y="302" text-anchor="middle" fill="#3f7b56" font-size="12" font-weight="800">ZANSHIN</text>
+            <text x="350" y="322" text-anchor="middle" fill="#645d68" font-size="12">CS</text>
+          </g>
+          <g>
+            <rect x="50" y="128" width="86" height="32" rx="6" fill="#27232a"/>
+            <text x="93" y="150" text-anchor="middle" fill="#fff8e9" font-size="12" font-weight="800">AGILITA</text>
+            <rect x="284" y="128" width="86" height="32" rx="6" fill="#27232a"/>
+            <text x="327" y="150" text-anchor="middle" fill="#fff8e9" font-size="12" font-weight="800">PARATA</text>
+            <rect x="167" y="374" width="86" height="32" rx="6" fill="#27232a"/>
+            <text x="210" y="396" text-anchor="middle" fill="#fff8e9" font-size="12" font-weight="800">VOLONTA</text>
+          </g>
+        </svg>
+      </figure>
+    </header>
+
+    <nav class="toc" aria-label="Indice">
+      <a href="#visione">0. Visione</a>
+      <a href="#base">1. Meccanismo base</a>
+      <a href="#rami">2. Rami di abilita</a>
+      <a href="#skiru">3. Skiru</a>
+      <a href="#progressione">4. Progressione</a>
+      <a href="#cantieri">5. Cantieri</a>
+    </nav>
+
+    <section id="visione">
+      <div class="section-head">
+        <h2>Visione di Design</h2>
+        <p>
+          Oyasumi vuole spostare il peso dalla statistica astratta alla biografia tecnica:
+          cosa sai fare, come lo fai, con quale trauma, addestramento o tradizione lo giustifichi.
+        </p>
+      </div>
+
+      <div class="design-pillars">
+        <article class="manifesto">
+          <h3>Principio guida</h3>
+          <p>
+            Il personaggio non e una somma di Forza, Destrezza e Mente. E un insieme di rami,
+            vie, skiru, ordini, eredita e strumenti. Il numero non deve dire "quanto sei forte"
+            in assoluto: deve dire quanto sei credibile quando dichiari una certa azione.
+          </p>
+          <p>
+            Per questo una Waza non pesca da una stat universale. Prende una media dai rami chiamati
+            in causa, aggiunge il livello della tecnica, poi premia la competenza in quel ramo se il
+            personaggio ne ha studiato davvero il linguaggio.
+          </p>
+          <div class="tag-list" aria-label="Parole chiave del sistema">
+            <span class="tag">No stat pure</span>
+            <span class="tag">Skill come identita</span>
+            <span class="tag">Waza come gesto</span>
+            <span class="tag">Lore che giustifica regola</span>
+          </div>
+        </article>
+
+        <aside class="compact-list">
+          <h3>Cose da proteggere</h3>
+          <ul>
+            <li>L'Ego/Jigoka non deve vincere da solo: potenzia area e pressione, non la sopravvivenza.</li>
+            <li>Le Skiru sociali e professionali devono pesare quanto quelle da combattimento.</li>
+            <li>Le Key devono aprire identita di gioco, non obbligare a comprare interi pacchetti indesiderati.</li>
+            <li>Le Waza devono restare descrittive: formula chiara sotto, scena ricca sopra.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section id="base">
+      <div class="section-head">
+        <h2>Meccanismo Base delle Waza</h2>
+        <p>
+          La Waza non nasce da una statistica dominante: prende forza dalla media dei rami coinvolti,
+          dal livello della tecnica e dalla competenza reale del personaggio in quel ramo.
+        </p>
+      </div>
+
+      <div class="visual-row">
+        <div class="diagram" aria-label="Diagramma di costruzione di una Waza">
+          <svg viewBox="0 0 430 360" role="img">
+            <rect width="430" height="360" fill="#fffaf1"/>
+            <line x1="215" y1="78" x2="215" y2="285" stroke="#d8cdbb" stroke-width="4"/>
+            <line x1="108" y1="158" x2="322" y2="158" stroke="#d8cdbb" stroke-width="4"/>
+            <circle cx="215" cy="78" r="45" fill="#27232a"/>
+            <text x="215" y="73" text-anchor="middle" fill="#fff8e9" font-size="13" font-weight="800">RAMI</text>
+            <text x="215" y="93" text-anchor="middle" fill="#fff8e9" font-size="11">media</text>
+            <circle cx="108" cy="158" r="45" fill="#b94545"/>
+            <text x="108" y="154" text-anchor="middle" fill="#fff8e9" font-size="12" font-weight="800">LIVELLO</text>
+            <text x="108" y="174" text-anchor="middle" fill="#fff8e9" font-size="11">Waza</text>
+            <circle cx="322" cy="158" r="45" fill="#276b8d"/>
+            <text x="322" y="154" text-anchor="middle" fill="#fff8e9" font-size="12" font-weight="800">BONUS</text>
+            <text x="322" y="174" text-anchor="middle" fill="#fff8e9" font-size="11">55 / 85%</text>
+            <circle cx="215" cy="285" r="56" fill="#fffaf1" stroke="#222028" stroke-width="4"/>
+            <text x="215" y="278" text-anchor="middle" fill="#222028" font-size="13" font-weight="900">VALORE</text>
+            <text x="215" y="300" text-anchor="middle" fill="#645d68" font-size="12">di esecuzione</text>
+          </svg>
+        </div>
+
+        <div>
+          <article class="formula">
+            <h3>Formula di lettura rapida</h3>
+            <code>Valore Waza = media dei Rami chiamati in causa + Livello Waza + Bonus Competenza</code>
+            <p>
+              Esempio: una tecnica che usa Scherma/Parata 6 ed Ego 4 parte da media 5.
+              Se la Waza e di livello 2 e il ramo ha il primo scatto competenza, il valore diventa 8.
+            </p>
+          </article>
+
+          <article class="formula">
+            <h3>Bonus Competenza</h3>
+            <code>55% delle Waza del ramo sbloccate = +1
+85% delle Waza del ramo sbloccate = +2</code>
+            <p>
+              Il bonus premia chi costruisce un'identita tecnica coerente. Non sostituisce i rami:
+              li accompagna, cosi una specializzazione ampia pesa senza schiacciare tutto il resto.
+            </p>
+          </article>
+
+          <article class="formula">
+            <h3>Uso su Velocita, Danno e Gittata</h3>
+            <code>Velocita, Danno o Raggio = Valore Waza interpretato dal tipo di tecnica</code>
+            <p>
+              Una Waza di taglio usera il valore per impatto e rapidita; una Waza spirituale
+              lo usera piu spesso per area, durata o pressione. Il numero serve da asse comune,
+              la descrizione della tecnica decide come appare in scena.
+            </p>
+          </article>
+        </div>
+      </div>
+
+      <div class="source-note">
+        <strong>Esempio guida: Cicatrice Persistente.</strong>
+        Il fendente chiama un ramo d'arma bianca o Via affine; la cicatrice energetica chiama Ego/Jigoka;
+        la permanenza e la propagazione possono chiamare Concentrazione o una Skiru di Incanalazione.
+        Il danno, la linea in metri e i turni di permanenza non nascono da tre statistiche diverse:
+        nascono dallo stesso valore Waza, letto in tre usi differenti.
+      </div>
+    </section>
+
+    <section id="rami">
+      <div class="section-head">
+        <h2>I Tre Rami Fondamentali</h2>
+        <p>
+          Ogni personaggio li possiede dalla nascita. Non richiedono Chiavi e regolano
+          sopravvivenza, proiezione spirituale e lucidita temporale.
+        </p>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <h3 class="red"><span class="glyph">T</span>Tempra</h3>
+          <p><strong>Taijutsu / Costituzione.</strong> Resistenza biologica, densita muscolare e capacita di incassare traumi fisici.</p>
+          <div class="callout red">HP Massimi = Grado Tempra x 10</div>
+          <p>
+            In mappa definisce anche quanto il personaggio puo sollevare o spostare:
+            oggetti piccoli ai gradi bassi, persone e masse grandi ai gradi intermedi,
+            fino a ostacoli enormi o veicoli al grado 10.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3 class="blue"><span class="glyph">E</span>Ego</h3>
+          <p><strong>Jigoka / Psiche.</strong> Potenza della proiezione dell'anima, estensione energetica e ampiezza dei Muen.</p>
+          <div class="callout blue">Non fornisce HP, difesa fisica o RD.</div>
+          <p>
+            Questo evita il dominio assoluto del Jigoka. Un personaggio tutto Ego diventa un
+            cannone di vetro: pressione enorme, ma sopravvivenza fragile se viene raggiunto.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3 class="green"><span class="glyph">Z</span>Concentrazione</h3>
+          <p><strong>Zanshin / Percezione Temporale.</strong> Lucidita tattica nel tempo alterato del Nemuribito.</p>
+          <div class="callout green">CS Massimi = 3 + INT(Grado Concentrazione / 2)</div>
+          <p>
+            Regola quante sotto-azioni mentali o tattiche possono essere sostenute
+            prima di arrivare a saturazione, Overheat o perdita di controllo.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="specializzazioni">
+      <div class="section-head">
+        <h2>Rami di Specializzazione</h2>
+        <p>
+          Per investire in questi rami e comprare le relative Waza serve consumare 1 Key.
+          Ogni ramo aggiunge una funzione concreta alla scheda.
+        </p>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <h3 class="gold"><span class="glyph">A</span>Agilita</h3>
+          <p><strong>Spostamento / Schivata.</strong> Riflessi, passo, accelerazione breve e movimento nella chat tattica.</p>
+          <div class="callout gold">Metri per sotto-azione = Grado Agilita x 1.5</div>
+          <p>
+            Fornisce anche il riferimento base per schivate pure, soprattutto quando il personaggio
+            non intercetta il colpo ma prova a uscire dalla traiettoria.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3 class="violet"><span class="glyph">P</span>Parata</h3>
+          <p><strong>Scherma / Guardia.</strong> Capacita di intercettare colpi con armi, supporti rigidi o scudi energetici.</p>
+          <div class="callout violet">RD = Grado Parata + Bonus Arma/Scudo</div>
+          <p>
+            La Riduzione Danno si applica quando la parata attiva viene dichiarata e riesce.
+            Non e una corazza sempre accesa: richiede scelta e posizionamento.
+          </p>
+        </article>
+
+        <article class="card">
+          <h3><span class="glyph">V</span>Volonta</h3>
+          <p><strong>Mente / Presenza.</strong> Resilienza contro stati mentali, Muen spirituali e costrizioni di movimento.</p>
+          <div class="callout">Sostituisce Tempra negli scontri psichici o misti.</div>
+          <p>
+            Serve a non trasformare ogni resistenza in un test fisico. Se l'attacco piega la mente,
+            la presenza interiore diventa la vera difesa.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="tabelle">
+      <div class="section-head">
+        <h2>Tabelle Rapide</h2>
+        <p>
+          Qui le regole sono compresse in formato consultazione. Sono pensate per master e giocatori
+          durante una giocata, quando serve una risposta veloce.
+        </p>
+      </div>
+
+      <div class="grid two">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Grado</th>
+                <th>HP da Tempra</th>
+                <th>CS da Concentrazione</th>
+                <th>Movimento da Agilita</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>10 HP</td><td>3 CS</td><td>1.5 m</td></tr>
+              <tr><td>2</td><td>20 HP</td><td>4 CS</td><td>3 m</td></tr>
+              <tr><td>3</td><td>30 HP</td><td>4 CS</td><td>4.5 m</td></tr>
+              <tr><td>4</td><td>40 HP</td><td>5 CS</td><td>6 m</td></tr>
+              <tr><td>5</td><td>50 HP</td><td>5 CS</td><td>7.5 m</td></tr>
+              <tr><td>6</td><td>60 HP</td><td>6 CS</td><td>9 m</td></tr>
+              <tr><td>7</td><td>70 HP</td><td>6 CS</td><td>10.5 m</td></tr>
+              <tr><td>8</td><td>80 HP</td><td>7 CS</td><td>12 m</td></tr>
+              <tr><td>9</td><td>90 HP</td><td>7 CS</td><td>13.5 m</td></tr>
+              <tr><td>10</td><td>100 HP</td><td>8 CS</td><td>15 m</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Ramo</th>
+                <th>Cosa automatizza</th>
+                <th>Nota di bilanciamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Sopravvivenza</td>
+                <td>Tempra</td>
+                <td>HP e forza fisica minore</td>
+                <td>Regge il corpo, non aumenta la potenza spirituale.</td>
+              </tr>
+              <tr>
+                <td>Proiezione</td>
+                <td>Ego</td>
+                <td>Estensione, area e pressione delle Waza spirituali</td>
+                <td>Non protegge dai danni fisici.</td>
+              </tr>
+              <tr>
+                <td>Tempo</td>
+                <td>Concentrazione</td>
+                <td>Chronostack e lucidita tattica</td>
+                <td>Potenzia il controllo, non sostituisce movimento o difesa.</td>
+              </tr>
+              <tr>
+                <td>Posizione</td>
+                <td>Agilita</td>
+                <td>Metri per quarto di turno e schivata</td>
+                <td>Serve una Key per sbloccarla.</td>
+              </tr>
+              <tr>
+                <td>Guardia</td>
+                <td>Parata</td>
+                <td>Riduzione Danno su parata attiva</td>
+                <td>Funziona quando viene dichiarata e riesce.</td>
+              </tr>
+              <tr>
+                <td>Mente</td>
+                <td>Volonta</td>
+                <td>Resistenza mentale e spirituale</td>
+                <td>Evita che Tempra risolva ogni confronto.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="skiru">
+      <div class="section-head">
+        <h2>Skiru: Abilita Come Linguaggio</h2>
+        <p>
+          Le Skiru sostituiscono le vecchie statistiche come giustificazione concreta:
+          indicano addestramento, mestiere, stile, classe sociale e modo di incanalare la Jigo-ka.
+        </p>
+      </div>
+
+      <div class="skill-board">
+        <article class="skill-tile">
+          <h3>Corpo</h3>
+          <p>Tempra, corpo a corpo, armi bianche, armi da fuoco, parata, movimento, presa, atletica. Servono per colpire, reggere, inseguire e posizionarsi.</p>
+        </article>
+        <article class="skill-tile">
+          <h3>Jigoka</h3>
+          <p>Ego, incanalazione, percezione onirica, costrutti, emanazione, propagazione, sigilli. Servono per dare forma al potere e leggerne le tracce.</p>
+        </article>
+        <article class="skill-tile">
+          <h3>Mestiere</h3>
+          <p>Medicina, veleni, artigianato, caccia, sopravvivenza, furtivita, ricerca, logistica. Aprono classi come Yakushi, Kurenai, Matagi e ruoli specialistici.</p>
+        </article>
+        <article class="skill-tile">
+          <h3>Societa</h3>
+          <p>Eloquenza, intimidazione, politica, etichetta, commercio, indagine, reputazione. Rendono giocabili politicanti, mediatori e manipolatori sociali.</p>
+        </article>
+      </div>
+
+      <div class="source-note">
+        <strong>Regola di costruzione.</strong>
+        Una Waza deve dichiarare almeno un ramo/Skiru requisito e puo dichiararne un secondo se il gesto e ibrido.
+        La media evita il personaggio monolitico: chi e fortissimo in una sola cosa resta brillante in quella,
+        ma le Waza miste chiedono identita piu ricche.
+      </div>
+    </section>
+
+    <section id="conversione">
+      <div class="section-head">
+        <h2>Conversione Senza Stat</h2>
+        <p>
+          Il vecchio materiale usa ancora Forza, Destrezza, Mente, Costituzione, BOD o KOT.
+          Qui c'e la chiave per tradurlo nel nuovo manuale senza perdere gli effetti.
+        </p>
+      </div>
+
+      <div class="conversion-flow">
+        <article class="flow-node">
+          <span>Vecchio</span>
+          <strong>F / C</strong>
+          <p>Forza, Costituzione, BOD, resistenza fisica.</p>
+        </article>
+        <article class="flow-node">
+          <span>Nuovo</span>
+          <strong>Tempra + Skiru fisica</strong>
+          <p>HP, traumi, presa, corpo a corpo, armi pesanti.</p>
+        </article>
+        <article class="flow-node">
+          <span>Vecchio</span>
+          <strong>D / M</strong>
+          <p>Destrezza, riflessi, mente, velocita calcolata.</p>
+        </article>
+        <article class="flow-node">
+          <span>Nuovo</span>
+          <strong>Agilita + Concentrazione</strong>
+          <p>Movimento, schivata, gestione turni, Chronostack.</p>
+        </article>
+        <article class="flow-node">
+          <span>Nuovo</span>
+          <strong>Ego / Volonta</strong>
+          <p>Area, pressione, Muen, resistenze mentali e spirituali.</p>
+        </article>
+      </div>
+
+      <article class="formula" style="margin-top:16px">
+        <h3>Formula convertita consigliata</h3>
+        <code>Valore Azione = media(Ramo principale, Skiru requisito) + Livello Waza + Competenza + Bonus Arma/Ordine</code>
+        <p>
+          Bonus Arma e Bonus Ordine devono rimanere piccoli o situazionali. Se diventano piu grandi dei rami,
+          l'equipaggiamento torna a comandare il personaggio.
+        </p>
+      </article>
+    </section>
+
+    <section id="progressione">
+      <div class="section-head">
+        <h2>Progressione 1-60</h2>
+        <p>
+          La fonte attuale del progetto arriva in modo canonico fino al livello 50.
+          La richiesta del nuovo manuale e arrivare a 60, quindi la scelta piu pulita e proseguire
+          la curva con lo stesso incremento lineare di +39 EXP per livello.
+        </p>
+      </div>
+
+      <div class="level-strip">
+        <article class="level-band"><strong>1-6</strong><span>Early game. Risveglio, prime Waza, prime Key.</span></article>
+        <article class="level-band"><strong>7-25</strong><span>Mid game. Identita tecnica, classi sociali, prime specializzazioni.</span></article>
+        <article class="level-band"><strong>26-50</strong><span>Core lento. Build mature e accesso pieno a Ordini, Madosho e Vie.</span></article>
+        <article class="level-band"><strong>51-60</strong><span>Paragon. Non piu solo crescita: definizione mitica del personaggio.</span></article>
+        <article class="level-band"><strong>Key</strong><span>1 per livello, usata per aprire Vie, Madosho secondarie o rami rari.</span></article>
+        <article class="level-band"><strong>Gem</strong><span>1 per livello, 3 ogni quinto livello, per potenziare Waza acquisite.</span></article>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Livello</th>
+              <th>EXP delta</th>
+              <th>EXP totale</th>
+              <th>Premio</th>
+              <th>Nota design</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>50</td><td>1.922</td><td>48.314</td><td>+1 Key, +3 Gem</td><td>Fine curva canonica attuale.</td></tr>
+            <tr><td>51</td><td>1.961</td><td>50.275</td><td>+1 Key, +1 Gem</td><td>Ingresso Paragon.</td></tr>
+            <tr><td>52</td><td>2.000</td><td>52.275</td><td>+1 Key, +1 Gem</td><td>Rifinitura di una Via primaria.</td></tr>
+            <tr><td>53</td><td>2.039</td><td>54.314</td><td>+1 Key, +1 Gem</td><td>Accesso a ibridazioni alte.</td></tr>
+            <tr><td>54</td><td>2.078</td><td>56.392</td><td>+1 Key, +1 Gem</td><td>Specializzazione narrativa.</td></tr>
+            <tr><td>55</td><td>2.117</td><td>58.509</td><td>+1 Key, +3 Gem</td><td>Soglia Paragon forte.</td></tr>
+            <tr><td>56</td><td>2.156</td><td>60.665</td><td>+1 Key, +1 Gem</td><td>Perfezionamento tecnico.</td></tr>
+            <tr><td>57</td><td>2.195</td><td>62.860</td><td>+1 Key, +1 Gem</td><td>Espansione della leggenda personale.</td></tr>
+            <tr><td>58</td><td>2.234</td><td>65.094</td><td>+1 Key, +1 Gem</td><td>Ultime Waza ibride.</td></tr>
+            <tr><td>59</td><td>2.273</td><td>67.367</td><td>+1 Key, +1 Gem</td><td>Stabilizzazione finale.</td></tr>
+            <tr><td>60</td><td>2.312</td><td>69.679</td><td>+1 Key, +3 Gem</td><td>Capstone: una firma Paragon, non solo altri numeri.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="cantieri">
+      <div class="section-head">
+        <h2>Cantieri Canonici</h2>
+        <p>
+          Questi sono i blocchi presi dai documenti sorgente che vanno integrati nel manuale completo.
+          Li teniamo separati per convertirli bene nel nuovo sistema senza-stat.
+        </p>
+      </div>
+
+      <div class="grid two">
+        <article class="card">
+          <h3 class="red"><span class="glyph">M</span>Mugen-Tai</h3>
+          <p>
+            Statuto letto da Miscellanous: caos come strumento, emozione brandita, Kessen/Cosmicon,
+            Matagi Matsuri, Shinkon, Dono di Memoria e diritto di Reclamo.
+          </p>
+          <div class="callout red">Da produrre: tabella dei 20 Wendingo + 2 passive + 5 attive d'Ordine.</div>
+        </article>
+
+        <article class="card">
+          <h3 class="blue"><span class="glyph">C</span>Chisen-Tai</h3>
+          <p>
+            Statuto letto da Miscellanous: ragione come lama, Kotowari/Astrolabio,
+            Shugyo, estetica del Kisei, silenzio, geometria, distacco e promessa.
+          </p>
+          <div class="callout blue">Da produrre: tabella dei 20 Santoni + 2 passive + 5 attive d'Ordine.</div>
+        </article>
+      </div>
+
+      <div class="table-wrap" style="margin-top:16px">
+        <table>
+          <thead>
+            <tr>
+              <th>Blocco</th>
+              <th>Fonte trovata</th>
+              <th>Conversione richiesta</th>
+              <th>Regola di sicurezza</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Madosho</td>
+              <td>Waza e cazzi vari + vecchio manuale v3</td>
+              <td>Allineare le sei eredita al sistema di rami e Skiru, togliendo F/C/D/M/E dalle formule.</td>
+              <td>Ogni Madosho deve dare identita, non superiorita numerica permanente.</td>
+            </tr>
+            <tr>
+              <td>Dieci Sorelle</td>
+              <td>Vecchio manuale v3</td>
+              <td>Convertire DMG Base, BA e VEL in bonus arma piccoli, tag, passiva e Waza peculiare.</td>
+              <td>Devono essere questline leggendarie, non acquisti da ottimizzazione.</td>
+            </tr>
+            <tr>
+              <td>Classi sociali</td>
+              <td>Miscellanous e manuale v3</td>
+              <td>Yakushi, Kurenai, Matagi, Kuchiki come rami professionali con sconto o perk di Skiru.</td>
+              <td>Devono aprire scene nuove, non solo bonus ai tiri.</td>
+            </tr>
+            <tr>
+              <td>Waza generiche</td>
+              <td>Waza e cazzi vari</td>
+              <td>Trucchetti, QR-CODE, Occhiali da Sole, Oyasumi's Got Talent come tecniche base senza stat.</td>
+              <td>Devono insegnare il sistema ai nuovi giocatori.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="source-note">
+        <strong>Decisione consigliata.</strong>
+        Prima completiamo le Skiru e la formula unica. Poi convertiamo una sola Madosho come prototipo.
+        Se quella funziona, applichiamo lo stesso telaio alle altre cinque, agli Ordini e alle Sorelle.
+      </div>
+    </section>
+
+    <section id="calcolatore">
+      <div class="section-head">
+        <h2>Calcolatore di Scheda</h2>
+        <p>
+          Muovi i gradi e guarda cosa succede. Questo serve soprattutto a visualizzare perche
+          dividere HP, CS, RD e movimento riduce lo strapotere di un solo ramo.
+        </p>
+      </div>
+
+      <div class="calculator">
+        <h3>Prova rapida dei valori</h3>
+        <div class="control">
+          <label for="tempra">Tempra</label>
+          <input id="tempra" type="range" min="1" max="10" value="5">
+          <span class="value" id="tempraValue">5</span>
+        </div>
+        <div class="control">
+          <label for="ego">Ego</label>
+          <input id="ego" type="range" min="1" max="10" value="5">
+          <span class="value" id="egoValue">5</span>
+        </div>
+        <div class="control">
+          <label for="concentrazione">Concentrazione</label>
+          <input id="concentrazione" type="range" min="1" max="10" value="6">
+          <span class="value" id="concentrazioneValue">6</span>
+        </div>
+        <div class="control">
+          <label for="agilita">Agilita</label>
+          <input id="agilita" type="range" min="1" max="10" value="4">
+          <span class="value" id="agilitaValue">4</span>
+        </div>
+        <div class="control">
+          <label for="parata">Parata</label>
+          <input id="parata" type="range" min="1" max="10" value="3">
+          <span class="value" id="parataValue">3</span>
+        </div>
+        <div class="control">
+          <label for="bonusScudo">Bonus arma/scudo</label>
+          <input id="bonusScudo" type="range" min="0" max="8" value="2">
+          <span class="value" id="bonusScudoValue">2</span>
+        </div>
+
+        <div class="results" aria-live="polite">
+          <div class="result"><span>HP massimi</span><strong id="hpResult">50</strong></div>
+          <div class="result"><span>Chronostack</span><strong id="csResult">6</strong></div>
+          <div class="result"><span>Metri / sotto-azione</span><strong id="moveResult">6 m</strong></div>
+          <div class="result"><span>RD su parata</span><strong id="rdResult">5</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="procedura">
+      <div class="section-head">
+        <h2>Procedura al Tavolo</h2>
+        <p>
+          Quando devi risolvere una scena, usa questo ordine. Tiene separate intenzione,
+          ramo usato e risultato meccanico.
+        </p>
+      </div>
+
+      <div class="timeline">
+        <article class="step">
+          <div class="step-number">1</div>
+          <div>
+            <h3>Dichiara l'intenzione</h3>
+            <p>Il giocatore descrive cosa vuole ottenere: colpire, difendersi, spostarsi, resistere, controllare un'area.</p>
+          </div>
+        </article>
+        <article class="step">
+          <div class="step-number">2</div>
+          <div>
+            <h3>Scegli i rami chiamati in causa</h3>
+            <p>Una Waza fisica puo usare Parata o Agilita; una spirituale puo usare Ego; un confronto mentale puo usare Volonta.</p>
+          </div>
+        </article>
+        <article class="step">
+          <div class="step-number">3</div>
+          <div>
+            <h3>Applica formula e risorsa</h3>
+            <p>Somma media dei rami, livello Waza e bonus competenza. Poi controlla HP, CS, movimento o RD se entrano in gioco.</p>
+          </div>
+        </article>
+        <article class="step">
+          <div class="step-number">4</div>
+          <div>
+            <h3>Traduci in scena</h3>
+            <p>Il numero decide la tenuta della regola; la descrizione decide il colore: lama, pressione psichica, guardia o scatto.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <p class="footer-note">
+      Documento preparato come base illustrata per Altervista. Prossimo blocco naturale:
+      progressione livelli 1-60, esperienza ogni 600 caratteri e livelli Paragon.
+    </p>
+  </main>
+
+  <script>
+    const ids = ["tempra", "ego", "concentrazione", "agilita", "parata", "bonusScudo"];
+
+    function value(id) {
+      return Number(document.getElementById(id).value);
+    }
+
+    function formatMeters(amount) {
+      return Number.isInteger(amount) ? amount + " m" : amount.toFixed(1) + " m";
+    }
+
+    function updateSheet() {
+      ids.forEach((id) => {
+        document.getElementById(id + "Value").textContent = value(id);
+      });
+
+      const hp = value("tempra") * 10;
+      const cs = 3 + Math.floor(value("concentrazione") / 2);
+      const movement = value("agilita") * 1.5;
+      const rd = value("parata") + value("bonusScudo");
+
+      document.getElementById("hpResult").textContent = hp;
+      document.getElementById("csResult").textContent = cs;
+      document.getElementById("moveResult").textContent = formatMeters(movement);
+      document.getElementById("rdResult").textContent = rd;
+    }
+
+    ids.forEach((id) => document.getElementById(id).addEventListener("input", updateSheet));
+    updateSheet();
+  </script>
+</body>
+</html>

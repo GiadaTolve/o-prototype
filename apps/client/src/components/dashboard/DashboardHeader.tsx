@@ -24,6 +24,8 @@ type Props = {
   onOpenGestione?: () => void;
   canAccessGestione?: boolean;
   canAccessShinigami?: boolean;
+  /** Notifica SMS: mostra "*drin drin!*" quando arriva un nuovo messaggio */
+  smsNotification?: boolean;
 };
 
 export function DashboardHeader({
@@ -35,6 +37,7 @@ export function DashboardHeader({
   onOpenGestione,
   canAccessGestione,
   canAccessShinigami,
+  smsNotification = false,
 }: Props) {
   const router = useRouter();
 
@@ -75,7 +78,14 @@ export function DashboardHeader({
   };
 
   return (
-    <header className="border-b border-[var(--border-color)] bg-[var(--panel-bg)]/80 backdrop-blur-sm sticky top-0 z-20">
+    <header
+      className="border-b border-[var(--border-color)] backdrop-blur-sm sticky top-0 z-20"
+      style={{
+        backgroundImage: "linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.85)), url('/backgrounds/cloudy.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 max-w-[1800px] mx-auto">
         <div className="flex items-baseline gap-4">
           <h1
@@ -87,6 +97,9 @@ export function DashboardHeader({
           <span className="text-gray-500 text-sm hidden sm:inline">— Protocollo onirico</span>
         </div>
         <nav className="flex flex-wrap items-center gap-2 md:gap-4">
+          {smsNotification && (
+            <span className="text-[var(--accent-gold)] text-sm italic animate-pulse">*drin drin!*</span>
+          )}
           {onGoToMap && (
             <button
               type="button"

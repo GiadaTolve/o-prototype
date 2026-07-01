@@ -10,6 +10,14 @@ export type ZoneId = "kessen" | "edo" | "kotowari" | "hamanachi";
 /** Slug univoco per room chat. Formato zone__location o zone__container__location. */
 export type RoomId = string;
 
+/** Room ID partychat (Circus) — chat anonima con regole a sé, raggiungibile solo da dashboard. */
+export const PARTYCHAT_ROOM_ID: RoomId = "edo__paradise";
+
+/** Indica se la room è la partychat (Circus). */
+export function isPartychat(roomId: RoomId): boolean {
+  return roomId === PARTYCHAT_ROOM_ID;
+}
+
 export type RootPin = {
   gameMapId: GameMapId;
   label: string;
@@ -148,7 +156,12 @@ const OGON: GameMapConfig = {
       id: "edo",
       label: "Edo",
       locations: [
-        { id: "paradise", label: "Paradise", roomId: "edo__paradise" },
+        {
+          id: "circus",
+          label: "Circus",
+          roomId: PARTYCHAT_ROOM_ID,
+          description: "Spazio speciale a Edo: chat anonima con nome animale e maschera. Sorteggi e eventi gestiti da mod/admin. Regole a sé.",
+        },
         { id: "ginza_o_clock", label: "Ginza o' Clock", roomId: "edo__ginza_o_clock" },
       ],
     },

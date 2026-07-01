@@ -1,20 +1,65 @@
-import { eq, and, gte, gt, sql } from 'drizzle-orm'
+import { eq, and, gt, gte, lte, desc, sql } from "drizzle-orm";
 import { db } from '../../plugins/db'
-import { gameSessions, gameSessionParticipants, zoneMessages, characters, fetches, questRewards, ledgerEntries } from '../../db/schema'
+import { gameSessions, gameSessionParticipants, zoneMessages, characters, fetches, quests, questRewards, ledgerEntries } from '../../db/schema'
 import { isValidRoom } from '../chat/chat.service'
 import { createRem } from '@domain/types/money'
 import { earn } from '@domain/ledger/transaction'
 
 const ACTION_THRESHOLD = 500 // 1 azione = messaggio con >500 caratteri totali
 
+const CIRCUS_ROOM_ID = "edo__paradise";
+
+/**
+ * Crea una giocata "evento" chiusa (Circus): chiamato quando Admin/Mod chiude il toggle Circus.
+ * La sessione viene registrata con sessionType='EVENTO' e appare come "Evento" nel registro.
+ */
+export async function createClosedCircusEvent(
+  roomId: string,
+  creatorId: string,
+  startedAt: Date,
+  title: string
+) {
+  const closedAt = new Date();
+  const [session] = await db.insert(gameSessions).values({
+    creatorId,
+    roomId,
+    title: title?.trim() || "Evento",
+    sessionType: "EVENTO" as const,
+    status: "CLOSED",
+    startedAt,
+    closedAt,
+    lastActiveAt: closedAt,
+  }).returning();
+  if (session) {
+    await refreshSessionParticipants(session.id, roomId);
+    // Inserisci il creatore (admin che ha aperto) come partecipante con 0 azioni, così l'evento appare nel suo Journal
+    const existingCreator = await db.query.gameSessionParticipants.findFirst({
+      where: and(
+        eq(gameSessionParticipants.sessionId, session.id),
+        eq(gameSessionParticipants.characterId, creatorId)
+      ),
+    });
+    if (!existingCreator) {
+      await db.insert(gameSessionParticipants).values({
+        sessionId: session.id,
+        characterId: creatorId,
+        actionCount: 0,
+      });
+    }
+  }
+  return session;
+}
+
 /**
  * Crea una nuova registrazione giocata.
+ * questId: se fornito, la giocata è in contesto quest → messaggi del creator della quest = masterscreen.
  */
 export async function createGameSession(
   creatorId: string,
   roomId: string,
   fetchId?: string | null,
-  title?: string | null
+  title?: string | null,
+  questId?: string | null
 ) {
   if (!isValidRoom(roomId)) {
     throw new Error('Invalid room ID')
@@ -42,16 +87,42 @@ export async function createGameSession(
     }
   }
 
+  // Verifica quest se fornita
+  if (questId) {
+    const quest = await db.query.quests.findFirst({
+      where: eq(quests.id, questId),
+    })
+    if (!quest) {
+      throw new Error('Quest non trovata')
+    }
+  }
+
   const [session] = await db.insert(gameSessions).values({
     creatorId,
     roomId,
     title: title?.trim() || null,
     fetchId: fetchId || null,
+    questId: questId || null,
     status: 'ACTIVE',
   }).returning()
 
   // Leggi automaticamente i partecipanti dalla chat (chi ha fatto azioni)
   await refreshSessionParticipants(session.id, roomId)
+
+  // Aggiungi il creatore come partecipante (così appare nella Scheda → Registrazioni anche prima di avere azioni)
+  const existingCreator = await db.query.gameSessionParticipants.findFirst({
+    where: and(
+      eq(gameSessionParticipants.sessionId, session.id),
+      eq(gameSessionParticipants.characterId, creatorId)
+    ),
+  })
+  if (!existingCreator) {
+    await db.insert(gameSessionParticipants).values({
+      sessionId: session.id,
+      characterId: creatorId,
+      actionCount: 0,
+    })
+  }
 
   return session
 }
@@ -69,7 +140,8 @@ export async function refreshSessionParticipants(sessionId: string, roomId: stri
     throw new Error('Sessione non trovata')
   }
 
-  // Trova tutti i messaggi nella room con >500 caratteri totali, creati dopo l'inizio della sessione
+  // Trova tutti i messaggi nella room con >500 caratteri totali, creati DOPO l'inizio della sessione
+  // (dall'azione successiva al click di inizio registrazione, non incluso il click)
   const messages = await db
     .select({
       characterId: zoneMessages.characterId,
@@ -80,7 +152,7 @@ export async function refreshSessionParticipants(sessionId: string, roomId: stri
       and(
         eq(zoneMessages.zone, roomId),
         gt(zoneMessages.totalChars, ACTION_THRESHOLD),
-        gte(zoneMessages.createdAt, session.startedAt)
+        gt(zoneMessages.createdAt, session.startedAt)
       )
     )
     .groupBy(zoneMessages.characterId)
@@ -268,8 +340,8 @@ export async function closeGameSession(sessionId: string) {
     .update(gameSessions)
     .set({
       status: 'CLOSED',
-      closedAt: new Date(),
-      lastActiveAt: new Date(),
+      closedAt: sql`CURRENT_TIMESTAMP`,
+      lastActiveAt: sql`CURRENT_TIMESTAMP`,
     })
     .where(eq(gameSessions.id, sessionId))
     .returning()
@@ -379,6 +451,171 @@ async function rewardFetchParticipants(
 }
 
 /**
+ * Trova la sessione CLOSED associata a una fetch (per responso Master).
+ */
+export async function getGameSessionByFetchId(fetchId: string) {
+  return db.query.gameSessions.findFirst({
+    where: and(eq(gameSessions.fetchId, fetchId), eq(gameSessions.status, 'CLOSED')),
+    with: {
+      creator: true,
+      fetch: true,
+      participants: {
+        with: {
+          character: true,
+        },
+      },
+    },
+  });
+}
+
+/** Formato messaggio per UI (allineato a getQuestMessages). */
+export type GameSessionMessage = {
+  id: string;
+  zone: string;
+  characterId: string;
+  name: string;
+  surname: string | null;
+  miniAvatar: string | null;
+  content: string;
+  locationTag: string | null;
+  createdAt: string;
+  pixelIcons: { ruolo?: string[]; ordine?: string[] };
+  /** Circus (evento): colore animale per display. */
+  anonymousColor?: string;
+  /** Messaggio del creatore della sessione (Master): mantiene formattazione masterscreen. */
+  isMasterscreen?: boolean;
+};
+
+/**
+ * Recupera i messaggi della giocata registrata (dalla chat, nel periodo della sessione).
+ */
+export async function getGameSessionMessages(sessionId: string): Promise<GameSessionMessage[]> {
+  const session = await db.query.gameSessions.findFirst({
+    where: eq(gameSessions.id, sessionId),
+    with: { quest: { columns: { creatorId: true } } },
+  });
+  if (!session) throw new Error('Sessione non trovata');
+  if (!session.closedAt) throw new Error('Sessione non ancora chiusa');
+
+  // Messaggi nel periodo sessione. Buffer 2min prima dell'avvio per includere messaggi "in volo" al click Registra Giocata.
+  const startedAt = session.startedAt instanceof Date ? session.startedAt : new Date(session.startedAt as string);
+  const closedAt = session.closedAt instanceof Date ? session.closedAt : new Date(session.closedAt as string);
+  const startBuf = new Date(startedAt.getTime() - 120_000); // 2 min prima
+  const endBuf = new Date(closedAt.getTime() + 300_000);   // +5min su chiusura per clock skew
+  const conditions = [
+    eq(zoneMessages.zone, session.roomId),
+    gte(zoneMessages.createdAt, startBuf),
+    lte(zoneMessages.createdAt, endBuf),
+  ];
+
+  const isCircusEvent = session.sessionType === 'EVENTO' || session.roomId === CIRCUS_ROOM_ID;
+
+  let messages = await db
+    .select({
+      id: zoneMessages.id,
+      zone: zoneMessages.zone,
+      characterId: zoneMessages.characterId,
+      content: zoneMessages.content,
+      locationTag: zoneMessages.locationTag,
+      createdAt: zoneMessages.createdAt,
+      isGlobal: zoneMessages.isGlobal,
+      anonymousAnimalName: zoneMessages.anonymousAnimalName,
+      anonymousColor: zoneMessages.anonymousColor,
+      character: {
+        id: characters.id,
+        name: characters.name,
+        surname: characters.surname,
+        miniAvatar: characters.miniAvatar,
+        uiMetadata: characters.uiMetadata,
+        order: characters.order,
+      },
+    })
+    .from(zoneMessages)
+    .leftJoin(characters, eq(zoneMessages.characterId, characters.id))
+    .where(and(...conditions))
+    .orderBy(desc(zoneMessages.createdAt));
+
+  // Fallback: se 0 messaggi nel periodo ma la zone ne ha, prova con buffer ampliato (sempre rispettando startedAt)
+  if (messages.length === 0) {
+    const anyInZone = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(zoneMessages)
+      .where(eq(zoneMessages.zone, session.roomId));
+    if (anyInZone[0]?.n > 0) {
+      // Usa solo messaggi DOPO l'inizio registrazione (nessun messaggio prima di startedAt)
+      const fallbackEnd = new Date(closedAt.getTime() + 300_000);
+      messages = await db
+        .select({
+          id: zoneMessages.id,
+          zone: zoneMessages.zone,
+          characterId: zoneMessages.characterId,
+          content: zoneMessages.content,
+          locationTag: zoneMessages.locationTag,
+          createdAt: zoneMessages.createdAt,
+          isGlobal: zoneMessages.isGlobal,
+          anonymousAnimalName: zoneMessages.anonymousAnimalName,
+          anonymousColor: zoneMessages.anonymousColor,
+          character: {
+            id: characters.id,
+            name: characters.name,
+            surname: characters.surname,
+            miniAvatar: characters.miniAvatar,
+            uiMetadata: characters.uiMetadata,
+            order: characters.order,
+          },
+        })
+        .from(zoneMessages)
+        .leftJoin(characters, eq(zoneMessages.characterId, characters.id))
+        .where(and(
+          eq(zoneMessages.zone, session.roomId),
+          gte(zoneMessages.createdAt, startBuf),
+          lte(zoneMessages.createdAt, fallbackEnd)
+        ))
+        .orderBy(desc(zoneMessages.createdAt));
+      if (messages.length > 0) {
+        console.warn(`[game-session-messages] Fallback buffer ampliato: ${messages.length} messaggi (periodo sessione vuoto)`);
+      }
+    }
+  }
+
+  // isMasterscreen = true SOLO se la giocata è in contesto quest E il messaggio è del creator della quest (Shinigami)
+  const questCreatorId = session.questId && session.quest ? session.quest.creatorId : null;
+  return messages.map((m) => {
+    const meta = (m.character?.uiMetadata as { roleIcon?: string; orderIcon?: string } | null) ?? {};
+    const roleIcon = (meta.roleIcon ?? '').toLowerCase();
+    const orderIcon = (meta.orderIcon ?? '').toLowerCase();
+    const pixelIcons: { ruolo?: string[]; ordine?: string[] } = {};
+    if (!isCircusEvent && roleIcon && ['admin', 'moderatore', 'capo-shinigami', 'shinigami'].includes(roleIcon)) {
+      pixelIcons.ruolo = [roleIcon];
+    }
+    if (!isCircusEvent && orderIcon && ['mugen-tai', 'chisen-tai'].includes(orderIcon)) {
+      pixelIcons.ordine = [orderIcon];
+    } else if (!isCircusEvent && m.character?.order && m.character.order !== 'NONE') {
+      pixelIcons.ordine = [m.character.order.toLowerCase()];
+    }
+    const displayName = isCircusEvent && m.anonymousAnimalName ? m.anonymousAnimalName : (m.character?.name ?? 'Unknown');
+    const displaySurname = isCircusEvent ? null : (m.character?.surname ?? null);
+    const displayAvatar = isCircusEvent ? '/anonymous/mask.svg' : (m.character?.miniAvatar ?? null);
+    // Masterscreen = messaggio del creator della quest (quando la giocata è stata registrata durante quella quest)
+    const isMasterscreen = !isCircusEvent && !!questCreatorId && m.characterId === questCreatorId;
+    return {
+      id: m.id,
+      zone: m.isGlobal ? 'GLOBAL' : m.zone,
+      characterId: m.characterId,
+      name: displayName,
+      surname: displaySurname,
+      miniAvatar: displayAvatar,
+      anonymousColor: isCircusEvent ? m.anonymousColor ?? undefined : undefined,
+      content: m.content,
+      locationTag: m.locationTag,
+      createdAt: m.createdAt.toISOString(),
+      pixelIcons,
+      isMasterscreen: !!isMasterscreen,
+    };
+  }).reverse();
+}
+
+/**
  * Annulla una sessione (non viene conservata).
  */
 export async function cancelGameSession(sessionId: string) {
@@ -420,6 +657,7 @@ export async function getCharacterSessions(characterId: string, status?: 'ACTIVE
       session: {
         with: {
           fetch: true,
+          quest: true,
           participants: {
             with: {
               character: true,

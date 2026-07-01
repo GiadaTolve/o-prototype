@@ -53,3 +53,18 @@ export function getPixelIconUrlRuolo(ruolo: PixelIconRuolo): string {
 export function getPixelIconUrlOrdine(_ordine: PixelIconOrdine): string | null {
   return null;
 }
+
+/** Etichetta tooltip per premio speciale / milestone Jiga. */
+export function labelForPremioPixelIcon(premioId: string): string {
+  const labels: Record<string, string> = {
+    keishosha: "Erede Madoshō",
+    "kanpeki-keishosha": "Erede Perfetto",
+    inkyo: "Eremita",
+    "sentō-senshi": "Soldato Scelto",
+    "sento-senshi": "Soldato Scelto",
+    renkinjutsushi: "Alchimista",
+    "daisei-renkin": "Opus Magna",
+    "daisei-no-renkin": "Opus Magna",
+  };
+  return labels[premioId] ?? premioId;
+}

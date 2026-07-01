@@ -1,4 +1,18 @@
-export type WindowId = "scheda" | "presenti" | "shop" | "sms" | "fetch" | "banca" | "housing" | "profilo" | "waza" | "ordine" | "bestiario";
+export type WindowId = "scheda" | "presenti" | "shop" | "sms" | "fetch" | "banca" | "housing" | "profilo" | "waza" | "ordine" | "bestiario" | "notifiche" | "spazioEventi";
+
+import type { PendingLevelUpBanner } from "@domain/progression/level-up";
+import type { CharacterComputed } from "./character-computed";
+
+export type { CharacterComputed };
+
+export type SkiruDomainIndex = {
+  domain: "ten" | "chi" | "jin";
+  label: string;
+  labelJa?: string;
+  points: number;
+  maxPoints: number;
+  percent: number;
+};
 
 export type CharacterSummary = {
   id?: string;
@@ -14,12 +28,26 @@ export type CharacterSummary = {
   experienceTotal?: number;
   experienceSpendable?: number;
   keys?: number;
-  gems?: number;
-  computed?: Record<string, number>;
+  /** Madoshō (clan) scelta in onboarding. */
+  madoshoId?: string | null;
+  computed?: CharacterComputed & Record<string, number>;
+  /** Indici domini Skiru (Ten / Chi / Jin). */
+  skiruDomains?: SkiruDomainIndex[];
+  skiruSheet?: Record<string, number>;
+  /** Alias assegnato dallo staff. */
+  staffAlias?: string | null;
+  /** Note Master (solo Master+ modifica). */
+  masterNotes?: string | null;
+  canEditStaffAlias?: boolean;
+  canEditMasterNotes?: boolean;
   /** Solo Shinigami / Capo: vedere link Shinigami, Registra Quest in chat. */
   canAccessShinigami?: boolean;
   /** Solo Admin/Mod/Capo: vedere link Gestione. */
   canAccessGestione?: boolean;
+  /** Banner PG personalizzabile (URL immagine). */
+  bannerPg?: string | null;
+  /** Banner level-up in attesa (Skiru v3). */
+  pendingLevelUp?: PendingLevelUpBanner | null;
 } | null;
 
 export const WINDOW_LABELS: Record<WindowId, string> = {
@@ -27,13 +55,15 @@ export const WINDOW_LABELS: Record<WindowId, string> = {
   presenti: "Presenti Estesi",
   shop: "Shop",
   sms: "SMS",
-  fetch: "Fetch (Missioni)",
+  fetch: "Assegnazioni",
   banca: "Banca",
   housing: "Housing",
   profilo: "Profilo Personaggio",
-  waza: "Waza",
+  waza: "Skiru & Waza",
   ordine: "Ordine",
   bestiario: "Bestiario",
+  notifiche: "Notifiche di sistema",
+  spazioEventi: "Spazio Eventi",
 };
 
 export type Presente = {
@@ -44,8 +74,16 @@ export type Presente = {
   /** Room ID chat corrente (per "presenti in chat"). */
   room?: string;
   isMe?: boolean;
+  /** Shadowban: visibile ma con colore diverso + icona occhio chiuso */
+  isShadow?: boolean;
   /** Pixel-icon (20×20) accanto al nome — GAME_LAYOUT_SPEC §4 */
   pixelIcons?: { ruolo?: string[]; ordine?: string[]; premioSpeciale?: string[] };
+  /** Circus (partychat): colore animale per badge presenti */
+  anonymousColor?: string;
+  /** Livello operativo (curva LEVELING_DESIGN, cap 50). */
+  level?: number;
+  /** Paragon oltre cap 50 — nome viola in lista presenti. */
+  paragon?: number;
 };
 
 /** Messaggio chat (WebSocket + GET /chat/:room). `zone` = roomId. `locationTag` = posizione compilata dal giocatore. */
@@ -56,10 +94,15 @@ export type ChatMessage = {
   name: string;
   surname?: string | null;
   miniAvatar?: string | null;
+  /** Partychat (Circus): nome animale e colore per display. */
+  anonymousAnimalName?: string | null;
+  anonymousColor?: string | null;
   pixelIcons?: { ruolo?: string[]; ordine?: string[]; premioSpeciale?: string[] };
   content: string;
   locationTag?: string | null;
   createdAt: string;
+  /** Messaggio masterscreen (Shinigami autore quest): mantiene formattazione anche dopo chiusura sessione. */
+  isMasterscreen?: boolean;
 };
 
 export function getMockPresenti(currentName?: string): Presente[] {

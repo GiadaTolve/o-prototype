@@ -1,12 +1,20 @@
 /**
  * Parsing Narrativo per chat play-by-chat.
- * 
+ *
  * Regole:
  * - Parlato: « ... » → formattato in UI
- * - Tag narrativi: [ ... ] → formattato in UI
- * - EXP: calcolato su caratteri netti (senza parlati)
- * - Anti-spam: validazione lunghezza e rate limiting
+ * - Tag v3 combat + consistenza/categoria §2.5
+ * - Tag narrativi residui: [ ... ] → formattato in UI
+ * - EXP: 1 ogni 500 caratteri totali mandati (compreso parlato e tag)
  */
+import { getTierRow, isWazaTier } from '@domain/combat/tier'
+import { formatWazaTagsInText } from '@domain/combat/waza-tag-preview'
+import { WAZA_TAG_INDEX } from '@domain/combat/waza-tag-index'
+import { formatWazaTaxonomyTagsInText } from '@domain/combat/waza-taxonomy'
+import { formatStatusTagsInText } from '@domain/combat/status/formatting'
+import { formatToroTagsInText } from '@domain/styles/toka/toro'
+import { formatGosaTagsInText } from '@domain/styles/genzai/gosa'
+import { formatActionStateTagsInText } from '@domain/combat/action-state-summary'
 
 export type ParsedMessage = {
   /** Testo originale */
@@ -61,14 +69,43 @@ function removeParlati(text: string): string {
 
 /**
  * Formatta il testo per la visualizzazione:
+ * - Tag v3 combat + consistenza/categoria §2.5
  * - Parlati «...» → <span class="parlato">...</span>
- * - Tag narrativi [ ... ] → <span class="tag-narrativo">[...]</span>
+ * - Tag narrativi residui [ ... ] → <span class="tag-narrativo">[...]</span>
  */
 function formatForDisplay(text: string): string {
   let formatted = text;
-  // Formatta parlati
+
+  formatted = formatted.replace(
+    /\[tier:([1-5])\]/gi,
+    (_m, tierStr: string) => {
+      const n = Number(tierStr)
+      if (!isWazaTier(n)) return _m
+      const row = getTierRow(n)
+      return `<span class="tier-tag" title="Tier §2.10 — ${row.value} danno · ${row.csCost} CS">${tierStr}</span>`
+    },
+  )
+  formatted = formatted.replace(/\[waza:([^\]]+)\]/gi, (_m, rawName: string) =>
+    formatWazaTagsInText(`[waza:${rawName}]`, WAZA_TAG_INDEX),
+  )
+  formatted = formatted.replace(/\[cs:(\d+)\]/gi, '<span class="cs-tag">$1 cs</span>')
+  formatted = formatted.replace(/\[tenkan(?:[^\]]*)?\]/gi, (match) => {
+    if (/off/i.test(match)) {
+      return '<span class="tenkan-tag tenkan-tag--off" title="Tenkan OFF">Corona chiusa</span>'
+    }
+    return '<span class="tenkan-tag" title="Tenkan ON — accumulo CS">Corona</span>'
+  })
+  formatted = formatted.replace(/\[([1-4])\/4\]/gi, '<span class="quarter-tag">[$1/4]</span>')
+  formatted = formatted.replace(/\[scudo\]/gi, '<span class="shield-tag">Scudo</span>')
+  formatted = formatted.replace(/\[ir:(\d+)\]/gi, '<span class="ir-tag">IR $1</span>')
+
+  formatted = formatStatusTagsInText(formatted)
+  formatted = formatWazaTaxonomyTagsInText(formatted)
+  formatted = formatToroTagsInText(formatted)
+  formatted = formatGosaTagsInText(formatted)
+  formatted = formatActionStateTagsInText(formatted)
+
   formatted = formatted.replace(/«([^»]+)»/g, '<span class="parlato">«$1»</span>');
-  // Formatta tag narrativi
   formatted = formatted.replace(/\[([^\]]+)\]/g, '<span class="tag-narrativo">[$1]</span>');
   return formatted;
 }
@@ -120,13 +157,19 @@ export function parseNarrativeMessage(text: string): ParsedMessage {
   };
 }
 
+/** Caratteri per 1 EXP in chat (caratteri totali del messaggio). */
+export const CHAT_EXP_CHARS_PER_POINT = 500;
+
 /**
- * Calcola EXP guadagnato basato sui caratteri netti.
- * Formula: EXP = netChars / 10 (arrotondato per difetto).
- * Minimo: 1 EXP per messaggio valido.
+ * EXP guadagnato da un messaggio chat: floor(totalChars / 500).
+ * Sotto 500 caratteri → 0 EXP (1 azione quest resta >500 totali, v. getActionsPerCharacter).
  */
+export function calculateExpFromTotalChars(totalChars: number): number {
+  if (totalChars <= 0) return 0;
+  return Math.floor(totalChars / CHAT_EXP_CHARS_PER_POINT);
+}
+
+/** @deprecated Usare calculateExpFromTotalChars (EXP su caratteri totali, non netti). */
 export function calculateExpFromNetChars(netChars: number): number {
-  if (netChars <= 0) return 0;
-  const exp = Math.floor(netChars / 10);
-  return Math.max(1, exp); // Minimo 1 EXP per messaggio valido
+  return calculateExpFromTotalChars(netChars);
 }

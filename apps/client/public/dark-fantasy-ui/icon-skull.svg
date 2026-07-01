@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="white">
+  <!-- Stylized skull - solid silhouette -->
+  <ellipse cx="24" cy="18" rx="12" ry="10" />
+  <path d="M 14 26 L 12 42 L 20 42 L 22 34 L 26 34 L 28 42 L 36 42 L 34 26 Z" />
+</svg>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { formatFetchError } from "@/lib/format-fetch-error";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -122,11 +123,7 @@ export default function AuthPage() {
         }
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") {
-        setError("Server non raggiungibile (timeout). Avvia il server con \`bun run dev\` in apps/server e verifica NEXT_PUBLIC_API_URL.");
-      } else {
-        setError(err instanceof Error ? err.message : "Errore");
-      }
+      setError(formatFetchError(err, API_BASE));
     } finally {
       setLoading(false);
     }

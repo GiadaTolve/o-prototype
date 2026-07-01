@@ -6,6 +6,8 @@ import { icons } from "@/lib/icons";
 import { PixelIcons } from "./PixelIcons";
 import { MusicPlayer } from "./MusicPlayer";
 import { api } from "@/lib/api";
+import { MiniSkiruStatsHud } from "./MiniSkiruStatsHud";
+import { resolveCharacterComputed } from "./character-computed";
 import type { WindowId, CharacterSummary } from "./types";
 
 type Props = {
@@ -24,129 +26,68 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenShop, onOpenSms, on
   const avatarSrc = (char?.avatarUrl ?? char?.avatar ?? char?.miniAvatar) as string | undefined;
   const nome = (char?.name ?? "Nome PG") as string;
   const cognome = (char?.surname ?? "") as string;
-
-  // Valori Body & Kotodama dal computed della scheda (se presenti)
-  const computed = (char as any)?.computed ?? {};
-  const hpMax = (computed.hpMax ?? computed.body ?? 0) as number;
-  const kotodamaMax = (computed.kotodamaMax ?? 0) as number;
+  const skiruStats = resolveCharacterComputed(char?.computed);
 
   return (
-    <aside className="flex flex-col gap-4 w-full lg:max-w-[280px] shrink-0 order-2 lg:order-1 min-h-0 overflow-y-auto">
-      {/* Mini-Profilo — click nome/avatar apre Scheda (window) */}
+    <aside className="flex flex-col gap-4 w-full lg:max-w-[360px] shrink-0 order-2 lg:order-1 min-h-0 overflow-y-auto">
+      {/* Mini-Profilo — click nome/avatar apre Scheda */}
       <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
-        <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-3 font-display flex items-center gap-2">
-          <FontAwesomeIcon icon={icons.user} className="w-3 h-3" />
-          Mini-Profilo
-        </h3>
         <button
           type="button"
           onClick={onOpenScheda}
           className="flex items-center gap-3 w-full text-left rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors -m-1 p-1"
         >
-          <div className="w-12 h-12 rounded-full bg-gray-800 border border-[var(--border-color)] shrink-0 overflow-hidden flex items-center justify-center">
-            {avatarSrc ? (
-              <img src={avatarSrc} alt={nome} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-[var(--accent-gold)]">
-                <FontAwesomeIcon icon={icons.user} className="w-5 h-5" />
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-sm text-white truncate flex items-center gap-1.5 flex-wrap">
-              {nome}
-              <PixelIcons pixelIcons={char?.pixelIcons} />
-            </p>
-            <p className="text-xs text-gray-500 truncate">{cognome || "Cognome (se presente)"}</p>
+            <div className="w-[60px] h-[60px] rounded-md bg-gray-800 shrink-0 overflow-hidden flex items-center justify-center border-2 border-[var(--border-color)] ring-2 ring-[var(--accent-gold)]/30">
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={nome} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[var(--accent-gold)]">
+                  <FontAwesomeIcon icon={icons.user} className="w-6 h-6" />
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-sm text-white truncate flex items-center gap-1.5 flex-wrap">
+                {nome}
+                <PixelIcons pixelIcons={char?.pixelIcons} />
+              </p>
 
-            {/* Body & Kotodama mini-HUD in stile videogame */}
-            {(hpMax > 0 || kotodamaMax > 0) && (
-              <div className="mt-2 space-y-1">
-                {/* Body */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-gray-500 font-display">
-                    BOD
-                  </span>
-                  <div className="flex-1 h-2 bg-black/60 rounded-full overflow-hidden border border-[var(--border-color)] relative">
-                    <div
-                      className="h-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, (hpMax > 0 ? (hpMax / hpMax) * 100 : 0))}%`,
-                        background:
-                          "linear-gradient(90deg, rgba(219,39,119,0.8) 0%, rgba(236,72,153,0.9) 100%)",
-                        boxShadow: "0 0 8px rgba(219,39,119,0.5)",
-                      }}
-                    />
-                  </div>
-                  <span className="text-[9px] font-display text-[var(--accent-gold)]">
-                    {hpMax}
-                  </span>
-                </div>
-                {/* Kotodama */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-gray-500 font-display">
-                    KOT
-                  </span>
-                  <div className="flex-1 h-2 bg-black/60 rounded-full overflow-hidden border border-[var(--border-color)] relative">
-                    <div
-                      className="h-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, (kotodamaMax > 0 ? (kotodamaMax / kotodamaMax) * 100 : 0))}%`,
-                        background:
-                          "linear-gradient(90deg, rgba(124,58,237,0.8) 0%, rgba(150,100,255,0.9) 100%)",
-                        boxShadow: "0 0 8px rgba(124,58,237,0.5)",
-                      }}
-                    />
-                  </div>
-                  <span className="text-[9px] font-display text-[var(--accent-gold)]">
-                    {kotodamaMax}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </button>
+              {cognome && (
+                <p className="text-[10px] text-[var(--accent-gold)]/80 truncate font-display">{cognome}</p>
+              )}
+
+              <MiniSkiruStatsHud stats={skiruStats} />
+            </div>
+          </button>
       </section>
 
-      {/* SMS — interfaccia stile WhatsApp, icona + badge non letti */}
-      <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
-        <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-3 font-display flex items-center gap-2">
-          <FontAwesomeIcon icon={icons.message} className="w-3 h-3" />
-          SMS
-        </h3>
+      {/* SMS — Messaggi */}
+      <section className={`bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4 ${smsUnread > 0 ? "animate-sms-section" : ""}`}>
         <button
           type="button"
           onClick={onOpenSms}
-          className="w-full flex items-center gap-3 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors p-3 text-left"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors relative"
+          title={smsUnread > 0 ? `${smsUnread} messaggi non letti` : "Messaggi"}
+          aria-label={smsUnread > 0 ? `${smsUnread} non letti` : "Messaggi"}
         >
-          <div className="relative shrink-0">
-            <div className="w-10 h-10 rounded-full bg-gray-800 border border-[var(--border-color)] flex items-center justify-center">
-              <FontAwesomeIcon icon={icons.message} className="w-4 h-4 text-[var(--accent-gold)]" />
-            </div>
-            {smsUnread > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-[var(--accent-gold)] text-black text-[10px] font-bold flex items-center justify-center px-1"
-                aria-label={`${smsUnread} non letti`}
-              >
-                {smsUnread > 99 ? "99+" : smsUnread}
-              </span>
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-display text-white">Messaggi</p>
-            <p className="text-xs text-gray-500">
-              {smsUnread > 0 ? `${smsUnread} non letti` : "Nessun nuovo messaggio"}
-            </p>
-          </div>
+          {smsUnread > 0 ? (
+            <FontAwesomeIcon icon={icons.message} className="w-4 h-4 text-[var(--accent-gold)]" />
+          ) : (
+            <FontAwesomeIcon icon={icons.envelope} className="w-4 h-4 text-gray-500" />
+          )}
+          <span className="text-xs font-display text-gray-300">
+            {smsUnread > 0 ? `${smsUnread} messaggi` : "Messaggi"}
+          </span>
+          {smsUnread > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-[var(--accent-gold)] text-black text-[10px] font-bold flex items-center justify-center px-1 animate-sms-badge">
+              {smsUnread > 99 ? "99+" : smsUnread}
+            </span>
+          )}
         </button>
       </section>
 
       {/* Media — Music Player */}
       <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
-        <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-3 font-display flex items-center gap-2">
-          <FontAwesomeIcon icon={icons.play} className="w-3 h-3" />
-          Media
-        </h3>
         <MusicPlayer />
         <div className="flex flex-col gap-2 mt-3">
           <button
@@ -196,7 +137,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenShop, onOpenSms, on
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
-                Waza
+                Skiru &amp; Waza
               </span>
             </div>
           </button>

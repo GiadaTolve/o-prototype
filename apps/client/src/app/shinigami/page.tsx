@@ -3,7 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
+import { formatNarrativeText } from "@/lib/narrative-parser";
+import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
 import { Skeleton, SkeletonList, SkeletonTable } from "@/components/ui/Skeleton";
 
 type Quest = {
@@ -21,12 +25,28 @@ type FetchItem = {
   title: string;
   description: string | null;
   status: string;
+  completionStatus?: "AWAITING_REWARD" | "COMPLETED" | null;
   requirements: {
     levelMin?: number;
     levelMax?: number;
     gradeIds?: string[];
     order?: string[];
   };
+};
+
+type GiocataMessage = {
+  id: string;
+  zone: string;
+  characterId: string;
+  name: string;
+  surname: string | null;
+  miniAvatar: string | null;
+  content: string;
+  locationTag: string | null;
+  createdAt: string;
+  pixelIcons?: { ruolo?: string[]; ordine?: string[] };
+  /** Messaggio Master (creatore sessione): mantiene formattazione masterscreen */
+  isMasterscreen?: boolean;
 };
 
 type MasterStat = {
@@ -98,9 +118,28 @@ export default function ShinigamiPage() {
   const [canAccessGestione, setCanAccessGestione] = useState(false);
   const [canAccessShinigami, setCanAccessShinigami] = useState(false);
   const [pendingFetches, setPendingFetches] = useState<FetchItem[]>([]);
+  const [awaitingRewardFetches, setAwaitingRewardFetches] = useState<FetchItem[]>([]);
+  const [completingFetchId, setCompletingFetchId] = useState<string | null>(null);
+  const [responsoComments, setResponsoComments] = useState<Record<string, string>>({});
+  const [showGiocataModal, setShowGiocataModal] = useState(false);
+  const [giocataFetch, setGiocataFetch] = useState<FetchItem | null>(null);
+  const [giocataMessages, setGiocataMessages] = useState<GiocataMessage[]>([]);
+  const [loadingGiocata, setLoadingGiocata] = useState(false);
+  const [giocataError, setGiocataError] = useState<string | null>(null);
   const [showFetchForm, setShowFetchForm] = useState(false);
   const [fetchTitle, setFetchTitle] = useState("");
   const [fetchDescription, setFetchDescription] = useState("");
+  const [fetchLevelMin, setFetchLevelMin] = useState("");
+  const [fetchLevelMax, setFetchLevelMax] = useState("");
+  const [fetchOrder, setFetchOrder] = useState<string[]>([]);
+  const [fetchLimitPerDay, setFetchLimitPerDay] = useState("");
+  const [fetchLimitPerWeek, setFetchLimitPerWeek] = useState("");
+  const [fetchMinActions, setFetchMinActions] = useState("");
+  const [fetchRemReward, setFetchRemReward] = useState("");
+  const [fetchExpReward, setFetchExpReward] = useState("");
+  const [fetchGradeIds, setFetchGradeIds] = useState<string[]>([]);
+  const [fetchPlotIds, setFetchPlotIds] = useState<string[]>([]);
+  const [grades, setGrades] = useState<Array<{ id: string; name: string }>>([]);
   const [submittingFetch, setSubmittingFetch] = useState(false);
   const [activeTab, setActiveTab] = useState<"quest" | "paused" | "lore" | "fetches" | "master">("quest");
 
@@ -149,14 +188,26 @@ export default function ShinigamiPage() {
         console.error("Errore caricamento lore:", e);
       }
 
-      // Carica fetch pending se può approvare
+      // Carica fetch pending e awaiting-reward se può approvare/completare
       if (canAccessGest) {
         try {
-          const pending = await api.get("/fetches/pending").then((d) => (Array.isArray(d) ? d : []) as FetchItem[]).catch(() => []);
+          const [pending, awaiting] = await Promise.all([
+            api.get("/fetches/pending").then((d) => (Array.isArray(d) ? d : []) as FetchItem[]).catch(() => []),
+            api.get("/fetches/awaiting-reward").then((d) => (Array.isArray(d) ? d : []) as FetchItem[]).catch(() => []),
+          ]);
           setPendingFetches(pending);
+          setAwaitingRewardFetches(awaiting);
         } catch (e) {
-          console.error("Errore caricamento fetch pending:", e);
+          console.error("Errore caricamento fetch pending/awaiting:", e);
         }
+      }
+
+      // Carica gradi per form creazione fetch (requisiti gradeIds)
+      try {
+        const gradesData = await api.get("/fetches/grades").then((d) => (Array.isArray(d) ? d : []) as Array<{ id: string; name: string }>).catch(() => []);
+        setGrades(gradesData);
+      } catch {
+        /* ignore */
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Errore");
@@ -542,8 +593,12 @@ export default function ShinigamiPage() {
                         <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
                           <span>{plot.questCount} quest</span>
                           <span>{plot.relatedFetchesCount} fetch</span>
-                          {plot.actualDuration && <span>Durata: {plot.actualDuration} giorni</span>}
-                          {plot.estimatedDuration && !plot.actualDuration && <span>Stimata: {plot.estimatedDuration} giorni</span>}
+                          {plot.actualDuration != null && (
+                            <span>Durata: {plot.actualDuration} giorni</span>
+                          )}
+                          {plot.estimatedDuration != null && plot.actualDuration == null && (
+                            <span>Stimata: {plot.estimatedDuration} giorni</span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -587,12 +642,36 @@ export default function ShinigamiPage() {
                         if (!fetchTitle.trim()) return;
                         setSubmittingFetch(true);
                         try {
+                          const requirements: Record<string, unknown> = {};
+                          if (fetchLevelMin) requirements.levelMin = Number(fetchLevelMin);
+                          if (fetchLevelMax) requirements.levelMax = Number(fetchLevelMax);
+                          if (fetchOrder.length > 0) requirements.order = fetchOrder as ("MUGEN-TAI" | "CHISEN-TAI")[];
+                          if (fetchLimitPerDay) requirements.limitPerDay = Number(fetchLimitPerDay);
+                          if (fetchLimitPerWeek) requirements.limitPerWeek = Number(fetchLimitPerWeek);
+                          if (fetchGradeIds.length > 0) requirements.gradeIds = fetchGradeIds;
+                          if (fetchPlotIds.length > 0) requirements.plotIds = fetchPlotIds;
+                          const rewardConfig: Record<string, number> = {};
+                          if (fetchMinActions) rewardConfig.minActions = Number(fetchMinActions);
+                          if (fetchRemReward) rewardConfig.remReward = Number(fetchRemReward);
+                          if (fetchExpReward) rewardConfig.expReward = Number(fetchExpReward);
                           await api.post("/fetches", {
                             title: fetchTitle,
                             description: fetchDescription || undefined,
+                            requirements: Object.keys(requirements).length > 0 ? requirements : undefined,
+                            rewardConfig: Object.keys(rewardConfig).length > 0 ? rewardConfig : undefined,
                           });
                           setFetchTitle("");
                           setFetchDescription("");
+                          setFetchLevelMin("");
+                          setFetchLevelMax("");
+                          setFetchOrder([]);
+                          setFetchLimitPerDay("");
+                          setFetchLimitPerWeek("");
+                          setFetchGradeIds([]);
+                          setFetchPlotIds([]);
+                          setFetchMinActions("");
+                          setFetchRemReward("");
+                          setFetchExpReward("");
                           setShowFetchForm(false);
                           await load();
                         } catch (err) {
@@ -617,6 +696,129 @@ export default function ShinigamiPage() {
                         placeholder="Descrizione (opzionale)"
                         className="w-full px-3 py-2 bg-black/30 border border-[var(--border-color)] rounded text-sm text-white placeholder-gray-500 resize-y min-h-[80px]"
                       />
+                      <div className="p-3 rounded border border-[var(--border-color)]/50 bg-black/20 space-y-3">
+                        <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]">Requisiti (opzionale)</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <input
+                            type="number"
+                            value={fetchLevelMin}
+                            onChange={(e) => setFetchLevelMin(e.target.value)}
+                            placeholder="Liv. min"
+                            className="px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white"
+                            min="1"
+                          />
+                          <input
+                            type="number"
+                            value={fetchLevelMax}
+                            onChange={(e) => setFetchLevelMax(e.target.value)}
+                            placeholder="Liv. max"
+                            className="px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white"
+                            min="1"
+                          />
+                          <input
+                            type="number"
+                            value={fetchLimitPerDay}
+                            onChange={(e) => setFetchLimitPerDay(e.target.value)}
+                            placeholder="Max/giorno"
+                            className="px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white"
+                            min="1"
+                          />
+                          <input
+                            type="number"
+                            value={fetchLimitPerWeek}
+                            onChange={(e) => setFetchLimitPerWeek(e.target.value)}
+                            placeholder="Max/settimana"
+                            className="px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white"
+                            min="1"
+                          />
+                        </div>
+                        <div className="flex gap-4 flex-wrap mb-2">
+                          <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={fetchOrder.includes("MUGEN-TAI")}
+                              onChange={(e) => setFetchOrder((o) => (e.target.checked ? [...o, "MUGEN-TAI"] : o.filter((x) => x !== "MUGEN-TAI")))}
+                              className="rounded"
+                            />
+                            Mugen-Tai
+                          </label>
+                          <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={fetchOrder.includes("CHISEN-TAI")}
+                              onChange={(e) => setFetchOrder((o) => (e.target.checked ? [...o, "CHISEN-TAI"] : o.filter((x) => x !== "CHISEN-TAI")))}
+                              className="rounded"
+                            />
+                            Chisen-Tai
+                          </label>
+                        </div>
+                        {grades.length > 0 && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-gray-500">Grado richiesto (opzionale):</p>
+                            <div className="flex flex-wrap gap-2">
+                              {grades.map((g) => (
+                                <label key={g.id} className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={fetchGradeIds.includes(g.id)}
+                                    onChange={(e) => setFetchGradeIds((o) => (e.target.checked ? [...o, g.id] : o.filter((x) => x !== g.id)))}
+                                    className="rounded"
+                                  />
+                                  {g.name}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {plots.length > 0 && (
+                          <div className="space-y-1 mt-2">
+                            <p className="text-[10px] text-gray-500">Partecipazione a trama (opzionale):</p>
+                            <div className="flex flex-wrap gap-2">
+                              {plots.filter((p) => p.status === "ACTIVE" || p.status === "COMPLETED").map((p) => (
+                                <label key={p.id} className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={fetchPlotIds.includes(p.id)}
+                                    onChange={(e) => setFetchPlotIds((o) => (e.target.checked ? [...o, p.id] : o.filter((x) => x !== p.id)))}
+                                    className="rounded"
+                                  />
+                                  {p.title}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3 rounded border border-[var(--border-color)]/50 bg-black/20 space-y-2">
+                        <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]">Premi automatici (opzionale)</p>
+                        <p className="text-[10px] text-gray-500">Default: 4 azioni min, 50 REM. Lascia vuoto per usare i valori di default.</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input
+                            type="number"
+                            value={fetchMinActions}
+                            onChange={(e) => setFetchMinActions(e.target.value)}
+                            placeholder="Min azioni (4)"
+                            className="px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white"
+                            min="1"
+                          />
+                          <input
+                            type="number"
+                            value={fetchRemReward}
+                            onChange={(e) => setFetchRemReward(e.target.value)}
+                            placeholder="REM (50)"
+                            className="px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white"
+                            min="0"
+                          />
+                          <input
+                            type="number"
+                            value={fetchExpReward}
+                            onChange={(e) => setFetchExpReward(e.target.value)}
+                            placeholder="EXP (0)"
+                            className="px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white"
+                            min="0"
+                          />
+                        </div>
+                      </div>
                       <button
                         type="submit"
                         disabled={submittingFetch}
@@ -626,6 +828,81 @@ export default function ShinigamiPage() {
                       </button>
                     </form>
                   )}
+                </div>
+              )}
+
+              {/* Lista fetch in attesa di responso (solo Admin/Mod/Capo) */}
+              {canAccessGestione && awaitingRewardFetches.length > 0 && (
+                <div className="border border-amber-500/50 rounded-lg p-4">
+                  <h3 className="text-sm font-display text-amber-400 mb-3">Fetch in attesa di responso</h3>
+                  <p className="text-xs text-gray-500 mb-3">Giocata chiusa, premi assegnati. Leggi la giocata e completa con eventuale commento.</p>
+                  <div className="space-y-2">
+                    {awaitingRewardFetches.map((f) => (
+                      <div key={f.id} className="p-3 rounded border border-amber-500/30 bg-black/20">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-display text-sm text-white">{f.title}</p>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setGiocataFetch(f);
+                              setShowGiocataModal(true);
+                              setLoadingGiocata(true);
+                              setGiocataMessages([]);
+                              setGiocataError(null);
+                              try {
+                                const res = await api.get(`/fetches/${f.id}/session`) as { session?: unknown; messages?: GiocataMessage[] };
+                                setGiocataMessages(res?.messages ?? []);
+                              } catch (err) {
+                                const msg = err instanceof Error ? err.message : "Errore caricamento giocata";
+                                setGiocataError(msg);
+                                setError(msg);
+                              } finally {
+                                setLoadingGiocata(false);
+                              }
+                            }}
+                            className="px-2 py-1 rounded border border-[var(--accent-gold)]/50 text-xs text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 shrink-0"
+                          >
+                            Leggi giocata
+                          </button>
+                        </div>
+                        {f.description && <p className="text-xs text-gray-500 mt-1">{f.description}</p>}
+                        <div className="mt-2 space-y-2">
+                          <textarea
+                            placeholder="Commento responso (opzionale)"
+                            value={responsoComments[f.id] ?? ""}
+                            onChange={(e) => setResponsoComments((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                            className="w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-xs text-white placeholder-gray-600 resize-none min-h-[60px]"
+                            rows={2}
+                          />
+                          <button
+                            type="button"
+                            disabled={completingFetchId !== null}
+                            onClick={async () => {
+                              setCompletingFetchId(f.id);
+                              try {
+                                await api.post(`/fetches/${f.id}/complete`, {
+                                  comment: (responsoComments[f.id] ?? "").trim() || undefined,
+                                });
+                                setResponsoComments((prev) => {
+                                  const next = { ...prev };
+                                  delete next[f.id];
+                                  return next;
+                                });
+                                setCompletingFetchId(null);
+                                await load();
+                              } catch (err) {
+                                setError(err instanceof Error ? err.message : "Errore completamento");
+                                setCompletingFetchId(null);
+                              }
+                            }}
+                            className="px-2 py-1 rounded border border-green-500/50 text-xs text-green-400 hover:bg-green-500/10 disabled:opacity-50"
+                          >
+                            {completingFetchId === f.id ? "…" : "Completa"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -786,6 +1063,101 @@ export default function ShinigamiPage() {
           )}
         </div>
       </div>
+
+      {/* Modal Leggi giocata (fetch in attesa responso) */}
+      {showGiocataModal && giocataFetch && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
+          <div className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg w-full max-w-5xl h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
+              <h2 className="font-display text-lg text-[var(--accent-gold)]">Giocata registrata: {giocataFetch.title}</h2>
+              <button
+                onClick={() => {
+                  setShowGiocataModal(false);
+                  setGiocataFetch(null);
+                  setGiocataMessages([]);
+                  setGiocataError(null);
+                }}
+                className="text-gray-400 hover:text-[var(--accent-gold)]"
+              >
+                ✕
+              </button>
+            </div>
+            <div
+              className="flex-1 overflow-y-auto p-10"
+              style={{
+                backgroundImage: "url('/backgrounds/darkstone.png')",
+                backgroundRepeat: "repeat",
+                backgroundBlendMode: "overlay",
+                backgroundColor: "rgba(0,0,0,0.6)",
+              }}
+            >
+              {loadingGiocata ? (
+                <p className="text-gray-400 text-center">Caricamento messaggi...</p>
+              ) : giocataError ? (
+                <p className="text-amber-400 text-center py-8">{giocataError}</p>
+              ) : giocataMessages.length === 0 ? (
+                <div className="text-gray-400 text-center space-y-1 py-4">
+                  <p>Nessun messaggio disponibile in questo periodo.</p>
+                  <p className="text-xs text-gray-500">I messaggi vengono registrati dalla chat durante la giocata (tra avvio e chiusura).</p>
+                </div>
+              ) : (
+                giocataMessages.map((m) => <GiocataMessageBlock key={m.id} message={m} />)
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+function GiocataMessageBlock({ message }: { message: GiocataMessage }) {
+  const formattedContent = formatNarrativeText(message.content);
+  const isGlobal = message.zone === "GLOBAL" || message.name?.startsWith("[GLOBAL]");
+  if (isGlobal) {
+    return (
+      <div className="border border-[var(--accent-violet)] bg-gradient-to-r from-[var(--accent-violet)]/20 via-transparent to-[var(--accent-violet)]/20 py-4 px-4 text-center my-5">
+        <strong className="block text-[var(--accent-violet)] mb-2 text-sm font-display">✦ MESSAGGIO GLOBALE ✦</strong>
+        <p className="m-0 font-normal text-sm text-gray-200" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+      </div>
+    );
+  }
+  if (message.isMasterscreen) {
+    return (
+      <div className="w-full mb-6 p-5 bg-black/40 border border-[var(--accent-gold)]/30 rounded shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] relative">
+        <div className="masterscreen-format font-sans text-[13px] leading-relaxed whitespace-pre-wrap mb-4">
+          <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+        </div>
+        <div className="text-right font-display text-[11px] font-bold text-[var(--accent-gold)] uppercase tracking-wider opacity-80">
+          — Shinigami ({message.name}{message.surname ? ` ${message.surname}` : ""})
+        </div>
+      </div>
+    );
+  }
+  const formatTimestamp = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  return (
+    <div className="w-full mb-5 text-[#b3b3c0] relative pl-2.5">
+      <div className="flex items-center mb-1.5 text-xs border-b border-white/5 pb-1">
+        <span className="mr-3 text-[10px] text-gray-600 font-sans">{formatTimestamp(message.createdAt)}</span>
+        <span className="font-display font-bold text-[#c9a84a] mr-2.5 tracking-wide text-[13px]">
+          {message.name}{message.surname ? ` ${message.surname}` : ""}
+        </span>
+        {message.pixelIcons && (
+          <div className="flex items-center gap-1 mr-2">
+            {message.pixelIcons.ruolo?.map((r) => {
+              const url = getPixelIconUrlRuolo(r as PixelIconRuolo);
+              return url ? <Image key={`ruolo-${r}`} src={url} alt={r} width={16} height={16} className="w-4 h-4 object-contain" /> : null;
+            })}
+            {message.pixelIcons.ordine?.map((o) => {
+              const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
+              return url ? <Image key={`ordine-${o}`} src={url} alt={o} width={16} height={16} className="w-4 h-4 object-contain" /> : null;
+            })}
+          </div>
+        )}
+        {message.locationTag && <span className="text-[10px] text-[#60519b]">[{message.locationTag}]</span>}
+      </div>
+      <p className="text-sm text-justify leading-relaxed m-0" style={{ textIndent: "1.5em" }} dangerouslySetInnerHTML={{ __html: formattedContent }} />
     </div>
   );
 }

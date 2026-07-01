@@ -13,12 +13,12 @@ export interface BaseStats {
   
   /**
    * Le Statistiche Derivate calcolate dal sistema.
-   * Basate sul "Quadro Formule Momentaneo" (Body, Kotodama, Riflessi, ecc.).
+   * Basate sul "Quadro Formule Momentaneo" (Body, Jigoka, Riflessi, ecc.).
    */
   export interface DerivedStats {
     // Sopravvivenza
     hpMax: number;        // Body [BOD]
-    kotodamaMax: number;  // Mana/Jiko-ka [KOT]
+    jigokaMax: number;   // Mana/Jigoka [JIG]
   
     // Azione
     reflexes: number;     // Riflessi [REF]
@@ -65,8 +65,8 @@ export interface BaseStats {
       // Body [BOD] = 1*[(Forza*0,5)+(Costituzione*2)] * Y
       hpMax: round(y * ((F * 0.5) + (C * 2))),
   
-      // Kotodama [KOT] = 3*[(Mente*0,6)+(Empatia*0,4)] * Y
-      kotodamaMax: round(y * 3 * ((M * 0.6) + (E * 0.4))),
+      // Jigoka [JIG] = 3*[(Mente*0,6)+(Empatia*0,4)] * Y
+      jigokaMax: round(y * 3 * ((M * 0.6) + (E * 0.4))),
 
       // Reflexes [REF] = 1* [(Mente*0,4)+(Destrezza*0,6)] * Y
       reflexes: round(y * ((M * 0.4) + (D * 0.6))),

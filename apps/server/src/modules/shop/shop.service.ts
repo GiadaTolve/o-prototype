@@ -60,9 +60,9 @@ export async function buyItem(
   try {
     const newInv = await addItemToInventory(characterId, itemId, quantity)
 
-    // Paga l'oggetto
-    const newBalance = spend(currentBalance, itemPrice)
-    const newRemValue = newBalance.newBalance as number
+    const spendResult = spend(currentBalance, itemPrice)
+    if (!spendResult.ok) throw new Error('Saldo insufficiente per l\'acquisto')
+    const newRemValue = spendResult.newBalance as number
 
     await db.transaction(async (tx) => {
       // Aggiorna il balance

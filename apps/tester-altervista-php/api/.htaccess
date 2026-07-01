@@ -1,0 +1,6 @@
+RewriteEngine On
+# Se l’API è in https://tuosito.altervista.org/api/ — RewriteBase adeguato
+RewriteBase /api/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]

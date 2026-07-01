@@ -30,6 +30,10 @@ export const bancaRoutes = new Elysia({ prefix: '/banca' })
 
       // Ottiene il job corrente del personaggio
       .get('/me/job', async ({ user, set }) => {
+        if (!user) {
+          set.status = 401;
+          return { error: "Non autenticato" };
+        }
         try {
           const char = await db.query.characters.findFirst({
             where: eq(characters.userId, user.id),
@@ -51,6 +55,10 @@ export const bancaRoutes = new Elysia({ prefix: '/banca' })
       .post(
         '/me/job',
         async ({ user, body, set }) => {
+          if (!user) {
+            set.status = 401;
+            return { error: "Non autenticato" };
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -76,6 +84,10 @@ export const bancaRoutes = new Elysia({ prefix: '/banca' })
 
       // Ritira lo stipendio giornaliero
       .post('/me/withdraw-salary', async ({ user, set }) => {
+        if (!user) {
+          set.status = 401;
+          return { error: "Non autenticato" };
+        }
         try {
           const char = await db.query.characters.findFirst({
             where: eq(characters.userId, user.id),
@@ -95,6 +107,10 @@ export const bancaRoutes = new Elysia({ prefix: '/banca' })
 
       // Verifica se può ritirare lo stipendio
       .get('/me/can-withdraw', async ({ user, set }) => {
+        if (!user) {
+          set.status = 401;
+          return { error: "Non autenticato" };
+        }
         try {
           const char = await db.query.characters.findFirst({
             where: eq(characters.userId, user.id),
@@ -116,6 +132,10 @@ export const bancaRoutes = new Elysia({ prefix: '/banca' })
       .get(
         '/me/ledger',
         async ({ user, query, set }) => {
+          if (!user) {
+            set.status = 401;
+            return { error: "Non autenticato" };
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -144,6 +164,10 @@ export const bancaRoutes = new Elysia({ prefix: '/banca' })
       .post(
         '/me/transfer',
         async ({ user, body, set }) => {
+          if (!user) {
+            set.status = 401;
+            return { error: "Non autenticato" };
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -176,6 +200,10 @@ export const bancaRoutes = new Elysia({ prefix: '/banca' })
 
       // Lascia il lavoro corrente
       .post('/me/leave-job', async ({ user, set }) => {
+        if (!user) {
+          set.status = 401;
+          return { error: "Non autenticato" };
+        }
         try {
           const char = await db.query.characters.findFirst({
             where: eq(characters.userId, user.id),

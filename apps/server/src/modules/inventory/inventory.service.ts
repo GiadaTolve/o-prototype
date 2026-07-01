@@ -1,6 +1,6 @@
 import { eq, and, desc, sql, inArray } from 'drizzle-orm'
 import { db } from '../../plugins/db'
-import { inventory, items, characters, characterHousing, housingTypes } from '../../db/schema'
+import { inventory, items, characters, characterHousing, housingTypes, housingGuests } from '../../db/schema'
 
 /**
  * Calcola gli slot totali disponibili per un personaggio.
@@ -328,4 +328,132 @@ export async function updateItemQuantity(
     .returning()
 
   return updated
+}
+
+// ─── Rubare da casa altrui (solo ospiti) ───
+
+/**
+ * Ottiene gli oggetti nell'armadio della casa del proprietario.
+ * Restituisce i dati solo se il chiamante (guestCharacterId) è ospite della casa.
+ */
+export async function getHousingArmadioForGuest(
+  ownerCharacterId: string,
+  guestCharacterId: string
+): Promise<{
+  items: Array<{
+    id: string
+    item: { name: string; type: string }
+    quantity: number
+    location: string
+  }>
+}> {
+  const guestRow = await db.query.housingGuests.findFirst({
+    where: and(
+      eq(housingGuests.ownerCharacterId, ownerCharacterId),
+      eq(housingGuests.guestCharacterId, guestCharacterId)
+    ),
+  })
+  if (!guestRow) {
+    throw new Error('Non sei ospite di questa casa')
+  }
+
+  const invRows = await db
+    .select({
+      inventory_id: inventory.id,
+      inventory_itemId: inventory.itemId,
+      inventory_quantity: inventory.quantity,
+      inventory_location: inventory.location,
+      item_id: items.id,
+      item_name: items.name,
+      item_type: items.type,
+    })
+    .from(inventory)
+    .leftJoin(items, eq(inventory.itemId, items.id))
+    .where(
+      and(
+        eq(inventory.characterId, ownerCharacterId),
+        eq(inventory.location, 'HOUSING')
+      )
+    )
+
+  const itemsList = invRows
+    .filter((row) => row.item_id != null)
+    .map((row) => ({
+      id: row.inventory_id!,
+      item: {
+        name: row.item_name ?? '?',
+        type: row.item_type ?? 'MISC',
+      },
+      quantity: row.inventory_quantity ?? 1,
+      location: row.inventory_location ?? 'HOUSING',
+    }))
+
+  return { items: itemsList }
+}
+
+/**
+ * Ruba un oggetto dall'armadio della casa del proprietario.
+ * Solo gli ospiti (housing_guests) possono rubare.
+ * Sposta 1 unità dall'inventario housing del proprietario allo zaino del ladro.
+ */
+export async function stealFromHousing(
+  ownerCharacterId: string,
+  inventoryId: string,
+  thiefCharacterId: string
+) {
+  const guestRow = await db.query.housingGuests.findFirst({
+    where: and(
+      eq(housingGuests.ownerCharacterId, ownerCharacterId),
+      eq(housingGuests.guestCharacterId, thiefCharacterId)
+    ),
+  })
+  if (!guestRow) {
+    throw new Error('Non sei ospite di questa casa')
+  }
+
+  const invRow = await db.query.inventory.findFirst({
+    where: and(
+      eq(inventory.id, inventoryId),
+      eq(inventory.characterId, ownerCharacterId),
+      eq(inventory.location, 'HOUSING')
+    ),
+    with: { item: true },
+  })
+
+  if (!invRow) {
+    throw new Error('Oggetto non trovato nell\'armadio')
+  }
+
+  const slotInfo = await calculateTotalSlots(thiefCharacterId)
+  const thiefItems = await db.query.inventory.findMany({
+    where: eq(inventory.characterId, thiefCharacterId),
+  })
+  const occupiedSlots = thiefItems.length
+  const availableSlots = slotInfo.totalSlots - occupiedSlots
+  if (availableSlots < 1) {
+    throw new Error('Inventario pieno. Libera spazio prima di rubare.')
+  }
+
+  const qty = invRow.quantity ?? 0
+  const toSteal = Math.min(1, qty)
+
+  await db.transaction(async (tx) => {
+    if (qty <= 1) {
+      await tx.delete(inventory).where(eq(inventory.id, inventoryId))
+    } else {
+      await tx
+        .update(inventory)
+        .set({ quantity: qty - toSteal })
+        .where(eq(inventory.id, inventoryId))
+    }
+    await tx.insert(inventory).values({
+      characterId: thiefCharacterId,
+      itemId: invRow.itemId,
+      quantity: toSteal,
+      isEquipped: false,
+      location: 'CARRY',
+    })
+  })
+
+  return { success: true }
 }

@@ -103,9 +103,9 @@ async function processMonthlyRent(
 
     // Verifica se può pagare
     if (currentBalance >= rentAmount) {
-      // Paga l'affitto
-      const newBalance = spend(currentBalance, rentAmount)
-      const newRemValue = newBalance.newBalance as number
+      const spendResult = spend(currentBalance, rentAmount)
+      if (!spendResult.ok) return null
+      const newRemValue = spendResult.newBalance as number
 
       // Calcola la prossima scadenza (15 del mese successivo)
       const nextDueDate = new Date(today.getFullYear(), today.getMonth() + 1, 15)
@@ -210,9 +210,10 @@ export async function processDailyTickForAllCharacters() {
     })
 
     // Calcola affitto giornaliero (solo per Stanza dell'Ordine)
+    const ht = housing?.housingType as { dailyRent?: number | null; monthlyRent?: number | null; name?: string; id?: string; code?: string } | undefined
     let dailyRent: number | undefined = undefined
-    if (housing && housing.housingType.dailyRent) {
-      dailyRent = housing.housingType.dailyRent
+    if (housing && ht?.dailyRent) {
+      dailyRent = ht.dailyRent
     }
 
     // Calcola lo stipendio usando la logica del domain
@@ -223,23 +224,27 @@ export async function processDailyTickForAllCharacters() {
       currentBalance,
       baseSalary,
       mode: 'DAILY',
-      banState: user.banState,
+      banState: user.banState ?? 'NONE',
       dailyRent: dailyRent ? createRem(dailyRent) : undefined,
     })
 
-    if (!salaryResult.ok) {
+    if (!('ok' in salaryResult) || !salaryResult.ok) {
       continue // Non può ricevere stipendio
     }
 
     // Aggiorna il balance del personaggio
     let newBalance = earn(currentBalance, salaryResult.amount)
-    let newRemValue = newBalance.newBalance as number
+    let newRemValue = 'newBalance' in newBalance ? newBalance.newBalance : 0
 
     // Gestisci affitto mensile (se applicabile)
     let rentProcessed = false
-    if (housing && housing.housingType.monthlyRent && !housing.evicted) {
+    if (housing && ht?.monthlyRent && !housing.evicted) {
       const today = new Date()
-      const rentResult = await processMonthlyRent(char.id, housing, today)
+      const housingForRent = {
+        ...housing,
+        housingType: { id: ht.id ?? '', code: ht.code ?? '', name: ht.name ?? '', monthlyRent: ht.monthlyRent ?? 0, dailyRent: ht.dailyRent ?? null },
+      }
+      const rentResult = await processMonthlyRent(char.id, housingForRent, today)
       if (rentResult) {
         newRemValue = rentResult.newBalance
         rentProcessed = true
@@ -321,7 +326,7 @@ export async function processDailyTickForCharacter(characterId: string) {
       eq(ledgerEntries.characterId, char.id),
       eq(ledgerEntries.type, 'SALARY'),
       gte(ledgerEntries.createdAt, today),
-      sql`${ledgerEntries.createdAt} <= ${todayEnd}`
+      lte(ledgerEntries.createdAt, todayEnd),
     ),
   })
 
@@ -337,17 +342,17 @@ export async function processDailyTickForCharacter(characterId: string) {
     currentBalance,
     baseSalary,
     mode: 'DAILY',
-    banState: user.banState,
+    banState: user.banState ?? 'NONE',
     dailyRent: undefined,
   })
 
-  if (!salaryResult.ok) {
-    throw new Error(`Impossibile pagare stipendio: ${salaryResult.reason}`)
+  if (!('ok' in salaryResult) || !salaryResult.ok) {
+    throw new Error(`Impossibile pagare stipendio: ${'reason' in salaryResult ? salaryResult.reason : 'unknown'}`)
   }
 
   // Aggiorna il balance
   const newBalance = earn(currentBalance, salaryResult.amount)
-  const newRemValue = newBalance.newBalance as number
+  const newRemValue = 'newBalance' in newBalance ? newBalance.newBalance : 0
 
   await db.transaction(async (tx) => {
     await tx

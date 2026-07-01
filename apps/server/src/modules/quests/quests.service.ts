@@ -1,7 +1,8 @@
-import { eq, and, desc, inArray, or, gte, lte } from "drizzle-orm";
+import { eq, and, desc, inArray, or, gt, gte, lte } from "drizzle-orm";
 import { db } from "../../plugins/db";
 import { quests, questParticipants, questRewards, questVotes, characters, zoneMessages } from "../../db/schema";
 import { sql } from "drizzle-orm";
+import { applyCharacterExpGain } from "../characters/level-up.service";
 
 export type QuestStatus = "OPEN" | "IN_PROGRESS" | "PAUSED" | "CLOSED";
 export type QuestType = "AMBIENT" | "TRAMA" | "BATTLE" | "ONE_SHOT" | "GLOBALE";
@@ -295,13 +296,7 @@ export async function addReward(
 
   // Se il premio è EXP o REM, aggiorna il personaggio
   if (type === "EXP" && value) {
-    await db
-      .update(characters)
-      .set({
-        experienceTotal: sql`${characters.experienceTotal} + ${value}`,
-        experienceSpendable: sql`${characters.experienceSpendable} + ${value}`,
-      })
-      .where(eq(characters.id, characterId));
+    await applyCharacterExpGain(characterId, value);
   } else if (type === "REM" && value) {
     await db
       .update(characters)
@@ -345,43 +340,60 @@ export async function getQuestRewards(questId: string): Promise<QuestReward[]> {
 }
 
 /**
- * Vota per un personaggio in una quest ("Let this character shine!").
- * Un personaggio può votare solo una volta per quest.
+ * Assegna shine a un personaggio ("Let this character shine!").
+ * Solo lo Shinigami (creatore della quest) può assegnare. Assegna 1 punto al partecipante scelto.
+ * La motivazione è obbligatoria. Se ha già assegnato, può cambiare destinatario e motivazione.
  */
-export async function voteForCharacter(questId: string, voterId: string, votedFor: string) {
-  // Verifica che la quest esista
+export async function voteForCharacter(questId: string, voterId: string, votedFor: string, motivation: string) {
   const quest = await db.query.quests.findFirst({
     where: eq(quests.id, questId),
   });
   if (!quest) throw new Error("Quest non trovata");
 
-  // Verifica che non abbia già votato
-  const existing = await db.query.questVotes.findFirst({
-    where: and(eq(questVotes.questId, questId), eq(questVotes.voterId, voterId)),
-  });
-  if (existing) throw new Error("Hai già votato per questa quest");
+  // Solo il creatore della quest (Shinigami/Master) può assegnare shine
+  if (quest.creatorId !== voterId) {
+    throw new Error("Solo il Master della quest può assegnare shine");
+  }
 
   // Verifica che votedFor sia un partecipante
   const isParticipant = await db.query.questParticipants.findFirst({
     where: and(eq(questParticipants.questId, questId), eq(questParticipants.characterId, votedFor)),
   });
-  if (!isParticipant) throw new Error("Il personaggio votato non partecipa a questa quest");
+  if (!isParticipant) throw new Error("Il personaggio deve essere partecipante della quest");
+
+  const existing = await db.query.questVotes.findFirst({
+    where: and(eq(questVotes.questId, questId), eq(questVotes.voterId, voterId)),
+  });
+
+  const motivationTrimmed = motivation?.trim() || "";
+  if (!motivationTrimmed) throw new Error("La motivazione è obbligatoria per assegnare shine");
+
+  if (existing) {
+    // Master può cambiare l'assegnazione e la motivazione
+    const [row] = await db
+      .update(questVotes)
+      .set({ votedFor, motivation: motivationTrimmed })
+      .where(eq(questVotes.id, existing.id))
+      .returning();
+    return row!;
+  }
 
   const [row] = await db
     .insert(questVotes)
-    .values({ questId, voterId, votedFor })
+    .values({ questId, voterId, votedFor, motivation: motivationTrimmed })
     .returning();
   return row!;
 }
 
 /**
- * Ottiene i voti di una quest (conteggi aggregati).
+ * Ottiene i voti di una quest (conteggi aggregati + motivazione).
  */
-export async function getQuestVotes(questId: string): Promise<{ characterId: string; characterName: string; votes: number }[]> {
+export async function getQuestVotes(questId: string): Promise<{ characterId: string; characterName: string; votes: number; motivation?: string }[]> {
   const rows = await db
     .select({
       characterId: questVotes.votedFor,
       characterName: characters.name,
+      motivation: sql<string | null>`MAX(${questVotes.motivation})`.as('motivation'),
       votes: sql<number>`COUNT(*)::int`.as('votes'),
     })
     .from(questVotes)
@@ -394,6 +406,7 @@ export async function getQuestVotes(questId: string): Promise<{ characterId: str
     characterId: r.characterId,
     characterName: r.characterName,
     votes: r.votes,
+    motivation: r.motivation ?? undefined,
   }));
 }
 
@@ -488,19 +501,23 @@ export async function deleteQuest(questId: string) {
 
 /**
  * Recupera i messaggi di una quest (dalla chat dove è stata registrata).
- * Restituisce tutti i messaggi dalla creazione della quest fino alla chiusura (o ora se ancora aperta).
+ * Solo messaggi DOPO la creazione della quest (dall'inizio registrazione), fino alla chiusura (o ora se ancora aperta).
  */
 export async function getQuestMessages(questId: string) {
   const quest = await db.query.quests.findFirst({
     where: eq(quests.id, questId),
   });
   if (!quest) throw new Error("Quest non trovata");
-  if (!quest.roomId) throw new Error("Questa quest non ha una chat associata");
+  if (!quest.roomId) throw new Error("Questa quest globale non ha messaggi in una chat specifica");
 
-  // Filtra i messaggi per roomId e periodo
-  const conditions = [eq(zoneMessages.zone, quest.roomId), gte(zoneMessages.createdAt, quest.createdAt)];
+  // Messaggi nel periodo quest. Buffer 2min prima dell'avvio per includere messaggi "in volo" al click Registra.
+  const createdAt = quest.createdAt instanceof Date ? quest.createdAt : new Date(quest.createdAt as string);
+  const startBuf = new Date(createdAt.getTime() - 120_000); // 2 min prima
+  const conditions = [eq(zoneMessages.zone, quest.roomId), gte(zoneMessages.createdAt, startBuf)];
   if (quest.closedAt) {
-    conditions.push(lte(zoneMessages.createdAt, quest.closedAt));
+    const closedAt = quest.closedAt instanceof Date ? quest.closedAt : new Date(quest.closedAt as string);
+    const endBuf = new Date(closedAt.getTime() + 60_000);
+    conditions.push(lte(zoneMessages.createdAt, endBuf));
   }
 
   const messages = await db
@@ -526,7 +543,19 @@ export async function getQuestMessages(questId: string) {
     .where(and(...conditions))
     .orderBy(desc(zoneMessages.createdAt));
 
-  // Formatta i messaggi come ChatMessage
+  // Diagnostica: se nessun messaggio, verifica se la zone ha messaggi (per debug)
+  if (messages.length === 0) {
+    const anyInZone = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(zoneMessages)
+      .where(eq(zoneMessages.zone, quest.roomId));
+    if (anyInZone[0]?.n > 0) {
+      console.warn(`[quest-messages] Zone ${quest.roomId} ha ${anyInZone[0].n} messaggi totali, ma 0 nel periodo quest (${createdAt.toISOString()})`);
+    }
+  }
+
+  // Formatta i messaggi come ChatMessage. isMasterscreen = messaggio Shinigami autore della quest (mantiene formattazione anche dopo chiusura).
+  const questCreatorId = quest.creatorId;
   return messages.map((m) => {
     const meta = (m.character?.uiMetadata as { roleIcon?: string; orderIcon?: string } | null) ?? {};
     const roleIcon = (meta.roleIcon ?? '').toLowerCase();
@@ -543,6 +572,8 @@ export async function getQuestMessages(questId: string) {
       pixelIcons.ordine = [m.character.order.toLowerCase()];
     }
 
+    const isMasterscreen = questCreatorId && m.characterId === questCreatorId;
+
     return {
       id: m.id,
       zone: m.isGlobal ? "GLOBAL" : m.zone,
@@ -554,6 +585,7 @@ export async function getQuestMessages(questId: string) {
       locationTag: m.locationTag,
       createdAt: m.createdAt.toISOString(),
       pixelIcons,
+      isMasterscreen: !!isMasterscreen,
     };
   }).reverse(); // Inverti per avere i messaggi in ordine cronologico (dal più vecchio al più recente)
 }

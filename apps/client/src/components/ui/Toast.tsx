@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 
@@ -32,25 +33,25 @@ function ToastItem({ toast, onClose }: ToastProps) {
     return () => clearTimeout(timer);
   }, [toast.id, toast.duration, onClose]);
 
-  const typeStyles = {
+  const typeStyles: Record<ToastType, { borderColor: string; textColor: string; icon: typeof icons.check }> = {
     success: {
-      bg: "bg-green-900/90 border-green-500/50",
-      text: "text-green-300",
+      borderColor: "rgba(212,175,55,0.5)",
+      textColor: "#d4af37",
       icon: icons.check,
     },
     error: {
-      bg: "bg-red-900/90 border-red-500/50",
-      text: "text-red-300",
+      borderColor: "rgba(138,28,28,0.6)",
+      textColor: "#f87171",
       icon: icons.times,
     },
     info: {
-      bg: "bg-blue-900/90 border-blue-500/50",
-      text: "text-blue-300",
+      borderColor: "rgba(124,58,237,0.5)",
+      textColor: "#a78bfa",
       icon: icons.info,
     },
     warning: {
-      bg: "bg-yellow-900/90 border-yellow-500/50",
-      text: "text-yellow-300",
+      borderColor: "rgba(212,175,55,0.5)",
+      textColor: "#d4af37",
       icon: icons.exclamation,
     },
   };
@@ -59,17 +60,20 @@ function ToastItem({ toast, onClose }: ToastProps) {
 
   return (
     <div
-      className={`${style.bg} ${style.text} border rounded-lg p-4 shadow-2xl flex items-center gap-3 min-w-[300px] max-w-[500px] animate-slide-in-right`}
+      className="border rounded-lg p-4 flex items-center gap-3 min-w-[280px] max-w-[420px] font-display animate-slide-in-right backdrop-blur-sm"
       style={{
-        animation: "slideInRight 0.3s ease-out",
+        backgroundColor: "rgba(15,15,18,0.97)",
+        borderColor: style.borderColor,
+        color: style.textColor,
+        boxShadow: "0 0 20px rgba(0,0,0,0.6), 0 0 1px rgba(212,175,55,0.2)",
       }}
     >
-      <FontAwesomeIcon icon={style.icon} className="w-5 h-5 flex-shrink-0" />
-      <p className="flex-1 text-sm font-sans">{toast.message}</p>
+      <FontAwesomeIcon icon={style.icon} className="w-4 h-4 flex-shrink-0 opacity-90" />
+      <p className="flex-1 text-sm tracking-wide text-inherit">{toast.message}</p>
       <button
         type="button"
         onClick={() => onClose(toast.id)}
-        className="text-gray-400 hover:text-white transition-colors"
+        className="text-gray-400 hover:text-[#d4af37] transition-colors p-1"
       >
         <FontAwesomeIcon icon={icons.times} className="w-4 h-4" />
       </button>
@@ -103,18 +107,24 @@ export function ToastContainer() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  return (
+  const container = (
     <div
-      className="fixed top-4 right-4 z-[10000] flex flex-col gap-2 pointer-events-none"
+      className="fixed top-4 right-4 z-[99999] flex flex-col gap-2 pointer-events-none"
       style={{ maxWidth: "calc(100vw - 2rem)" }}
+      aria-live="polite"
     >
-      {toasts.map((toast) => (
-        <div key={toast.id} className="pointer-events-auto">
-          <ToastItem toast={toast} onClose={handleClose} />
+      {toasts.map((t) => (
+        <div key={t.id} className="pointer-events-auto">
+          <ToastItem toast={t} onClose={handleClose} />
         </div>
       ))}
     </div>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(container, document.body);
+  }
+  return container;
 }
 
 // Helper functions per facilità d'uso

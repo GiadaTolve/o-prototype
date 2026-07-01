@@ -30,18 +30,52 @@ import {
   updateBanner,
   deleteBanner,
   getAllDailyEvents,
+  getTodayDailyEvents,
   createDailyEvent,
   updateDailyEvent,
   deleteDailyEvent,
   getUserSanctions,
   createSanction,
+  getAdminCreatures,
+  createCreature,
+  updateCreature,
+  deleteCreature,
 } from './admin.service'
 import { musicService } from '../music/music.service'
 import { forumService } from '../forum/forum.service'
+import { setRoomOpen, getRoomState } from '../anonymous-chat/anonymous-chat.service'
 import type { UserRole, BanState } from '@domain/security/jwt'
+
+const PARADISE_ROOM_ID = 'edo__paradise'
 
 export const adminRoutes = new Elysia({ prefix: '/admin' })
   .use(authPlugin)
+  // Toggle Paradise — route statica PRIMA del guard per evitare 404
+  .post('/paradise/toggle', async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401
+      return { error: 'Non autenticato' }
+    }
+    const userRole = (user.role ?? '').toUpperCase()
+    if (userRole !== 'ADMIN' && userRole !== 'MASTER') {
+      set.status = 403
+      return { error: 'Accesso riservato ad admin/master' }
+    }
+    const b = body as { isOpen?: boolean; roomId?: string }
+    const roomId = b?.roomId ?? PARADISE_ROOM_ID
+    const isOpen = !!b?.isOpen
+    try {
+      if (isOpen && !user?.characterId) {
+        set.status = 400
+        return { error: 'Serve un personaggio attivo per aprire la stanza' }
+      }
+      await setRoomOpen(roomId, isOpen, user?.characterId ?? '')
+      return getRoomState(roomId)
+    } catch (e: unknown) {
+      set.status = 400
+      return { error: e instanceof Error ? e.message : 'Errore durante il toggle stanza anonima' }
+    }
+  })
   .guard({ isAuthenticated: true }, (app) =>
     app
       // Verifica se l'utente ha accesso al pannello admin
@@ -65,6 +99,16 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
         } catch (e: unknown) {
           set.status = 400
           return { error: e instanceof Error ? e.message : 'Errore recupero banner mappe' }
+        }
+      })
+      // Eventi di oggi per calendario (disponibile a tutti gli utenti autenticati)
+      .get('/daily-events/today', async ({ set }) => {
+        try {
+          const events = await getTodayDailyEvents()
+          return events
+        } catch (e: unknown) {
+          set.status = 400
+          return { error: e instanceof Error ? e.message : 'Errore recupero eventi' }
         }
       })
       .guard(({ hasAdminAccess }: { hasAdminAccess: boolean }) => hasAdminAccess, (app) =>
@@ -514,21 +558,28 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
             }
           })
 
-          // Ottiene i log di una chat per una data
+          // Ottiene i log di una chat per fascia temporale (Da...A)
           .get('/logs', async ({ query, set }) => {
             try {
               const chatId = query.chatId as string
-              const date = query.date as string
-              if (!chatId || !date) {
+              const from = query.from as string
+              const to = (query.to as string) || undefined
+              if (!chatId || !from) {
                 set.status = 400
-                return { error: 'chatId e date sono richiesti' }
+                return { error: 'chatId e from sono richiesti' }
               }
-              const logs = await getChatLogs(chatId, date)
+              const logs = await getChatLogs(chatId, from, to)
               return logs
             } catch (e: unknown) {
               set.status = 400
               return { error: e instanceof Error ? e.message : 'Errore durante il recupero log' }
             }
+          }, {
+            query: t.Object({
+              chatId: t.String(),
+              from: t.String(),
+              to: t.Optional(t.String()),
+            }),
           })
 
           // ==========================================
@@ -998,6 +1049,92 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
               return { error: e instanceof Error ? e.message : 'Errore durante l\'eliminazione evento' }
             }
           })
+
+          // ==========================================
+          // BESTIARIO (PNG)
+          // ==========================================
+
+          .get('/creatures', async ({ set }) => {
+            try {
+              const list = await getAdminCreatures()
+              return list
+            } catch (e: unknown) {
+              set.status = 400
+              return { error: e instanceof Error ? e.message : 'Errore recupero PNG' }
+            }
+          })
+          .post(
+            '/creatures',
+            async ({ body, set }) => {
+              try {
+                const c = await createCreature({
+                  name: body.name,
+                  description: body.description,
+                  imageUrl: body.image_url,
+                  category: body.category,
+                  stats: body.stats,
+                })
+                return c
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore creazione PNG' }
+              }
+            },
+            {
+              body: t.Object({
+                name: t.String(),
+                description: t.Optional(t.String()),
+                image_url: t.Optional(t.String()),
+                category: t.Union([t.Literal('HOLIC'), t.Literal('PHOBIAS'), t.Literal('MUEN')]),
+                stats: t.Optional(t.Object({
+                  hp: t.Optional(t.Number()),
+                  attack: t.Optional(t.Number()),
+                  defense: t.Optional(t.Number()),
+                })),
+              }),
+            }
+          )
+          .put(
+            '/creatures/:id',
+            async ({ params, body, set }) => {
+              try {
+                const c = await updateCreature(params.id, {
+                  name: body.name,
+                  description: body.description,
+                  imageUrl: body.image_url,
+                  category: body.category,
+                  stats: body.stats,
+                })
+                return c
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore aggiornamento PNG' }
+              }
+            },
+            {
+              params: t.Object({ id: t.String() }),
+              body: t.Object({
+                name: t.Optional(t.String()),
+                description: t.Optional(t.String()),
+                image_url: t.Optional(t.String()),
+                category: t.Optional(t.Union([t.Literal('HOLIC'), t.Literal('PHOBIAS'), t.Literal('MUEN')])),
+                stats: t.Optional(t.Object({
+                  hp: t.Optional(t.Number()),
+                  attack: t.Optional(t.Number()),
+                  defense: t.Optional(t.Number()),
+                })),
+              }),
+            }
+          )
+          .delete('/creatures/:id', async ({ params, set }) => {
+            try {
+              await deleteCreature(params.id)
+              return { success: true }
+            } catch (e: unknown) {
+              set.status = 400
+              return { error: e instanceof Error ? e.message : 'Errore eliminazione PNG' }
+            }
+          }, { params: t.Object({ id: t.String() }) })
 
           // ==========================================
           // SANCTIONS

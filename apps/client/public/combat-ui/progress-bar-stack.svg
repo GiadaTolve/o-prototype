@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 32" fill="none">
+  <!-- Chronostack - base etched, segmented fill (battery/pile style) -->
+  <rect x="8" y="4" width="224" height="24" rx="0" fill="#0f0d12" stroke="#2a2530" stroke-width="2" />
+  <line x1="12" y1="8" x2="228" y2="8" stroke="#1a161f" stroke-width="1" />
+  <line x1="12" y1="12" x2="228" y2="12" stroke="#151319" stroke-width="1" />
+  <line x1="12" y1="16" x2="228" y2="16" stroke="#1a161f" stroke-width="1" />
+  <line x1="12" y1="20" x2="228" y2="20" stroke="#151319" stroke-width="1" />
+  <path d="M 8 16 L 2 10 L 8 10 L 14 16 L 8 22 L 2 22 Z" fill="#2a2530" stroke="#4a4550" stroke-width="1" />
+  <path d="M 232 16 L 238 10 L 232 10 L 226 16 L 232 22 L 238 22 Z" fill="#2a2530" stroke="#4a4550" stroke-width="1" />
+  <!-- Segmented fill - 6 blocchi con gap, 4 pieni -->
+  <rect x="14" y="10" width="30" height="12" fill="#d4af37" stroke="#e8c958" stroke-width="0.5" />
+  <rect x="48" y="10" width="30" height="12" fill="#d4af37" stroke="#e8c958" stroke-width="0.5" />
+  <rect x="82" y="10" width="30" height="12" fill="#d4af37" stroke="#e8c958" stroke-width="0.5" />
+  <rect x="116" y="10" width="30" height="12" fill="#d4af37" stroke="#e8c958" stroke-width="0.5" />
+  <rect x="150" y="10" width="30" height="12" fill="none" stroke="#3a3540" stroke-width="0.5" />
+  <rect x="184" y="10" width="30" height="12" fill="none" stroke="#3a3540" stroke-width="0.5" />
+</svg>

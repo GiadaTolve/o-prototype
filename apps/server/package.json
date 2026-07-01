@@ -5,7 +5,6 @@
         "dev": "bun run --watch src/server.ts",
         "db:push": "bun drizzle-kit push",
         "db:studio": "bun drizzle-kit studio",
-        "create-test-char": "bun run scripts/create-test-char.ts",
         "seed-grades-levels": "bun run scripts/seed-grades-levels.ts",
         "seed-meteo": "bun run scripts/seed-meteo.ts",
         "fix-stats-column-types": "bun run scripts/fix-stats-column-types.ts",
@@ -17,7 +16,20 @@
         "add-music-tables": "bun run scripts/add-music-tables.ts",
         "add-forum-tables": "bun run scripts/add-forum-tables.ts",
         "add-admin-tables": "bun run scripts/add-admin-tables.ts",
-        "migrate-locations": "bun run scripts/migrate-locations-from-config.ts"
+        "add-room-cleared-table": "bun run scripts/add-room-cleared-table.ts",
+        "add-fetches-responso-comment": "bun run scripts/add-fetches-responso-comment.ts",
+        "add-password-reset-tokens": "bun run scripts/add-password-reset-tokens.ts",
+        "delete-all-fetches": "bun run scripts/delete-all-fetches.ts",
+        "test:pulisci-chat": "bun run scripts/test-pulisci-chat.ts",
+        "test:logs-fetch": "bun run scripts/test-logs-and-fetch.ts",
+        "migrate-locations": "bun run scripts/migrate-locations-from-config.ts",
+        "seed-bestiario": "bun run scripts/seed-bestiario.ts",
+        "seed-skills": "bun run scripts/seed-skills.ts",
+        "publish-waza-catalog": "bun run scripts/generate-waza-tag-catalog.ts && bun run scripts/sync-waza-manual.ts",
+        "rename-cost-kotodama-to-jigoka": "bun run scripts/rename-cost-kotodama-to-jigoka.ts",
+        "sync-waza-manual": "bun run scripts/sync-waza-manual.ts",
+        "sync-madosho-manual": "bun run scripts/sync-madosho-manual.ts",
+        "generate-waza-tag-catalog": "bun run scripts/generate-waza-tag-catalog.ts"
     },
     "dependencies": {
         "@elysiajs/bearer": "^1.4.2",
@@ -27,7 +39,8 @@
         "drizzle-orm": "latest",
         "elysia": "latest",
         "pg": "latest",
-        "postgres": "latest"
+        "postgres": "latest",
+        "resend": "^6.9.3"
     },
     "devDependencies": {
         "bun-types": "latest",

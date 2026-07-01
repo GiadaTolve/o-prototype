@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dark Fantasy UI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Cinzel', Georgia, serif;
+      background: linear-gradient(180deg, #1a0a1a 0%, #0d0512 50%, #080408 100%);
+      min-height: 100vh;
+      color: #e5e5e5;
+      padding: 3rem 2rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      letter-spacing: 0.3em;
+      color: #d4af37;
+      margin-bottom: 3rem;
+      text-transform: uppercase;
+    }
+    section {
+      margin-bottom: 4rem;
+    }
+    section h2 {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      align-items: center;
+    }
+    .card {
+      background: rgba(0,0,0,0.3);
+      padding: 1rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .card img { display: block; }
+    .label { font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem; text-align: center; }
+    .progress-bars .card img { height: 36px; width: auto; }
+    .banners .card img { height: 200px; width: auto; object-fit: contain; }
+    .buttons .card img { height: 48px; width: auto; }
+    .icons .card img { height: 48px; width: 48px; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <h1>Dark Fantasy UI</h1>
+
+  <section>
+    <h2>Banner — Presentazione Livello</h2>
+    <div class="row banners">
+      <div class="card">
+        <img src="banner-arch.svg" alt="Banner Arch">
+        <div class="label">banner-arch.svg</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Progress Bars</h2>
+    <div class="row progress-bars">
+      <div class="card">
+        <img src="progress-bar-etched.svg" alt="Etched">
+        <div class="label">progress-bar-etched.svg (base)</div>
+      </div>
+      <div class="card">
+        <img src="progress-bar-life.svg" alt="Life">
+        <div class="label">progress-bar-life.svg (Lifepoints)</div>
+      </div>
+      <div class="card">
+        <img src="progress-bar-mana.svg" alt="Mana">
+        <div class="label">progress-bar-mana.svg (Jigoka)</div>
+      </div>
+      <div class="card">
+        <img src="progress-bar-stack.svg" alt="Stack">
+        <div class="label">progress-bar-stack.svg (Chronostack — segmenti)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Button</h2>
+    <div class="row buttons">
+      <div class="card">
+        <img src="button-primary.svg" alt="Primary">
+        <div class="label">button-primary.svg</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Icons</h2>
+    <div class="row icons">
+      <div class="card"><img src="icon-shield.svg" alt="Shield"><div class="label">icon-shield.svg</div></div>
+      <div class="card"><img src="icon-swords.svg" alt="Swords"><div class="label">icon-swords.svg</div></div>
+      <div class="card"><img src="icon-potion.svg" alt="Potion"><div class="label">icon-potion.svg</div></div>
+      <div class="card"><img src="icon-skull.svg" alt="Skull"><div class="label">icon-skull.svg</div></div>
+      <div class="card"><img src="icon-crown.svg" alt="Crown"><div class="label">icon-crown.svg</div></div>
+      <div class="card"><img src="icon-heart.svg" alt="Heart"><div class="label">icon-heart.svg</div></div>
+    </div>
+  </section>
+</body>
+</html>

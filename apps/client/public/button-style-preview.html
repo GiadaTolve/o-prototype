@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anteprima stili bottone — Oyasumi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Ropa+Sans&family=Cinzel:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent-gold: #d4af37;
+      --accent-violet: #7c3aed;
+      --accent-violet-light: #a78bfa;
+      --background: #050508;
+      --panel-bg: #0f0f12;
+      --button-bg: #141418;
+      --button-bg-hover: #1a1a20;
+      --shadow-dark: rgba(20, 10, 40, 0.7);
+      --shadow-mid: rgba(30, 20, 50, 0.6);
+      --border-color: #2a2a32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--background);
+      color: #e5e5e5;
+      padding: 2rem;
+      background-image: radial-gradient(circle at 50% -20%, rgba(42, 5, 20, 0.6) 0%, transparent 45%);
+      min-height: 100vh;
+    }
+    h1 {
+      font-family: 'Cinzel', serif;
+      color: var(--accent-gold);
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 1.5rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+    }
+    .card h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-gold);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* L — Croccante: bordi netti, ombre/luci viola-oro (Oyasumi) */
+    .croccante {
+      background: var(--button-bg);
+      border: none;
+      border-radius: 0;
+      color: #e5e5e5;
+      box-shadow:
+        inset 1px 1px 0 rgba(167, 139, 250, 0.12),
+        inset -1px -1px 0 rgba(30, 20, 50, 0.6),
+        2px 2px 0 var(--shadow-dark);
+      border-top: 1px solid rgba(167, 139, 250, 0.2);
+      border-left: 1px solid rgba(167, 139, 250, 0.12);
+      font-family: inherit;
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .croccante:hover {
+      background: var(--button-bg-hover);
+      box-shadow:
+        inset 1px 1px 0 rgba(167, 139, 250, 0.18),
+        inset -1px -1px 0 rgba(30, 20, 50, 0.4),
+        2px 2px 0 rgba(20, 10, 40, 0.5),
+        0 0 0 1px rgba(212, 175, 55, 0.35);
+      border-top-color: rgba(212, 175, 55, 0.3);
+      border-left-color: rgba(212, 175, 55, 0.2);
+    }
+    .croccante:active {
+      box-shadow:
+        inset 2px 2px 4px rgba(20, 10, 40, 0.6),
+        inset -1px -1px 0 rgba(15, 10, 35, 0.5),
+        inset 1px 1px 0 rgba(212, 175, 55, 0.15),
+        1px 1px 0 rgba(20, 10, 40, 0.4);
+      border-top: 1px solid rgba(212, 175, 55, 0.2);
+      border-left: 1px solid rgba(212, 175, 55, 0.12);
+    }
+
+    /* N — Download Log (Uiverse vinodjangid07): tondo, tooltip — palette Oyasumi */
+    .btn-download-log {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background-color: var(--button-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition-duration: 0.3s;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+      color: var(--accent-violet-light);
+    }
+    .btn-download-log .tooltip {
+      position: absolute;
+      right: -95px;
+      opacity: 0;
+      background-color: var(--background);
+      color: #e5e5e5;
+      padding: 5px 10px;
+      border-radius: 5px;
+      white-space: nowrap;
+      transition-duration: 0.2s;
+      pointer-events: none;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+    }
+    .btn-download-log .tooltip::before {
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: var(--background);
+      transform: rotate(45deg);
+      left: -5px;
+      top: 50%;
+      margin-top: -5px;
+    }
+    .btn-download-log:hover {
+      background-color: var(--accent-violet);
+      color: white;
+      transition-duration: 0.3s;
+    }
+    .btn-download-log:hover .tooltip {
+      opacity: 1;
+      transition-duration: 0.3s;
+    }
+
+    /* O — Primary sweep (Uiverse faizanullah1999) — palette Oyasumi: oro invece di rosso */
+    .primary-button {
+      font-family: 'Ropa Sans', sans-serif;
+      color: #e5e5e5;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.05rem;
+      border: 1px solid var(--button-bg);
+      padding: 0.8rem 2.1rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 531.28 200'%3E%3Cdefs%3E%3Cstyle%3E .shape %7B fill: %23d4af37 %7D %3C/style%3E%3C/defs%3E%3Cg id='Layer_2' data-name='Layer 2'%3E%3Cg id='Layer_1-2' data-name='Layer 1'%3E%3Cpolygon class='shape' points='415.81 200 0 200 115.47 0 531.28 0 415.81 200' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E%0A");
+      background-color: var(--button-bg);
+      background-size: 200%;
+      background-position: 200%;
+      background-repeat: no-repeat;
+      transition: 0.3s ease-in-out;
+      transition-property: background-position, border, color;
+      position: relative;
+      z-index: 1;
+    }
+    .primary-button:hover {
+      border: 1px solid var(--accent-gold);
+      color: white;
+      background-position: 40%;
+    }
+    .primary-button::before {
+      content: "";
+      position: absolute;
+      background-color: var(--button-bg);
+      width: 0.2rem;
+      height: 0.2rem;
+      top: -1px;
+      left: -1px;
+      transition: background-color 0.15s ease-in-out;
+    }
+    .primary-button:hover::before {
+      background-color: var(--accent-gold);
+    }
+    .primary-button::after {
+      content: "";
+      position: absolute;
+      background-color: var(--accent-gold);
+      width: 0.3rem;
+      height: 0.3rem;
+      bottom: -1px;
+      right: -1px;
+      transition: background-color 0.15s ease-in-out;
+    }
+    .primary-button:hover::after {
+      background-color: var(--accent-gold);
+    }
+    .button-borders {
+      position: relative;
+      width: fit-content;
+      height: fit-content;
+    }
+    .button-borders::before {
+      content: "";
+      position: absolute;
+      width: calc(100% + 0.5em);
+      height: 50%;
+      left: -0.3em;
+      top: -0.3em;
+      border: 1px solid var(--border-color);
+      border-bottom: 0;
+    }
+    .button-borders::after {
+      content: "";
+      position: absolute;
+      width: calc(100% + 0.5em);
+      height: 50%;
+      left: -0.3em;
+      bottom: -0.3em;
+      border: 1px solid var(--border-color);
+      border-top: 0;
+      z-index: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Anteprima stili bottone</h1>
+  <p style="text-align: center; color: #888; margin-bottom: 2rem; font-size: 0.875rem;">
+    Repertorio stili — Croccante · Download Log · Primary
+  </p>
+  <div class="grid">
+    <div class="card">
+      <h2>L — Croccante</h2>
+      <p style="font-size: 0.7rem; color: #888; margin-bottom: 0.75rem;">Bordi netti, luci viola, ombre scure, accent oro al hover</p>
+      <div class="buttons">
+        <button class="croccante">Banca</button>
+        <button class="croccante">Shop</button>
+        <button class="croccante">Assegna a me</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>N — Download Log (chat)</h2>
+      <p style="font-size: 0.7rem; color: #888; margin-bottom: 0.75rem;">Stile Uiverse vinodjangid07 — per scaricare log giocata</p>
+      <div class="buttons">
+        <button class="btn-download-log" type="button" title="Scarica log">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          <span class="tooltip">Scarica log giocata</span>
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>O — Primary (sweep)</h2>
+      <p style="font-size: 0.7rem; color: #888; margin-bottom: 0.75rem;">Stile Uiverse faizanullah1999 — angoli sfalsati, sweep oro Oyasumi</p>
+      <div class="buttons">
+        <div class="button-borders">
+          <button class="primary-button">Banca</button>
+        </div>
+        <div class="button-borders">
+          <button class="primary-button">Shop</button>
+        </div>
+        <div class="button-borders">
+          <button class="primary-button">Assegna a me</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

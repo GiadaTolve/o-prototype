@@ -1,0 +1,14 @@
+{
+  "name": "tester-api",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "prepare:collab-env": "bun scripts/prepare-collab-env.ts"
+  },
+  "dependencies": {
+    "jose": "^6.2.2"
+  }
+}

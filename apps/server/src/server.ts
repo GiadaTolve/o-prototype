@@ -11,6 +11,7 @@ import { healthRoutes } from './health/health.routes'
 import { realtimeRoutes } from './modules/realtime/ws.routes'
 import { presenceRoutes } from './modules/realtime/presence.routes'
 import { chatRoutes } from './modules/chat/chat.routes'
+import { anonymousChatRoutes } from './modules/anonymous-chat/anonymous-chat.routes'
 import { smsRoutes } from './modules/sms/sms.routes'
 import { questsRoutes } from './modules/quests/quests.routes'
 import { fetchesRoutes } from './modules/fetches/fetches.routes'
@@ -27,6 +28,8 @@ import { bancaRoutes } from './modules/banca/banca.routes'
 import { adminRoutes } from './modules/admin/admin.routes'
 import { musicRoutes } from './modules/music/music.routes'
 import { forumRoutes } from './modules/forum/forum.routes'
+import { bestiarioRoutes } from './modules/bestiario/bestiario.routes'
+import { playerRequestsRoutes } from './modules/player-requests/player-requests.routes'
 import { startDailyTickScheduler } from './scheduler/daily-tick.scheduler'
 import { JWT_SECRET } from './config'
 
@@ -48,6 +51,7 @@ const app = new Elysia()
   .use(authRoutes)
   .use(charactersController)
   .use(chatRoutes)
+  .use(anonymousChatRoutes)
   .use(smsRoutes)
   .use(questsRoutes)
   .use(fetchesRoutes)
@@ -64,6 +68,8 @@ const app = new Elysia()
   .use(adminRoutes)
   .use(musicRoutes)
   .use(forumRoutes)
+  .use(bestiarioRoutes)
+  .use(playerRequestsRoutes)
   .use(realtimeRoutes)
   .use(presenceRoutes)
   .listen(PORT, () => {

@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
+import { oyasumiWriteFilePlugin } from './plugins/oyasumiWriteFile';
+var testerRoot = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
-    plugins: [react()],
+    // Percorsi relativi: ok su Altervista (root o sottocartella) senza riconfigurare l’URL.
+    base: './',
+    plugins: [react(), oyasumiWriteFilePlugin(testerRoot)],
     resolve: {
         alias: {
             '@domain': path.resolve(__dirname, '../../packages/domain/src'),

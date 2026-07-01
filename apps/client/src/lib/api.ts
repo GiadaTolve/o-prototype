@@ -42,14 +42,12 @@ async function fetcher(endpoint: string, options: RequestInit = {}) {
   const contentType = response.headers.get('content-type')
   const isJson = contentType?.includes('application/json')
 
-  let data: any
+  let data: unknown
   if (isJson) {
     try {
       data = await response.json()
-    } catch (e) {
-      // Se il parsing JSON fallisce, usa il testo della risposta
-      const text = await response.text()
-      throw new Error(text || 'Errore nella richiesta')
+    } catch {
+      throw new Error('Errore nella richiesta')
     }
   } else {
     // Se non è JSON, leggi come testo
@@ -65,16 +63,15 @@ async function fetcher(endpoint: string, options: RequestInit = {}) {
   }
 
   if (!response.ok) {
-    // Estrae il messaggio di errore dall'oggetto o usa il valore diretto
     let errorMessage = `Errore ${response.status}`
     if (typeof data === 'string') {
       errorMessage = data
     } else if (data && typeof data === 'object') {
-      // Prova a estrarre il messaggio di errore
-      if (typeof data.error === 'string') {
-        errorMessage = data.error
-      } else if (data.message) {
-        errorMessage = String(data.message)
+      const o = data as Record<string, unknown>
+      if (typeof o.error === 'string') {
+        errorMessage = o.error
+      } else if (o.message != null) {
+        errorMessage = String(o.message)
       } else {
         errorMessage = JSON.stringify(data)
       }

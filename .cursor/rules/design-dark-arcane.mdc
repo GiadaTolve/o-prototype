@@ -1,0 +1,37 @@
+---
+description: Estetica Oyasumi — Dark Arcane, palette coerente, librerie gratuite
+alwaysApply: true
+---
+
+# Design Oyasumi — Dark Arcane
+
+**Sempre applicare:** Dark Arcane. Colori coerenti con la palette. Librerie gratuite.
+
+## Palette (globals.css)
+
+Usare **solo** queste variabili per colori, ombre e glow:
+
+| Token | Uso |
+|-------|-----|
+| `--accent-gold` | CTA, titoli, hover, emphasis |
+| `--accent-violet` | Accento secondario, link, Shinigami |
+| `--accent-violet-light` | Testo secondario, stati attivi |
+| `--background` | Sfondo globale |
+| `--panel-bg` | Card, modali, pannelli |
+| `--button-bg` | Pulsanti default |
+| `--border-color` | Bordi |
+| `--shadow-gold` / `--glow-gold` | Effetti oro |
+| `--shadow-violet` / `--glow-violet` | Effetti viola |
+
+## Librerie integrate (gratuite)
+
+- **Animate.css** — animazioni UI: `animate__animated animate__fadeIn`, `animate__slideInUp`, ecc.
+- **Font Awesome** — icone
+- **Font:** Cinzel (display), Inter (sans), Cormorant Garamond (accent)
+
+## Principi
+
+1. **Dark Arcane sempre** — nero profondo, oro, viola; niente colori brillanti estranei
+2. **Niente colori hardcoded** — usare variabili CSS
+3. **Patterns coerenti** — hover gold/violet; bordi sottili; glow tenue
+4. **animate.css** per transizioni UI (fade, slide) — rispetta `prefers-reduced-motion`

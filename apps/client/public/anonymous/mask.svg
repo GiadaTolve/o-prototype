@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="#8b7355" stroke-width="2">
+  <!-- Maschera stilizzata - placeholder: sostituire con asset definitivo -->
+  <ellipse cx="50" cy="55" rx="35" ry="40" fill="#2a2520" stroke="#6b5b4a"/>
+  <ellipse cx="35" cy="50" rx="6" ry="8" fill="#1a1510"/>
+  <ellipse cx="65" cy="50" rx="6" ry="8" fill="#1a1510"/>
+  <path d="M 25 70 Q 50 85 75 70" stroke="#6b5b4a" fill="none"/>
+</svg>

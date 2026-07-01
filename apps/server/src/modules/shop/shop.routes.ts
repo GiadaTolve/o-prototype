@@ -23,6 +23,10 @@ export const shopRoutes = new Elysia({ prefix: '/shop' })
       .post(
         '/buy',
         async ({ body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -51,6 +55,10 @@ export const shopRoutes = new Elysia({ prefix: '/shop' })
       .post(
         '/sell',
         async ({ body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),

@@ -1,0 +1,23 @@
+<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bannerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a1612" />
+      <stop offset="40%" stop-color="#0f0d0a" />
+      <stop offset="100%" stop-color="#080606" />
+    </linearGradient>
+  </defs>
+  <g fill="url(#bannerGrad)" stroke="#7a5b32" stroke-width="5">
+    <path d="
+      M 80 420
+      L 80 180
+      C 80 120 140 60 200 40
+      C 260 60 320 120 320 180
+      L 320 420
+      Z
+    " />
+  </g>
+  <!-- Level up text -->
+  <text x="200" y="120" text-anchor="middle" fill="#7a5b32" font-family="Georgia, serif" font-size="28" font-weight="bold">Level</text>
+  <text x="200" y="170" text-anchor="middle" fill="#c9a227" font-family="Georgia, serif" font-size="56" font-weight="bold">2</text>
+  <text x="200" y="240" text-anchor="middle" fill="#7a5b32" font-size="14" opacity="0.9">18 / 100 EXP</text>
+</svg>

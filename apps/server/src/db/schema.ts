@@ -1,4 +1,4 @@
-import { pgTable, text, integer, uuid, boolean, jsonb, timestamp, date } from 'drizzle-orm/pg-core'
+import { pgTable, text, integer, uuid, boolean, jsonb, timestamp, date, unique, foreignKey } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
 // ==========================================
@@ -15,6 +15,15 @@ export const users = pgTable('users', {
   // Gestione Ban (Shadowban non invia messaggi in chat)
   banState: text('ban_state').$type<'NONE' | 'SHADOW' | 'FULL'>().default('NONE'),
   
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  tokenHash: text('token_hash').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
   createdAt: timestamp('created_at').defaultNow()
 })
 
@@ -40,7 +49,7 @@ export const characters = pgTable('characters', {
   name: text('name').notNull(),
   surname: text('surname'), // Assegnato dopo la creazione
   bio: text('bio'), 
-  avatar: text('avatar'),      // Immagine Grande (400x350)
+  avatar: text('avatar'),      // Immagine Grande (300x400)
   miniAvatar: text('mini_avatar'), // Icona (100x100) per Chat/Forum
   
   // --- METADATI UI (Dark Arcane) ---
@@ -53,11 +62,29 @@ export const characters = pgTable('characters', {
     backgroundImage?: string;
     /** URL tema musicale (.mp3) per la scheda. */
     themeMusicUrl?: string;
+    /** Banner PG in fondo scheda (banner_pg). */
+    bannerPg?: string;
+  /** Pixel-icon premio speciale (GAME_LAYOUT_SPEC §4). */
+  premioSpeciale?: string;
+  /** Slot passivi Waza sbloccati (2–6, default 2). §2.12 */
+  passiveSlotsUnlocked?: number;
+  /** skillId equipaggiati negli slot passivi (ordine = slot). */
+  equippedPassiveIds?: string[];
+  /** Stile principale Esagono §2.13 */
+  primaryStyleId?: string;
+  /** Stili Dō sbloccati con Key */
+  unlockedStyleIds?: string[];
+  /** Tōrō attivo: mano a contatto con l'arma (narrativo §3.1). */
+  toroWeaponInContact?: boolean;
   }>().default({}),
 
   // --- RUOLO SOCIALE ---
   order: text('order').$type<'MUGEN-TAI' | 'CHISEN-TAI' | 'NONE'>().default('NONE'),
   grade: text('grade').default('Nemuribito'), // Grado gerarchico
+  /** Alias assegnato da Shinigami / Moderatori / staff. */
+  staffAlias: text('staff_alias'),
+  /** Note interne Master (solo Master+ possono modificare). */
+  masterNotes: text('master_notes'),
   jobId: uuid('job_id').references(() => jobs.id),
 
   // --- ECONOMIA & VALUTE ---
@@ -70,7 +97,13 @@ export const characters = pgTable('characters', {
   
   // Valute Rare (per Skill Tree)
   keys: integer('keys').default(0).notNull(), // Sblocca rami (Appendici)
-  gems: integer('gems').default(0).notNull(), // Potenzia skill (Livello Waza)
+  /** @deprecated v3 — non usare in UI/API; colonna mantenuta per compat DB */
+  gems: integer('gems').default(0).notNull(),
+
+  /** Madoshō approvata dallo staff (non scelta in registrazione). UltimateManual §4.0 */
+  madoshoId: text('madosho_id').$type<
+    'ringai-janjae' | 'gokaon' | 'komonoire' | 'nakigara' | 'ikiryo' | 'hataori'
+  >(),
 
   // --- STATISTICHE BASE (I 5 Pilastri) ---
   // Esplose in colonne per permettere calcoli nel Domain e Query veloci
@@ -79,16 +112,96 @@ export const characters = pgTable('characters', {
   dexterity: integer('dexterity').default(0).notNull(),   // Destrezza [D]
   mind: integer('mind').default(0).notNull(),             // Mente [M]
   empathy: integer('empathy').default(0).notNull(),       // Empatia [E]
+
+  /** Punti Skiru per id (UltimateManual §2.7). Vuoto → derivato da stats legacy. */
+  skiruSheet: jsonb('skiru_sheet').$type<Record<string, number>>().default({}).notNull(),
+
+  /** HP correnti in combattimento; null = pieni (hpMax). */
+  currentHp: integer('current_hp'),
+
+  /** Stato Chrono Stack (CS, accumulo Tenkan, Overheat). */
+  chronoStackState: jsonb('chrono_stack_state')
+    .$type<{
+      current: number
+      accumulating: boolean
+      overheatTurns: number
+      skipNextTurn: boolean
+    }>()
+    .default({
+      current: 0,
+      accumulating: false,
+      overheatTurns: 0,
+      skipNextTurn: false,
+    })
+    .notNull(),
   
   // --- INVENTARIO BASE ---
   // Slot "corporei" di default (Braccia, Gambe, Busto)
   baseSlots: integer('base_slots').default(5).notNull(),
 
   // --- FLAGS ---
-  // True = Utente appena registrato, deve ancora compilare la scheda
-  isRaw: boolean('is_raw').default(true).notNull(),
+  /** @deprecated — PG attivo alla registrazione; mantenuto per compat DB */
+  isRaw: boolean('is_raw').default(false).notNull(),
   
   createdAt: timestamp('created_at').defaultNow()
+})
+
+export const characterPlayerRequests = pgTable(
+  'character_player_requests',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    characterId: uuid('character_id')
+      .references(() => characters.id, { onDelete: 'cascade' })
+      .notNull(),
+    kind: text('kind').$type<'MADOSHO' | 'ORDER' | 'PREMIO'>().notNull(),
+    requestedValue: text('requested_value').notNull(),
+    status: text('status')
+      .$type<'PENDING' | 'APPROVED' | 'REJECTED'>()
+      .default('PENDING')
+      .notNull(),
+    staffNote: text('staff_note'),
+    reviewedByUserId: uuid('reviewed_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    reviewedAt: timestamp('reviewed_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.characterId, t.kind)],
+)
+
+/** Status combattimento attivi sul PG (§2.4). */
+export const characterStatusEffects = pgTable(
+  'character_status_effects',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    characterId: uuid('character_id')
+      .references(() => characters.id, { onDelete: 'cascade' })
+      .notNull(),
+    statusId: text('status_id').notNull(),
+    stacks: integer('stacks').notNull().default(1),
+    targetKind: text('target_kind').$type<'character' | 'construct'>().default('character').notNull(),
+    /** Riferimento costrutto sul campo (future §2.6). */
+    constructRef: text('construct_ref'),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.characterId, t.statusId)],
+)
+
+/** Costrutti sul campo (§2.6) — creati da Jigo-Ka, persistenza fino a distruzione. */
+export const fieldConstructs = pgTable('field_constructs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  creatorCharacterId: uuid('creator_character_id')
+    .references(() => characters.id, { onDelete: 'cascade' })
+    .notNull(),
+  label: text('label').notNull().default('Costrutto'),
+  size: text('size').$type<'piccola' | 'media' | 'grande' | 'enorme'>().default('media').notNull(),
+  wazaTier: integer('waza_tier').notNull().default(1),
+  genkai: integer('genkai').notNull().default(0),
+  maxResistance: integer('max_resistance').notNull(),
+  remainingResistance: integer('remaining_resistance').notNull(),
+  stationary: boolean('stationary').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
 // ==========================================
@@ -108,7 +221,19 @@ export const skills = pgTable('skills', {
   costKeys: integer('cost_keys').default(0), // Richiede Keys per sbloccare il ramo?
   
   // Meccaniche di Gioco
-  costKotodama: integer('cost_kotodama').default(0), // Costo in Mana (Kotodama)
+  costJigoka: integer('cost_jigoka').default(0), // Costo in Mana (Jigoka)
+  /** Tier waza v3 (es. "T1" … "T5") — vedi §2.10 */
+  rank: text('rank'),
+  /** Waza sempre attiva (slot passivi §2.12). */
+  isPassive: boolean('is_passive').default(false).notNull(),
+  /** Slug stabile (wazaPool / catalogo Dō Ultimate Manual). */
+  poolId: text('pool_id'),
+  /** Ramo Esagono: toka | genzai | ito | naikan | hensei | hado */
+  styleId: text('style_id'),
+  /** Lignaggio Madoshō (Parte IV) — mutualmente esclusivo con styleId. */
+  madoshoId: text('madosho_id').$type<
+    'ringai-janjae' | 'gokaon' | 'komonoire' | 'nakigara' | 'ikiryo' | 'hataori'
+  >(),
   cooldown: integer('cooldown').default(0),
   diceFormula: text('dice_formula'), // Es: "1d20 + $M"
 
@@ -124,6 +249,23 @@ export const characterSkills = pgTable('character_skills', {
   level: integer('level').default(1),
   
   createdAt: timestamp('created_at').defaultNow()
+})
+
+// ==========================================
+// 4b. BESTIARIO (PNG — Personaggi Non Giocanti)
+// ==========================================
+
+/** Catalogo globale dei PNG esistenti e persistenti. Categorie: Holic, Phobias, Muen. */
+export const creatures = pgTable('creatures', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  imageUrl: text('image_url'),
+  /** Categoria: Holic, Phobias, Muen. */
+  category: text('category').$type<'HOLIC' | 'PHOBIAS' | 'MUEN'>().notNull(),
+  /** Stats opzionali per lore/combat. */
+  stats: jsonb('stats').$type<{ hp?: number; attack?: number; defense?: number; [k: string]: unknown }>(),
+  createdAt: timestamp('created_at').defaultNow(),
 })
 
 // ==========================================
@@ -207,6 +349,34 @@ export const charactersRelations = relations(characters, ({ one, many }) => ({
   skills: many(characterSkills),
   inventory: many(inventory),
   zoneMessages: many(zoneMessages),
+  playerRequests: many(characterPlayerRequests),
+  statusEffects: many(characterStatusEffects),
+  fieldConstructs: many(fieldConstructs),
+}))
+
+export const characterPlayerRequestsRelations = relations(characterPlayerRequests, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterPlayerRequests.characterId],
+    references: [characters.id],
+  }),
+  reviewedBy: one(users, {
+    fields: [characterPlayerRequests.reviewedByUserId],
+    references: [users.id],
+  }),
+}))
+
+export const characterStatusEffectsRelations = relations(characterStatusEffects, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterStatusEffects.characterId],
+    references: [characters.id],
+  }),
+}))
+
+export const fieldConstructsRelations = relations(fieldConstructs, ({ one }) => ({
+  creator: one(characters, {
+    fields: [fieldConstructs.creatorCharacterId],
+    references: [characters.id],
+  }),
 }))
 
 export const skillsRelations = relations(skills, ({ many }) => ({
@@ -242,6 +412,11 @@ export const zoneMessages = pgTable('zone_messages', {
   totalChars: integer('total_chars'),
   /** Se true, è un messaggio globale (visibile in tutte le chat). */
   isGlobal: boolean('is_global').default(false).notNull(),
+  /** Chat anonima: nome animale e colore al momento dell'invio (per display storico). */
+  anonymousAnimalName: text('anonymous_animal_name'),
+  anonymousColor: text('anonymous_color'),
+  /** Messaggio masterscreen (Shinigami autore della quest attiva): mantiene formattazione anche dopo chiusura sessione. */
+  isMasterscreen: boolean('is_masterscreen').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -267,6 +442,38 @@ export const roomMasterNotes = pgTable('room_master_notes', {
 export const roomMasterNotesRelations = relations(roomMasterNotes, ({ one }) => ({
   updatedBy: one(characters, { fields: [roomMasterNotes.updatedById], references: [characters.id] }),
 }))
+
+// ==========================================
+// 7c. PARTYCHAT (Circus / Spazio Eventi) — chat anonima con regole a sé
+// ==========================================
+
+/** Stato stanza anonima: solo admin/mod può aprire/chiudere. Quando chiusa = area interdetta. */
+export const anonymousRoomState = pgTable('anonymous_room_state', {
+  roomId: text('room_id').primaryKey(),
+  isOpen: boolean('is_open').default(false).notNull(),
+  openedById: uuid('opened_by_id').references(() => characters.id, { onDelete: 'set null' }),
+  openedAt: timestamp('opened_at'),
+  /** Nome sessione deciso al toggle ON; usato come titolo della giocata "evento" al toggle OFF. */
+  sessionTitle: text('session_title'),
+})
+
+/** Partecipanti sessione anonima: nome animale + colore assegnati per la durata della sessione. */
+export const anonymousParticipants = pgTable('anonymous_participants', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  roomId: text('room_id').notNull(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  animalName: text('animal_name').notNull(),
+  color: text('color').notNull(), // hex es. #a78bfa
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+}, (t) => [unique().on(t.roomId, t.characterId)])
+
+/** Quando una chat è stata "pulita": i messaggi prima di cleared_at restano nel DB ma non sono mostrati in chat. Sempre visibili nel Log. */
+export const roomCleared = pgTable('room_cleared', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  roomId: text('room_id').notNull().unique(),
+  clearedAt: timestamp('cleared_at').defaultNow().notNull(),
+  clearedById: uuid('cleared_by_id').references(() => characters.id, { onDelete: 'set null' }),
+})
 
 // ==========================================
 // 8. SMS (Messaggi privati — interfaccia stile WhatsApp)
@@ -337,7 +544,9 @@ export const fetches = pgTable('fetches', {
     minActions?: number; // Default: 4
     remReward?: number; // REM per partecipante con >= minActions (default: 50)
     expReward?: number; // EXP per partecipante con >= minActions (default: 0)
-  }>().default(null),
+  }>().default({}),
+  /** Commento Shinigami/Admin al responso (quando completa fetch in AWAITING_REWARD). */
+  responsoComment: text('responso_comment'),
   approvedById: uuid('approved_by_id').references(() => characters.id, { onDelete: 'set null' }),
   approvedAt: timestamp('approved_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -383,11 +592,14 @@ export const questVotes = pgTable('quest_votes', {
   voterId: uuid('voter_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
   /** Chi è stato votato (il personaggio che "ha brillato"). */
   votedFor: uuid('voted_for').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Motivazione dello Shinigami per l'assegnazione (obbligatoria). */
+  motivation: text('motivation'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
 export const questsRelations = relations(quests, ({ one, many }) => ({
   creator: one(characters, { fields: [quests.creatorId], references: [characters.id] }),
+  plot: one(plots, { fields: [quests.plotId], references: [plots.id] }),
   participants: many(questParticipants),
   rewards: many(questRewards),
   votes: many(questVotes),
@@ -436,6 +648,10 @@ export const gameSessions = pgTable('game_sessions', {
   title: text('title'),
   /** Fetch associata (opzionale). */
   fetchId: uuid('fetch_id').references(() => fetches.id, { onDelete: 'set null' }),
+  /** Quest durante cui è stata registrata (se in sessione quest → isMasterscreen per creator) */
+  questId: uuid('quest_id').references(() => quests.id, { onDelete: 'set null' }),
+  /** Tipo: STANDARD (giocata normale) | EVENTO (Circus chiuso, visibile come "Evento" nel registro). */
+  sessionType: text('session_type').$type<'STANDARD' | 'EVENTO'>().default('STANDARD'),
   /** Stato: ACTIVE, FROZEN, CLOSED, CANCELLED */
   status: text('status').$type<'ACTIVE' | 'FROZEN' | 'CLOSED' | 'CANCELLED'>().default('ACTIVE').notNull(),
   /** Timestamp di inizio registrazione. */
@@ -462,6 +678,7 @@ export const gameSessionParticipants = pgTable('game_session_participants', {
 export const gameSessionsRelations = relations(gameSessions, ({ one, many }) => ({
   creator: one(characters, { fields: [gameSessions.creatorId], references: [characters.id], relationName: 'sessionCreator' }),
   fetch: one(fetches, { fields: [gameSessions.fetchId], references: [fetches.id] }),
+  quest: one(quests, { fields: [gameSessions.questId], references: [quests.id] }),
   participants: many(gameSessionParticipants),
 }))
 
@@ -495,6 +712,23 @@ export const ledgerEntries = pgTable('ledger_entries', {
 
 export const ledgerEntriesRelations = relations(ledgerEntries, ({ one }) => ({
   character: one(characters, { fields: [ledgerEntries.characterId], references: [characters.id] }),
+}))
+
+// ==========================================
+// 11b. NOTIFICHE DI SISTEMA (es. responso Fetch)
+// ==========================================
+export const systemNotifications = pgTable('system_notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  type: text('type').notNull(),
+  title: text('title'),
+  content: text('content'),
+  readAt: timestamp('read_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const systemNotificationsRelations = relations(systemNotifications, ({ one }) => ({
+  character: one(characters, { fields: [systemNotifications.characterId], references: [characters.id] }),
 }))
 
 // ==========================================
@@ -534,6 +768,12 @@ export const characterHousing = pgTable('character_housing', {
   housingTypeId: uuid('housing_type_id').references(() => housingTypes.id, { onDelete: 'restrict' }).notNull(),
   /** Room ID per la chat personalizzata della casa (es. housing_container_123). */
   chatRoomId: text('chat_room_id').unique(),
+  /** Nome personalizzato per la chat della casa. */
+  chatName: text('chat_name'),
+  /** URL immagine di sfondo per la chat della casa. */
+  chatImage: text('chat_image'),
+  /** Descrizione ambientale personalizzata per la chat della casa. */
+  chatDescription: text('chat_description'),
   /** Data di inizio affitto. */
   rentedAt: timestamp('rented_at').defaultNow().notNull(),
   /** Prossima scadenza pagamento (15 del mese per affitti mensili). */
@@ -552,9 +792,25 @@ export const housingTypesRelations = relations(housingTypes, ({ many }) => ({
   tenants: many(characterHousing),
 }))
 
-export const characterHousingRelations = relations(characterHousing, ({ one }) => ({
+export const characterHousingRelations = relations(characterHousing, ({ one, many }) => ({
   character: one(characters, { fields: [characterHousing.characterId], references: [characters.id] }),
   housingType: one(housingTypes, { fields: [characterHousing.housingTypeId], references: [housingTypes.id] }),
+  guests: many(housingGuests),
+}))
+
+/** Ospiti invitati nella casa di un personaggio. Solo gli ospiti possono accedere alla chat della casa. */
+export const housingGuests = pgTable('housing_guests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  /** Proprietario della casa (characterId). */
+  ownerCharacterId: uuid('owner_character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  /** Ospite invitato (characterId). */
+  guestCharacterId: uuid('guest_character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [unique().on(table.ownerCharacterId, table.guestCharacterId)])
+
+export const housingGuestsRelations = relations(housingGuests, ({ one }) => ({
+  owner: one(characters, { fields: [housingGuests.ownerCharacterId], references: [characters.id] }),
+  guest: one(characters, { fields: [housingGuests.guestCharacterId], references: [characters.id] }),
 }))
 
 // ==========================================
@@ -725,7 +981,7 @@ export const forumPostLikesRelations = relations(forumPostLikes, ({ one }) => ({
 
 export const locations = pgTable('locations', {
   id: uuid('id').defaultRandom().primaryKey(),
-  parentId: uuid('parent_id').references(() => locations.id, { onDelete: 'cascade' }),
+  parentId: uuid('parent_id'),
   name: text('name').notNull(),
   type: text('type').$type<'MAP' | 'CHAT'>().notNull(),
   imageUrl: text('image_url'),
@@ -740,11 +996,17 @@ export const locations = pgTable('locations', {
   posX: integer('pos_x').default(50).notNull(), // Posizione X in %
   posY: integer('pos_y').default(50).notNull(), // Posizione Y in %
   createdAt: timestamp('created_at').defaultNow().notNull(),
-})
+}, (table) => [
+  foreignKey({
+    columns: [table.parentId],
+    foreignColumns: [table.id],
+    name: 'locations_parent_id_fkey',
+  }),
+])
 
 export const locationsRelations = relations(locations, ({ one, many }) => ({
-  parent: one(locations, { fields: [locations.parentId], references: [locations.id], relationName: 'parentLocation' }),
-  children: many(locations, { relationName: 'childLocations' }),
+  parent: one(locations, { fields: [locations.parentId], references: [locations.id], relationName: 'locationHierarchy' }),
+  children: many(locations, { relationName: 'locationHierarchy' }),
 }))
 
 // ==========================================

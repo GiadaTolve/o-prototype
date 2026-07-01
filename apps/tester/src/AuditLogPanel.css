@@ -1,0 +1,210 @@
+.audit-panel {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(201, 168, 74, 0.35));
+  background: var(--panel-bg, rgba(0, 0, 0, 0.35));
+}
+
+.audit-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.audit-panel-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--accent-gold, #c9a84a);
+  font-family: var(--font-display, 'Cinzel', serif);
+}
+
+.audit-panel-lead {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--accent-violet-light, #c4b5fd);
+  flex: 1 1 100%;
+}
+
+.audit-panel-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.audit-panel-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.audit-panel-controls input[type='password'],
+.audit-panel-controls input[type='number'] {
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: rgba(0, 0, 0, 0.4);
+  color: #eee;
+  min-width: 8rem;
+}
+
+.audit-panel-controls input[type='number'] {
+  width: 4.5rem;
+  min-width: 4.5rem;
+}
+
+.audit-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  border: 1px solid var(--border-color, rgba(201, 168, 74, 0.4));
+  background: var(--button-bg, rgba(255, 255, 255, 0.06));
+  color: var(--accent-gold, #c9a84a);
+}
+
+.audit-btn:hover {
+  box-shadow: 0 0 12px var(--shadow-gold, rgba(201, 168, 74, 0.15));
+}
+
+.audit-btn--print {
+  border-color: rgba(167, 139, 250, 0.4);
+  color: var(--accent-violet-light, #c4b5fd);
+}
+
+.audit-meta {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 1rem;
+}
+
+.audit-entry {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.audit-entry:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.audit-entry-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+}
+
+.audit-entry-user {
+  font-weight: 600;
+  color: var(--accent-violet-light, #ddd6fe);
+}
+
+.audit-entry-action {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(167, 139, 250, 0.12);
+  color: var(--accent-violet-light, #c4b5fd);
+}
+
+.audit-entry-action--rimozione {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+}
+
+.audit-entry-action--aggiunta {
+  background: rgba(74, 222, 128, 0.1);
+  color: #86efac;
+}
+
+.audit-entry-action--modifica {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+.audit-entry-sum {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0 0 0.5rem;
+}
+
+.audit-entry-block {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 20rem;
+  overflow: auto;
+  color: rgba(230, 230, 230, 0.92);
+  font-family: ui-monospace, monospace;
+}
+
+.audit-nudge {
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: rgba(167, 139, 250, 0.08);
+  font-size: 0.84rem;
+  color: var(--accent-violet-light, #c4b5fd);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.audit-nudge button {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid rgba(201, 168, 74, 0.4);
+  background: transparent;
+  color: var(--accent-gold, #c9a84a);
+}
+
+@media print {
+  .audit-no-print {
+    display: none !important;
+  }
+
+  .audit-panel {
+    border: none;
+    background: #fff;
+    color: #111;
+  }
+
+  .audit-entry-block {
+    max-height: none;
+    background: #f6f6f6;
+    color: #111;
+    border: 1px solid #ccc;
+  }
+
+  .audit-panel-title,
+  .audit-entry-sum,
+  .audit-entry-user {
+    color: #111;
+  }
+
+  .audit-meta {
+    color: #444;
+  }
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" fill="white">
+  <!-- Crossed swords - diagonal blades with guards -->
+  <path d="M 28 2 L 30 26 L 28 54 L 26 26 Z" transform="rotate(-45 28 28)" />
+  <path d="M 28 2 L 30 26 L 28 54 L 26 26 Z" transform="rotate(45 28 28)" />
+  <rect x="22" y="18" width="12" height="8" rx="1" transform="rotate(-45 28 22)" />
+  <rect x="22" y="18" width="12" height="8" rx="1" transform="rotate(45 28 22)" />
+</svg>

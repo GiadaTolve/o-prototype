@@ -1,6 +1,6 @@
-import { eq, and, desc, gte, sql } from "drizzle-orm";
+import { eq, and, desc, gte, or, isNull, isNotNull, ne, sql, inArray } from "drizzle-orm";
 import { db } from "../../plugins/db";
-import { fetches, fetchAssignments, levels, grades, characters } from "../../db/schema";
+import { fetches, fetchAssignments, levels, grades, characters, quests, questParticipants, gameSessions, gameSessionParticipants } from "../../db/schema";
 import { characterService } from "../characters/characters.service";
 
 export type FetchStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
@@ -63,16 +63,37 @@ export async function meetsRequirements(characterId: string, req: FetchRequireme
   if (req.levelMax != null && level > req.levelMax) return false;
 
   const order = char.order ?? "NONE";
-  if (req.order?.length && order !== "NONE") {
-    if (!req.order.includes(order)) return false;
+  if (req.order?.length) {
+    if (order === "NONE" || !req.order.includes(order)) return false;
   }
 
   if (req.gradeIds?.length) {
-    const charGrade = (char.grade ?? "").trim();
-    const gradeIdMap = await db.select({ id: grades.id, name: grades.name }).from(grades);
-    const idByName = new Map(gradeIdMap.map((r) => [r.name, r.id]));
-    const charGradeId = idByName.get(charGrade);
+    const gradeRows = await db.select({ id: grades.id, name: grades.name, levelMin: grades.levelMin, levelMax: grades.levelMax }).from(grades);
+    const idByName = new Map(gradeRows.map((r) => [r.name, r.id]));
+    let charGradeId: string | undefined = (char.grade ?? "").trim()
+      ? idByName.get((char.grade ?? "").trim())
+      : undefined;
+    if (!charGradeId) {
+      const byLevel = gradeRows.find((g) => level >= g.levelMin && level <= g.levelMax);
+      charGradeId = byLevel?.id;
+    }
     if (!charGradeId || !req.gradeIds.includes(charGradeId)) return false;
+  }
+
+  if (req.plotIds?.length) {
+    const participated = await db
+      .select({ one: sql<number>`1` })
+      .from(questParticipants)
+      .innerJoin(quests, eq(questParticipants.questId, quests.id))
+      .where(
+        and(
+          eq(questParticipants.characterId, characterId),
+          isNotNull(quests.plotId),
+          inArray(quests.plotId, req.plotIds),
+        ),
+      )
+      .limit(1);
+    if (participated.length === 0) return false;
   }
 
   return true;
@@ -130,8 +151,16 @@ async function listFetchesByStatus(status: FetchStatus | null = null): Promise<F
   }));
 }
 
+/** Fetch in bacheca: solo APPROVED e NON ancora COMPLETATE (quelle concluse vengono rimosse). */
 export async function listApprovedFetches(): Promise<Fetch[]> {
-  return listFetchesByStatus("APPROVED");
+  const all = await listFetchesByStatus("APPROVED");
+  return all.filter((f) => f.completionStatus !== "COMPLETED");
+}
+
+/** Fetch in attesa di responso (Shinigami/Admin completano con commento). */
+export async function listAwaitingRewardFetches(): Promise<Fetch[]> {
+  const all = await listFetchesByStatus("APPROVED");
+  return all.filter((f) => f.completionStatus === "AWAITING_REWARD");
 }
 
 export async function listPendingFetches(): Promise<Fetch[]> {
@@ -284,6 +313,22 @@ export async function assignFetchToSelf(fetchId: string, characterId: string) {
   if (f.status !== "APPROVED") throw new Error("Solo fetch approvate sono assegnabili");
   if (f.assignedTo) throw new Error("Fetch già assegnata");
 
+  // Regola: una sola fetch assegnata alla volta
+  const existing = await db
+    .select({ fetchId: fetchAssignments.fetchId })
+    .from(fetchAssignments)
+    .innerJoin(fetches, eq(fetchAssignments.fetchId, fetches.id))
+    .where(
+      and(
+        eq(fetchAssignments.characterId, characterId),
+        or(isNull(fetches.completionStatus), ne(fetches.completionStatus, "COMPLETED"))
+      )
+    )
+    .limit(1);
+  if (existing.length > 0) {
+    throw new Error("Puoi avere solo una fetch assegnata alla volta. Completa o attendi il responso della fetch corrente.");
+  }
+
   const ok = await meetsRequirements(characterId, f.requirements);
   if (!ok) throw new Error("Requisiti non soddisfatti");
 
@@ -301,23 +346,107 @@ export async function assignFetchToSelf(fetchId: string, characterId: string) {
 }
 
 export async function getAssignmentForCharacter(characterId: string): Promise<Fetch | null> {
+  // Solo assegnazioni a fetch NON completate (COMPLETED = responso già dato)
   const [a] = await db
     .select({ fetchId: fetchAssignments.fetchId })
     .from(fetchAssignments)
-    .where(eq(fetchAssignments.characterId, characterId))
+    .innerJoin(fetches, eq(fetchAssignments.fetchId, fetches.id))
+    .where(
+      and(
+        eq(fetchAssignments.characterId, characterId),
+        or(isNull(fetches.completionStatus), ne(fetches.completionStatus, "COMPLETED"))
+      )
+    )
     .limit(1);
   if (!a) return null;
   return getFetch(a.fetchId);
 }
 
+/** Fetch concluse del personaggio con nomi partecipanti (per sezione "Concluse da: Partecipanti"). */
+export async function listConcludedFetchesForCharacter(characterId: string): Promise<Array<{
+  id: string;
+  title: string;
+  description: string | null;
+  completedAt: Date | null;
+  responsoComment: string | null;
+  participantNames: string[];
+}>> {
+  const rows = await db
+    .select({
+      id: fetches.id,
+      title: fetches.title,
+      description: fetches.description,
+      completedAt: fetches.completedAt,
+      responsoComment: fetches.responsoComment,
+    })
+    .from(fetches)
+    .innerJoin(fetchAssignments, eq(fetches.id, fetchAssignments.fetchId))
+    .where(
+      and(
+        eq(fetchAssignments.characterId, characterId),
+        eq(fetches.completionStatus, "COMPLETED")
+      )
+    )
+    .orderBy(desc(fetches.completedAt));
+
+  const result: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    completedAt: Date | null;
+    responsoComment: string | null;
+    participantNames: string[];
+  }> = [];
+
+  for (const row of rows) {
+    const [session] = await db
+      .select({ id: gameSessions.id })
+      .from(gameSessions)
+      .where(and(eq(gameSessions.fetchId, row.id), eq(gameSessions.status, "CLOSED")))
+      .limit(1);
+
+    let participantNames: string[] = [];
+    if (session) {
+      const parts = await db
+        .select({ name: characters.name })
+        .from(gameSessionParticipants)
+        .innerJoin(characters, eq(gameSessionParticipants.characterId, characters.id))
+        .where(eq(gameSessionParticipants.sessionId, session.id));
+      participantNames = parts.map((p) => p.name).filter(Boolean);
+    }
+
+    result.push({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      completedAt: row.completedAt,
+      responsoComment: row.responsoComment,
+      participantNames,
+    });
+  }
+
+  return result;
+}
+
 /**
- * Marca una fetch come completata (dopo che i premi finali sono stati assegnati).
+ * Marca una fetch come completata (dopo responso Shinigami/Admin).
+ * Il commento opzionale viene salvato per tracciabilità.
+ * Solo fetch in AWAITING_REWARD possono essere completate.
  */
-export async function markFetchAsCompleted(fetchId: string) {
+export async function markFetchAsCompleted(fetchId: string, opts?: { comment?: string }) {
+  const existing = await db.query.fetches.findFirst({
+    where: eq(fetches.id, fetchId),
+    columns: { completionStatus: true },
+  });
+  if (!existing) throw new Error("Fetch non trovata");
+  if (existing.completionStatus !== "AWAITING_REWARD") {
+    throw new Error("Solo fetch in attesa di responso possono essere completate");
+  }
   const [row] = await db
     .update(fetches)
     .set({
-      completionStatus: 'COMPLETED',
+      completionStatus: "COMPLETED",
+      responsoComment: opts?.comment?.trim() || null,
     })
     .where(eq(fetches.id, fetchId))
     .returning();

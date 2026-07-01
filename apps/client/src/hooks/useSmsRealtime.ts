@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
@@ -40,20 +40,27 @@ export function useSmsRealtime(options: {
     createdAt: string;
   }) => void;
   onUnreadUpdate?: () => void;
+  /** Notifica responso Fetch dal Master (arriva come messaggio di sistema). */
+  onFetchResponso?: (payload: { fetchId: string; fetchTitle: string; comment: string | null }) => void;
   /** CharacterId corrente (per determinare se il messaggio è ricevuto o inviato). */
   myCharacterId?: string | null;
 }): {
   connected: boolean;
 } {
-  const { onNewMessage, onUnreadUpdate, myCharacterId } = options;
+  const { onNewMessage, onUnreadUpdate, onFetchResponso, myCharacterId } = options;
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const onNewMessageRef = useRef(onNewMessage);
   const onUnreadUpdateRef = useRef(onUnreadUpdate);
+  const onFetchResponsoRef = useRef(onFetchResponso);
   const myCharacterIdRef = useRef(myCharacterId);
-  onNewMessageRef.current = onNewMessage;
-  onUnreadUpdateRef.current = onUnreadUpdate;
-  myCharacterIdRef.current = myCharacterId;
+
+  useLayoutEffect(() => {
+    onNewMessageRef.current = onNewMessage;
+    onUnreadUpdateRef.current = onUnreadUpdate;
+    onFetchResponsoRef.current = onFetchResponso;
+    myCharacterIdRef.current = myCharacterId;
+  }, [onNewMessage, onUnreadUpdate, onFetchResponso, myCharacterId]);
 
   useEffect(() => {
     const token = getToken();
@@ -82,11 +89,30 @@ export function useSmsRealtime(options: {
           content?: string;
           createdAt?: string;
           me?: { id: string; name: string };
+          fetchId?: string;
+          fetchTitle?: string;
+          comment?: string;
         };
         if (data.type === "welcome" && data.me?.id) {
-          // Aggiorna myCharacterId quando riceviamo il welcome message (prima che arrivi qualsiasi SMS)
           myCharacterIdRef.current = data.me.id;
-          console.debug("[SMS] Welcome message received, myCharacterId set to:", data.me.id);
+        }
+        if (
+          data.type === "fetch_responso" &&
+          typeof data.fetchId === "string" &&
+          typeof data.fetchTitle === "string"
+        ) {
+          // Deduplicazione: evita notifiche ripetute per la stessa fetch (es. riconnessione, multi-tab)
+          const key = `fetch_responso_${data.fetchId}`;
+          const last = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(key) : null;
+          const now = Date.now();
+          if (last && now - parseInt(last, 10) < 60000) return; // già notificato negli ultimi 60s
+          if (typeof sessionStorage !== "undefined") sessionStorage.setItem(key, String(now));
+          onFetchResponsoRef.current?.({
+            fetchId: data.fetchId,
+            fetchTitle: data.fetchTitle,
+            comment: typeof data.comment === "string" ? data.comment : null,
+          });
+          playNotificationSound();
         }
         if (data.type === "sms_message" && data.id && data.senderId && data.recipientId && data.content && data.createdAt) {
           const msg = {
@@ -147,7 +173,8 @@ export function useSmsRealtime(options: {
       wsRef.current = null;
       setConnected(false);
     };
-  }, [myCharacterId]);
+    // Connessione stabile: callback e myCharacterId aggiornati via ref (useLayoutEffect sopra).
+  }, []);
 
   return { connected };
 }

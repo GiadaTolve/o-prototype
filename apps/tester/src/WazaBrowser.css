@@ -1,0 +1,106 @@
+/* Browser Waza — bulletin collassabile (Dark Arcane) */
+.wb-bulletin {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border-color, rgba(162, 112, 255, 0.35));
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.wb-bulletin summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent-violet-light);
+  background: rgba(162, 112, 255, 0.08);
+}
+
+.wb-bulletin summary::-webkit-details-marker {
+  display: none;
+}
+
+.wb-bulletin summary::before {
+  content: '▸ ';
+  color: var(--accent-gold);
+  margin-right: 0.25rem;
+}
+
+.wb-bulletin[open] summary::before {
+  content: '▾ ';
+}
+
+.wb-bulletin summary:hover {
+  color: var(--accent-gold);
+}
+
+.wb-bulletin-body {
+  padding: 0.75rem 1rem 0.9rem;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  font-size: 0.8rem;
+  color: var(--accent-gold, #c9a84a);
+}
+
+.wb-bulletin-hint {
+  font-size: 0.72rem;
+  color: var(--accent-violet-light);
+  opacity: 0.85;
+  margin-bottom: 0.65rem;
+  line-height: 1.45;
+}
+
+.wb-bulletin-row {
+  margin-bottom: 0.5rem;
+}
+
+.wb-bulletin-row:last-child {
+  margin-bottom: 0;
+}
+
+.wb-bulletin-label {
+  color: var(--accent-violet, #a270ff);
+  font-weight: 600;
+}
+
+.wb-bulletin-code {
+  display: block;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--accent-violet-light);
+}
+
+.wb-bulletin-formulas-block {
+  margin-bottom: 0.25rem;
+}
+
+.wb-bulletin-sample-inline {
+  margin-top: 6px;
+  font-size: 0.74rem;
+  color: var(--accent-violet-light);
+  opacity: 0.92;
+}
+
+.wb-bulletin-quadrant-extra {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.wb-bulletin-sample {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.wb-bulletin-sample-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  margin-bottom: 0.45rem;
+}

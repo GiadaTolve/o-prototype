@@ -9,8 +9,9 @@ import { DashboardCenter } from "@/components/dashboard/DashboardCenter";
 import { DashboardRightCol } from "@/components/dashboard/DashboardRightCol";
 import { DashboardFooter } from "@/components/dashboard/DashboardFooter";
 import { DashboardWindowPanel } from "@/components/dashboard/DashboardWindowPanel";
+import { DashboardMobileLayout } from "@/components/dashboard/DashboardMobileLayout";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/Button";
-import { ToastContainer } from "@/components/ui/Toast";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { WindowId, CharacterSummary, Presente } from "@/components/dashboard/types";
 import { getMockPresenti } from "@/components/dashboard/types";
@@ -18,6 +19,10 @@ import { roomToPrefettura, getChatLocationByRoomId, GAME_MAPS } from "@/config/m
 import { useRealtime } from "@/hooks/useRealtime";
 import { useSmsRealtime } from "@/hooks/useSmsRealtime";
 import { api } from "@/lib/api";
+import { isCharacterMeFound, characterMeToSummary } from "@/lib/character-me";
+import { toast } from "@/components/ui/Toast";
+import { LevelUpOverlay } from "@/components/dashboard/LevelUpOverlay";
+import type { LevelUpWsPayload } from "@/hooks/useRealtime";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -34,7 +39,25 @@ export default function DashboardPage() {
   const [forumTrigger, setForumTrigger] = useState(0);
   const [gestioneTrigger, setGestioneTrigger] = useState(0);
   const [smsUnread, setSmsUnread] = useState(0);
+  const [smsNotificationVisible, setSmsNotificationVisible] = useState(false);
+  const [notificheUnread, setNotificheUnread] = useState(0);
   const [profileCharacterId, setProfileCharacterId] = useState<string | null>(null);
+  /** Target per apertura diretta SMS da Presenti: { id, name }. Usato solo all'apertura. */
+  const [smsTargetCharacterId, setSmsTargetCharacterId] = useState<{ id: string; name: string } | null>(null);
+  const [levelUpDismissed, setLevelUpDismissed] = useState(false);
+
+  const isMobile = useIsMobile();
+
+  const reloadChar = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const data = await api.get("/characters/me");
+      if (isCharacterMeFound(data)) setChar(characterMeToSummary(data));
+    } catch (e) {
+      console.error("Errore ricarica personaggio:", e);
+    }
+  }, []);
 
   const fetchSmsUnread = useCallback(async () => {
     try {
@@ -49,17 +72,77 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Carica il badge all'avvio e quando cambia il character
+  const fetchNotificationsUnread = useCallback(async () => {
+    try {
+      const d = (await api.get("/notifications/unread-count")) as { count?: number };
+      setNotificheUnread(typeof d.count === "number" ? d.count : 0);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Carica i badge all'avvio
   useEffect(() => {
     fetchSmsUnread();
-  }, [fetchSmsUnread]);
+    fetchNotificationsUnread();
+  }, [fetchSmsUnread, fetchNotificationsUnread]);
 
-  // Aggiorna il badge anche quando char viene caricato (potrebbe esserci un messaggio in arrivo)
+  // Aggiorna i badge quando char viene caricato
   useEffect(() => {
     if (char?.id) {
       fetchSmsUnread();
+      fetchNotificationsUnread();
     }
-  }, [char?.id, fetchSmsUnread]);
+  }, [char?.id, fetchSmsUnread, fetchNotificationsUnread]);
+
+  useEffect(() => {
+    const onHp = (e: Event) => {
+      const d = (e as CustomEvent<{ characterId: string; hpCurrent: number; hpMax: number }>).detail;
+      if (!d?.characterId || d.characterId !== char?.id) return;
+      setChar((prev) =>
+        prev
+          ? {
+              ...prev,
+              computed: {
+                ...(prev.computed ?? {}),
+                hpMax: d.hpMax,
+                hpCurrent: d.hpCurrent,
+                body: d.hpMax,
+              },
+            }
+          : prev,
+      );
+    };
+    window.addEventListener("characterHpUpdated", onHp);
+    return () => window.removeEventListener("characterHpUpdated", onHp);
+  }, [char?.id]);
+
+  useEffect(() => {
+    const onCs = (e: Event) => {
+      const d = (e as CustomEvent<{
+        characterId: string;
+        csCurrent: number;
+        csCapacity: number;
+        accumulating: boolean;
+      }>).detail;
+      if (!d?.characterId || d.characterId !== char?.id) return;
+      setChar((prev) =>
+        prev
+          ? {
+              ...prev,
+              computed: {
+                ...(prev.computed ?? {}),
+                csCurrent: d.csCurrent,
+                csCapacity: d.csCapacity,
+                csAccumulating: d.accumulating,
+              },
+            }
+          : prev,
+      );
+    };
+    window.addEventListener("characterChronoUpdated", onCs);
+    return () => window.removeEventListener("characterChronoUpdated", onCs);
+  }, [char?.id]);
 
   // WebSocket per SMS real-time (sempre attivo per notifiche sonore e badge)
   // Passa myCharacterId se disponibile, altrimenti sarà ottenuto dal welcome message o da /characters/me
@@ -67,9 +150,22 @@ export default function DashboardPage() {
     onUnreadUpdate: fetchSmsUnread,
     myCharacterId: char?.id ?? null,
     onNewMessage: (msg) => {
-      // Aggiorna il badge quando arriva un nuovo messaggio (anche se char non è ancora caricato)
       console.debug("[SMS] New message received in DashboardPage", msg);
       fetchSmsUnread();
+      // Mostra "*drin drin!*" solo se il messaggio è per noi (ricevuto, non inviato)
+      if (char?.id && msg.recipientId === char.id && msg.senderId !== char.id) {
+        setSmsNotificationVisible(true);
+        setTimeout(() => setSmsNotificationVisible(false), 4000);
+      }
+    },
+    onFetchResponso: (p) => {
+      const msg = p.comment
+        ? `Responso per "${p.fetchTitle}": ${p.comment}`
+        : `Il Master ha completato il responso per "${p.fetchTitle}". Consulta la Scheda → Registrazioni.`;
+      toast.success(msg, 8000);
+      fetchNotificationsUnread();
+      setOpenWindow((prev) => (prev === "fetch" ? prev : "notifiche"));
+      setLoweredWindows((l) => l.filter((w) => w !== "fetch" && w !== "notifiche"));
     },
   });
 
@@ -78,27 +174,11 @@ export default function DashboardPage() {
     setLoweredWindows((prev) => prev.filter((w) => w !== id));
   }, []);
 
-  /** Unico punto di ingresso: apri scheda personaggio (la mia = scheda completa, altrui = profilo pubblico o completa se mod/admin). */
+  /** Unico punto di ingresso: apri scheda personaggio. Sempre la stessa Scheda: la mia = completa/edit, altrui = censurata/read-only (admin/mod possono editare). */
   const openCharacterSheet = useCallback(
-    async (characterId: string) => {
-      // Se è la mia scheda, apri direttamente la scheda completa
-      if (char?.id && characterId === char.id) {
-        open("scheda");
-        return;
-      }
-      // Per altri personaggi, verifica i permessi di visibilità
-      try {
-        const publicData = (await api.get(`/characters/${characterId}/public`)) as { visibility?: { canSeeFullSheet?: boolean } };
-        const canSeeFullSheet = publicData?.visibility?.canSeeFullSheet ?? false;
-        setProfileCharacterId(characterId);
-        // Se mod/admin, apri la scheda completa (non censurata); altrimenti profilo pubblico
-        open(canSeeFullSheet ? "scheda" : "profilo");
-      } catch (e) {
-        // Fallback: apri profilo pubblico in caso di errore
-        console.error("Errore verifica permessi:", e);
-        setProfileCharacterId(characterId);
-        open("profilo");
-      }
+    (characterId: string) => {
+      setProfileCharacterId(char?.id && characterId === char.id ? null : characterId);
+      open("scheda");
     },
     [char?.id, open]
   );
@@ -116,10 +196,59 @@ export default function DashboardPage() {
   const close = useCallback((id: WindowId) => {
     setOpenWindow((prev) => (prev === id ? null : prev));
     setLoweredWindows((prev) => prev.filter((w) => w !== id));
+    if (id === "sms") setSmsTargetCharacterId(null);
   }, []);
 
-  const { users: usersInRoom, messages, sendMessage, connected: chatConnected } = useRealtime(roomId);
+  const handleLevelUpFromWs = useCallback((payload: LevelUpWsPayload) => {
+    const gained = payload.pendingLevelUp.expGained;
+    setChar((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        pendingLevelUp: payload.pendingLevelUp,
+        keys: payload.newKeys ?? prev.keys,
+        experienceTotal: payload.newExpTotal ?? (prev.experienceTotal ?? 0) + gained,
+        experienceSpendable: (prev.experienceSpendable ?? 0) + gained,
+      };
+    });
+    setLevelUpDismissed(false);
+  }, []);
+
+  const handleLevelUpSkiru = useCallback(async () => {
+    try {
+      await api.patch("/characters/me/level-up-banner", { action: "ack" });
+      setChar((prev) => (prev ? { ...prev, pendingLevelUp: null } : prev));
+      setLevelUpDismissed(true);
+      open("waza");
+      await reloadChar();
+    } catch (e) {
+      console.error("Errore acknowledge level-up:", e);
+      toast.error("Impossibile confermare il level-up.");
+    }
+  }, [open, reloadChar]);
+
+  const handleLevelUpSalta = useCallback(async () => {
+    try {
+      await api.patch("/characters/me/level-up-banner", { action: "dismiss" });
+    } catch {
+      /* ignore */
+    }
+    setLevelUpDismissed(true);
+  }, []);
+
+  useEffect(() => {
+    if (char?.pendingLevelUp) setLevelUpDismissed(false);
+  }, [char?.pendingLevelUp]);
+
+  const showLevelUpOverlay = Boolean(char?.pendingLevelUp) && !levelUpDismissed;
+
+  const { users: usersInRoom, messages, sendMessage, connected: chatConnected, connectionFailed } = useRealtime(
+    roomId,
+    { onLevelUp: handleLevelUpFromWs },
+  );
   const [presenti, setPresenti] = useState<Presente[]>([]);
+  /** true se la lista viene da fallback locale (API assente / token / errore). */
+  const [presentiAreMock, setPresentiAreMock] = useState(false);
   const prefettura = useMemo(() => roomToPrefettura(roomId ?? ""), [roomId]);
 
   // Carica lista presenti (tutti gli utenti online) periodicamente
@@ -154,21 +283,28 @@ export default function DashboardPage() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          // Se non c'è token, usa mock
           const mockPresenti = getMockPresenti(typeof char?.name === "string" ? char.name : undefined);
           setPresenti(mockPresenti);
+          setPresentiAreMock(true);
           return;
         }
-        
-        const data = (await api.get("/presence/all")) as Array<{ id: string; name: string; room: string | null }>;
-        // Assicuriamoci che data sia un array
+
+        const data = (await api.get("/presence/all")) as Array<{
+          id: string;
+          name: string;
+          room: string | null;
+          isShadow?: boolean;
+          level?: number;
+          paragon?: number;
+        }>;
         if (!Array.isArray(data)) {
           console.warn("[Presenti] Risposta non è un array:", data);
           const mockPresenti = getMockPresenti(typeof char?.name === "string" ? char.name : undefined);
           setPresenti(mockPresenti);
+          setPresentiAreMock(true);
           return;
         }
-        
+
         const myId = char?.id;
         const presentiList: Presente[] = data.map((u) => ({
           id: u.id,
@@ -176,18 +312,21 @@ export default function DashboardPage() {
           zone: getZoneLabel(u.room),
           room: u.room ?? undefined,
           isMe: myId !== undefined && u.id === myId,
+          isShadow: u.isShadow ?? false,
+          level: u.level,
+          paragon: u.paragon ?? 0,
         }));
         setPresenti(presentiList);
+        setPresentiAreMock(false);
       } catch (e) {
-        // Se è un errore di rete (server non raggiungibile), usa mock silenziosamente
         if (e instanceof Error && e.message.includes("non raggiungibile")) {
           console.warn("[Presenti] Server non raggiungibile, uso mock");
         } else {
           console.error("[Presenti] Errore caricamento:", e);
         }
-        // Fallback a mock in caso di errore
         const mockPresenti = getMockPresenti(typeof char?.name === "string" ? char.name : undefined);
         setPresenti(mockPresenti);
+        setPresentiAreMock(true);
       }
     };
 
@@ -197,19 +336,24 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [char?.id, char?.name]);
 
-  // Ascolta evento globale: clic su nome in Presenti / Presenti Estesi → stessa logica di "apri scheda personaggio"
+  // Ascolta evento globale: clic su nome in Presenti → apri SMS con target; altrimenti apri scheda personaggio
   useEffect(() => {
     const handler = (event: Event) => {
-      const custom = event as CustomEvent<{ characterId?: string }>;
+      const custom = event as CustomEvent<{ characterId?: string; openSms?: boolean; name?: string }>;
       const id = custom.detail?.characterId;
       if (!id) return;
-      openCharacterSheet(id);
+      if (custom.detail?.openSms) {
+        setSmsTargetCharacterId({ id, name: custom.detail.name ?? "Utente" });
+        open("sms");
+      } else {
+        openCharacterSheet(id);
+      }
     };
     window.addEventListener("openProfileWindow", handler as EventListener);
     return () => {
       window.removeEventListener("openProfileWindow", handler as EventListener);
     };
-  }, [openCharacterSheet]);
+  }, [openCharacterSheet, open]);
 
   // Ascolta eventi per aprire finestra housing dalla scheda
   useEffect(() => {
@@ -221,6 +365,28 @@ export default function DashboardPage() {
       window.removeEventListener('openHousingWindow', handleOpenHousingWindow);
     };
   }, []);
+
+  // Chiudi Scheda automaticamente quando si apre la chat di casa (Entra in Casa)
+  useEffect(() => {
+    const handleOpenHousingChat = () => {
+      close("scheda");
+    };
+    window.addEventListener('openHousingChat', handleOpenHousingChat as EventListener);
+    return () => {
+      window.removeEventListener('openHousingChat', handleOpenHousingChat as EventListener);
+    };
+  }, [close]);
+
+  // Chiudi finestra su evento closeWindow (es. Entra nel Circus → chiudi Spazio Eventi)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ windowId?: string }>;
+      const id = ev.detail?.windowId;
+      if (id) close(id as WindowId);
+    };
+    window.addEventListener("closeWindow", handler as EventListener);
+    return () => window.removeEventListener("closeWindow", handler as EventListener);
+  }, [close]);
 
   // Ascolta postMessage da iframe (es. gestione) per aprire profilo personaggio
   useEffect(() => {
@@ -244,16 +410,15 @@ export default function DashboardPage() {
     }
     api.get("/characters/me")
       .then((data) => {
-        if (data.found && data.isOnboarded === false) {
-          router.replace("/create-character");
+        if (isCharacterMeFound(data)) {
+          const charData = characterMeToSummary(data);
+          setChar(charData);
+          if (charData.id) {
+            fetchSmsUnread();
+          }
           return;
         }
-        const charData = data as CharacterSummary;
-        setChar(charData);
-        // Se abbiamo l'id, aggiorna subito il badge (potrebbe esserci un messaggio in arrivo)
-        if (charData?.id) {
-          fetchSmsUnread();
-        }
+        setError("Personaggio non trovato. Contatta lo staff.");
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
@@ -276,7 +441,7 @@ export default function DashboardPage() {
         {/* Content Skeleton */}
         <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 max-w-[1800px] w-full mx-auto">
           {/* Left Col Skeleton */}
-          <div className="w-full lg:w-[280px] space-y-4">
+          <div className="w-full lg:w-[360px] space-y-4">
             <Skeleton variant="rounded" height={120} />
             <Skeleton variant="rounded" height={200} />
             <Skeleton variant="rounded" height={150} />
@@ -286,7 +451,7 @@ export default function DashboardPage() {
             <Skeleton variant="rounded" height={400} />
           </div>
           {/* Right Col Skeleton */}
-          <div className="w-full lg:w-[280px] space-y-4">
+          <div className="w-full lg:w-[340px] space-y-4">
             <Skeleton variant="rounded" height={150} />
             <Skeleton variant="rounded" height={200} />
           </div>
@@ -313,6 +478,50 @@ export default function DashboardPage() {
     );
   }
 
+  if (isMobile) {
+    return (
+      <>
+      <DashboardMobileLayout
+        char={char}
+        presenti={presenti}
+        presentiAreMock={presentiAreMock}
+        roomId={roomId}
+        mapTrigger={mapTrigger}
+        shinigamiTrigger={shinigamiTrigger}
+        guidaTrigger={guidaTrigger}
+        ambientazioneTrigger={ambientazioneTrigger}
+        forumTrigger={forumTrigger}
+        gestioneTrigger={gestioneTrigger}
+        messages={messages}
+        sendMessage={sendMessage}
+        chatConnected={chatConnected}
+        chatConnectionFailed={connectionFailed}
+        usersInRoom={roomId ? usersInRoom : []}
+        openWindow={openWindow}
+        smsUnread={smsUnread}
+        notificheUnread={notificheUnread}
+        profileCharacterId={profileCharacterId}
+        smsTargetCharacterId={smsTargetCharacterId}
+        onRoomChange={setRoomId}
+        onOpen={open}
+        onClose={close}
+        openCharacterSheet={openCharacterSheet}
+        fetchSmsUnread={fetchSmsUnread}
+        fetchNotificationsUnread={fetchNotificationsUnread}
+        onCharUpdate={reloadChar}
+      />
+      {char?.pendingLevelUp && (
+        <LevelUpOverlay
+          pending={char.pendingLevelUp}
+          visible={showLevelUpOverlay}
+          onSkiru={handleLevelUpSkiru}
+          onSalta={handleLevelUpSalta}
+        />
+      )}
+      </>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <DashboardHeader
@@ -324,6 +533,7 @@ export default function DashboardPage() {
           onOpenGestione={() => setGestioneTrigger((t) => t + 1)}
           canAccessGestione={char?.canAccessGestione}
           canAccessShinigami={char?.canAccessShinigami}
+          smsNotification={smsNotificationVisible}
         />
       <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 max-w-[1800px] w-full mx-auto min-h-0 overflow-hidden">
         <DashboardLeftCol
@@ -348,6 +558,7 @@ export default function DashboardPage() {
           messages={messages}
           sendMessage={sendMessage}
           chatConnected={chatConnected}
+          chatConnectionFailed={connectionFailed}
           usersInRoom={roomId ? usersInRoom : []}
           canAccessShinigami={char?.canAccessShinigami}
           canAccessGestione={char?.canAccessGestione}
@@ -355,9 +566,11 @@ export default function DashboardPage() {
         />
         <DashboardRightCol
           presenti={presenti}
+          presentiAreMock={presentiAreMock}
           prefettura={prefettura}
           onOpenPresenti={() => open("presenti")}
           onOpenFetch={() => open("fetch")}
+          onOpenSpazioEventi={() => open("spazioEventi")}
         />
       </div>
       <DashboardFooter loweredWindows={loweredWindows} onRaiseFromDock={raiseFromDock} />
@@ -366,27 +579,25 @@ export default function DashboardPage() {
           windowId={openWindow}
           onLower={lower}
           onClose={close}
-          char={openWindow === "scheda" || openWindow === "shop" ? char : undefined}
+          char={openWindow === "scheda" || openWindow === "shop" || openWindow === "waza" ? char : undefined}
           presenti={openWindow === "presenti" ? presenti : undefined}
-          profileCharacterId={openWindow === "scheda" || openWindow === "profilo" ? profileCharacterId ?? undefined : undefined}
-          onCharUpdate={async () => {
-            // Ricarica il personaggio dopo l'acquisto
-            const token = localStorage.getItem("token");
-            if (token) {
-              try {
-                const data = await api.get("/characters/me");
-                if (data.found) {
-                  setChar(data as CharacterSummary);
-                }
-              } catch (e) {
-                console.error("Errore nel ricaricare il personaggio:", e);
-              }
-            }
-          }}
+          presentiAreMock={openWindow === "presenti" ? presentiAreMock : undefined}
+          profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}
+          smsTargetCharacterId={openWindow === "sms" ? smsTargetCharacterId : undefined}
+          onCharUpdate={reloadChar}
           onUnreadChange={openWindow === "sms" ? fetchSmsUnread : undefined}
+          onNotificationsUnreadChange={fetchNotificationsUnread}
+          canAccessGestione={char?.canAccessGestione}
         />
       )}
-      <ToastContainer />
+      {char?.pendingLevelUp && (
+        <LevelUpOverlay
+          pending={char.pendingLevelUp}
+          visible={showLevelUpOverlay}
+          onSkiru={handleLevelUpSkiru}
+          onSalta={handleLevelUpSalta}
+        />
+      )}
     </div>
   );
 }

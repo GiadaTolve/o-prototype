@@ -13,6 +13,12 @@ const DOCK_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   fetch: icons.trophy,
   banca: icons.banca,
   housing: icons.home,
+  profilo: icons.user,
+  waza: icons.waza,
+  ordine: icons.ordine,
+  bestiario: icons.trophy,
+  notifiche: icons.bell,
+  spazioEventi: icons.gamepad,
 };
 
 type Props = {

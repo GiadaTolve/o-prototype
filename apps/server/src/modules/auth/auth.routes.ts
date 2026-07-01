@@ -1,11 +1,13 @@
 import { Elysia, t } from 'elysia'
 import { jwt } from '@elysiajs/jwt'
-import { eq, ilike } from 'drizzle-orm'
+import { eq, ilike, and, gt, isNull } from 'drizzle-orm'
+import { randomBytes } from 'crypto'
 
 import { db } from '../../plugins/db'
-import { users, characters } from '../../db/schema'
+import { users, characters, passwordResetTokens } from '../../db/schema'
 import { JWT_SECRET } from '../../config'
 import { registerUser } from './auth.service'
+import { sendPasswordResetEmail } from '../../lib/email'
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
   .use(jwt({ name: 'jwt', secret: JWT_SECRET }))
@@ -80,15 +82,75 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         set.status = 200
         return { success: true, message: "Se l'email è registrata, riceverai un link di reset." }
       }
-      // TODO: generare token, salvare in DB, inviare email. Per ora risposta generica.
+
+      const token = randomBytes(32).toString('hex')
+      const tokenHash = await Bun.password.hash(token, { algorithm: 'bcrypt', cost: 10 })
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 ora
+
+      await db.insert(passwordResetTokens).values({
+        userId: u.id,
+        tokenHash,
+        expiresAt,
+      })
+
+      const { ok, error } = await sendPasswordResetEmail(u.email, token)
+      if (!ok) {
+        set.status = 500
+        return { error: error || "Errore nell'invio email." }
+      }
+
       set.status = 200
       return { success: true, message: "Se l'email è registrata, riceverai un link di reset." }
-    } catch {
+    } catch (e: unknown) {
+      console.error('[auth] forgot-password error:', e)
       set.status = 500
       return { error: "Errore interno." }
     }
   }, {
     body: t.Object({ email: t.String({ format: 'email' }) }),
+  })
+
+  // ===================== RESET PASSWORD (con token) =====================
+  .post('/reset-password', async ({ body, set }) => {
+    try {
+      const { token, newPassword } = body
+      if (!token || newPassword.length < 8) {
+        set.status = 400
+        return { error: "Token mancante o password non valida (min 8 caratteri)." }
+      }
+
+      const rows = await db.query.passwordResetTokens.findMany({
+        where: and(
+          gt(passwordResetTokens.expiresAt, new Date()),
+          isNull(passwordResetTokens.usedAt)
+        ),
+      })
+
+      let matched = false
+      for (const row of rows) {
+        const ok = await Bun.password.verify(token, row.tokenHash)
+        if (ok && row.userId) {
+          matched = true
+          const passwordHash = await Bun.password.hash(newPassword, { algorithm: 'bcrypt', cost: 10 })
+          await db.update(users).set({ passwordHash }).where(eq(users.id, row.userId))
+          await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, row.id))
+          set.status = 200
+          return { success: true, message: "Password aggiornata. Puoi effettuare il login." }
+        }
+      }
+
+      set.status = 400
+      return { error: "Token non valido o scaduto. Richiedi un nuovo link." }
+    } catch (e: unknown) {
+      console.error('[auth] reset-password error:', e)
+      set.status = 500
+      return { error: "Errore interno." }
+    }
+  }, {
+    body: t.Object({
+      token: t.String({ minLength: 1 }),
+      newPassword: t.String({ minLength: 8 }),
+    }),
   })
 
   // =====================

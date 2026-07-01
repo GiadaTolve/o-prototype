@@ -1,0 +1,23 @@
+---
+description: Sistema combattimento Oyasumi — regole e riferimenti
+alwaysApply: true
+---
+
+# Sistema Combattimento Oyasumi
+
+**Spec completa:** `COMBAT_SPEC.md` — consultare per qualsiasi implementazione legata a combattimento, Waza, Chrono Stack.
+
+## Punti fissi (non modificare senza aggiornare COMBAT_SPEC)
+
+- Combattimento **in chat**, non schermata dedicata
+- **Iniziativa:** Reflexes più alto agisce per primo
+- **Chrono Stack:** +3/turno, +1 al difensore per colpo; capacità 20; Overheat = −2 HP/turno per stack oltre 20; Defaticamento dopo 3 turni in OH (−50% stack)
+- **Waza:** costano **CS + Jigoka** (entrambi)
+- **Dadi:** solo su richiesta Master; tira il giocatore
+- Master arbitra; combattimenti validi richiedono Master
+
+## Riferimenti incrociati
+
+- `CHRONO_STACK.md` — accumulo CS, limiti mosse, defaticamento
+- `WAZA_CALCOLI.md` — formule Waza, costi, danno
+- `apps/tester` — Waza & Stats Tester per calcoli da copiare in chat

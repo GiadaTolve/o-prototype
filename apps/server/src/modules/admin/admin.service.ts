@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc, asc, isNull, sql } from 'drizzle-orm'
 import { db } from '../../plugins/db'
-import { users, characters, zoneMessages, locations, banners, dailyEvents, sanctions, jobs, housingTypes, characterHousing } from '../../db/schema'
+import { users, characters, zoneMessages, locations, banners, dailyEvents, sanctions, jobs, housingTypes, characterHousing, creatures } from '../../db/schema'
 import type { UserRole, BanState } from '@domain/security/jwt'
 
 /**
@@ -92,26 +92,53 @@ export async function resetCharacterStats(characterId: string) {
 // LOGS & CHAT ROOMS
 // ==========================================
 
+/** Room IDs noti (da chat.service) + housing. Usati per popolare il Log Viewer anche senza messaggi. */
+const KNOWN_ROOMS = [
+  'kessen__cosmicon__junk_town',
+  'kessen__cosmicon__arcade_palace',
+  'kessen__cosmicon__milky_way',
+  'edo__paradise',
+  'edo__ginza_o_clock',
+  'kotowari__astrolabio',
+  'kotowari__osservatorio',
+  'hamanachi__casa_da_te',
+  'hamanachi__ospedale',
+]
+
 /**
- * Ottiene tutte le chat rooms (zone uniche da zone_messages)
+ * Ottiene tutte le chat rooms: zone uniche da zone_messages + housing + room noti (per avere sempre opzioni).
  */
 export async function getChatRooms() {
-  const rooms = await db
+  const fromDb = await db
     .selectDistinct({ id: zoneMessages.zone, name: zoneMessages.zone })
     .from(zoneMessages)
     .orderBy(asc(zoneMessages.zone))
-  
-  return rooms.map(r => ({ id: r.id, name: r.name }))
+
+  const byZone = new Map<string, string>()
+  for (const r of fromDb) {
+    byZone.set(r.id, r.name)
+  }
+  for (const roomId of KNOWN_ROOMS) {
+    if (!byZone.has(roomId)) byZone.set(roomId, roomId)
+  }
+  return Array.from(byZone.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.id.localeCompare(b.id))
 }
 
 /**
- * Ottiene i log di una chat per una data specifica
+ * Ottiene i log di una chat per una fascia temporale (da... a).
+ * @param chatId - zone/roomId
+ * @param from - ISO string o "date" (YYYY-MM-DD) per inizio giornata
+ * @param to - ISO string o "date" (YYYY-MM-DD) per fine giornata
  */
-export async function getChatLogs(chatId: string, date: string) {
-  const startDate = new Date(date)
-  startDate.setHours(0, 0, 0, 0)
-  const endDate = new Date(date)
-  endDate.setHours(23, 59, 59, 999)
+export async function getChatLogs(chatId: string, from: string, to?: string) {
+  const startDate = new Date(from)
+  if (from.length <= 10) {
+    startDate.setHours(0, 0, 0, 0)
+  }
+  const endDate = to ? new Date(to) : new Date(from)
+  if (!to || to.length <= 10) {
+    endDate.setHours(23, 59, 59, 999)
+  }
 
   const logs = await db
     .select({
@@ -352,6 +379,17 @@ export async function getAllDailyEvents() {
 }
 
 /**
+ * Ottiene gli eventi di oggi (per calendario dashboard, disponibile a tutti gli utenti autenticati)
+ */
+export async function getTodayDailyEvents() {
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  return db.query.dailyEvents.findMany({
+    where: eq(dailyEvents.eventDate, today),
+    orderBy: [asc(dailyEvents.eventDate)],
+  })
+}
+
+/**
  * Crea un nuovo evento giornaliero
  */
 export async function createDailyEvent(data: {
@@ -397,6 +435,48 @@ export async function updateDailyEvent(eventId: string, data: {
  */
 export async function deleteDailyEvent(eventId: string) {
   await db.delete(dailyEvents).where(eq(dailyEvents.id, eventId))
+  return { success: true }
+}
+
+// ==========================================
+// BESTIARIO (PNG)
+// ==========================================
+
+export async function getAdminCreatures() {
+  return db.query.creatures.findMany({
+    orderBy: [asc(creatures.category), asc(creatures.name)],
+  })
+}
+
+export async function createCreature(data: {
+  name: string
+  description?: string
+  imageUrl?: string
+  category: 'HOLIC' | 'PHOBIAS' | 'MUEN'
+  stats?: { hp?: number; attack?: number; defense?: number }
+}) {
+  const [c] = await db.insert(creatures).values(data).returning()
+  return c!
+}
+
+export async function updateCreature(creatureId: string, data: {
+  name?: string
+  description?: string
+  imageUrl?: string
+  category?: 'HOLIC' | 'PHOBIAS' | 'MUEN'
+  stats?: { hp?: number; attack?: number; defense?: number }
+}) {
+  const [updated] = await db
+    .update(creatures)
+    .set(data)
+    .where(eq(creatures.id, creatureId))
+    .returning()
+  if (!updated) throw new Error('PNG non trovato')
+  return updated
+}
+
+export async function deleteCreature(creatureId: string) {
+  await db.delete(creatures).where(eq(creatures.id, creatureId))
   return { success: true }
 }
 

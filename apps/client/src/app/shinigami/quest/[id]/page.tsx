@@ -20,7 +20,7 @@ type Quest = {
 };
 type Participant = { id: string; characterId: string; characterName: string };
 type Reward = { id: string; characterId: string; characterName: string; type: string; value: number | null; description: string | null };
-type VoteAgg = { characterId: string; characterName: string; votes: number };
+type VoteAgg = { characterId: string; characterName: string; votes: number; motivation?: string };
 type QuestMessage = {
   id: string;
   zone: string;
@@ -32,6 +32,8 @@ type QuestMessage = {
   locationTag: string | null;
   createdAt: string;
   pixelIcons?: { ruolo?: string[]; ordine?: string[] };
+  /** Messaggio Shinigami (Master) in modalità masterscreen: mantiene formattazione anche dopo chiusura quest */
+  isMasterscreen?: boolean;
 };
 
 export default function QuestDetailPage() {
@@ -49,26 +51,33 @@ export default function QuestDetailPage() {
   const [addRewardType, setAddRewardType] = useState<"EXP" | "REM" | "ITEM" | "CUSTOM">("EXP");
   const [addRewardVal, setAddRewardVal] = useState("");
   const [votedFor, setVotedFor] = useState("");
+  const [voteMotivation, setVoteMotivation] = useState("");
   const [busy, setBusy] = useState(false);
   const [showReadModal, setShowReadModal] = useState(false);
   const [questMessages, setQuestMessages] = useState<QuestMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
+    setError("");
     try {
-      const [q, p, r, v] = await Promise.all([
-        api.get(`/quests/${id}`),
+      // Carica prima la quest: se fallisce (404, 401), mostriamo l'errore reale
+      const q = await api.get(`/quests/${id}`);
+      setQuest(q as Quest);
+
+      // Poi partecipanti, rewards, votes (se uno fallisce non blocchiamo la pagina)
+      const [p, r, v] = await Promise.allSettled([
         api.get(`/quests/${id}/participants`),
         api.get(`/quests/${id}/rewards`),
         api.get(`/quests/${id}/votes`),
       ]);
-      setQuest(q as Quest);
-      setParticipants(Array.isArray(p) ? p : []);
-      setRewards(Array.isArray(r) ? r : []);
-      setVotes(Array.isArray(v) ? v : []);
+      if (p.status === "fulfilled" && Array.isArray(p.value)) setParticipants(p.value as Participant[]);
+      if (r.status === "fulfilled" && Array.isArray(r.value)) setRewards(r.value as Reward[]);
+      if (v.status === "fulfilled" && Array.isArray(v.value)) setVotes(v.value as VoteAgg[]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Errore");
+      setQuest(null);
     } finally {
       setLoading(false);
     }
@@ -121,12 +130,13 @@ export default function QuestDetailPage() {
   };
 
   const vote = async () => {
-    if (!id || !votedFor || busy) return;
+    if (!id || !votedFor || !voteMotivation.trim() || busy) return;
     setBusy(true);
     setError("");
     try {
-      await api.post(`/quests/${id}/vote`, { votedFor });
+      await api.post(`/quests/${id}/vote`, { votedFor, motivation: voteMotivation.trim() });
       setVotedFor("");
+      setVoteMotivation("");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Errore");
@@ -152,11 +162,14 @@ export default function QuestDetailPage() {
   const loadQuestMessages = useCallback(async () => {
     if (!id) return;
     setLoadingMessages(true);
+    setMessagesError(null);
     try {
-      const messages = await api.get(`/quests/${id}/messages`) as QuestMessage[];
+      const messages = (await api.get(`/quests/${id}/messages`)) as QuestMessage[];
       setQuestMessages(messages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Errore caricamento messaggi");
+      const msg = e instanceof Error ? e.message : "Errore caricamento messaggi";
+      setMessagesError(msg);
+      setError(msg);
     } finally {
       setLoadingMessages(false);
     }
@@ -164,13 +177,15 @@ export default function QuestDetailPage() {
 
   const openReadModal = async () => {
     setShowReadModal(true);
+    setQuestMessages([]);
     await loadQuestMessages();
   };
 
   if (loading || !quest) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
         {loading ? "Caricamento…" : "Quest non trovata."}
+        {error && <p className="text-red-400 text-sm text-center max-w-md">{error}</p>}
       </div>
     );
   }
@@ -254,20 +269,34 @@ export default function QuestDetailPage() {
 
       <section className="border border-[var(--border-color)] rounded-lg p-4 mb-4">
         <h2 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] mb-2">Let this character shine!</h2>
+        <p className="text-xs text-gray-500 mb-2">Solo il Master assegna 1 punto shine a un partecipante (visibile solo ad Admin/Mod).</p>
         <ul className="space-y-1 text-sm">
           {votes.map((v) => (
-            <li key={v.characterId}>{v.characterName}: {v.votes} voti</li>
+            <li key={v.characterId}>
+              {v.characterName}: {v.votes} shine
+              {v.motivation && <span className="block text-xs text-gray-400 mt-0.5 italic">&ldquo;{v.motivation}&rdquo;</span>}
+            </li>
           ))}
         </ul>
-        {!isClosed && amParticipant && participants.length > 1 && (
-          <form onSubmit={(e) => { e.preventDefault(); vote(); }} className="mt-3 flex flex-wrap gap-2">
-            <select value={votedFor} onChange={(e) => setVotedFor(e.target.value)} className="px-2 py-1 rounded border border-[var(--border-color)] bg-black/40 text-sm">
-              <option value="">Vota per…</option>
-              {participants.filter((p) => p.characterId !== myId).map((p) => (
+        {!isClosed && amCreator && participants.length > 0 && (
+          <form onSubmit={(e) => { e.preventDefault(); vote(); }} className="mt-3 space-y-2">
+            <select value={votedFor} onChange={(e) => setVotedFor(e.target.value)} className="w-full max-w-xs px-2 py-1 rounded border border-[var(--border-color)] bg-black/40 text-sm">
+              <option value="">Assegna shine a…</option>
+              {participants.map((p) => (
                 <option key={p.characterId} value={p.characterId}>{p.characterName}</option>
               ))}
             </select>
-            <button type="submit" disabled={busy || !votedFor} className="px-3 py-1 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-sm">Vota</button>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Motivazione (obbligatoria)</label>
+              <textarea
+                value={voteMotivation}
+                onChange={(e) => setVoteMotivation(e.target.value)}
+                placeholder="Scrivi perché questo personaggio ha brillato..."
+                rows={3}
+                className="w-full px-2 py-1 rounded border border-[var(--border-color)] bg-black/40 text-sm resize-y min-h-[4rem]"
+              />
+            </div>
+            <button type="submit" disabled={busy || !votedFor || !voteMotivation.trim()} className="px-3 py-1 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-sm">Assegna shine</button>
           </form>
         )}
       </section>
@@ -289,6 +318,7 @@ export default function QuestDetailPage() {
                 onClick={() => {
                   setShowReadModal(false);
                   setQuestMessages([]);
+                  setMessagesError(null);
                 }}
                 className="text-gray-400 hover:text-[var(--accent-gold)]"
               >
@@ -308,8 +338,13 @@ export default function QuestDetailPage() {
             >
               {loadingMessages ? (
                 <p className="text-gray-400 text-center">Caricamento messaggi...</p>
+              ) : messagesError ? (
+                <p className="text-amber-400 text-center py-8">{messagesError}</p>
               ) : questMessages.length === 0 ? (
-                <p className="text-gray-400 text-center">Nessun messaggio disponibile.</p>
+                <div className="text-gray-400 text-center space-y-1">
+                  <p>Nessun messaggio disponibile in questo periodo.</p>
+                  <p className="text-xs text-gray-500">I messaggi vengono registrati dalla chat collegata alla quest dall&apos;avvio (Registra Quest). Invii messaggi nella chat dopo aver creato la quest per vederli qui.</p>
+                </div>
               ) : (
                 questMessages.map((m) => (
                   <QuestMessageBlock key={m.id} message={m} />
@@ -337,6 +372,20 @@ function QuestMessageBlock({ message }: { message: QuestMessage }) {
           ✦ MESSAGGIO GLOBALE ✦
         </strong>
         <p className="m-0 font-normal text-sm text-gray-200" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+      </div>
+    );
+  }
+  
+  // Messaggio Masterscreen (Shinigami autore della quest): mantiene formattazione anche dopo chiusura
+  if (message.isMasterscreen) {
+    return (
+      <div className="w-full mb-6 p-5 bg-black/40 border border-[var(--accent-gold)]/30 rounded shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] relative">
+        <div className="masterscreen-format font-sans text-[13px] leading-relaxed whitespace-pre-wrap mb-4">
+          <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+        </div>
+        <div className="text-right font-display text-[11px] font-bold text-[var(--accent-gold)] uppercase tracking-wider opacity-80">
+          — Shinigami ({message.name}{message.surname ? ` ${message.surname}` : ""})
+        </div>
       </div>
     );
   }

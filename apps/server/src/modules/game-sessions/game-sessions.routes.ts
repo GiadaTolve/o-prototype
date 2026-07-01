@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import { characters } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth.plugin'
+import { characterService } from '../characters/characters.service'
+import { canAccessPrivateChatAsync } from '../housing/housing.service'
 import {
   createGameSession,
   getGameSession,
@@ -13,6 +15,7 @@ import {
   cancelGameSession,
   refreshSessionParticipants,
   getCharacterSessions,
+  getGameSessionMessages,
 } from './game-sessions.service'
 
 export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
@@ -23,6 +26,10 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
       .post(
         '/',
         async ({ body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -31,12 +38,21 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 404
               return { error: 'Personaggio non trovato' }
             }
+            const roomId = body.roomId
+            if (roomId.startsWith('housing_')) {
+              const hasAccess = await canAccessPrivateChatAsync(char.id, roomId, user, char)
+              if (!hasAccess) {
+                set.status = 403
+                return { error: 'Accesso negato a questa chat privata' }
+              }
+            }
 
             const session = await createGameSession(
               char.id,
-              body.roomId,
+              roomId,
               body.fetchId || null,
-              body.title || null
+              body.title || null,
+              body.questId || null
             )
             return session
           } catch (e: unknown) {
@@ -49,6 +65,7 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
             roomId: t.String(),
             fetchId: t.Optional(t.String()),
             title: t.Optional(t.String()),
+            questId: t.Optional(t.String()),
           }),
         }
       )
@@ -56,9 +73,17 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
       // Ottiene la sessione attiva in una room
       .get(
         '/room/:roomId/active',
-        async ({ params, set }) => {
+        async ({ params, user, set }) => {
           try {
-            const session = await getActiveSessionInRoom(params.roomId)
+            const roomId = params.roomId
+            if (roomId.startsWith('housing_')) {
+              const char = await characterService.getCharacterByUserId(user!.id)
+              if (!char || !(await canAccessPrivateChatAsync(char.id, roomId, user!, char))) {
+                set.status = 403
+                return { error: 'Accesso negato a questa chat privata' }
+              }
+            }
+            const session = await getActiveSessionInRoom(roomId)
             return session || null
           } catch (e: unknown) {
             set.status = 400
@@ -70,15 +95,58 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
+      // Messaggi di una giocata (solo per partecipanti/creator – per Leggi da Scheda/Registrazioni)
+      .get(
+        '/:id/messages',
+        async ({ params, user, set }) => {
+          try {
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 401
+              return { error: 'Personaggio non trovato' }
+            }
+            const session = await getGameSession(params.id)
+            if (!session) {
+              set.status = 404
+              return { error: 'Sessione non trovata' }
+            }
+            if (session.status !== 'CLOSED') {
+              set.status = 400
+              return { error: 'Solo sessioni chiuse hanno messaggi consultabili' }
+            }
+            const isCreator = session.creatorId === char.id
+            const isParticipant = session.participants?.some((p: { characterId: string }) => p.characterId === char.id)
+            if (!isCreator && !isParticipant) {
+              set.status = 403
+              return { error: 'Puoi leggere solo le tue giocate' }
+            }
+            const messages = await getGameSessionMessages(params.id)
+            return { session: { id: session.id, title: session.title, roomId: session.roomId }, messages }
+          } catch (e: unknown) {
+            set.status = 400
+            return { error: e instanceof Error ? e.message : 'Errore recupero messaggi' }
+          }
+        },
+        { params: t.Object({ id: t.String() }) }
+      )
+
       // Ottiene una sessione specifica
       .get(
         '/:id',
-        async ({ params, set }) => {
+        async ({ params, user, set }) => {
           try {
             const session = await getGameSession(params.id)
             if (!session) {
               set.status = 404
               return { error: 'Sessione non trovata' }
+            }
+            const roomId = session.roomId
+            if (roomId.startsWith('housing_')) {
+              const char = await characterService.getCharacterByUserId(user!.id)
+              if (!char || !(await canAccessPrivateChatAsync(char.id, roomId, user!, char))) {
+                set.status = 403
+                return { error: 'Accesso negato a questa chat privata' }
+              }
             }
             return session
           } catch (e: unknown) {
@@ -91,17 +159,31 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
-      // Aggiorna i partecipanti di una sessione
+      // Aggiorna i partecipanti di una sessione (solo creatore o cariche superiori)
       .post(
         '/:id/refresh-participants',
-        async ({ params, set }) => {
+        async ({ params, user, set }) => {
           try {
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
             const session = await getGameSession(params.id)
             if (!session) {
               set.status = 404
               return { error: 'Sessione non trovata' }
             }
-
+            const userRole = (user!.role ?? '').toUpperCase()
+            const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
+            const roleIcon = (meta.roleIcon ?? '').toLowerCase()
+            const canManage = session.creatorId === char.id ||
+              userRole === 'ADMIN' || userRole === 'MASTER' ||
+              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            if (!canManage) {
+              set.status = 403
+              return { error: 'Solo il creatore o cariche superiori possono aggiornare i partecipanti' }
+            }
             await refreshSessionParticipants(params.id, session.roomId)
             const updated = await getGameSession(params.id)
             return updated
@@ -115,13 +197,33 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
-      // Congela una sessione
+      // Congela una sessione (solo creatore o cariche superiori)
       .post(
         '/:id/freeze',
-        async ({ params, set }) => {
+        async ({ params, user, set }) => {
           try {
-            const session = await freezeGameSession(params.id)
-            return session
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            const session = await getGameSession(params.id)
+            if (!session) {
+              set.status = 404
+              return { error: 'Sessione non trovata' }
+            }
+            const userRole = (user!.role ?? '').toUpperCase()
+            const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
+            const roleIcon = (meta.roleIcon ?? '').toLowerCase()
+            const canManage = session.creatorId === char.id ||
+              userRole === 'ADMIN' || userRole === 'MASTER' ||
+              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            if (!canManage) {
+              set.status = 403
+              return { error: 'Solo il creatore o cariche superiori possono congelare la sessione' }
+            }
+            const updated = await freezeGameSession(params.id)
+            return updated
           } catch (e: unknown) {
             set.status = 400
             return { error: e instanceof Error ? e.message : 'Errore durante il congelamento' }
@@ -132,13 +234,33 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
-      // Riavvia una sessione congelata
+      // Riavvia una sessione congelata (solo creatore o cariche superiori)
       .post(
         '/:id/resume',
-        async ({ params, set }) => {
+        async ({ params, user, set }) => {
           try {
-            const session = await resumeGameSession(params.id)
-            return session
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            const session = await getGameSession(params.id)
+            if (!session) {
+              set.status = 404
+              return { error: 'Sessione non trovata' }
+            }
+            const userRole = (user!.role ?? '').toUpperCase()
+            const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
+            const roleIcon = (meta.roleIcon ?? '').toLowerCase()
+            const canManage = session.creatorId === char.id ||
+              userRole === 'ADMIN' || userRole === 'MASTER' ||
+              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            if (!canManage) {
+              set.status = 403
+              return { error: 'Solo il creatore o cariche superiori possono riavviare la sessione' }
+            }
+            const updated = await resumeGameSession(params.id)
+            return updated
           } catch (e: unknown) {
             set.status = 400
             return { error: e instanceof Error ? e.message : 'Errore durante il riavvio' }
@@ -149,13 +271,33 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
-      // Chiude una sessione
+      // Chiude una sessione (solo creatore o cariche superiori)
       .post(
         '/:id/close',
-        async ({ params, set }) => {
+        async ({ params, user, set }) => {
           try {
-            const session = await closeGameSession(params.id)
-            return session
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            const session = await getGameSession(params.id)
+            if (!session) {
+              set.status = 404
+              return { error: 'Sessione non trovata' }
+            }
+            const userRole = (user!.role ?? '').toUpperCase()
+            const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
+            const roleIcon = (meta.roleIcon ?? '').toLowerCase()
+            const canManage = session.creatorId === char.id ||
+              userRole === 'ADMIN' || userRole === 'MASTER' ||
+              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            if (!canManage) {
+              set.status = 403
+              return { error: 'Solo il creatore o cariche superiori possono chiudere la sessione' }
+            }
+            const updated = await closeGameSession(params.id)
+            return updated
           } catch (e: unknown) {
             set.status = 400
             return { error: e instanceof Error ? e.message : 'Errore durante la chiusura' }
@@ -166,13 +308,33 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
-      // Annulla una sessione
+      // Annulla una sessione (solo creatore o cariche superiori)
       .post(
         '/:id/cancel',
-        async ({ params, set }) => {
+        async ({ params, user, set }) => {
           try {
-            const session = await cancelGameSession(params.id)
-            return session
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            const session = await getGameSession(params.id)
+            if (!session) {
+              set.status = 404
+              return { error: 'Sessione non trovata' }
+            }
+            const userRole = (user!.role ?? '').toUpperCase()
+            const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
+            const roleIcon = (meta.roleIcon ?? '').toLowerCase()
+            const canManage = session.creatorId === char.id ||
+              userRole === 'ADMIN' || userRole === 'MASTER' ||
+              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            if (!canManage) {
+              set.status = 403
+              return { error: 'Solo il creatore o cariche superiori possono annullare la sessione' }
+            }
+            const updated = await cancelGameSession(params.id)
+            return updated
           } catch (e: unknown) {
             set.status = 400
             return { error: e instanceof Error ? e.message : 'Errore durante l\'annullamento' }
@@ -183,11 +345,20 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
-      // Ottiene tutte le sessioni di un personaggio
+      // Ottiene tutte le sessioni del proprio personaggio (solo le proprie)
       .get(
         '/character/:characterId',
-        async ({ params, query, set }) => {
+        async ({ params, query, user, set }) => {
           try {
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            if (params.characterId !== char.id) {
+              set.status = 403
+              return { error: 'Puoi visualizzare solo le tue sessioni' }
+            }
             const status = query.status as 'ACTIVE' | 'FROZEN' | 'CLOSED' | 'CANCELLED' | undefined
             const sessions = await getCharacterSessions(params.characterId, status)
             return sessions

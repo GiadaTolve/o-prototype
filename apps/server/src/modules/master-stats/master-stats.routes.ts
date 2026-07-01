@@ -17,6 +17,10 @@ export const masterStatsRoutes = new Elysia({ prefix: '/master-stats' })
       .get(
         '/masters',
         async ({ user, query, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             // Verifica permessi (solo Admin/Mod)
             const char = await db.query.characters.findFirst({
@@ -62,6 +66,10 @@ export const masterStatsRoutes = new Elysia({ prefix: '/master-stats' })
       .get(
         '/user-shine-ranking',
         async ({ user, query, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             // Verifica permessi (solo Admin/Mod)
             const char = await db.query.characters.findFirst({
@@ -106,6 +114,10 @@ export const masterStatsRoutes = new Elysia({ prefix: '/master-stats' })
       .get(
         '/master/:masterId',
         async ({ params, user, query, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             // Verifica permessi (solo Admin/Mod)
             const char = await db.query.characters.findFirst({

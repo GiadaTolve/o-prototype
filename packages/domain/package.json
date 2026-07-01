@@ -5,6 +5,14 @@
     "exports": {
       ".": "./src/index.ts",
       "./stats/calculator": "./src/stats/calculator.ts",
+      "./skiru": "./src/skiru/index.ts",
+      "./skiru/*": "./src/skiru/*.ts",
+      "./combat": "./src/combat/index.ts",
+      "./combat/*": "./src/combat/*.ts",
+      "./progression": "./src/progression/index.ts",
+      "./progression/*": "./src/progression/*.ts",
+      "./shakai-kaikyu": "./src/shakai-kaikyu/index.ts",
+      "./shakai-kaikyu/*": "./src/shakai-kaikyu/*.ts",
       "./*": "./src/*.ts"
     }
   }

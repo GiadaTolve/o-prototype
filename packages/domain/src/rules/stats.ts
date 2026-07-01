@@ -12,7 +12,7 @@ export interface BaseStats {
     body: number      // HP
     reflexes: number  // Reattività
     speed: number     // Velocità movimento
-    kotodama: number  // Mana / Jiko-ka
+    jigoka: number  // Mana / Jigoka
   }
   
   // Costanti di Gioco
@@ -37,16 +37,16 @@ export interface BaseStats {
     // Formula: [(D * 0.7) + (F * 0.3)] * Y
     const speed = ((d * 0.7) + (f * 0.3)) * rankMult;
   
-    // 4. Kotodama (Mana)
+    // 4. Jigoka (Mana)
     // Formula: [(E * 0.7) + (M * 0.3)] * Y
-    const kotodama = ((e * 0.7) + (m * 0.3)) * rankMult;
+    const jigoka = ((e * 0.7) + (m * 0.3)) * rankMult;
   
     return {
       // Arrotondiamo per evitare numeri brutti (es. 12.000001)
       body: Math.round(body),
       reflexes: Math.round(reflexes),
       speed: Math.round(speed),
-      kotodama: Math.round(kotodama)
+      jigoka: Math.round(jigoka)
     };
   }
   

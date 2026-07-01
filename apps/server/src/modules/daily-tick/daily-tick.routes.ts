@@ -17,6 +17,10 @@ export const dailyTickRoutes = new Elysia({ prefix: '/daily-tick' })
       .post(
         '/process-all',
         async ({ user, set }) => {
+          if (!user) {
+            set.status = 401;
+            return { error: "Non autenticato" };
+          }
           try {
             // Verifica permessi (solo Admin/Mod)
             const char = await db.query.characters.findFirst({
@@ -42,6 +46,10 @@ export const dailyTickRoutes = new Elysia({ prefix: '/daily-tick' })
       .post(
         '/process-me',
         async ({ user, set }) => {
+          if (!user) {
+            set.status = 401;
+            return { error: "Non autenticato" };
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -64,6 +72,10 @@ export const dailyTickRoutes = new Elysia({ prefix: '/daily-tick' })
       .get(
         '/ledger/me',
         async ({ user, query, set }) => {
+          if (!user) {
+            set.status = 401;
+            return { error: "Non autenticato" };
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),

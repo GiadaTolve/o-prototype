@@ -1,13 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { api } from "@/lib/api";
 import { useSmsRealtime } from "@/hooks/useSmsRealtime";
 import { PixelIcons } from "./PixelIcons";
+import { formatNarrativeText } from "@/lib/narrative-parser";
+import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, type PixelIconRuolo, type PixelIconOrdine } from "./pixel-icons";
 import type { WindowId, CharacterSummary, Presente } from "./types";
 import { WINDOW_LABELS } from "./types";
+import { SchedaSkiruPage } from "./SchedaSkiruPage";
+import { SchedaWazaPage } from "./SchedaWazaPage";
+import { SchedaRichiestePage } from "./SchedaRichiestePage";
+import { SkiruWazaPanel } from "./SkiruWazaPanel";
+import { resolveCharacterComputed, formatMovementMeters } from "./character-computed";
+import { getMadoshoDef } from "@domain/progression/madosho";
+import { resolveLevelFromExp, presentiNameClass } from "@/lib/leveling";
 
 type Conversation = {
   otherId: string;
@@ -42,6 +53,8 @@ const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   waza: icons.waza,
   ordine: icons.ordine,
   bestiario: icons.trophy,
+  notifiche: icons.bell,
+  spazioEventi: icons.gamepad,
 };
 
 const STAT_LABELS: Record<string, string> = {
@@ -60,21 +73,35 @@ type Props = {
   presenti?: Presente[];
   /** ID personaggio per finestra profilo pubblico (aperta da "Presenti"). */
   profileCharacterId?: string;
+  /** Target per apertura diretta SMS da Presenti: { id, name }. */
+  smsTargetCharacterId?: { id: string; name: string } | null;
   /** Chiamato quando SMS segna thread come letti (per aggiornare badge). */
   onUnreadChange?: () => void;
+  /** Chiamato quando le notifiche di sistema vengono lette (per aggiornare badge). */
+  onNotificationsUnreadChange?: () => void;
   /** Chiamato quando il personaggio viene aggiornato (es. dopo acquisto shop). */
   onCharUpdate?: () => void;
+  /** Admin/master: può attivare/disattivare Circus (partychat). */
+  canAccessGestione?: boolean;
 };
 
-export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, onUnreadChange, onCharUpdate }: Props) {
+/** Finestre con dimensione unificata: 80% della zona centrale */
+const UNIFIED_PANEL_IDS = ["sms", "banca", "shop", "ordine", "bestiario", "notifiche", "spazioEventi", "fetch"] as const;
+
+/** Stesse dimensioni della colonna centrale (chat / main area) */
+const MAIN_AREA_PANEL_IDS = ["scheda", "profilo", "waza"] as const;
+
+export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione }: Props) {
   const isSms = windowId === "sms";
   const isScheda = windowId === "scheda";
   const isProfilo = windowId === "profilo";
   const isSchedaLike = isScheda || isProfilo;
+  const isMainAreaPanel = (MAIN_AREA_PANEL_IDS as readonly string[]).includes(windowId);
+  const isUnifiedPanel = (UNIFIED_PANEL_IDS as readonly string[]).includes(windowId);
   return (
     <div
       className={`fixed inset-0 z-30 pointer-events-none ${
-        isSchedaLike
+        isMainAreaPanel
           ? ""
           : "flex items-center justify-center p-4"
       }`}
@@ -84,10 +111,10 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
     >
       <div
         className={`relative flex flex-col bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl overflow-hidden pointer-events-auto ${
-          isSms
-            ? "w-full max-w-4xl max-h-[80vh]"
-            : isSchedaLike
-            ? "w-[calc(100vw-37.75rem)] h-[calc(100vh-8rem)] absolute top-[calc(50%+5px)] left-[calc(50vw+0.625rem)] -translate-x-[50%] -translate-y-[50%] max-w-[calc(1800px-37.75rem)]"
+          isMainAreaPanel
+            ? "w-full max-w-full h-full md:w-[calc(100vw-37.75rem)] md:h-[calc(100vh-8rem)] md:absolute md:top-[calc(50%+5px)] md:left-[calc(50vw+0.625rem)] md:-translate-x-[50%] md:-translate-y-[50%] md:max-w-[calc(1800px-37.75rem)]"
+            : isUnifiedPanel
+            ? "w-full max-w-4xl h-[calc(80vh-5rem)]"
             : "w-full max-w-2xl max-h-[75vh]"
         }`}
       >
@@ -120,8 +147,8 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
         </div>
         {/* Contenuto scrollabile */}
         <div
-          className={`flex-1 overflow-hidden ${
-            isSms ? "flex flex-col" : isSchedaLike ? "h-full" : "overflow-auto px-4 py-4"
+          className={`flex-1 min-h-0 overflow-hidden ${
+            isSms ? "flex flex-col" : isMainAreaPanel ? "h-full" : windowId === "ordine" ? "overflow-y-auto px-4 pt-0 pb-4" : "overflow-y-auto px-4 py-4"
           }`}
         >
           {windowId === "scheda" && (
@@ -130,38 +157,107 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
             </div>
           )}
           {windowId === "presenti" && <PresentiEstesiContent presenti={presenti} />}
-          {windowId === "profilo" && <ProfiloPersonaggioWindow characterId={profileCharacterId} />}
           {windowId === "shop" && <ShopContent char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "fetch" && <FetchContent />}
-          {windowId === "sms" && <SmsContent onUnreadChange={onUnreadChange} />}
+          {windowId === "sms" && <SmsContent onUnreadChange={onUnreadChange} initialTargetCharacterId={smsTargetCharacterId ?? undefined} />}
           {windowId === "banca" && <BancaContent char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "housing" && <HousingContent char={char} onCharUpdate={onCharUpdate} />}
-          {windowId === "waza" && <WazaContent char={char} />}
+          {windowId === "waza" && (
+            <div className="h-full">
+              <SkiruWazaPanel char={char} onCharUpdate={onCharUpdate} />
+            </div>
+          )}
           {windowId === "ordine" && <OrdineContent char={char} />}
           {windowId === "bestiario" && <BestiarioContent char={char} />}
+          {windowId === "notifiche" && <NotificheContent onUnreadChange={onNotificationsUnreadChange} />}
+          {windowId === "spazioEventi" && <SpazioEventiContent canAccessGestione={canAccessGestione} />}
         </div>
       </div>
     </div>
   );
 }
 
-type FetchItem = { id: string; title: string; description: string | null; assignedTo: string | null };
+type FetchRequirements = {
+  levelMin?: number;
+  levelMax?: number;
+  gradeIds?: string[];
+  order?: string[];
+  plotIds?: string[];
+  limitPerDay?: number;
+  limitPerWeek?: number;
+};
+
+type FetchRewardConfig = {
+  minActions?: number;
+  remReward?: number;
+  expReward?: number;
+};
+
+type FetchItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  assignedTo: string | null;
+  requirements?: FetchRequirements;
+  rewardConfig?: FetchRewardConfig | null;
+};
+
+type ConcludedFetch = {
+  id: string;
+  title: string;
+  description: string | null;
+  completedAt: string | null;
+  responsoComment: string | null;
+  participantNames: string[];
+};
+
+function formatRequirements(req: FetchRequirements | undefined): string {
+  if (!req || Object.keys(req).length === 0) return "";
+  const parts: string[] = [];
+  if (req.levelMin != null) parts.push(`Liv. min ${req.levelMin}`);
+  if (req.levelMax != null) parts.push(`Liv. max ${req.levelMax}`);
+  if (req.order?.length) parts.push(req.order.join(", "));
+  if (req.gradeIds?.length) parts.push("Grado richiesto");
+  if (req.plotIds?.length) parts.push("Trama richiesta");
+  if (req.limitPerDay != null) parts.push(`${req.limitPerDay}/giorno`);
+  if (req.limitPerWeek != null) parts.push(`${req.limitPerWeek}/settimana`);
+  return parts.join(" · ");
+}
+
+function formatRewards(rc: FetchRewardConfig | null | undefined): string {
+  if (!rc) return "4 azioni min, 50 REM (default)";
+  const min = rc.minActions ?? 4;
+  const rem = rc.remReward ?? 50;
+  const exp = rc.expReward ?? 0;
+  const parts = [`≥${min} azioni`, `${rem} REM`];
+  if (exp > 0) parts.push(`${exp} EXP`);
+  return parts.join(", ");
+}
+
+type SelectedFetchDetail =
+  | { type: "available" | "assigned"; item: FetchItem }
+  | { type: "concluded"; item: ConcludedFetch };
 
 function FetchContent() {
   const [list, setList] = useState<FetchItem[]>([]);
+  const [concluded, setConcluded] = useState<ConcludedFetch[]>([]);
   const [myFetch, setMyFetch] = useState<FetchItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<SelectedFetchDetail | null>(null);
+  const [showConcluded, setShowConcluded] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
     Promise.all([
       api.get("/fetches").then((d) => (Array.isArray(d) ? d : []) as FetchItem[]),
       api.get("/fetches/my").then((d) => d as FetchItem | { assigned: false }),
+      api.get("/fetches/my/concluded").then((d) => (Array.isArray(d) ? d : []) as ConcludedFetch[]).catch(() => []),
     ])
-      .then(([arr, my]) => {
+      .then(([arr, my, concl]) => {
         setList(Array.isArray(arr) ? arr : []);
         setMyFetch(my && "id" in my && my.id ? (my as FetchItem) : null);
+        setConcluded(Array.isArray(concl) ? concl : []);
       })
       .catch(() => setList([]))
       .finally(() => setLoading(false));
@@ -188,36 +284,495 @@ function FetchContent() {
   }
 
   return (
-    <div className="space-y-4">
-      {myFetch && (
-        <div className="p-3 rounded border border-[var(--accent-violet)]/50 bg-[var(--accent-violet)]/10">
-          <p className="text-[10px] uppercase tracking-widest text-[var(--accent-violet)] mb-1">Assegnata a te</p>
-          <p className="text-sm font-display text-white">{myFetch.title}</p>
-          {myFetch.description && <p className="text-xs text-gray-500 mt-1">{myFetch.description}</p>}
+    <div
+      className="min-h-0 flex flex-col"
+      style={{
+        backgroundImage: "linear-gradient(rgba(20, 15, 30, 0.95), rgba(10, 8, 15, 0.98)), url('/backgrounds/darkstone.png')",
+        backgroundRepeat: "repeat",
+        backgroundBlendMode: "overlay",
+      }}
+    >
+      {/* Header bacheca */}
+      <div className="shrink-0 py-3 px-1 border-b border-[var(--accent-gold)]/30">
+        <h2 className="text-center font-display text-sm uppercase tracking-[0.25em] text-[var(--accent-gold)]">
+          Assegnazioni
+        </h2>
+        <p className="text-center text-[10px] text-gray-500 mt-0.5 tracking-wider px-2 max-w-md mx-auto">
+          Notifiche disponibili dal cerca-persone: Le assegnazioni possono arrivare direttamente dal proprio Ordine, o da aristocratici del Paradise.
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+        {/* Missioni — mostrine uniformi (assegnata + disponibili) */}
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-display">
+            {myFetch ? "Assegnata a te · Disponibili" : "Disponibili"}
+          </p>
+          {!myFetch && list.length === 0 ? (
+            <p className="text-sm text-gray-500 py-4 text-center">Nessuna missione approvata disponibile.</p>
+          ) : (
+            <ul className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {myFetch && (
+                <li key="my" className="relative h-[200px]">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDetail({ type: "assigned", item: myFetch })}
+                    className="absolute inset-0 flex flex-col rounded-lg border-2 border-[var(--accent-violet)]/60 bg-[var(--accent-violet)]/15 px-4 py-3 overflow-hidden text-left cursor-pointer hover:border-[var(--accent-violet)]/80 transition-colors"
+                    style={{ boxShadow: "0 4px 12px var(--shadow-violet), inset 0 1px 0 rgba(255,255,255,0.05)" }}
+                  >
+                    <span
+                      className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 border-[var(--accent-violet)] bg-[var(--accent-violet)]/80 shrink-0"
+                      aria-hidden
+                    />
+                    <p className="text-[9px] uppercase tracking-widest text-[var(--accent-violet-light)] text-center mt-1 flex-shrink-0">
+                      Assegnata a te
+                    </p>
+                    <p className="font-display text-sm text-white text-center line-clamp-2 mt-1 flex-shrink-0">{myFetch.title}</p>
+                    {myFetch.description && (
+                      <p className="text-[10px] text-gray-400 text-center line-clamp-2 mt-1 flex-1 min-h-0">{myFetch.description}</p>
+                    )}
+                    <div className="flex-1 min-h-4" />
+                    <span className="text-[9px] text-[var(--accent-violet-light)]/70 mt-auto">Clicca per leggere tutto</span>
+                  </button>
+                </li>
+              )}
+              {list.filter((f) => !myFetch || f.id !== myFetch.id).map((f) => (
+                <li key={f.id} className={`relative h-[200px] ${f.assignedTo ? "opacity-50" : ""}`}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedDetail({ type: "available", item: f })}
+                    onKeyDown={(e) => e.key === "Enter" && setSelectedDetail({ type: "available", item: f })}
+                    className={`absolute inset-0 flex flex-col rounded-lg transition-colors px-4 py-3 overflow-hidden text-left cursor-pointer ${
+                      f.assignedTo
+                        ? "border border-[var(--border-color)]/50 bg-black/60"
+                        : "border border-[var(--border-color)] bg-black/40 hover:border-[var(--accent-gold)]/40"
+                    }`}
+                    style={{ boxShadow: f.assignedTo ? "none" : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)" }}
+                  >
+                    <span
+                      className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border shrink-0 ${
+                        f.assignedTo ? "border-gray-600 bg-black/60" : "border-[var(--accent-gold)]/60 bg-[var(--panel-bg)]"
+                      }`}
+                      aria-hidden
+                    />
+                    <p className={`font-display text-sm text-center line-clamp-2 mt-1 flex-shrink-0 ${f.assignedTo ? "text-gray-500" : "text-[var(--accent-gold)]"}`}>{f.title}</p>
+                    {f.description && (
+                      <p className="text-[10px] text-center line-clamp-2 mt-0.5 flex-shrink-0 text-gray-600">{f.description}</p>
+                    )}
+                    <div className="mt-2 space-y-0.5 text-[9px] flex-shrink-0 min-h-0 overflow-hidden text-gray-500">
+                      {formatRequirements(f.requirements) && (
+                        <p className="truncate"><span className="text-gray-600">Req:</span> {formatRequirements(f.requirements)}</p>
+                      )}
+                      <p className={`truncate ${f.assignedTo ? "text-gray-500" : "text-[var(--accent-gold)]/90"}`}>
+                        <span className="text-gray-600">Premi:</span> {formatRewards(f.rewardConfig)}
+                      </p>
+                    </div>
+                    {!f.assignedTo ? (
+                      <div className="mt-auto pt-2 border-t border-[var(--border-color)]/50 flex justify-center flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); assign(f.id); }}
+                          disabled={assigningId !== null}
+                          className="px-2 py-1 rounded border border-[var(--accent-gold)] text-[9px] uppercase tracking-wider text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50 transition-colors"
+                        >
+                          {assigningId === f.id ? "…" : "Assegna"}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="mt-auto text-[10px] text-gray-500 text-center italic flex-shrink-0">Assegnata</p>
+                    )}
+                    <span className={`text-[9px] mt-1 flex-shrink-0 ${f.assignedTo ? "text-gray-600" : "text-gray-500/70"}`}>Clicca per leggere tutto</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
-      <p className="text-[10px] uppercase tracking-widest text-gray-500">Bacheca missioni</p>
-      {list.length === 0 ? (
-        <p className="text-sm text-gray-500">Nessuna fetch approvata.</p>
-      ) : (
-        <ul className="space-y-2 max-h-64 overflow-y-auto">
-          {list.map((f) => (
-            <li key={f.id} className="flex items-center justify-between gap-2 p-3 rounded border border-[var(--border-color)] bg-black/20">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-display text-white truncate">{f.title}</p>
-                {f.description && <p className="text-xs text-gray-500 truncate mt-0.5">{f.description}</p>}
-                {f.assignedTo && <p className="text-[10px] text-gray-600 mt-0.5">Assegnata</p>}
-              </div>
-              {!f.assignedTo && (
+
+        {/* Fetch concluse — nascoste dietro bottone */}
+        {concluded.length > 0 && (
+          <div className="pt-4 border-t border-[var(--border-color)]">
+            <button
+              type="button"
+              onClick={() => setShowConcluded((v) => !v)}
+              className="w-full py-2 px-3 rounded border border-[var(--border-color)]/50 bg-black/20 text-left text-sm text-gray-400 hover:border-[var(--accent-gold)]/40 hover:text-[var(--accent-gold)] transition-colors flex items-center justify-between gap-2"
+            >
+              <span className="font-display text-[10px] uppercase tracking-widest">Le tue missioni concluse</span>
+              <span className="text-[10px]">{concluded.length} · {showConcluded ? "▲ Nascondi" : "▼ Mostra"}</span>
+            </button>
+            {showConcluded && (
+              <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto mt-3">
+                {concluded.map((c) => (
+                  <li key={c.id} className="relative h-[100px]">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDetail({ type: "concluded", item: c })}
+                      className="absolute inset-0 flex flex-col rounded border border-[var(--border-color)]/40 bg-black/20 px-3 py-2 overflow-hidden text-left cursor-pointer hover:border-[var(--border-color)]/60 transition-colors"
+                    >
+                      <span
+                        className="absolute -top-0.5 left-3 w-1.5 h-1.5 rounded-full bg-gray-600 shrink-0"
+                        aria-hidden
+                      />
+                      <p className="font-display text-xs text-gray-400 line-clamp-2 mt-1 flex-shrink-0">{c.title}</p>
+                      {c.responsoComment && <p className="text-[9px] text-gray-500 line-clamp-1 mt-0.5 flex-shrink-0">{c.responsoComment}</p>}
+                      <p className="text-[9px] text-gray-600 mt-auto line-clamp-1 flex-shrink-0">
+                        {c.participantNames.length > 0 ? c.participantNames.join(", ") : "—"}
+                      </p>
+                      <span className="text-[8px] text-gray-600 mt-0.5">Clicca per dettagli</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal dettaglio missione — contenuto completo con scroll */}
+      {selectedDetail &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setSelectedDetail(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fetch-detail-title"
+          >
+            <div
+              className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg w-full max-w-lg max-h-[85vh] flex flex-col shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="shrink-0 relative flex items-center justify-between p-4 border-b border-[var(--border-color)]">
+                <h2 id="fetch-detail-title" className="font-display text-lg text-[var(--accent-gold)] pr-10">
+                  {selectedDetail.item.title}
+                </h2>
                 <button
                   type="button"
-                  onClick={() => assign(f.id)}
-                  disabled={assigningId !== null}
-                  className="shrink-0 px-2 py-1 rounded border border-[var(--accent-gold)] text-[10px] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+                  onClick={() => setSelectedDetail(null)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-[var(--accent-gold)] p-1"
+                  aria-label="Chiudi"
                 >
-                  {assigningId === f.id ? "…" : "Assegna a me"}
+                  ✕
                 </button>
-              )}
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {selectedDetail.type === "assigned" && (
+                  <p className="text-[10px] uppercase tracking-widest text-[var(--accent-violet-light)]">Assegnata a te</p>
+                )}
+                {selectedDetail.type === "concluded" ? (
+                  <>
+                    {selectedDetail.item.description && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Descrizione</p>
+                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedDetail.item.description}</p>
+                      </div>
+                    )}
+                    {selectedDetail.item.responsoComment && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Responso Master</p>
+                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedDetail.item.responsoComment}</p>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-500">
+                      Conclusa da: {selectedDetail.item.participantNames.length > 0 ? selectedDetail.item.participantNames.join(", ") : "—"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {selectedDetail.item.description && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Descrizione</p>
+                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedDetail.item.description}</p>
+                      </div>
+                    )}
+                    {formatRequirements(selectedDetail.item.requirements) && (
+                      <p className="text-sm text-gray-400">
+                        <span className="text-gray-500">Requisiti:</span> {formatRequirements(selectedDetail.item.requirements)}
+                      </p>
+                    )}
+                    <p className="text-sm text-[var(--accent-gold)]/90">
+                      <span className="text-gray-500">Premi:</span> {formatRewards(selectedDetail.item.rewardConfig)}
+                    </p>
+                    {selectedDetail.type === "available" && !selectedDetail.item.assignedTo && (
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => { assign(selectedDetail.item.id); setSelectedDetail(null); }}
+                          disabled={assigningId !== null}
+                          className="px-4 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-sm hover:bg-[var(--accent-gold)]/10 disabled:opacity-50 transition-colors"
+                        >
+                          {assigningId === selectedDetail.item.id ? "…" : "Assegna a me"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}
+
+type SystemNotification = {
+  id: string;
+  type: string;
+  title: string | null;
+  content: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+/** Room ID partychat (Circus) — chat anonima, regole a sé. */
+const PARTYCHAT_ROOM_ID = "edo__paradise";
+
+function SpazioEventiContent({ canAccessGestione }: { canAccessGestione?: boolean }) {
+  const [state, setState] = useState<{ isOpen: boolean; sessionTitle?: string } | null>(null);
+  const [sessionTitleInput, setSessionTitleInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [toggleLoading, setToggleLoading] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+
+  const fetchState = useCallback(() => {
+    api
+      .get(`/anonymous-room/${PARTYCHAT_ROOM_ID}/state`)
+      .then((d) => (typeof d === "object" && d && "isOpen" in d ? { isOpen: !!d.isOpen, sessionTitle: (d as { sessionTitle?: string }).sessionTitle } : { isOpen: false }))
+      .then(setState)
+      .catch(() => setState({ isOpen: false }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchState();
+  }, [fetchState]);
+
+  const handleToggle = async () => {
+    if (!canAccessGestione || state === null) return;
+    if (state.isOpen) {
+      setToggleError(null);
+      setToggleLoading(true);
+      try {
+        await api.post("/paradise-toggle", { isOpen: false, roomId: PARTYCHAT_ROOM_ID });
+        setState({ isOpen: false });
+        setSessionTitleInput("");
+      } catch (e: unknown) {
+        const msg = e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "Errore";
+        setToggleError(msg);
+      } finally {
+        setToggleLoading(false);
+      }
+    } else {
+      const title = sessionTitleInput.trim();
+      if (!title) {
+        setToggleError("Inserisci il nome della sessione per aprire il Circus");
+        return;
+      }
+      setToggleError(null);
+      setToggleLoading(true);
+      try {
+        await api.post("/paradise-toggle", { isOpen: true, roomId: PARTYCHAT_ROOM_ID, sessionTitle: title });
+        setState({ isOpen: true, sessionTitle: title });
+      } catch (e: unknown) {
+        const res = e && typeof e === "object" && "response" in e ? (e as { response?: { data?: { error?: string } } }).response : null;
+        const msg = res?.data?.error || (e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "Errore");
+        setToggleError(msg);
+      } finally {
+        setToggleLoading(false);
+      }
+    }
+  };
+
+  const handleEntraCircus = async () => {
+    try {
+      await api.post(`/anonymous-room/${PARTYCHAT_ROOM_ID}/join`, {});
+      window.dispatchEvent(new CustomEvent("openChatRoom", { detail: { roomId: PARTYCHAT_ROOM_ID } }));
+      window.dispatchEvent(new CustomEvent("closeWindow", { detail: { windowId: "spazioEventi" } }));
+    } catch {
+      // Errore: stanza chiusa o altro
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full p-4">
+        <p className="text-sm text-gray-500">Caricamento…</p>
+      </div>
+    );
+  }
+
+  const header = (
+    <>
+      <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-3 font-display">
+        Circus — Spazio Eventi
+      </p>
+      <p className="text-sm text-gray-400 mb-4">
+        Il <strong className="text-gray-300">Circus</strong> è uno spazio speciale a Edo: chat anonima, momenti di sorteggio e eventi gestiti da mod/admin.
+      </p>
+    </>
+  );
+
+  if (!state?.isOpen) {
+    return (
+      <div className="flex flex-col h-full p-4">
+        {header}
+        {canAccessGestione && (
+          <div className="space-y-3 mb-4 p-3 rounded-lg border border-[var(--border-color)] bg-black/20">
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-gray-500 mb-1.5 font-display">
+                Nome sessione (obbligatorio per aprire)
+              </label>
+              <input
+                type="text"
+                value={sessionTitleInput}
+                onChange={(e) => setSessionTitleInput(e.target.value)}
+                placeholder="Es. Serata Cinema, Torneo Dicembre..."
+                className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/40 text-white text-sm placeholder-gray-500"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-400 font-display">Sessione</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={false}
+                onClick={handleToggle}
+                disabled={toggleLoading}
+                className="relative w-11 h-6 rounded-full bg-gray-700 border border-gray-600 transition-colors disabled:opacity-50"
+              >
+                <span className="absolute left-1 top-1 w-4 h-4 rounded-full bg-gray-500 transition-transform" />
+              </button>
+              <span className="text-xs text-amber-200/70">Chiusa — sezione interdetta</span>
+            </div>
+            {toggleError && <p className="text-xs text-red-400">{toggleError}</p>}
+          </div>
+        )}
+        <div className="flex items-center justify-center gap-2 py-6 px-4 bg-black/30 border border-amber-900/50 rounded text-amber-200/80">
+          <FontAwesomeIcon icon={icons.lock} className="w-5 h-5 shrink-0" />
+          <span className="font-display text-sm">Area interdetta</span>
+        </div>
+        <p className="text-[10px] text-gray-500 mt-4 italic">
+          {canAccessGestione ? "Inserisci il nome della sessione e attiva il toggle per aprire. La sessione resterà aperta finché non la chiudi manualmente." : "L'admin/mod deve aprire la stanza per permettere l'accesso."}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full p-4">
+      {header}
+      {canAccessGestione && (
+        <div className="space-y-2 mb-4 p-3 rounded-lg border border-[var(--border-color)] bg-black/20">
+          {state?.sessionTitle && (
+            <p className="text-xs text-gray-400">
+              Sessione: <span className="text-[var(--accent-gold)]">{state.sessionTitle}</span>
+            </p>
+          )}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400 font-display">Sessione</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={true}
+              onClick={handleToggle}
+              disabled={toggleLoading}
+              className="relative w-11 h-6 rounded-full bg-amber-900/60 border border-amber-700/50 transition-colors disabled:opacity-50"
+            >
+              <span className="absolute right-1 top-1 w-4 h-4 rounded-full bg-amber-400 transition-transform translate-x-0" />
+            </button>
+            <span className="text-xs text-emerald-400/80">Aperta — chiudi per registrare l&apos;evento</span>
+          </div>
+          {toggleError && <p className="text-xs text-red-400">{toggleError}</p>}
+        </div>
+      )}
+      <div className="btn-primary-sweep-borders w-full">
+        <button
+          type="button"
+          onClick={handleEntraCircus}
+          className="btn-primary-sweep w-full flex items-center justify-center relative py-3"
+        >
+          <span className="btn-primary-sweep-sweep" aria-hidden />
+          <span className="relative z-10 font-display">Entra nel Circus</span>
+        </button>
+      </div>
+      <p className="text-[10px] text-gray-500 mt-4 italic">
+        Chat anonima: nome animale e maschera per tutta la sessione.
+      </p>
+    </div>
+  );
+}
+
+function NotificheContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
+  const [list, setList] = useState<SystemNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    api
+      .get("/notifications")
+      .then((d) => (Array.isArray(d) ? d : []) as SystemNotification[])
+      .then(setList)
+      .catch(() => setList([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const markAsRead = async (id: string) => {
+    try {
+      await api.post(`/notifications/${id}/read`, {});
+      setList((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)));
+      onUnreadChange?.();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  if (loading) {
+    return <p className="text-sm text-gray-500">Caricamento…</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-[10px] uppercase tracking-widest text-gray-500">Messaggi di sistema (responso Fetch, ecc.)</p>
+      {list.length === 0 ? (
+        <p className="text-sm text-gray-500">Nessuna notifica.</p>
+      ) : (
+        <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {list.map((n) => (
+            <li
+              key={n.id}
+              className={`p-3 rounded border bg-black/20 ${
+                n.readAt ? "border-[var(--border-color)]" : "border-[var(--accent-gold)]/50"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  {n.title && (
+                    <p className="text-sm font-display text-[var(--accent-gold)]">{n.title}</p>
+                  )}
+                  {n.content && (
+                    <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{n.content}</p>
+                  )}
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {new Date(n.createdAt).toLocaleString("it-IT")}
+                    {n.type === "fetch_responso" && " · Responso Fetch"}
+                  </p>
+                </div>
+                {!n.readAt && (
+                  <button
+                    type="button"
+                    onClick={() => markAsRead(n.id)}
+                    className="shrink-0 px-2 py-1 rounded border border-[var(--accent-gold)]/50 text-[10px] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10"
+                  >
+                    Segna letto
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -231,10 +786,10 @@ function PresentiEstesiContent({ presenti }: { presenti: Presente[] }) {
     return <p className="text-sm text-gray-500">Nessun presente al momento.</p>;
   }
 
-  const openProfile = (id: string) => {
+  const openProfile = (p: Presente) => {
     window.dispatchEvent(
       new CustomEvent("openProfileWindow", {
-        detail: { characterId: id },
+        detail: p.isMe ? { characterId: p.id } : { characterId: p.id, openSms: true, name: p.name },
       })
     );
   };
@@ -249,12 +804,20 @@ function PresentiEstesiContent({ presenti }: { presenti: Presente[] }) {
           <li
             key={p.id}
             className="flex items-center gap-4 py-3 first:pt-0 cursor-pointer hover:bg-white/5"
-            onClick={() => openProfile(p.id)}
+            onClick={() => openProfile(p)}
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" aria-hidden />
+            <span className={`w-2 h-2 rounded-full shrink-0 ${p.isShadow ? "bg-amber-500" : "bg-emerald-500"}`} aria-hidden />
             <div className="min-w-0 flex-1">
-              <span className={`font-display text-sm flex items-center gap-1.5 flex-wrap ${p.isMe ? "text-[var(--accent-gold)]" : "text-white"}`}>
+              <span className={`font-display text-sm flex items-center gap-1.5 flex-wrap ${presentiNameClass({ isMe: p.isMe, isShadow: p.isShadow, paragon: p.paragon })}`}>
                 {p.name}
+                {(p.paragon ?? 0) > 0 && (
+                  <span className="text-[10px] uppercase tracking-wider text-[var(--accent-violet-light)]/80">
+                    ★{p.paragon}
+                  </span>
+                )}
+                {p.isShadow && (
+                  <FontAwesomeIcon icon={icons.eyeSlash} className="w-3.5 h-3.5 text-amber-400/80" title="Shadowban" aria-hidden />
+                )}
                 <PixelIcons pixelIcons={p.pixelIcons} />
                 {p.isMe && " (Tu)"}
               </span>
@@ -262,7 +825,21 @@ function PresentiEstesiContent({ presenti }: { presenti: Presente[] }) {
                 <p className="text-xs text-gray-500 truncate">{p.zone}</p>
               )}
             </div>
-            <span className="text-[10px] uppercase text-emerald-500/80 shrink-0">Online</span>
+            {!p.isMe && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent("openProfileWindow", { detail: { characterId: p.id } }));
+                }}
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-[var(--accent-gold)] hover:bg-white/5"
+                title="Vedi scheda"
+                aria-label="Vedi scheda"
+              >
+                <FontAwesomeIcon icon={icons.user} className="w-4 h-4" />
+              </button>
+            )}
+            <span className={`text-[10px] uppercase shrink-0 ${p.isShadow ? "text-amber-500/80" : "text-emerald-500/80"}`}>Online</span>
           </li>
         ))}
       </ul>
@@ -321,6 +898,7 @@ function ProfiloPersonaggioWindow({ characterId }: { characterId?: string }) {
   const canSeeJournal = visibility.canSeeJournal ?? true;
 
   const stats = data.stats ?? { f: 0, c: 0, d: 0, m: 0, e: 0 };
+  const skiruDomains = (data as CharacterSummary).skiruDomains ?? [];
 
   return (
     <div className="flex h-full min-h-0 bg-[var(--panel-bg)]">
@@ -329,7 +907,7 @@ function ProfiloPersonaggioWindow({ characterId }: { characterId?: string }) {
         <button
           type="button"
           onClick={() => setActiveTab("profilo")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
+          className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
             activeTab === "profilo"
               ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
               : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
@@ -341,7 +919,7 @@ function ProfiloPersonaggioWindow({ characterId }: { characterId?: string }) {
         <button
           type="button"
           onClick={() => canSeeJournal && setActiveTab("journal")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
+          className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
             activeTab === "journal"
               ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
               : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
@@ -354,19 +932,19 @@ function ProfiloPersonaggioWindow({ characterId }: { characterId?: string }) {
 
       {/* Contenuto principale: layout a libro come scheda */}
       <div className="flex-1 min-h-0 flex">
-        {/* Colonna sinistra: Avatar 350x400 e dati base */}
-        <div className="w-[350px] shrink-0 border-r border-[var(--border-color)] p-6 bg-black/20 flex flex-col items-center gap-4">
+        {/* Colonna sinistra: Avatar 300x400 e dati base */}
+        <div className="w-[348px] shrink-0 border-r border-[var(--border-color)] p-6 bg-black/20 flex flex-col items-center gap-4">
           {data.avatar ? (
             <img
               src={data.avatar as string}
               alt={String(data.name)}
-              className="w-[350px] h-[400px] rounded-lg border-2 border-[var(--accent-gold)] object-cover shadow-[0_0_20px_rgba(212,175,55,0.2)]"
-              style={{ width: "350px", height: "400px" }}
+              className="rounded-lg border-2 border-[var(--accent-gold)] object-cover shadow-[0_0_20px_rgba(212,175,55,0.2)]"
+              style={{ width: AVATAR_MAIN_WIDTH, height: AVATAR_MAIN_HEIGHT }}
             />
           ) : (
             <div
-              className="w-[350px] h-[400px] rounded-lg border-2 border-[var(--accent-gold)] bg-black/50 flex items-center justify-center"
-              style={{ width: "350px", height: "400px" }}
+              className="rounded-lg border-2 border-[var(--accent-gold)] bg-black/50 flex items-center justify-center"
+              style={{ width: AVATAR_MAIN_WIDTH, height: AVATAR_MAIN_HEIGHT }}
             >
               <FontAwesomeIcon icon={icons.user} className="w-20 h-20 text-gray-600" />
             </div>
@@ -383,24 +961,35 @@ function ProfiloPersonaggioWindow({ characterId }: { characterId?: string }) {
             </p>
           </div>
 
-          {/* Stat base sintetiche (mini-plancia) */}
+          {/* Domini Skiru o legacy stats */}
           <div className="w-full mt-2 space-y-2 text-[11px]">
-            <p className="text-[9px] uppercase tracking-[0.24em] text-gray-500 font-display mb-1">
-              Statistiche Base
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(stats).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="bg-black/40 rounded-md border border-[var(--border-color)]/70 px-2 py-1.5 flex items-center justify-between"
-                >
-                  <span className="text-[10px] text-gray-400 uppercase tracking-[0.18em]">
-                    {STAT_LABELS[key] ?? key.toUpperCase()}
-                  </span>
-                  <span className="text-[11px] text-[var(--accent-gold)] font-display">{value as number}</span>
+            {skiruDomains.length > 0 ? (
+              <>
+                <p className="text-[9px] uppercase tracking-[0.24em] text-gray-500 font-display mb-1">
+                  Domini Skiru
+                </p>
+                <SkiruDomainRadarChart domains={skiruDomains} />
+              </>
+            ) : (
+              <>
+                <p className="text-[9px] uppercase tracking-[0.24em] text-gray-500 font-display mb-1">
+                  Statistiche Base
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(stats).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="bg-black/40 rounded-md border border-[var(--border-color)]/70 px-2 py-1.5 flex items-center justify-between"
+                    >
+                      <span className="text-[10px] text-gray-400 uppercase tracking-[0.18em]">
+                        {STAT_LABELS[key] ?? key.toUpperCase()}
+                      </span>
+                      <span className="text-[11px] text-[var(--accent-gold)] font-display">{value as number}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -487,7 +1076,7 @@ function ProfiloPersonaggioWindow({ characterId }: { characterId?: string }) {
   );
 }
 
-function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
+function SmsContent({ onUnreadChange, initialTargetCharacterId }: { onUnreadChange?: () => void; initialTargetCharacterId?: { id: string; name: string } }) {
   const onUnreadChangeRef = useRef(onUnreadChange);
   useEffect(() => {
     onUnreadChangeRef.current = onUnreadChange;
@@ -497,6 +1086,8 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
   const [selectedOther, setSelectedOther] = useState<{ id: string; name: string; miniAvatar: string | null } | null>(null);
   const [newMode, setNewMode] = useState(false);
   const [characterList, setCharacterList] = useState<CharacterListItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingThread, setLoadingThread] = useState(false);
@@ -504,11 +1095,34 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  const SMS_CACHE_KEY = "oyasumi-sms-conversations-cache";
+
   const fetchConversations = useCallback(async () => {
     try {
       const list = (await api.get("/sms/conversations")) as Conversation[];
-      setConversations(Array.isArray(list) ? list : []);
+      const normalized = Array.isArray(list) ? list : [];
+      setConversations(normalized);
+      try {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(SMS_CACHE_KEY, JSON.stringify(normalized));
+        }
+      } catch {
+        // ignore localStorage errors
+      }
     } catch {
+      // Fallback: carica da localStorage in caso di errore 500/rete
+      try {
+        if (typeof window !== "undefined") {
+          const cached = window.localStorage.getItem(SMS_CACHE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached) as unknown;
+            setConversations(Array.isArray(parsed) ? parsed : []);
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
       setConversations([]);
     } finally {
       setLoading(false);
@@ -527,6 +1141,14 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
       }
     })();
   }, [fetchConversations]);
+
+  // Apertura diretta da Presenti: se initialTargetCharacterId è passato, apri subito quella conversazione
+  useEffect(() => {
+    if (initialTargetCharacterId?.id && initialTargetCharacterId?.name) {
+      setNewMode(false);
+      setSelectedOther({ id: initialTargetCharacterId.id, name: initialTargetCharacterId.name, miniAvatar: null });
+    }
+  }, [initialTargetCharacterId?.id, initialTargetCharacterId?.name]);
 
   // WebSocket per SMS real-time (solo per aggiornare thread e conversazioni quando finestra aperta)
   // La notifica sonora e il badge sono gestiti da DashboardPage
@@ -601,17 +1223,28 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
     listRef.current?.scrollTo(0, listRef.current.scrollHeight);
   }, [thread]);
 
-  const openNew = useCallback(async () => {
+  const openNew = useCallback(() => {
     setNewMode(true);
     setSelectedOther(null);
     setThread([]);
-    try {
-      const list = (await api.get("/characters/list")) as CharacterListItem[];
-      setCharacterList(Array.isArray(list) ? list : []);
-    } catch {
-      setCharacterList([]);
-    }
+    setSearchQuery("");
+    setCharacterList([]);
   }, []);
+
+  // Live Search: debounce 300ms, chiama /characters/search quando in newMode
+  useEffect(() => {
+    if (!newMode || !myCharacterId) return;
+    const t = setTimeout(() => {
+      setSearchLoading(true);
+      const q = searchQuery.trim();
+      api
+        .get(`/characters/search${q ? `?q=${encodeURIComponent(q)}` : ""}`)
+        .then((list: unknown) => setCharacterList(Array.isArray(list) ? (list as CharacterListItem[]) : []))
+        .catch(() => setCharacterList([]))
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [newMode, myCharacterId, searchQuery]);
 
   const pickOther = useCallback((c: CharacterListItem) => {
     setNewMode(false);
@@ -622,6 +1255,16 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
     setNewMode(false);
     setSelectedOther({ id: c.otherId, name: c.otherName, miniAvatar: c.otherMiniAvatar });
   }, []);
+
+  // Filtro client-side per conversazioni (otherName, lastMessage)
+  const filteredConversations = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter(
+      (c) =>
+        (c.otherName ?? "").toLowerCase().includes(q) || (c.lastMessage ?? "").toLowerCase().includes(q)
+    );
+  }, [conversations, searchQuery]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -655,7 +1298,7 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
           {newMode ? (
             <button
               type="button"
-              onClick={() => { setNewMode(false); setSelectedOther(null); setThread([]); }}
+              onClick={() => { setNewMode(false); setSelectedOther(null); setThread([]); setSearchQuery(""); }}
               className="flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-[var(--accent-gold)]"
             >
               <FontAwesomeIcon icon={icons.back} className="w-4 h-4" />
@@ -672,8 +1315,22 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
             </button>
           )}
         </div>
+        {/* Live Search — debounce 300ms, filtra conversazioni o cerca utenti nel DB */}
+        <div className="shrink-0 px-3 py-2 border-b border-[var(--border-color)]">
+          <div className="relative">
+            <FontAwesomeIcon icon={icons.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+            <input
+              type="search"
+              placeholder={newMode ? "Cerca personaggio…" : "Filtra conversazioni…"}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-black/40 border border-[var(--border-color)] rounded text-white placeholder-gray-500 focus:outline-none focus:border-[var(--accent-gold)]/50"
+              aria-label={newMode ? "Cerca personaggio" : "Filtra conversazioni"}
+            />
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {loading && !newMode ? (
             <p className="p-4 text-xs text-gray-500">Caricamento…</p>
           ) : newMode ? (
             <ul className="divide-y divide-[var(--border-color)]">
@@ -695,13 +1352,15 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
                   </button>
                 </li>
               ))}
-              {characterList.length === 0 && !loading && (
-                <li className="px-4 py-6 text-xs text-gray-500">Nessun altro personaggio.</li>
+              {characterList.length === 0 && (
+                <li className="px-4 py-6 text-xs text-gray-500">
+                  {searchLoading ? "Ricerca…" : searchQuery.trim() ? "Nessun personaggio trovato." : "Digita per cercare un personaggio."}
+                </li>
               )}
             </ul>
           ) : (
             <ul className="divide-y divide-[var(--border-color)]">
-              {conversations.map((c) => (
+              {filteredConversations.map((c) => (
                 <li key={c.otherId}>
                   <button
                     type="button"
@@ -732,8 +1391,10 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
                   </button>
                 </li>
               ))}
-              {conversations.length === 0 && !loading && (
-                <li className="px-4 py-6 text-xs text-gray-500">Nessuna conversazione. Avviane una nuova.</li>
+              {filteredConversations.length === 0 && !loading && (
+                <li className="px-4 py-6 text-xs text-gray-500">
+                  {searchQuery.trim() ? "Nessuna conversazione trovata." : "Nessuna conversazione. Avviane una nuova."}
+                </li>
               )}
             </ul>
           )}
@@ -839,11 +1500,230 @@ function SmsContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
 
 // ─── Componenti Scheda Personaggio ───
 
+/** Banner PG — dimensioni asset consigliate e altezza display fissa in scheda. */
+const BANNER_PG_UPLOAD_WIDTH = 1200;
+const BANNER_PG_UPLOAD_HEIGHT = 135;
+const BANNER_PG_DISPLAY_HEIGHT = 135;
+
+/** Avatar scheda (colonna sinistra) e avatar messaggi chat. */
+const AVATAR_MAIN_WIDTH = 300;
+const AVATAR_MAIN_HEIGHT = 400;
+const AVATAR_CHAT_SIZE = 100;
+
+function CharacterMainAvatarPreview({ url }: { url?: string | null }) {
+  return (
+    <div
+      className="overflow-hidden rounded-lg border-2 border-[var(--accent-gold)]/50 bg-black/50 shadow-[var(--shadow-gold)]"
+      style={{ width: AVATAR_MAIN_WIDTH, height: AVATAR_MAIN_HEIGHT }}
+    >
+      {url?.trim() ? (
+        <img
+          src={url.trim()}
+          alt="Avatar principale"
+          className="h-full w-full object-cover object-center"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center border border-dashed border-[var(--border-color)] bg-[var(--panel-bg)]/80">
+          <span className="font-display text-[10px] uppercase tracking-[0.22em] text-[var(--accent-violet-light)]/40">
+            avatar
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CharacterChatAvatarPreview({ url }: { url?: string | null }) {
+  return (
+    <div
+      className="overflow-hidden rounded-lg border-2 border-[var(--accent-gold)]/50 bg-black/50 shadow-[var(--shadow-gold)]"
+      style={{ width: AVATAR_CHAT_SIZE, height: AVATAR_CHAT_SIZE }}
+    >
+      {url?.trim() ? (
+        <img
+          src={url.trim()}
+          alt="Avatar chat"
+          className="h-full w-full object-cover object-center"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center border border-dashed border-[var(--border-color)] bg-[var(--panel-bg)]/80">
+          <span className="font-display text-[8px] uppercase tracking-[0.18em] text-[var(--accent-violet-light)]/40">
+            mini
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CharacterBannerPg({ url }: { url?: string | null }) {
+  return (
+    <div
+      className="w-full overflow-hidden rounded-lg border-2 border-[var(--accent-gold)]/50 bg-black/50 shadow-[var(--shadow-gold)]"
+      style={{ height: BANNER_PG_DISPLAY_HEIGHT }}
+    >
+      {url?.trim() ? (
+        <img
+          src={url.trim()}
+          alt="Banner personaggio"
+          className="h-full w-full object-cover object-center"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center border border-dashed border-[var(--border-color)] bg-[var(--panel-bg)]/80">
+          <span className="font-display text-[10px] uppercase tracking-[0.22em] text-[var(--accent-violet-light)]/40">
+            banner_pg
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Barra HP — HUD videogame dark (palette oro / viola)
+function GameHpBar({ value, max, embedded }: { value: number; max: number; embedded?: boolean }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  const segments = 16;
+  const filled = max > 0 ? Math.round((value / max) * segments) : 0;
+
+  return (
+    <div
+      className={
+        embedded
+          ? "relative rounded-md border border-[var(--border-color)] bg-black/50 px-3 py-3 shadow-[var(--shadow-violet)]"
+          : "relative border-t border-[var(--accent-gold)]/20 bg-[var(--background)] px-4 py-3.5"
+      }
+    >
+      {/* Angoli decorativi HUD */}
+      <span className="pointer-events-none absolute left-3 top-2 h-2 w-2 border-l border-t border-[var(--accent-gold)]/50" aria-hidden />
+      <span className="pointer-events-none absolute right-3 top-2 h-2 w-2 border-r border-t border-[var(--accent-gold)]/50" aria-hidden />
+      <span className="pointer-events-none absolute bottom-2 left-3 h-2 w-2 border-b border-l border-[var(--accent-violet)]/40" aria-hidden />
+      <span className="pointer-events-none absolute bottom-2 right-3 h-2 w-2 border-b border-r border-[var(--accent-violet)]/40" aria-hidden />
+
+      <div className="flex items-end justify-between mb-2.5 gap-3">
+        <div className="flex items-baseline gap-2">
+          <span className="font-display text-[11px] uppercase tracking-[0.28em] text-[var(--accent-violet-light)]/80">
+            HP
+          </span>
+          <span
+            className="font-display text-xl leading-none tabular-nums text-[var(--accent-gold)]"
+            style={{ textShadow: "0 0 12px var(--glow-gold), 0 0 24px var(--shadow-gold)" }}
+          >
+            {value}
+          </span>
+        </div>
+        <span className="font-display text-[10px] tabular-nums tracking-widest text-[var(--accent-violet-light)]/45 uppercase">
+          / {max}
+        </span>
+      </div>
+
+      <div
+        className={`relative flex gap-[2px] p-[2px] rounded-sm border border-[var(--border-color)] bg-black ${embedded ? "w-full" : "max-w-[280px]"}`}
+        style={{
+          boxShadow:
+            "inset 0 3px 10px rgba(0,0,0,0.95), inset 0 -1px 0 var(--shadow-violet), 0 0 16px var(--shadow-violet)",
+        }}
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={max}
+        aria-label="Punti vita"
+      >
+        {Array.from({ length: segments }, (_, i) => {
+          const active = i < filled;
+          return (
+            <div
+              key={i}
+              className="relative flex-1 h-[10px] min-w-0 overflow-hidden transition-all duration-500"
+              style={{
+                background: active ? "var(--panel-bg)" : "transparent",
+                boxShadow: active
+                  ? "inset 0 0 0 1px var(--accent-violet-light)"
+                  : "inset 0 0 0 1px var(--border-color)",
+              }}
+            >
+              {active ? (
+                <>
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, var(--accent-violet-light) 0%, var(--accent-violet) 55%, color-mix(in srgb, var(--accent-violet) 40%, black) 100%)",
+                      opacity: 0.95,
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 opacity-35"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, transparent 0%, var(--accent-violet-light) 50%, transparent 100%)",
+                    }}
+                  />
+                  <div
+                    className="absolute inset-x-0 top-0 h-[40%]"
+                    style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.1), transparent)" }}
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{ boxShadow: "inset 0 0 6px var(--glow-violet)" }}
+                  />
+                </>
+              ) : (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: "linear-gradient(180deg, rgba(0,0,0,0.6), var(--panel-bg))",
+                    boxShadow: "inset 0 2px 6px rgba(0,0,0,0.9)",
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
+
+        {/* Scanline sottile */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(0deg, transparent, transparent 2px, var(--accent-violet-light) 2px, var(--accent-violet-light) 3px)",
+          }}
+        />
+      </div>
+
+      {/* Indicatore percentuale — whisper dark */}
+      <div className="mt-1.5 flex justify-end">
+        <span className="text-[8px] uppercase tracking-[0.2em] font-display text-[var(--accent-violet-light)]/35 tabular-nums">
+          {Math.round(pct)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // Pagina principale della scheda
-function SchedaMainPage({ char, level, grade }: { char: any; level: number; grade: string }) {
+function SchedaMainPage({
+  char,
+  level,
+  levelLabel,
+  paragon = 0,
+  grade,
+  housingChatRoomId,
+  skiruDomains = [],
+  themeMusicUrl,
+  bannerPg,
+}: {
+  char: any;
+  level: number;
+  levelLabel: string;
+  paragon?: number;
+  grade: string;
+  housingChatRoomId?: string | null;
+  skiruDomains?: Array<{ label: string; points: number; percent: number }>;
+  themeMusicUrl?: string;
+  bannerPg?: string | null;
+}) {
   const computed = char.computed ?? {};
-  const hpMax = computed.hpMax || computed.body || 0;
-  const kotodamaMax = computed.kotodamaMax || 0;
+  const madosho = getMadoshoDef(char.madoshoId);
 
   return (
     <div className="p-6 space-y-6">
@@ -855,325 +1735,295 @@ function SchedaMainPage({ char, level, grade }: { char: any; level: number; grad
           </h2>
           <PixelIcons pixelIcons={char.pixelIcons} />
         </div>
+        {madosho && (
+          <p className="text-[11px] text-[var(--accent-violet-light)]/80 mt-1">
+            Madoshō:{' '}
+            <span className="text-[var(--accent-gold)] font-display">{madosho.name}</span>
+            <span className="text-gray-500 ml-2">{madosho.tagline}</span>
+          </p>
+        )}
       </div>
 
       {/* Mostrina militare */}
-      <div className="bg-gradient-to-r from-[var(--panel-bg)] to-black border-2 border-[var(--accent-gold)] rounded-lg p-4 flex items-center justify-between shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-        <div>
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Livello</p>
-          <p className="font-display text-3xl text-[var(--accent-gold)]" style={{ textShadow: "0 0 10px rgba(212,175,55,0.5)" }}>{level}</p>
-        </div>
-        <div className="h-12 w-px bg-[var(--accent-gold)]/30"></div>
-        <div>
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Grado</p>
-          <p className="font-display text-xl text-white">{grade}</p>
+      <div className="rounded-lg border-2 border-[var(--accent-gold)] overflow-hidden shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+        <div className="bg-gradient-to-r from-[var(--panel-bg)] to-black p-4 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">
+              {paragon > 0 ? 'Livello · Paragon' : 'Livello'}
+            </p>
+            <p
+              className={`font-display text-3xl ${paragon > 0 ? 'text-[var(--accent-violet-light)]' : 'text-[var(--accent-gold)]'}`}
+              style={{
+                textShadow: paragon > 0
+                  ? '0 0 12px var(--glow-violet)'
+                  : '0 0 10px rgba(212,175,55,0.5)',
+              }}
+            >
+              {levelLabel}
+            </p>
+          </div>
+          <div className="h-12 w-px bg-[var(--accent-gold)]/30" />
+          <div>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Grado</p>
+            <p className="font-display text-xl text-white">{grade}</p>
+          </div>
         </div>
       </div>
 
+      {/* Domini Skiru + parametri derivati affiancati */}
+      <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 items-start">
+        <div className="shrink-0">
+          <SkiruDomainRadarChart domains={skiruDomains} />
+        </div>
+        <div className="flex-1 min-w-[160px] w-full sm:w-auto">
+          <DerivedStatsGrid computed={computed} stacked />
+        </div>
+      </div>
 
-      {/* Statistiche derivate */}
-      {Object.keys(computed).length > 0 && (
-        <DerivedStatsGrid computed={computed} />
+      {themeMusicUrl && (
+        <div className="pt-2 border-t border-[var(--border-color)]">
+          <p className="text-[9px] uppercase tracking-[0.18em] text-gray-400 font-display mb-2">
+            Tema musicale
+          </p>
+          <audio controls loop className="w-full h-7 [&>button]:!text-[10px]">
+            <source src={themeMusicUrl} type="audio/mpeg" />
+            Il tuo browser non supporta l&apos;audio.
+          </audio>
+        </div>
       )}
 
-      {/* Ultima posizione e icona casa */}
+      {/* Banner PG — sopra Ultima Posizione */}
+      <CharacterBannerPg url={bannerPg} />
+
+      {/* Ultima posizione e Entra in Casa (chat privata) — visibile solo se si ha un'abitazione */}
       <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)]">
         <div>
           <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ultima Posizione</p>
           <p className="text-sm text-gray-400">N/D</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new Event("openHousingWindow"));
-            }
-          }}
-          className="px-4 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 transition-colors flex items-center gap-2 text-xs uppercase tracking-wider"
-        >
-          <FontAwesomeIcon icon={icons.home} className="w-4 h-4" />
-          <span>Entra in Casa</span>
-        </button>
+        {housingChatRoomId && (
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("openHousingChat", { detail: { roomId: housingChatRoomId } }));
+              }
+            }}
+            className="px-4 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 transition-colors flex items-center gap-2 text-xs uppercase tracking-wider"
+            title="Accedi alla chat privata della tua abitazione"
+          >
+            <FontAwesomeIcon icon={icons.home} className="w-4 h-4" />
+            <span>Entra in Casa</span>
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-// Griglia ordinata e rinominata delle statistiche derivate
-function DerivedStatsGrid({ computed }: { computed: any }) {
-  const throwRange = computed.throwRange ?? {};
+// Griglia parametri derivati Skiru v3 (HP + Mitigazione + Movimento)
+function DerivedStatsGrid({ computed, stacked }: { computed: any; stacked?: boolean }) {
+  const hpMax = computed.hpMax ?? computed.body;
+  const hpCurrent = computed.hpCurrent ?? hpMax;
+  const hasHp = typeof hpMax === "number" && hpMax > 0;
 
-  // Raggruppo in blocchi tematici per effetto "faldone militare"
-  const groups: Array<{
-    id: string;
-    title: string;
-    rows: Array<{ key: string; label: string; value: number | undefined }>;
-  }> = [
+  const rows: Array<{ key: string; label: string; value: number; suffix?: string }> = [
     {
-      id: "sopravvivenza",
-      title: "Sopravvivenza",
-      rows: [
-        { key: "hpMax", label: "Body [BOD]", value: computed.hpMax },
-        { key: "kotodamaMax", label: "Kotodama [KOT]", value: computed.kotodamaMax },
-      ],
+      key: "mitigationPercent",
+      label: "Mitigazione Itami",
+      value: computed.mitigationPercent,
+      suffix: "%",
     },
     {
-      id: "movimento",
-      title: "Movimento & Spazio",
-      rows: [
-        { key: "movement", label: "Movimento [MOV] (m)", value: computed.movement },
-        { key: "jump", label: "Salto [JUMP] (m)", value: computed.jump },
-        { key: "engageDistance", label: "Distanza d’ingaggio (m)", value: computed.engageDistance },
-        { key: "throw_small", label: "Lancio (Piccole)", value: throwRange.small },
-        { key: "throw_medium", label: "Lancio (Medie)", value: throwRange.medium },
-        { key: "throw_large", label: "Lancio (Grandi)", value: throwRange.large },
-        { key: "throw_giant", label: "Lancio (Giganti)", value: throwRange.giant },
-      ],
+      key: "movementMetersPerQuarter",
+      label: "Movimento (m/quarto)",
+      value: computed.movementMetersPerQuarter ?? computed.movement,
     },
-    {
-      id: "percezione",
-      title: "Percezione",
-      rows: [
-        { key: "perceptionPhysical", label: "Percezione Sensi [PER-S]", value: computed.perceptionPhysical },
-        { key: "perceptionSpiritual", label: "Percezione Anime [PER-E]", value: computed.perceptionSpiritual },
-      ],
-    },
-    {
-      id: "combattimento",
-      title: "Combattimento",
-      rows: [
-        { key: "reflexes", label: "Reflexes [REF]", value: computed.reflexes },
-        { key: "velocity", label: "Velocità [VEL]", value: computed.velocity },
-        { key: "meleeDamage", label: "Danno CAC", value: computed.meleeDamage },
-        { key: "rangedDamage", label: "Danno CAD", value: computed.rangedDamage },
-      ],
-    },
-  ]
-    .map((group) => ({
-      ...group,
-      rows: group.rows.filter((r) => typeof r.value === "number"),
-    }))
-    .filter((group) => group.rows.length > 0);
+  ].filter((r): r is { key: string; label: string; value: number; suffix?: string } => typeof r.value === "number");
 
-  if (groups.length === 0) return null;
+  if (!hasHp && rows.length === 0) return null;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-3 font-display">
-        Statistiche Derivate
+    <div className={stacked ? "space-y-3" : "space-y-4"}>
+      <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display">
+        Parametri derivati
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {groups.map((group) => (
-          <section
-            key={group.id}
-            className="bg-black/30 rounded-lg border border-[var(--border-color)]/80 shadow-[0_0_12px_rgba(0,0,0,0.6)]"
+      <div className={stacked ? "flex flex-col gap-3" : "grid grid-cols-1 sm:grid-cols-2 gap-3"}>
+        {hasHp && <GameHpBar embedded value={hpCurrent} max={hpMax} />}
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className="bg-black/30 rounded-lg border border-[var(--border-color)]/80 px-3 py-2"
           >
-            <header className="px-3 py-2 border-b border-[var(--border-color)]/60 bg-black/50">
-              <p className="text-[9px] uppercase tracking-[0.25em] text-gray-400 font-display">
-                {group.title}
-              </p>
-            </header>
-            <div className="p-3 space-y-2">
-              {group.id === "movimento" ? (
-                <>
-                  <p className="text-[9px] uppercase tracking-[0.2em] text-gray-500 mb-1">
-                    Movimento &amp; Posizione
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {group.rows
-                      .filter((r) => r.key === "movement" || r.key === "jump" || r.key === "engageDistance")
-                      .map((row) => (
-                        <div
-                          key={row.key}
-                          className="bg-[var(--panel-bg)]/80 rounded-md px-2 py-2 border border-[var(--border-color)] hover:border-[var(--accent-gold)]/50 transition-colors"
-                        >
-                          <p className="text-[9px] text-gray-500 uppercase mb-0.5 leading-tight">
-                            {row.label}
-                          </p>
-                          <p className="font-display text-lg text-[var(--accent-gold)] leading-none">
-                            {String(row.value)}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                  {group.rows.some((r) => r.key.startsWith("throw_")) && (
-                    <>
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-gray-500 mt-2 mb-1">
-                        Lancio [LAN]
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {group.rows
-                          .filter((r) => r.key.startsWith("throw_"))
-                          .map((row) => (
-                            <div
-                              key={row.key}
-                              className="bg-[var(--panel-bg)]/80 rounded-md px-2 py-2 border border-[var(--border-color)] hover:border-[var(--accent-gold)]/50 transition-colors"
-                            >
-                              <p className="text-[9px] text-gray-500 uppercase mb-0.5 leading-tight">
-                                {row.label}
-                              </p>
-                              <p className="font-display text-lg text-[var(--accent-gold)] leading-none">
-                                {String(row.value)}
-                              </p>
-                            </div>
-                          ))}
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {group.rows.map((row) => (
-                    <div
-                      key={row.key}
-                      className="bg-[var(--panel-bg)]/80 rounded-md px-2 py-2 border border-[var(--border-color)] hover:border-[var(--accent-gold)]/50 transition-colors"
-                    >
-                      <p className="text-[9px] text-gray-500 uppercase mb-0.5 leading-tight">
-                        {row.label}
-                      </p>
-                      <p className="font-display text-lg text-[var(--accent-gold)] leading-none">
-                        {String(row.value)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
+            <p className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-display mb-1">
+              {row.label}
+            </p>
+            <p className="font-display text-xl text-[var(--accent-gold)]">
+              {row.value}
+              {row.suffix ?? ""}
+            </p>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-// Componente Radar Chart SVG
-function RadarChart({ data }: { data: { f: number; c: number; d: number; m: number; e: number } }) {
-  const size = 240;
-  const center = size / 2;
-  const radius = 90;
-  const angles = {
-    f: -Math.PI / 2, // Top
-    c: -Math.PI / 2 + (2 * Math.PI / 5) * 1,
-    d: -Math.PI / 2 + (2 * Math.PI / 5) * 2,
-    m: -Math.PI / 2 + (2 * Math.PI / 5) * 3,
-    e: -Math.PI / 2 + (2 * Math.PI / 5) * 4,
-  };
+// Radar domini Skiru — stile pannello RPG (triangolo Ten · Chi · Jin)
+function skiruRadarAxisPoint(
+  cx: number,
+  cy: number,
+  vx: number,
+  vy: number,
+  scale: number,
+) {
+  return { x: cx + (vx - cx) * scale, y: cy + (vy - cy) * scale };
+}
 
-  const points = Object.entries(angles).map(([key, angle]) => {
-    const value = data[key as keyof typeof data];
-    const r = (value / 100) * radius;
-    return {
-      x: center + r * Math.cos(angle),
-      y: center + r * Math.sin(angle),
-      label: STAT_LABELS[key] || key,
-      angle,
-    };
+function skiruRadarTrianglePolygon(
+  cx: number,
+  cy: number,
+  top: { x: number; y: number },
+  bl: { x: number; y: number },
+  br: { x: number; y: number },
+  scale: number,
+) {
+  const t = skiruRadarAxisPoint(cx, cy, top.x, top.y, scale);
+  const l = skiruRadarAxisPoint(cx, cy, bl.x, bl.y, scale);
+  const r = skiruRadarAxisPoint(cx, cy, br.x, br.y, scale);
+  return `${t.x},${t.y} ${l.x},${l.y} ${r.x},${r.y}`;
+}
+
+function SkiruDomainRadarChart({
+  domains,
+}: {
+  domains: Array<{ label: string; points: number; percent: number }>;
+}) {
+  const gradientId = useId().replace(/:/g, "");
+  const vbW = 360;
+  const vbH = 320;
+  const cx = 180;
+  const cy = 180;
+  const apex = { x: 180, y: 40 };
+  const bl = { x: 58.76, y: 250 };
+  const br = { x: 301.24, y: 250 };
+
+  const ordered =
+    domains.length >= 3
+      ? domains
+      : [
+          { label: "Ten", points: 0, percent: 0 },
+          { label: "Chi", points: 0, percent: 0 },
+          { label: "Jin", points: 0, percent: 0 },
+        ];
+
+  const ten = ordered[0] ?? { label: "Ten", points: 0, percent: 0 };
+  const chi = ordered[1] ?? { label: "Chi", points: 0, percent: 0 };
+  const jin = ordered[2] ?? { label: "Jin", points: 0, percent: 0 };
+
+  const tenPt = skiruRadarAxisPoint(cx, cy, apex.x, apex.y, ten.percent / 100);
+  const chiPt = skiruRadarAxisPoint(cx, cy, bl.x, bl.y, chi.percent / 100);
+  const jinPt = skiruRadarAxisPoint(cx, cy, br.x, br.y, jin.percent / 100);
+  const dataPolygon = `${tenPt.x},${tenPt.y} ${chiPt.x},${chiPt.y} ${jinPt.x},${jinPt.y}`;
+
+  const toPct = (x: number, y: number) => ({
+    left: `${(x / vbW) * 100}%`,
+    top: `${(y / vbH) * 100}%`,
   });
 
-  const pathData = `M ${points.map((p) => `${p.x},${p.y}`).join(" L ")} Z`;
-
   return (
-    <div className="flex items-center justify-center bg-[var(--panel-bg)] rounded-lg p-4 border border-[var(--accent-violet)]/30">
-      <svg width={size} height={size} className="overflow-visible">
-        {/* Griglia concentrica */}
-        {[0.2, 0.4, 0.6, 0.8, 1.0].map((scale) => (
-          <circle
-            key={scale}
-            cx={center}
-            cy={center}
-            r={radius * scale}
-            fill="none"
-            stroke="rgba(124, 58, 237, 0.15)"
-            strokeWidth="1"
+    <div className="relative w-[min(100%,380px)] min-w-[300px] shrink-0 rounded-[10px] border-2 border-[var(--accent-gold)] bg-[var(--panel-bg)] px-5 py-5 shadow-[var(--shadow-gold)]">
+      <div
+        className="pointer-events-none absolute rounded-md border border-[var(--accent-violet)]/45"
+        style={{ inset: "9px" }}
+        aria-hidden
+      />
+      <span className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 border-l-2 border-t-2 border-[var(--accent-gold)]" aria-hidden />
+      <span className="pointer-events-none absolute right-2.5 top-2.5 h-4 w-4 border-r-2 border-t-2 border-[var(--accent-gold)]" aria-hidden />
+      <span className="pointer-events-none absolute bottom-2.5 left-2.5 h-4 w-4 border-b-2 border-l-2 border-[var(--accent-gold)]" aria-hidden />
+      <span className="pointer-events-none absolute bottom-2.5 right-2.5 h-4 w-4 border-b-2 border-r-2 border-[var(--accent-gold)]" aria-hidden />
+
+      <div className="relative z-[1] mx-auto w-full" style={{ aspectRatio: `${vbW} / ${vbH}` }}>
+        <svg
+          viewBox={`0 0 ${vbW} ${vbH}`}
+          className="absolute inset-0 h-full w-full overflow-visible"
+          aria-hidden
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent-violet-light)" stopOpacity={0.85} />
+              <stop offset="100%" stopColor="var(--accent-violet)" stopOpacity={0.65} />
+            </linearGradient>
+          </defs>
+
+          {[0.25, 0.5, 0.75, 1].map((scale) => (
+            <polygon
+              key={scale}
+              points={skiruRadarTrianglePolygon(cx, cy, apex, bl, br, scale)}
+              fill="none"
+              stroke="var(--border-color)"
+              strokeWidth={scale === 1 ? 1 : 0.75}
+              strokeOpacity={scale === 1 ? 0.9 : 0.75}
+            />
+          ))}
+
+          <line x1={cx} y1={cy} x2={apex.x} y2={apex.y} stroke="var(--accent-violet)" strokeOpacity={0.45} strokeWidth={0.75} />
+          <line x1={cx} y1={cy} x2={bl.x} y2={bl.y} stroke="var(--accent-violet)" strokeOpacity={0.45} strokeWidth={0.75} />
+          <line x1={cx} y1={cy} x2={br.x} y2={br.y} stroke="var(--accent-violet)" strokeOpacity={0.45} strokeWidth={0.75} />
+
+          <polygon
+            points={dataPolygon}
+            fill={`url(#${gradientId})`}
+            stroke="var(--accent-gold)"
+            strokeWidth={2}
+            strokeLinejoin="round"
+            style={{ filter: "drop-shadow(0 0 8px var(--glow-violet))" }}
           />
-        ))}
-        {/* Linee assi */}
-        {Object.values(angles).map((angle, i) => (
-          <line
-            key={i}
-            x1={center}
-            y1={center}
-            x2={center + radius * Math.cos(angle)}
-            y2={center + radius * Math.sin(angle)}
-            stroke="rgba(124, 58, 237, 0.2)"
-            strokeWidth="1"
-          />
-        ))}
-        {/* Area dati con gradiente viola */}
-        <defs>
-          <linearGradient id="radarGradientViolet" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="rgba(124, 58, 237, 0.4)" />
-            <stop offset="100%" stopColor="rgba(124, 58, 237, 0.1)" />
-          </linearGradient>
-        </defs>
-        <path
-          d={pathData}
-          fill="url(#radarGradientViolet)"
-          stroke="var(--accent-violet)"
-          strokeWidth="2"
-          style={{ filter: "drop-shadow(0 0 8px rgba(124, 58, 237, 0.5))" }}
-        />
-        {/* Punti e etichette */}
-        {points.map((point, i) => {
-          const labelX = center + (radius + 20) * Math.cos(point.angle);
-          const labelY = center + (radius + 20) * Math.sin(point.angle);
+        </svg>
+
+        {[
+          { pt: tenPt, delay: "0s" },
+          { pt: chiPt, delay: "0.8s" },
+          { pt: jinPt, delay: "1.6s" },
+        ].map((item, i) => {
+          const pos = toPct(item.pt.x, item.pt.y);
           return (
-            <g key={i}>
-              <circle 
-                cx={point.x} 
-                cy={point.y} 
-                r="5" 
-                fill="var(--accent-violet)" 
-                style={{ filter: "drop-shadow(0 0 4px rgba(124, 58, 237, 0.7))" }}
-              />
-              <text
-                x={labelX}
-                y={labelY}
-                fill="var(--accent-violet)"
-                fontSize="11"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="font-display"
-                style={{ textShadow: "0 0 4px rgba(124, 58, 237, 0.5)" }}
-              >
-                {point.label}
-              </text>
-            </g>
+            <div
+              key={i}
+              className="skiru-radar-dot absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-[var(--accent-gold)] bg-[var(--accent-violet-light)]"
+              style={{ ...pos, animationDelay: item.delay }}
+            />
           );
         })}
-      </svg>
-    </div>
-  );
-}
 
-// Barra statistica con estetica videogame (versione ancora più compatta)
-function StatBar({ label, value, max, color }: { label: string; value: number; max: number; color: "magenta" | "purple" }) {
-  const percentage = max > 0 ? (value / max) * 100 : 0;
-  const isMagenta = color === "magenta";
-  // Magenta/rosa che si abbina bene con il viola
-  const barColor = isMagenta ? "rgba(219, 39, 119, 0.8)" : "rgba(124, 58, 237, 0.8)";
-  const glowColor = isMagenta ? "rgba(219, 39, 119, 0.4)" : "rgba(124, 58, 237, 0.4)";
-  const gradientEnd = isMagenta ? "rgba(236, 72, 153, 0.9)" : "rgba(150, 100, 255, 0.9)";
-
-  return (
-    <div className="bg-[var(--panel-bg)] rounded-md px-2 py-1.5 border border-[var(--border-color)]">
-      <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[8px] uppercase tracking-widest text-gray-500 font-display">{label}</span>
-        <span className="font-display text-[10px] text-[var(--accent-gold)]" style={{ textShadow: "0 0 5px rgba(212,175,55,0.3)" }}>
-          {value}/{max}
-        </span>
-      </div>
-      <div className="h-3 bg-black/60 rounded-full overflow-hidden border border-[var(--border-color)] relative">
         <div
-          className="h-full transition-all duration-700 relative"
-          style={{ 
-            width: `${percentage}%`,
-            background: `linear-gradient(90deg, ${barColor} 0%, ${gradientEnd} 100%)`,
-            boxShadow: `0 0 10px ${glowColor}, inset 0 0 8px rgba(255,255,255,0.08)`
-          }}
+          className="absolute -translate-x-1/2 text-center whitespace-nowrap"
+          style={{ left: "50%", top: "0%" }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-white/8 to-transparent"></div>
+          <p className="font-display text-[13px] text-[var(--accent-violet-light)]" style={{ textShadow: "0 0 6px var(--glow-violet)" }}>
+            {ten.points}
+          </p>
+          <p className="font-display text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--accent-gold)]" style={{ textShadow: "0 0 6px var(--shadow-gold)" }}>
+            {ten.label}
+          </p>
+        </div>
+
+        <div className="absolute -translate-x-1/2 text-center whitespace-nowrap" style={{ left: `${(bl.x / vbW) * 100}%`, top: `${((bl.y + 18) / vbH) * 100}%` }}>
+          <p className="font-display text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--accent-gold)]" style={{ textShadow: "0 0 6px var(--shadow-gold)" }}>
+            {chi.label}
+          </p>
+          <p className="font-display text-[13px] text-[var(--accent-violet-light)]" style={{ textShadow: "0 0 6px var(--glow-violet)" }}>
+            {chi.points}
+          </p>
+        </div>
+
+        <div className="absolute -translate-x-1/2 text-center whitespace-nowrap" style={{ left: `${(br.x / vbW) * 100}%`, top: `${((br.y + 18) / vbH) * 100}%` }}>
+          <p className="font-display text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--accent-gold)]" style={{ textShadow: "0 0 6px var(--shadow-gold)" }}>
+            {jin.label}
+          </p>
+          <p className="font-display text-[13px] text-[var(--accent-violet-light)]" style={{ textShadow: "0 0 6px var(--glow-violet)" }}>
+            {jin.points}
+          </p>
         </div>
       </div>
     </div>
@@ -1181,35 +2031,37 @@ function StatBar({ label, value, max, color }: { label: string; value: number; m
 }
 
 // Pagina Modifica
-function SchedaModificaPage({ char, onCharUpdate }: { char: any; onCharUpdate?: () => void }) {
+function SchedaModificaPage({ char, characterId, onCharUpdate }: { char: any; characterId?: string; onCharUpdate?: () => void }) {
   const [avatar, setAvatar] = useState(char.avatarUrl ?? char.avatar ?? "");
   const [miniAvatar, setMiniAvatar] = useState(char.miniAvatar ?? "");
   const [surname, setSurname] = useState(char.surname ?? "");
-  const [background, setBackground] = useState((char as any)?.backgroundImage ?? "");
   const [music, setMusic] = useState((char as any)?.themeMusicUrl ?? "");
+  const [bannerPg, setBannerPg] = useState((char as any)?.bannerPg ?? "");
   const [bio, setBio] = useState(char.bio ?? "");
   const [saving, setSaving] = useState(false);
 
-  // Aggiorna lo stato quando char cambia (dopo il salvataggio)
+  const isEditingOther = characterId && characterId !== char?.id;
+
   useEffect(() => {
     setAvatar(char.avatarUrl ?? char.avatar ?? "");
     setMiniAvatar(char.miniAvatar ?? "");
     setSurname(char.surname ?? "");
-    setBackground((char as any)?.backgroundImage ?? "");
     setMusic((char as any)?.themeMusicUrl ?? "");
+    setBannerPg((char as any)?.bannerPg ?? "");
     setBio(char.bio ?? "");
   }, [char]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put("/characters/me/profilo", {
+      const url = isEditingOther ? `/characters/${characterId}/profilo` : "/characters/me/profilo";
+      await api.put(url, {
         avatar,
         miniAvatar,
         surname,
         bio,
-        backgroundImage: background,
         themeMusicUrl: music,
+        bannerPg,
       });
       if (onCharUpdate) onCharUpdate();
       alert("Profilo aggiornato!");
@@ -1237,6 +2089,13 @@ function SchedaModificaPage({ char, onCharUpdate }: { char: any; onCharUpdate?: 
         </div>
         <div>
           <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 block font-display">Avatar Principale</label>
+          <p className="text-[10px] text-[var(--accent-violet-light)]/70 mb-2 font-display">
+            Dimensioni consigliate:{" "}
+            <span className="text-[var(--accent-gold)]">
+              {AVATAR_MAIN_WIDTH} × {AVATAR_MAIN_HEIGHT} px
+            </span>
+            {" "}(colonna sinistra scheda · rapporto verticale)
+          </p>
           <input
             type="text"
             value={avatar}
@@ -1244,9 +2103,22 @@ function SchedaModificaPage({ char, onCharUpdate }: { char: any; onCharUpdate?: 
             placeholder="URL immagine"
             className="w-full px-4 py-2.5 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-gold)]/50 transition-colors"
           />
+          <div className="mt-3 rounded-lg border border-[var(--border-color)] bg-black/40 overflow-hidden inline-block">
+            <CharacterMainAvatarPreview url={avatar} />
+            <p className="px-3 py-2 text-[10px] text-gray-500 uppercase tracking-[0.18em] font-display">
+              Anteprima Avatar Principale ({AVATAR_MAIN_WIDTH}×{AVATAR_MAIN_HEIGHT})
+            </p>
+          </div>
         </div>
         <div>
           <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 block font-display">Avatar Chat</label>
+          <p className="text-[10px] text-[var(--accent-violet-light)]/70 mb-2 font-display">
+            Dimensioni consigliate:{" "}
+            <span className="text-[var(--accent-gold)]">
+              {AVATAR_CHAT_SIZE} × {AVATAR_CHAT_SIZE} px
+            </span>
+            {" "}(quadrato accanto ai messaggi in chat)
+          </p>
           <input
             type="text"
             value={miniAvatar}
@@ -1254,28 +2126,40 @@ function SchedaModificaPage({ char, onCharUpdate }: { char: any; onCharUpdate?: 
             placeholder="URL immagine"
             className="w-full px-4 py-2.5 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-gold)]/50 transition-colors"
           />
+          <div className="mt-3 rounded-lg border border-[var(--border-color)] bg-black/40 overflow-hidden inline-block">
+            <CharacterChatAvatarPreview url={miniAvatar} />
+            <p className="px-3 py-2 text-[10px] text-gray-500 uppercase tracking-[0.18em] font-display">
+              Anteprima Avatar Chat ({AVATAR_CHAT_SIZE}×{AVATAR_CHAT_SIZE})
+            </p>
+          </div>
         </div>
+
         <div>
-          <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 block font-display">Background Immagine</label>
+          <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 block font-display">
+            Banner PG
+          </label>
+          <p className="text-[10px] text-[var(--accent-violet-light)]/70 mb-2 font-display">
+            Dimensioni consigliate:{" "}
+            <span className="text-[var(--accent-gold)]">
+              {BANNER_PG_UPLOAD_WIDTH} × {BANNER_PG_UPLOAD_HEIGHT} px
+            </span>
+            {" "}(larghezza piena sezione · altezza fissa {BANNER_PG_DISPLAY_HEIGHT}px in scheda)
+          </p>
           <input
             type="text"
-            value={background}
-            onChange={(e) => setBackground(e.target.value)}
-            placeholder="URL immagine background"
+            value={bannerPg}
+            onChange={(e) => setBannerPg(e.target.value)}
+            placeholder="URL immagine banner_pg"
             className="w-full px-4 py-2.5 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-gold)]/50 transition-colors"
           />
-          {background && (
-            <div className="mt-3 rounded-lg border border-[var(--border-color)] bg-black/40 overflow-hidden">
-              <div
-                className="h-32 bg-cover bg-center"
-                style={{ backgroundImage: `url(${background})` }}
-              />
-              <p className="px-3 py-2 text-[10px] text-gray-500 uppercase tracking-[0.18em] font-display">
-                Anteprima Background
-              </p>
-            </div>
-          )}
+          <div className="mt-3 rounded-lg border border-[var(--border-color)] bg-black/40 overflow-hidden">
+            <CharacterBannerPg url={bannerPg} />
+            <p className="px-3 py-2 text-[10px] text-gray-500 uppercase tracking-[0.18em] font-display">
+              Anteprima Banner PG ({BANNER_PG_UPLOAD_WIDTH}×{BANNER_PG_UPLOAD_HEIGHT})
+            </p>
+          </div>
         </div>
+
         <div>
           <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 block font-display">Musica (.mp3)</label>
           <input
@@ -1330,62 +2214,33 @@ function SchedaModificaPage({ char, onCharUpdate }: { char: any; onCharUpdate?: 
   );
 }
 
-// Pagina Background (solo anteprima iframe del contenuto)
+// Pagina Background (contenuto diretto, tutta l'area disponibile)
 function SchedaBackgroundPage({ char }: { char: any }) {
   const bio = char.bio ?? "";
-
-  const previewHtml = `
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0a0a0a;
-      color: #e5e5e5;
-      padding: 20px;
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-    ${bio.includes('<style>') ? '' : '/* CSS personalizzato può essere inserito qui */'}
-  </style>
-</head>
-<body>
-  ${bio || '<p style="color: #666; font-style: italic;">Nessun contenuto inserito.</p>'}
-</body>
-</html>
-  `;
+  const hasHtml = /<[a-z][\s\S]*>/i.test(bio);
 
   return (
-    <div className="p-6 space-y-6 min-h-full box-border flex flex-col">
+    <div className="p-6 min-h-full min-w-0 box-border flex flex-col">
       <h2
-        className="font-display text-xl text-[var(--accent-gold)] border-b border-[var(--border-color)] pb-3 mb-4"
+        className="font-display text-xl text-[var(--accent-gold)] border-b border-[var(--border-color)] pb-3 mb-4 shrink-0"
         style={{ textShadow: "0 0 10px rgba(212,175,55,0.3)" }}
       >
         Background Personaggio
       </h2>
 
-      <section className="bg-[var(--panel-bg)] rounded-lg border border-[var(--border-color)] overflow-hidden shadow-[0_0_16px_rgba(0,0,0,0.6)] flex-1 flex flex-col">
-        <div className="p-4 flex-1 flex flex-col">
-          <div className="border border-[var(--border-color)] bg-black/80 rounded-lg overflow-hidden flex-1">
-            <iframe
-              srcDoc={previewHtml}
-              className="w-full h-full border-0"
-              sandbox="allow-same-origin"
-              title="Anteprima Background"
+      <section className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto bg-black/40 rounded-lg border border-[var(--border-color)] p-6">
+        {bio ? (
+          hasHtml ? (
+            <div
+              className="scheda-bio-host mx-auto w-fit max-w-full min-w-0 font-sans text-[var(--foreground)] leading-relaxed [&_a]:text-[var(--accent-gold)] [&_a]:hover:underline [&_p]:mb-3 [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-6 [&_ol]:pl-6 [&_#Scheda-BackBear]:mx-auto [&_#Scheda-BackBear]:max-w-full [&_.Scheda-shapeBox]:overflow-hidden [&_.Scheda-boxText]:box-border [&_.Scheda-boxText]:max-w-full"
+              dangerouslySetInnerHTML={{ __html: bio }}
             />
-          </div>
-          <p className="mt-3 text-[10px] text-gray-600 italic text-center">
-            Questa è la resa finale del background del personaggio.
-          </p>
-        </div>
+          ) : (
+            <p className="whitespace-pre-wrap text-[var(--foreground)] leading-relaxed max-w-full">{bio}</p>
+          )
+        ) : (
+          <p className="text-gray-500 italic">Nessun contenuto inserito.</p>
+        )}
       </section>
     </div>
   );
@@ -1406,126 +2261,114 @@ function SchedaInventarioPage({ characterId }: { characterId?: string }) {
   );
 }
 
-// Pagina Waza
-function SchedaWazaPage({ characterId }: { characterId?: string }) {
-  const [skills, setSkills] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+// Pagina Waza — vedi SchedaWazaPage.tsx
+
+// Bottone Leggi giocata (da Scheda → Registrazioni)
+function RegistrazioneLeggiButton({ sessionId, title }: { sessionId: string; title: string }) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = (await api.get(`/game-sessions/${sessionId}/messages`)) as { session?: any; messages?: any[] };
+      setMessages(res?.messages ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Errore caricamento");
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId]);
 
   useEffect(() => {
-    if (!characterId) {
-      setLoading(false);
-      return;
-    }
-    api
-      .get(`/characters/${characterId}/waza`)
-      .then((d) => {
-        setSkills(Array.isArray(d) ? d : []);
-      })
-      .catch(() => setSkills([]))
-      .finally(() => setLoading(false));
-  }, [characterId]);
-
-  if (loading) {
-    return <p className="text-sm text-gray-500 p-4">Caricamento…</p>;
-  }
+    if (open) load();
+  }, [open, load]);
 
   return (
-    <div className="p-6 space-y-6 min-h-full box-border">
-      <h2
-        className="font-display text-xl text-[var(--accent-gold)] border-b border-[var(--border-color)] pb-3 mb-4"
-        style={{ textShadow: "0 0 10px rgba(212,175,55,0.3)" }}
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="px-2 py-1 rounded text-[9px] uppercase tracking-wider border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10"
       >
-        Waza / Skill Operative
-      </h2>
-
-      <section className="bg-[var(--panel-bg)] rounded-lg border border-[var(--border-color)] overflow-hidden shadow-[0_0_16px_rgba(0,0,0,0.6)]">
-        <header className="px-4 py-2 border-b border-[var(--border-color)]/70 bg-black/60 flex items-center justify-between">
-          <p className="text-[9px] uppercase tracking-[0.24em] text-gray-400 font-display">
-            Registro Waza
-          </p>
-          <p className="text-[9px] uppercase tracking-[0.18em] text-[var(--accent-violet)] font-display">
-            Slot attivi: 0 / 0
-          </p>
-        </header>
-
-        <div className="p-4">
-          {skills.length === 0 ? (
-            <div className="text-sm text-gray-500 italic">
-              Nessuna Waza registrata. Le abilità apprese appariranno qui con nome, rango e costo in Kotodama.
+        Leggi
+      </button>
+      {open &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
+            <div className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg w-full max-w-5xl max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)] shrink-0">
+                <h2 className="font-display text-lg text-[var(--accent-gold)]">Giocata: {title}</h2>
+                <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-[var(--accent-gold)]">
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 bg-black/40">
+                {loading ? (
+                  <p className="text-gray-400 text-center">Caricamento...</p>
+                ) : error ? (
+                  <p className="text-amber-400 text-center">{error}</p>
+                ) : messages.length === 0 ? (
+                  <div className="text-gray-400 text-center space-y-1">
+                  <p>Nessun messaggio disponibile.</p>
+                  <p className="text-xs text-gray-500">I messaggi vengono registrati dalla chat durante la giocata. Assicurati di aver inviato messaggi nella chat corretta tra l&apos;avvio e la chiusura della registrazione.</p>
+                </div>
+                ) : (
+                  messages.map((m: any) => (
+                    <RegistrazioneMessageBlock key={m.id} message={m} />
+                  ))
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-xs">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)]/70 bg-black/40">
-                    <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                      Nome
-                    </th>
-                    <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                      Rango
-                    </th>
-                    <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                      Costo KOT
-                    </th>
-                      <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                        Tipo
-                      </th>
-                      <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                        Livello
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {skills.map((s, idx) => {
-                      const getTypeColor = (type: string) => {
-                        switch (type?.toUpperCase()) {
-                          case 'OFFENSIVE':
-                          case 'ATTACK':
-                            return 'text-red-400 bg-red-500/20 border-red-500/40';
-                          case 'DEFENSIVE':
-                          case 'DEFENSE':
-                            return 'text-blue-400 bg-blue-500/20 border-blue-500/40';
-                          case 'SUPPORT':
-                          case 'HEAL':
-                            return 'text-green-400 bg-green-500/20 border-green-500/40';
-                          case 'UTILITY':
-                          case 'BUFF':
-                            return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/40';
-                          default:
-                            return 'text-gray-400 bg-gray-500/20 border-gray-500/40';
-                        }
-                      };
-                      return (
-                        <tr
-                          key={s.id || idx}
-                          className="border-b border-[var(--border-color)]/40 last:border-0 hover:bg-white/5 transition-colors"
-                        >
-                          <td className="px-3 py-2 text-[11px] text-gray-100 font-display">{s.name}</td>
-                          <td className="px-3 py-2 text-[11px] text-gray-300">{s.rank ?? "-"}</td>
-                          <td className="px-3 py-2 text-[11px] text-[var(--accent-violet)] font-display">
-                            {s.costKotodama ?? s.kotCost ?? "-"} KOT
-                          </td>
-                          <td className="px-3 py-2 text-[11px]">
-                            {s.type ? (
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] uppercase tracking-wider border ${getTypeColor(s.type)}`}>
-                                {s.type}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-[11px] text-[var(--accent-gold)] font-display">
-                            {s.level ?? 1}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          </div>,
+          document.body
+        )}
+    </>
+  );
+}
+
+function RegistrazioneMessageBlock({ message }: { message: any }) {
+  const formatted = formatNarrativeText(message.content ?? "");
+  const isGlobal = message.zone === "GLOBAL" || message.name?.startsWith("[GLOBAL]");
+  if (isGlobal) {
+    return (
+      <div className="border border-[var(--accent-violet)]/50 py-3 px-4 text-center my-4 rounded">
+        <strong className="text-[var(--accent-violet)] text-xs">✦ GLOBALE ✦</strong>
+        <p className="m-0 text-sm text-gray-200 mt-1" dangerouslySetInnerHTML={{ __html: formatted }} />
+      </div>
+    );
+  }
+  if (message.isMasterscreen) {
+    return (
+      <div className="w-full mb-6 p-5 bg-black/40 border border-[var(--accent-gold)]/30 rounded shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] relative">
+        <div className="masterscreen-format font-sans text-[13px] leading-relaxed whitespace-pre-wrap mb-4">
+          <div dangerouslySetInnerHTML={{ __html: formatted }} />
         </div>
-      </section>
+        <div className="text-right font-display text-[11px] font-bold text-[var(--accent-gold)] uppercase tracking-wider opacity-80">
+          — Shinigami ({message.name}{message.surname ? ` ${message.surname}` : ""})
+        </div>
+      </div>
+    );
+  }
+  const fmt = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  return (
+    <div className="mb-4 pl-2 border-b border-white/5 pb-2">
+      <div className="flex items-center gap-2 mb-1 text-xs">
+        <span className="text-gray-500">{fmt(message.createdAt)}</span>
+        <span className="font-display font-bold text-[var(--accent-gold)]">{message.name}{message.surname ? ` ${message.surname}` : ""}</span>
+        {message.pixelIcons?.ruolo?.map((r: string) => {
+          const url = getPixelIconUrlRuolo(r as PixelIconRuolo);
+          return url ? <Image key={r} src={url} alt={r} width={14} height={14} className="object-contain" /> : null;
+        })}
+        {message.pixelIcons?.ordine?.map((o: string) => {
+          const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
+          return url ? <Image key={o} src={url} alt={o} width={14} height={14} className="object-contain" /> : null;
+        })}
+      </div>
+      <p className="text-sm text-gray-300 m-0 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />
     </div>
   );
 }
@@ -1534,7 +2377,7 @@ function SchedaWazaPage({ characterId }: { characterId?: string }) {
 function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "quest" | "free">("all");
+  const [filter, setFilter] = useState<"all" | "quest" | "free" | "evento">("all");
 
   useEffect(() => {
     if (!characterId) {
@@ -1548,16 +2391,20 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
         // Mappa i dati per renderli più leggibili
         const mapped = sessions.map((s: any) => {
           const fetch = s.fetch || null;
-          const isQuest = !!fetch || !!s.fetchId;
+          const quest = s.quest || null;
+          const isQuest = !!fetch || !!s.fetchId || !!quest || !!s.questId;
+          const isEvento = s.sessionType === "EVENTO";
           const closedDate = s.closedAt || s.lastActiveAt || s.startedAt;
+          const questTitle = quest?.title || fetch?.title;
           return {
             id: s.id,
             date: closedDate,
-            type: isQuest ? "Quest" : "Sessione Libera",
-            title: fetch?.title || (isQuest ? `Quest ${s.roomId}` : `Sessione ${s.roomId}`),
-            questName: fetch?.title,
+            type: isEvento ? "Evento" : isQuest ? "Quest" : "Sessione Libera",
+            title: s.title || questTitle || (isQuest ? `Quest ${s.roomId}` : isEvento ? "Evento" : `Sessione ${s.roomId}`),
+            questName: questTitle,
             outcome: s.status === "CLOSED" ? "Completata" : s.status === "CANCELLED" ? "Annullata" : s.status,
             isQuest,
+            isEvento,
             fetchId: s.fetchId,
           };
         });
@@ -1569,7 +2416,8 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
 
   const filteredRegistrations = registrations.filter((r) => {
     if (filter === "quest") return r.isQuest;
-    if (filter === "free") return !r.isQuest;
+    if (filter === "free") return !r.isQuest && !r.isEvento;
+    if (filter === "evento") return r.isEvento;
     return true;
   });
 
@@ -1626,6 +2474,17 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
               >
                 Libere
               </button>
+              <button
+                type="button"
+                onClick={() => setFilter("evento")}
+                className={`px-2 py-1 rounded text-[9px] uppercase tracking-wider transition-colors ${
+                  filter === "evento"
+                    ? "bg-[var(--accent-gold)]/20 text-[var(--accent-gold)] border border-[var(--accent-gold)]/50"
+                    : "bg-black/40 text-gray-400 border border-[var(--border-color)]/50 hover:border-gray-600"
+                }`}
+              >
+                Eventi
+              </button>
             </div>
             <p className="text-[9px] uppercase tracking-[0.18em] text-[var(--accent-violet)] font-display">
               {loading ? "Caricamento..." : `${filteredRegistrations.length} sessioni`}
@@ -1658,6 +2517,9 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
                     <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
                       Esito
                     </th>
+                    <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
+                      Azioni
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1671,7 +2533,9 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
                       </td>
                       <td className="px-3 py-2 text-[11px]">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] uppercase tracking-wider ${
-                          r.isQuest
+                          r.isEvento
+                            ? "text-amber-400 bg-amber-500/20 border border-amber-500/40"
+                            : r.isQuest
                             ? "text-[var(--accent-violet)] bg-[var(--accent-violet)]/20 border border-[var(--accent-violet)]/40"
                             : "text-gray-400 bg-gray-500/20 border border-gray-500/40"
                         }`}>
@@ -1690,6 +2554,11 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
                           {r.outcome ?? "-"}
                         </span>
                       </td>
+                      <td className="px-3 py-2">
+                        {r.outcome === "Completata" && (
+                          <RegistrazioneLeggiButton sessionId={r.id} title={r.title} />
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1703,13 +2572,14 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
 }
 
 // Pagina Log
-function SchedaLogPage({ char }: { char: any }) {
+function SchedaLogPage({ char, characterId, isRemoteCharacter }: { char: any; characterId?: string; isRemoteCharacter?: boolean }) {
   const [expLogs, setExpLogs] = useState<any[]>([]);
   const [expLast7Days, setExpLast7Days] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get("/characters/me/exp-logs")
+    const url = isRemoteCharacter && characterId ? `/characters/${characterId}/exp-logs` : "/characters/me/exp-logs";
+    api.get(url)
       .then((d: any) => {
         setExpLast7Days(d.expLast7Days ?? 0);
         setExpLogs(Array.isArray(d.expRewards) ? d.expRewards : []);
@@ -1719,23 +2589,10 @@ function SchedaLogPage({ char }: { char: any }) {
         setExpLogs([]);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [characterId, isRemoteCharacter]);
 
-  // Calcola livello basandosi su EXP totale
-  const calculateLevel = (expTotal: number = 0): number => {
-    if (expTotal < 100) return 1;
-    if (expTotal < 300) return 2;
-    if (expTotal < 600) return 3;
-    if (expTotal < 1000) return 4;
-    if (expTotal < 1500) return 5;
-    if (expTotal < 2100) return 6;
-    if (expTotal < 2800) return 7;
-    if (expTotal < 3600) return 8;
-    if (expTotal < 4500) return 9;
-    return 10 + Math.floor((expTotal - 4500) / 1000);
-  };
-
-  const level = calculateLevel(char.experienceTotal ?? 0);
+  // Calcola livello basandosi su EXP totale (curva LEVELING_DESIGN, cap 50)
+  const levelProgress = resolveLevelFromExp(char.experienceTotal ?? 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -1754,7 +2611,10 @@ function SchedaLogPage({ char }: { char: any }) {
               Dossier Personaggio
             </p>
             <p className="text-[9px] uppercase tracking-[0.18em] text-[var(--accent-violet)] font-display">
-              Livello Operativo: {level}
+              Livello Operativo: {levelProgress.label}
+              {(levelProgress.paragon ?? 0) > 0 && (
+                <span className="ml-1 text-[var(--accent-violet-light)]">Paragon</span>
+              )}
             </p>
           </header>
 
@@ -1866,24 +2726,230 @@ function SchedaLogPage({ char }: { char: any }) {
   );
 }
 
-function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSummary; characterId?: string; onCharUpdate?: () => void }) {
-  const [activeSection, setActiveSection] = useState<"main" | "modifica" | "background" | "inventario" | "waza" | "registrazioni" | "log">("main");
-  const [charData, setCharData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+type Visibility = {
+  canSeeBackground?: boolean;
+  canSeeJournal?: boolean;
+  canSeePrivateLog?: boolean;
+  canSeeFullSheet?: boolean;
+  canEdit?: boolean;
+  showMasterNotes?: boolean;
+};
 
-  // Se characterId è presente e diverso da char.id, è una scheda remota (mod/admin vedono altri)
+// Alias staff + Note Master sotto l'avatar
+function SchedaAvatarSidebar({
+  characterId,
+  staffAlias,
+  masterNotes,
+  canEditStaffAlias,
+  canEditMasterNotes,
+  showMasterNotes = true,
+  onUpdate,
+}: {
+  characterId: string;
+  staffAlias?: string | null;
+  masterNotes?: string | null;
+  canEditStaffAlias?: boolean;
+  canEditMasterNotes?: boolean;
+  showMasterNotes?: boolean;
+  onUpdate?: () => void;
+}) {
+  const [alias, setAlias] = useState(staffAlias ?? "");
+  const [notes, setNotes] = useState(masterNotes ?? "");
+  const [editingAlias, setEditingAlias] = useState(false);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [savingAlias, setSavingAlias] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setAlias(staffAlias ?? "");
+  }, [staffAlias]);
+
+  useEffect(() => {
+    setNotes(masterNotes ?? "");
+  }, [masterNotes]);
+
+  const saveAlias = async () => {
+    if (!canEditStaffAlias) return;
+    setSavingAlias(true);
+    setError("");
+    try {
+      await api.patch(`/characters/${characterId}/staff-meta`, {
+        staffAlias: alias.trim() || null,
+      });
+      setEditingAlias(false);
+      onUpdate?.();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Errore salvataggio alias");
+    } finally {
+      setSavingAlias(false);
+    }
+  };
+
+  const saveNotes = async () => {
+    if (!canEditMasterNotes) return;
+    setSavingNotes(true);
+    setError("");
+    try {
+      await api.patch(`/characters/${characterId}/staff-meta`, {
+        masterNotes: notes.trim() || null,
+      });
+      setEditingNotes(false);
+      onUpdate?.();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Errore salvataggio note");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  return (
+    <div className="w-full mt-4 space-y-3">
+      {/* Alias staff */}
+      <div className="rounded-md border border-[var(--border-color)] bg-black/50 p-3 shadow-[var(--shadow-violet)]">
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <p className="text-[9px] uppercase tracking-[0.24em] text-[var(--accent-violet-light)] font-display">
+            Alias
+          </p>
+          {canEditStaffAlias && !editingAlias && (
+            <button
+              type="button"
+              onClick={() => setEditingAlias(true)}
+              className="text-[9px] uppercase tracking-wider text-[var(--accent-gold)] hover:underline shrink-0"
+            >
+              Modifica
+            </button>
+          )}
+        </div>
+        {editingAlias ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
+              placeholder="Alias assegnato dallo staff…"
+              maxLength={120}
+              className="w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/60 text-sm text-[var(--accent-gold)] font-display placeholder:text-gray-600 focus:outline-none focus:border-[var(--accent-gold)]/50"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingAlias(false);
+                  setAlias(staffAlias ?? "");
+                  setError("");
+                }}
+                className="px-2 py-1 rounded border border-[var(--border-color)] text-[10px] text-gray-400"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                onClick={saveAlias}
+                disabled={savingAlias}
+                className="px-2 py-1 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-[10px] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+              >
+                {savingAlias ? "…" : "Salva"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="font-display text-sm text-[var(--accent-gold)] min-h-[1.25rem]">
+            {staffAlias?.trim() ? staffAlias : <span className="text-gray-600 italic text-xs">Nessun alias assegnato</span>}
+          </p>
+        )}
+      </div>
+
+      {/* Note Master */}
+      {showMasterNotes && (
+        <div className="rounded-md border border-[var(--border-color)] bg-black/50 p-3 min-h-[140px] flex flex-col shadow-[var(--shadow-violet)]">
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <p className="text-[9px] uppercase tracking-[0.24em] text-[var(--accent-gold)] font-display">
+              Note del Master
+            </p>
+            {canEditMasterNotes && !editingNotes && (
+              <button
+                type="button"
+                onClick={() => setEditingNotes(true)}
+                className="text-[9px] uppercase tracking-wider text-[var(--accent-gold)] hover:underline shrink-0"
+              >
+                Modifica
+              </button>
+            )}
+          </div>
+          {editingNotes ? (
+            <div className="flex flex-col gap-2 flex-1">
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Note interne Master…"
+                rows={5}
+                maxLength={5000}
+                className="flex-1 min-h-[100px] px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/60 text-xs text-gray-200 resize-none focus:outline-none focus:border-[var(--accent-violet)]/50"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingNotes(false);
+                    setNotes(masterNotes ?? "");
+                    setError("");
+                  }}
+                  className="px-2 py-1 rounded border border-[var(--border-color)] text-[10px] text-gray-400"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="button"
+                  onClick={saveNotes}
+                  disabled={savingNotes}
+                  className="px-2 py-1 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-[10px] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+                >
+                  {savingNotes ? "…" : "Salva"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--accent-violet-light)]/80 whitespace-pre-wrap flex-1 leading-relaxed">
+              {masterNotes?.trim() ? masterNotes : <span className="text-gray-600 italic">Nessuna nota.</span>}
+            </p>
+          )}
+        </div>
+      )}
+
+      {error && <p className="text-[10px] text-[var(--accent-red)]">{error}</p>}
+    </div>
+  );
+}
+
+function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSummary; characterId?: string; onCharUpdate?: () => void }) {
+  const [activeSection, setActiveSection] = useState<
+    "main" | "skiru" | "modifica" | "background" | "inventario" | "waza" | "registrazioni" | "log" | "richieste"
+  >("main");
+  const [charData, setCharData] = useState<any>(null);
+  const [visibility, setVisibility] = useState<Visibility>({});
+  const [loading, setLoading] = useState(true);
+  const [housingChatRoomId, setHousingChatRoomId] = useState<string | null>(null);
+
+  // Se characterId è presente e diverso da char.id, è una scheda remota (altrui = censurata, admin/mod possono editare)
   const isRemoteCharacter = characterId && characterId !== char?.id;
 
   const loadCharData = useCallback(() => {
     if (isRemoteCharacter && characterId) {
-      // Carica dati completi di un altro personaggio (solo mod/admin)
       setLoading(true);
-      api.get(`/characters/${characterId}/full`)
+      api
+        .get(`/characters/${characterId}/public`)
+        .then((publicData: any) => {
+          setVisibility(publicData?.visibility ?? {});
+          if (publicData?.visibility?.canEdit) {
+            return api.get(`/characters/${characterId}/full`).then((full) => full).catch(() => publicData);
+          }
+          return publicData;
+        })
         .then((d) => setCharData(d))
         .catch(() => setCharData(null))
         .finally(() => setLoading(false));
     } else if (char?.id) {
-      // Carica dati del personaggio corrente
       setLoading(true);
       api.get(`/characters/me`)
         .then((d) => setCharData(d))
@@ -1897,6 +2963,18 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
   useEffect(() => {
     loadCharData();
   }, [loadCharData]);
+
+  // Carica housing per "Entra in Casa" (solo scheda propria)
+  useEffect(() => {
+    if (isRemoteCharacter) {
+      setHousingChatRoomId(null);
+      return;
+    }
+    api
+      .get("/housing/me")
+      .then((d: any) => setHousingChatRoomId(d?.chatRoomId ?? null))
+      .catch(() => setHousingChatRoomId(null));
+  }, [isRemoteCharacter]);
 
   // Funzione che ricarica i dati e chiama onCharUpdate del parent
   const handleCharUpdate = useCallback(() => {
@@ -1913,51 +2991,39 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
     return <p className="text-sm text-gray-500 p-4">Errore: dati personaggio non disponibili.</p>;
   }
 
-  // Calcola livello basandosi su EXP totale
-  const calculateLevel = (expTotal: number = 0): number => {
-    if (expTotal < 100) return 1;
-    if (expTotal < 300) return 2;
-    if (expTotal < 600) return 3;
-    if (expTotal < 1000) return 4;
-    if (expTotal < 1500) return 5;
-    if (expTotal < 2100) return 6;
-    if (expTotal < 2800) return 7;
-    if (expTotal < 3600) return 8;
-    if (expTotal < 4500) return 9;
-    return 10 + Math.floor((expTotal - 4500) / 1000);
-  };
-
-  const level = calculateLevel(displayChar.experienceTotal ?? char?.experienceTotal ?? 0);
+  const levelProgress = resolveLevelFromExp(displayChar.experienceTotal ?? char?.experienceTotal ?? 0);
+  const level = levelProgress.level;
+  const paragon = levelProgress.paragon;
   const grade = (displayChar as any)?.grade || "Nemuribito";
 
-  // Calcola dati per radar chart (statistiche base normalizzate su scala 0-100)
-  const stats = displayChar.stats ?? { f: 0, c: 0, d: 0, m: 0, e: 0 };
-  const maxStat = Math.max(...(Object.values(stats) as number[]), 1);
-  const radarData = {
-    f: (stats.f / maxStat) * 100,
-    c: (stats.c / maxStat) * 100,
-    d: (stats.d / maxStat) * 100,
-    m: (stats.m / maxStat) * 100,
-    e: (stats.e / maxStat) * 100,
-  };
-
-  // Body & Kotodama (da computed)
-  const computedMain = (displayChar as any)?.computed ?? {};
-  const hpMax = computedMain.hpMax ?? computedMain.body ?? 0;
-  const kotodamaMax = computedMain.kotodamaMax ?? 0;
+  // Radar domini Skiru (Ten · Chi · Jin) — mostrato in SchedaMainPage
+  const skiruDomains = (displayChar as CharacterSummary & { skiruDomains?: Array<{ label: string; points: number; percent: number }> }).skiruDomains ?? [];
 
   // Background estetico e tema musicale
   const backgroundImage = (displayChar as any)?.backgroundImage ?? "";
   const themeMusicUrl = (displayChar as any)?.themeMusicUrl ?? "";
+  const bannerPg = (displayChar as CharacterSummary)?.bannerPg ?? null;
+  const staffAlias = (displayChar as CharacterSummary)?.staffAlias ?? null;
+  const masterNotes = (displayChar as CharacterSummary)?.masterNotes ?? null;
+  const canEditStaffAlias =
+    (char as CharacterSummary)?.canEditStaffAlias ??
+    (displayChar as CharacterSummary)?.canEditStaffAlias ??
+    false;
+  const canEditMasterNotes =
+    (char as CharacterSummary)?.canEditMasterNotes ??
+    (displayChar as CharacterSummary)?.canEditMasterNotes ??
+    false;
+  const showMasterNotes = isRemoteCharacter ? visibility.showMasterNotes === true : true;
+  const schedaCharacterId = characterId || displayChar.id || "";
 
   return (
-    <div className="flex h-full min-h-0 bg-[var(--panel-bg)]">
-      {/* Sidebar - Segnalibri come faldone militare */}
-      <div className="w-14 shrink-0 border-r border-[var(--border-color)] bg-black/40 flex flex-col items-center py-4 gap-2">
+    <div className="flex h-full min-h-0 flex-col md:flex-row bg-[var(--panel-bg)]">
+      {/* Segnalibri — orizzontali su mobile, verticali su desktop */}
+      <div className="shrink-0 flex md:flex-col flex-row items-center gap-2 p-2 md:py-4 md:w-14 overflow-x-auto md:overflow-visible border-b md:border-b-0 md:border-r border-[var(--border-color)] bg-black/40">
         <button
           type="button"
           onClick={() => setActiveSection("main")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
+          className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
             activeSection === "main"
               ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
               : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
@@ -1966,132 +3032,153 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
         >
           <FontAwesomeIcon icon={icons.user} className="w-4 h-4" />
         </button>
-        {!isRemoteCharacter && (
+        {isRemoteCharacter && visibility.canSeeFullSheet && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("skiru")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "skiru"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title="Skiru"
+          >
+            <FontAwesomeIcon icon={icons.skiru} className="w-4 h-4" />
+          </button>
+        )}
+        {(!isRemoteCharacter || visibility.canEdit) && (
           <button
             type="button"
             onClick={() => setActiveSection("modifica")}
-            className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
               activeSection === "modifica"
                 ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
                 : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
             }`}
             title="Modifica"
           >
-            <FontAwesomeIcon icon={icons.user} className="w-4 h-4" />
+            <FontAwesomeIcon icon={icons.pencil} className="w-4 h-4" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => setActiveSection("background")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
-            activeSection === "background"
-              ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
-              : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
-          }`}
-          title="Background"
-        >
-          <FontAwesomeIcon icon={icons.ordine} className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("inventario")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
-            activeSection === "inventario"
-              ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
-              : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
-          }`}
-          title="Inventario"
-        >
-          <FontAwesomeIcon icon={icons.shop} className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("waza")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
-            activeSection === "waza"
-              ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
-              : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
-          }`}
-          title="Waza"
-        >
-          <FontAwesomeIcon icon={icons.waza} className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("registrazioni")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
-            activeSection === "registrazioni"
-              ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
-              : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
-          }`}
-          title="Registrazioni"
-        >
-          <FontAwesomeIcon icon={icons.message} className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSection("log")}
-          className={`w-10 h-10 rounded border flex items-center justify-center transition-all ${
-            activeSection === "log"
-              ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
-              : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
-          }`}
-          title="Log"
-        >
-          <FontAwesomeIcon icon={icons.user} className="w-4 h-4" />
-        </button>
+        {(!isRemoteCharacter || visibility.canSeeBackground !== false) && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("background")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "background"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title="Background"
+          >
+            <FontAwesomeIcon icon={icons.ordine} className="w-4 h-4" />
+          </button>
+        )}
+        {(!isRemoteCharacter || visibility.canSeeFullSheet) && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("inventario")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "inventario"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title="Inventario"
+          >
+            <FontAwesomeIcon icon={icons.shop} className="w-4 h-4" />
+          </button>
+        )}
+        {isRemoteCharacter && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("waza")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "waza"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title="Waza (sola lettura)"
+          >
+            <FontAwesomeIcon icon={icons.waza} className="w-4 h-4" />
+          </button>
+        )}
+        {(!isRemoteCharacter || visibility.canSeeJournal !== false) && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("registrazioni")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "registrazioni"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title="Registrazioni"
+          >
+            <FontAwesomeIcon icon={icons.message} className="w-4 h-4" />
+          </button>
+        )}
+        {(!isRemoteCharacter || visibility.canSeePrivateLog) && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("log")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "log"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title="Log Tecnici / Fascicolo EXP"
+          >
+            <FontAwesomeIcon icon={icons.gear} className="w-4 h-4" />
+          </button>
+        )}
+        {!isRemoteCharacter && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("richieste")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "richieste"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title="Richieste — Madoshō, Ordine, Premi"
+          >
+            <FontAwesomeIcon icon={icons.fire} className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      {/* Contenuto principale - Layout fisso */}
-      <div className="flex-1 min-h-0 flex">
-        {/* Colonna sinistra: Avatar fisso 350x400 (larghezza x altezza) + Body/Kotodama + Radar Chart */}
-        <div className="w-[350px] shrink-0 border-r border-[var(--border-color)] p-6 bg-black/20 flex flex-col items-center gap-4">
+      {/* Contenuto principale */}
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row min-w-0">
+        {/* Avatar + alias / note Master */}
+        <div className="shrink-0 md:w-[348px] border-b md:border-b-0 md:border-r border-[var(--border-color)] p-4 md:p-6 bg-black/20 flex flex-row md:flex-col items-start md:items-center gap-4 md:gap-4 max-md:overflow-x-auto">
           {displayChar.avatarUrl || displayChar.avatar ? (
             <img
               src={(displayChar.avatarUrl || displayChar.avatar) as string}
               alt={String(displayChar.name)}
-              className="w-[350px] h-[400px] rounded-lg border-2 border-[var(--accent-gold)] object-cover shadow-[0_0_20px_rgba(212,175,55,0.2)]"
-              style={{ width: "350px", height: "400px" }}
+              className="rounded-lg border-2 border-[var(--accent-gold)] object-cover shadow-[var(--shadow-gold)] shrink-0 w-[90px] h-[120px] md:w-[300px] md:h-[400px]"
             />
           ) : (
-            <div className="w-[350px] h-[400px] rounded-lg border-2 border-[var(--accent-gold)] bg-black/50 flex items-center justify-center" style={{ width: "350px", height: "400px" }}>
-              <FontAwesomeIcon icon={icons.user} className="w-20 h-20 text-gray-600" />
+            <div className="rounded-lg border-2 border-[var(--accent-gold)] bg-black/50 flex items-center justify-center shrink-0 w-[90px] h-[120px] md:w-[300px] md:h-[400px]">
+              <FontAwesomeIcon icon={icons.user} className="w-10 h-10 md:w-20 md:h-20 text-gray-600" />
             </div>
           )}
-          {/* Body & Kotodama sopra il radar */}
-          <div className="w-full space-y-2">
-            <StatBar label="Body (HP)" value={hpMax} max={hpMax} color="magenta" />
-            <StatBar label="Kotodama" value={kotodamaMax} max={kotodamaMax} color="purple" />
-          </div>
-          {/* Radar Chart sotto Body/Kotodama */}
-          <div className="w-full">
-            <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-violet)] mb-3 font-display text-center">
-              Radar Statistiche
-            </h3>
-            <RadarChart data={radarData} />
-          </div>
-
-          {/* Controllo tema musicale, se presente */}
-          {themeMusicUrl && (
-            <div className="w-full mt-2">
-              <p className="text-[9px] uppercase tracking-[0.18em] text-gray-400 font-display mb-1 text-center">
-                Tema musicale
-              </p>
-              <audio
-                controls
-                loop
-                className="w-full h-7 [&>button]:!text-[10px]"
-              >
-                <source src={themeMusicUrl} type="audio/mpeg" />
-                Il tuo browser non supporta l&apos;audio.
-              </audio>
+          {schedaCharacterId && (
+            <div className="min-w-0 flex-1 md:w-full">
+            <SchedaAvatarSidebar
+              characterId={schedaCharacterId}
+              staffAlias={staffAlias}
+              masterNotes={masterNotes}
+              canEditStaffAlias={canEditStaffAlias}
+              canEditMasterNotes={canEditMasterNotes}
+              showMasterNotes={showMasterNotes}
+              onUpdate={handleCharUpdate}
+            />
             </div>
           )}
         </div>
 
-        {/* Colonna destra: Contenuto dinamico con background personalizzato */}
+        {/* Tab content */}
         <div
-          className="flex-1 min-h-0 overflow-y-auto"
+          className={`flex-1 min-h-0 min-w-0 ${activeSection === "skiru" ? "overflow-hidden" : "overflow-y-auto"}`}
           style={
             backgroundImage
               ? {
@@ -2103,13 +3190,38 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
               : undefined
           }
         >
-          {activeSection === "main" && <SchedaMainPage char={displayChar} level={level} grade={grade} />}
-          {activeSection === "modifica" && !isRemoteCharacter && <SchedaModificaPage char={displayChar} onCharUpdate={handleCharUpdate} />}
+          {activeSection === "skiru" && isRemoteCharacter && (
+            <SchedaSkiruPage
+              char={displayChar as CharacterSummary}
+              canEdit={false}
+              onCharUpdate={handleCharUpdate}
+            />
+          )}
+          {activeSection === "main" && (
+            <SchedaMainPage
+              char={displayChar}
+              level={level}
+              levelLabel={levelProgress.label}
+              paragon={paragon}
+              grade={grade}
+              housingChatRoomId={housingChatRoomId}
+              skiruDomains={skiruDomains}
+              themeMusicUrl={themeMusicUrl}
+              bannerPg={bannerPg}
+            />
+          )}
+          {activeSection === "modifica" && (!isRemoteCharacter || visibility.canEdit) && <SchedaModificaPage char={displayChar} characterId={characterId || displayChar.id} onCharUpdate={handleCharUpdate} />}
           {activeSection === "background" && <SchedaBackgroundPage char={displayChar} />}
           {activeSection === "inventario" && <SchedaInventarioPage characterId={characterId || displayChar.id} />}
-          {activeSection === "waza" && <SchedaWazaPage characterId={characterId || displayChar.id} />}
+          {activeSection === "waza" && isRemoteCharacter && (
+            <SchedaWazaPage
+              characterId={characterId || displayChar.id}
+              isOwnCharacter={false}
+            />
+          )}
           {activeSection === "registrazioni" && <SchedaRegistrazioniPage characterId={characterId || displayChar.id} />}
-          {activeSection === "log" && <SchedaLogPage char={displayChar} />}
+          {activeSection === "log" && <SchedaLogPage char={displayChar} characterId={characterId || displayChar.id} isRemoteCharacter={!!isRemoteCharacter} />}
+          {activeSection === "richieste" && !isRemoteCharacter && <SchedaRichiestePage />}
         </div>
       </div>
     </div>
@@ -2151,7 +3263,8 @@ function ProfiloTab({ char, onCharUpdate }: { char: NonNullable<CharacterSummary
           <img
             src={(char.avatarUrl ?? char.avatar ?? char.miniAvatar) as string}
             alt={String(char.name)}
-            className="w-[350px] h-[400px] rounded-lg object-cover border border-[var(--border-color)] shrink-0"
+            className="rounded-lg object-cover border border-[var(--border-color)] shrink-0"
+            style={{ width: AVATAR_MAIN_WIDTH, height: AVATAR_MAIN_HEIGHT }}
           />
         )}
         <div className="flex-1 min-w-0">
@@ -2160,7 +3273,7 @@ function ProfiloTab({ char, onCharUpdate }: { char: NonNullable<CharacterSummary
             <PixelIcons pixelIcons={char.pixelIcons} />
           </p>
           <p className="text-xs text-gray-500 mb-4">
-            Livello: {char.experienceTotal ? Math.floor(char.experienceTotal / 100) + 1 : 1}
+            Livello: {resolveLevelFromExp(char.experienceTotal ?? 0).label}
           </p>
           {!editing ? (
             <button
@@ -2174,6 +3287,9 @@ function ProfiloTab({ char, onCharUpdate }: { char: NonNullable<CharacterSummary
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-1 block">Avatar Principale</label>
+                <p className="text-[10px] text-[var(--accent-violet-light)]/60 mb-1.5">
+                  Consigliato <span className="text-[var(--accent-gold)]">300 × 400 px</span>
+                </p>
                 <input
                   type="text"
                   value={avatar}
@@ -2184,6 +3300,9 @@ function ProfiloTab({ char, onCharUpdate }: { char: NonNullable<CharacterSummary
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-1 block">Avatar Chat</label>
+                <p className="text-[10px] text-[var(--accent-violet-light)]/60 mb-1.5">
+                  Consigliato <span className="text-[var(--accent-gold)]">100 × 100 px</span>
+                </p>
                 <input
                   type="text"
                   value={miniAvatar}
@@ -2237,55 +3356,91 @@ function ProfiloTab({ char, onCharUpdate }: { char: NonNullable<CharacterSummary
   );
 }
 
-// ─── Tab Statistiche (Attributi Base e Derivati) ───
+// ─── Tab Statistiche (Skiru v3 + valute) ───
 function StatisticheTab({ char, onCharUpdate }: { char: NonNullable<CharacterSummary>; onCharUpdate?: () => void }) {
-  const s = char.stats ?? { f: 0, c: 0, d: 0, m: 0, e: 0 };
-  const stats = ["f", "c", "d", "m", "e"] as const;
+  const skiruDomains = char.skiruDomains ?? [];
+  const derived = resolveCharacterComputed(char.computed);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-          Attributi Base (Editabili)
-        </h4>
-        <div className="grid grid-cols-5 gap-2">
-          {stats.map((k) => (
-            <div key={k} className="bg-black/40 rounded p-2 border border-[var(--border-color)] text-center">
-              <p className="text-[10px] text-gray-500 uppercase">{STAT_LABELS[k] ?? k}</p>
-              <p className="font-display text-lg text-[var(--accent-gold)]">{s[k]}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {char.computed && Object.keys(char.computed).length > 0 && (
+      {skiruDomains.length > 0 && (
         <div>
           <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-            Statistiche Derivate (Calcolate)
+            Domini Skiru
           </h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {Object.entries(char.computed).map(([k, v]) => (
-              <div key={k} className="bg-black/40 rounded p-3 border border-[var(--border-color)]">
-                <p className="text-[10px] text-gray-500 uppercase mb-1">{k}</p>
-                <p className="font-display text-xl text-[var(--accent-gold)]">{String(v)}</p>
+          <div className="grid grid-cols-3 gap-2">
+            {skiruDomains.map((d) => (
+              <div key={d.domain} className="bg-black/40 rounded p-2 border border-[var(--border-color)] text-center">
+                <p className="text-[10px] text-gray-500 uppercase">{d.label}</p>
+                <p className="font-display text-lg text-[var(--accent-gold)]">{d.points}</p>
+                <p className="text-[9px] text-[var(--accent-violet-light)]">{d.percent}%</p>
               </div>
             ))}
+          </div>
+          <p className="text-[10px] text-[var(--accent-violet-light)]/50 mt-2">
+            Investi punti nella tab <strong className="text-[var(--accent-gold)]">Skiru</strong> della scheda.
+          </p>
+        </div>
+      )}
+
+      {(derived.hpMax > 0 || derived.mitigationPercent > 0 || derived.movementMeters > 0) && (
+        <div>
+          <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
+            Parametri derivati (Skiru §2.8)
+          </h4>
+          <div className="grid grid-cols-3 gap-2">
+            {derived.hpMax > 0 && (
+              <div className="bg-black/40 rounded p-3 border border-[var(--border-color)] text-center col-span-3 sm:col-span-1">
+                <p className="text-[10px] text-gray-500 uppercase mb-1">HP</p>
+                <p className="font-display text-xl text-[var(--accent-gold)] tabular-nums">
+                  {derived.hpCurrent}/{derived.hpMax}
+                </p>
+              </div>
+            )}
+            {derived.mitigationPercent > 0 && (
+              <div className="bg-black/40 rounded p-3 border border-[var(--border-color)] text-center">
+                <p className="text-[10px] text-gray-500 uppercase mb-1">Mitigazione</p>
+                <p className="font-display text-xl text-[var(--accent-gold)]">{derived.mitigationPercent}%</p>
+              </div>
+            )}
+            {derived.movementMeters > 0 && (
+              <div className="bg-black/40 rounded p-3 border border-[var(--border-color)] text-center">
+                <p className="text-[10px] text-gray-500 uppercase mb-1">Movimento</p>
+                <p className="font-display text-xl text-[var(--accent-gold)]">
+                  {formatMovementMeters(derived.movementMeters)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       <div>
         <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-          Valute
+          Valute &amp; EXP
         </h4>
         <div className="flex flex-wrap gap-4 text-sm">
           <span><strong className="text-[var(--accent-gold)]">REM</strong> {char.rem ?? 0}</span>
           <span><strong className="text-[var(--accent-gold)]">EXP tot.</strong> {char.experienceTotal ?? 0}</span>
           <span><strong className="text-[var(--accent-gold)]">EXP spend.</strong> {char.experienceSpendable ?? 0}</span>
+          <span className="text-[var(--accent-violet-light)]/60 text-xs">(finestra Skiru &amp; Waza)</span>
           <span><strong className="text-[var(--accent-gold)]">Keys</strong> {char.keys ?? 0}</span>
-          <span><strong className="text-[var(--accent-gold)]">Gems</strong> {char.gems ?? 0}</span>
         </div>
       </div>
+
+      <details className="rounded border border-[var(--border-color)]/60 bg-black/20 px-3 py-2">
+        <summary className="text-[10px] uppercase tracking-widest text-gray-500 cursor-pointer font-display">
+          Sistema precedente F/C/D/M/E (solo migrazione)
+        </summary>
+        <div className="grid grid-cols-5 gap-2 mt-3 pb-1">
+          {(["f", "c", "d", "m", "e"] as const).map((k) => (
+            <div key={k} className="bg-black/40 rounded p-2 border border-[var(--border-color)] text-center opacity-60">
+              <p className="text-[10px] text-gray-500 uppercase">{STAT_LABELS[k] ?? k}</p>
+              <p className="font-display text-lg text-gray-400">{char.stats?.[k] ?? 0}</p>
+            </div>
+          ))}
+        </div>
+      </details>
 
       <InventorySection characterId={char.id} />
     </div>
@@ -3004,6 +4159,19 @@ function ShopContent({ char, onCharUpdate }: { char?: CharacterSummary; onCharUp
 
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border border-[var(--border-color)] bg-black/30 px-4 py-3 flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div>
+          <h3 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] font-display">Marketplace</h3>
+          <p className="text-[11px] text-[var(--accent-violet-light)]/70 mt-0.5">
+            Acquisto oggetti con REM. Skiru e Waza si gestiscono nella finestra Skiru &amp; Waza.
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[9px] uppercase tracking-widest text-gray-500 font-display">REM</p>
+          <p className="font-display text-xl text-[var(--accent-gold)] tabular-nums">{char?.rem ?? 0}</p>
+        </div>
+      </div>
+
       {/* Tab: Emporio | Immobiliare (come vecchio Mercato) */}
       <div className="flex items-center gap-1 border-b border-[var(--border-color)] mb-2">
         <button
@@ -3585,6 +4753,11 @@ function HousingContent({ char, onCharUpdate }: { char?: CharacterSummary; onCha
   const [rentingId, setRentingId] = useState<string | null>(null);
   const [payingRent, setPayingRent] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [guests, setGuests] = useState<Array<{ id: string; guest: { id: string; name: string; surname: string } }>>([]);
+  const [inviteSearch, setInviteSearch] = useState("");
+  const [inviteResults, setInviteResults] = useState<Array<{ id: string; name: string; surname: string }>>([]);
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [removingGuestId, setRemovingGuestId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -3654,6 +4827,55 @@ function HousingContent({ char, onCharUpdate }: { char?: CharacterSummary; onCha
   const openHousingChat = () => {
     if (!currentHousing?.chatRoomId) return;
     window.dispatchEvent(new CustomEvent('openHousingChat', { detail: { roomId: currentHousing.chatRoomId } }));
+  };
+
+  // Carica ospiti quando c'è una casa con chat
+  useEffect(() => {
+    if (!currentHousing?.chatRoomId) return;
+    api.get("/housing/guests").then((d) => (Array.isArray(d) ? d : []) as typeof guests).then(setGuests).catch(() => setGuests([]));
+  }, [currentHousing?.chatRoomId]);
+
+  // Live search per invito ospite (debounce)
+  useEffect(() => {
+    const q = inviteSearch.trim();
+    if (q.length < 2) {
+      setInviteResults([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      api.get(`/characters/search${q ? `?q=${encodeURIComponent(q)}` : ""}`).then((d) => {
+        const arr = Array.isArray(d) ? d : [];
+        setInviteResults(arr.slice(0, 6));
+      }).catch(() => setInviteResults([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [inviteSearch]);
+
+  const handleInviteGuest = async (guestCharacterId: string) => {
+    setInvitingId(guestCharacterId);
+    try {
+      await api.post("/housing/guests", { guestCharacterId });
+      const updated = await api.get("/housing/guests").then((d) => (Array.isArray(d) ? d : []) as typeof guests);
+      setGuests(updated);
+      setInviteSearch("");
+      setInviteResults([]);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Errore durante l'invito");
+    } finally {
+      setInvitingId(null);
+    }
+  };
+
+  const handleRemoveGuest = async (guestCharacterId: string) => {
+    setRemovingGuestId(guestCharacterId);
+    try {
+      await api.delete(`/housing/guests/${guestCharacterId}`);
+      setGuests((prev) => prev.filter((g) => g.guest.id !== guestCharacterId));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Errore durante la rimozione");
+    } finally {
+      setRemovingGuestId(null);
+    }
   };
 
   if (loading) {
@@ -3733,6 +4955,64 @@ function HousingContent({ char, onCharUpdate }: { char?: CharacterSummary; onCha
         )}
       </section>
 
+      {/* Gestione Ospiti (solo se ha casa con chat) */}
+      {currentHousing?.chatRoomId && !currentHousing.evicted && (
+        <section>
+          <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
+            Ospiti
+          </h4>
+          <p className="text-xs text-gray-400 mb-2">Gli ospiti possono accedere alla chat della tua casa.</p>
+          <div className="space-y-2 mb-3">
+            <input
+              type="text"
+              placeholder="Cerca personaggio da invitare (min 2 caratteri)"
+              value={inviteSearch}
+              onChange={(e) => setInviteSearch(e.target.value)}
+              className="w-full px-3 py-1.5 rounded border border-[var(--border-color)] bg-black/30 text-white text-sm placeholder-gray-500"
+            />
+            {inviteResults.length > 0 && (
+              <ul className="rounded border border-[var(--border-color)] bg-black/40 divide-y divide-[var(--border-color)]">
+                {inviteResults.map((c) => {
+                  const alreadyGuest = guests.some((g) => g.guest.id === c.id);
+                  return (
+                    <li key={c.id} className="flex items-center justify-between px-2 py-1.5 text-sm">
+                      <span className="text-white">{c.name} {c.surname || ""}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleInviteGuest(c.id)}
+                        disabled={invitingId !== null || alreadyGuest}
+                        className="px-2 py-0.5 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+                      >
+                        {alreadyGuest ? "Già ospite" : invitingId === c.id ? "…" : "Invita"}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          {guests.length > 0 ? (
+            <ul className="space-y-1 rounded border border-[var(--border-color)] bg-black/20 divide-y divide-[var(--border-color)]">
+              {guests.map((g) => (
+                <li key={g.id} className="flex items-center justify-between px-2 py-1.5 text-sm">
+                  <span className="text-white">{g.guest.name} {g.guest.surname || ""}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveGuest(g.guest.id)}
+                    disabled={removingGuestId !== null}
+                    className="px-2 py-0.5 rounded border border-red-500/60 text-red-400 text-xs hover:bg-red-500/10 disabled:opacity-50"
+                  >
+                    {removingGuestId === g.guest.id ? "…" : "Rimuovi"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-gray-500">Nessun ospite invitato.</p>
+          )}
+        </section>
+      )}
+
       {/* Case Disponibili */}
       <section>
         <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
@@ -3795,238 +5075,205 @@ function HousingContent({ char, onCharUpdate }: { char?: CharacterSummary; onCha
   );
 }
 
-// ─── Waza Content ───
-function WazaContent({ char }: { char?: CharacterSummary }) {
-  const [skills, setSkills] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+// ─── Ordine Content ───
+const ORDINE_CHISEN = { id: "chisen-tai", src: "/ordine/chisen.png", label: "Chisen-Tai" };
+const ORDINE_MUGEN = { id: "mugen-tai", src: "/ordine/mugen.png", label: "Mugen-Tai" };
 
-  useEffect(() => {
-    if (!char?.id) {
-      setLoading(false);
-      return;
-    }
-    api
-      .get(`/characters/${char.id}/waza`)
-      .then((d) => {
-        setSkills(Array.isArray(d) ? d : []);
-      })
-      .catch(() => setSkills([]))
-      .finally(() => setLoading(false));
-  }, [char?.id]);
-
-  if (loading) {
-    return <p className="text-sm text-gray-500 p-4">Caricamento…</p>;
-  }
-
+function OrdineStatutoBox({ ord, onClose }: { ord: typeof ORDINE_CHISEN; onClose: () => void }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] mb-3 font-display">
-          Waza / Skill Operative
-        </h3>
-        <p className="text-xs text-gray-500 mb-4">
-          Le tue abilità apprese con nome, rango e costo in Kotodama.
-        </p>
+    <div className="w-full max-w-md h-[70%] min-h-0 p-6 mt-2 mx-4 mb-4 bg-black/30 rounded border border-[var(--accent-gold)]/30 overflow-y-auto self-stretch flex flex-col">
+      <div className="flex items-center justify-between mb-6 shrink-0">
+        <span className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display">
+          {ord.label}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs text-gray-500 hover:text-white"
+        >
+          Chiudi
+        </button>
       </div>
-
-      {skills.length === 0 ? (
-        <div className="text-sm text-gray-500 italic p-4 bg-black/20 rounded border border-[var(--border-color)]">
-          Nessuna Waza registrata. Le abilità apprese appariranno qui con nome, rango e costo in Kotodama.
+      <div className="space-y-6 text-sm flex-1 min-h-0">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]/80 mb-2 font-display">Statuto</p>
+          <p className="text-gray-400 italic">[Placeholder — Contenuto statuto]</p>
         </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-xs">
-            <thead>
-              <tr className="border-b border-[var(--border-color)]/70 bg-black/40">
-                <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                  Nome
-                </th>
-                <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                  Rango
-                </th>
-                <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                  Costo KOT
-                </th>
-                <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                  Tipo
-                </th>
-                <th className="px-3 py-2 text-left font-normal text-[9px] uppercase tracking-[0.18em] text-gray-500">
-                  Livello
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {skills.map((s, idx) => {
-                const getTypeColor = (type: string) => {
-                  switch (type?.toUpperCase()) {
-                    case 'OFFENSIVE':
-                    case 'ATTACK':
-                      return 'text-red-400 bg-red-500/20 border-red-500/40';
-                    case 'DEFENSIVE':
-                    case 'DEFENSE':
-                      return 'text-blue-400 bg-blue-500/20 border-blue-500/40';
-                    case 'SUPPORT':
-                    case 'HEAL':
-                      return 'text-green-400 bg-green-500/20 border-green-500/40';
-                    case 'UTILITY':
-                    case 'BUFF':
-                      return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/40';
-                    default:
-                      return 'text-gray-400 bg-gray-500/20 border-gray-500/40';
-                  }
-                };
-                return (
-                  <tr
-                    key={s.id || idx}
-                    className="border-b border-[var(--border-color)]/40 last:border-0 hover:bg-white/5 transition-colors"
-                  >
-                    <td className="px-3 py-2 text-[11px] text-gray-100 font-display">{s.name}</td>
-                    <td className="px-3 py-2 text-[11px] text-gray-300">{s.rank ?? "-"}</td>
-                    <td className="px-3 py-2 text-[11px] text-[var(--accent-violet)] font-display">
-                      {s.costKotodama ?? s.kotCost ?? "-"} KOT
-                    </td>
-                    <td className="px-3 py-2 text-[11px]">
-                      <span className={`px-2 py-0.5 rounded border text-[10px] ${getTypeColor(s.type ?? '')}`}>
-                        {s.type ?? "-"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-[11px] text-[var(--accent-gold)] font-display">
-                      {s.level ?? "-"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]/80 mb-2 font-display">Regole</p>
+          <p className="text-gray-400 italic">[Placeholder — Contenuto regole]</p>
         </div>
-      )}
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]/80 mb-2 font-display">Compendi</p>
+          <p className="text-gray-400 italic">[Placeholder — Contenuto compendi]</p>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── Ordine Content ───
 function OrdineContent({ char }: { char?: CharacterSummary }) {
-  const [orderInfo, setOrderInfo] = useState<{
-    name?: string;
-    description?: string;
-    members?: Array<{ id: string; name: string }>;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!char?.id) {
-      setLoading(false);
-      return;
-    }
-    // TODO: Implementare API endpoint per informazioni ordine
-    // Per ora mostra informazioni dal character
-    setOrderInfo({
-      name: (char as any).order || "Nessun ordine",
-      description: (char as any).orderDescription || "Non appartieni a nessun ordine.",
-      members: [],
-    });
-    setLoading(false);
-  }, [char?.id]);
-
-  if (loading) {
-    return <p className="text-sm text-gray-500 p-4">Caricamento…</p>;
-  }
+  const [statutoOpen, setStatutoOpen] = useState<"chisen-tai" | "mugen-tai" | null>(null);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] mb-3 font-display">
-          Ordine
-        </h3>
-        <p className="text-xs text-gray-500 mb-4">
-          Informazioni sul tuo ordine e i suoi membri.
-        </p>
+    <div className="flex flex-col h-full min-h-0 -mx-4 mt-7 -mb-4">
+      {/* Split: click su un'immagine → l'altra sparisce, lo statuto prende il suo posto */}
+      <div className="flex-1 flex min-h-[960px] items-stretch overflow-visible pt-6">
+        {/* Slot sinistro: Chisen quando nulla/mugen aperto, Statuto quando chisen aperto */}
+        <div
+          className="flex-1 flex min-h-0 overflow-visible pr-0"
+          style={{ justifyContent: statutoOpen === "mugen-tai" ? "center" : statutoOpen === "chisen-tai" ? "flex-start" : "flex-end", alignItems: statutoOpen === "mugen-tai" ? "center" : "flex-start" }}
+        >
+          {statutoOpen === "mugen-tai" ? (
+            <OrdineStatutoBox ord={ORDINE_MUGEN} onClose={() => setStatutoOpen(null)} />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setStatutoOpen("chisen-tai")}
+              className="group relative flex items-start justify-center pt-0 px-2 pb-6 focus:outline-none overflow-visible pr-0"
+            >
+              <img
+                src={ORDINE_CHISEN.src}
+                alt={ORDINE_CHISEN.label}
+                className={`max-w-full max-h-[800px] w-auto h-auto object-contain mt-6 ${statutoOpen === "chisen-tai" ? "-mr-4 -ml-12" : "-mr-20"}`}
+              />
+              <span className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-3 py-1.5 rounded">
+                {ORDINE_CHISEN.label}
+              </span>
+            </button>
+          )}
+        </div>
+        {/* Slot destro: Mugen quando nulla/chisen aperto, Statuto quando mugen aperto */}
+        <div
+          className="flex-1 flex min-h-0 overflow-visible pl-0"
+          style={{ justifyContent: statutoOpen === "chisen-tai" ? "center" : statutoOpen === "mugen-tai" ? "flex-end" : "flex-start", alignItems: statutoOpen === "chisen-tai" ? "center" : "flex-start" }}
+        >
+          {statutoOpen === "chisen-tai" ? (
+            <OrdineStatutoBox ord={ORDINE_CHISEN} onClose={() => setStatutoOpen(null)} />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setStatutoOpen("mugen-tai")}
+              className="group relative flex items-start justify-center pt-0 px-2 pb-6 focus:outline-none overflow-visible pl-0"
+            >
+              <img
+                src={ORDINE_MUGEN.src}
+                alt={ORDINE_MUGEN.label}
+                className={`max-w-full max-h-[800px] w-auto h-auto object-contain -mt-6 ${statutoOpen === "mugen-tai" ? "-ml-4 -mr-12" : "-ml-20"}`}
+              />
+              <span className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-3 py-1.5 rounded">
+                {ORDINE_MUGEN.label}
+              </span>
+            </button>
+          )}
+        </div>
       </div>
-
-      {orderInfo ? (
-        <div className="space-y-4">
-          <div className="p-4 rounded border border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/10">
-            <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-1">Nome Ordine</p>
-            <p className="text-lg font-display text-white">{orderInfo.name}</p>
-          </div>
-
-          {orderInfo.description && (
-            <div className="p-4 rounded border border-[var(--border-color)] bg-black/20">
-              <p className="text-xs text-gray-400">{orderInfo.description}</p>
-            </div>
-          )}
-
-          {orderInfo.members && orderInfo.members.length > 0 && (
-            <div>
-              <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-                Membri
-              </h4>
-              <ul className="space-y-2">
-                {orderInfo.members.map((member) => (
-                  <li
-                    key={member.id}
-                    className="p-2 rounded border border-[var(--border-color)] bg-black/20 text-xs text-gray-300"
-                  >
-                    {member.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-sm text-gray-500 italic p-4 bg-black/20 rounded border border-[var(--border-color)]">
-          Nessuna informazione disponibile sull'ordine.
-        </div>
-      )}
     </div>
   );
 }
 
 // ─── Bestiario Content ───
+type BestiaryEntry = {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  category: "HOLIC" | "PHOBIAS" | "MUEN";
+  stats: { hp?: number; attack?: number; defense?: number } | null;
+};
+
+type BestiaryByCategory = {
+  HOLIC: BestiaryEntry[];
+  PHOBIAS: BestiaryEntry[];
+  MUEN: BestiaryEntry[];
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  HOLIC: "Holic",
+  PHOBIAS: "Phobias",
+  MUEN: "Muen",
+};
+
 function BestiarioContent({ char }: { char?: CharacterSummary }) {
-  const [creatures, setCreatures] = useState<any[]>([]);
+  const [grouped, setGrouped] = useState<BestiaryByCategory | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    // TODO: Implementare API endpoint per bestiario
-    // Per ora mostra placeholder
-    setLoading(false);
-    setCreatures([]);
+    api
+      .get("/bestiario")
+      .then((d) => setGrouped(d as BestiaryByCategory))
+      .catch(() => setGrouped({ HOLIC: [], PHOBIAS: [], MUEN: [] }))
+      .finally(() => setLoading(false));
   }, []);
+
+  const filterEntry = (e: BestiaryEntry) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      e.name.toLowerCase().includes(q) ||
+      (e.description?.toLowerCase().includes(q) ?? false)
+    );
+  };
 
   if (loading) {
     return <p className="text-sm text-gray-500 p-4">Caricamento…</p>;
   }
 
+  const total = grouped ? grouped.HOLIC.length + grouped.PHOBIAS.length + grouped.MUEN.length : 0;
+
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] mb-3 font-display">
-          Bestiario
-        </h3>
-        <p className="text-xs text-gray-500 mb-4">
-          Registro delle creature incontrate durante le tue avventure.
-        </p>
-      </div>
+      <input
+        type="search"
+        placeholder="Cerca PNG…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/40 text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[var(--accent-gold)]"
+      />
 
-      {creatures.length === 0 ? (
+      {!grouped || total === 0 ? (
         <div className="text-sm text-gray-500 italic p-4 bg-black/20 rounded border border-[var(--border-color)]">
-          Nessuna creatura registrata nel bestiario. Le creature incontrate durante le quest appariranno qui.
+          Nessun PNG nel catalogo. Un Master o Admin può aggiungere voci da Gestione.
         </div>
       ) : (
-        <div className="space-y-3">
-          {creatures.map((creature) => (
-            <div
-              key={creature.id}
-              className="p-4 rounded border border-[var(--border-color)] bg-black/20"
-            >
-              <h4 className="font-display text-sm text-white mb-2">{creature.name}</h4>
-              {creature.description && (
-                <p className="text-xs text-gray-400">{creature.description}</p>
-              )}
-            </div>
-          ))}
+        <div className="space-y-6">
+          {(["HOLIC", "PHOBIAS", "MUEN"] as const).map((cat) => {
+            const entries = (grouped[cat] ?? []).filter(filterEntry);
+            if (entries.length === 0) return null;
+            return (
+              <section key={cat}>
+                <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-3 font-display">
+                  {CATEGORY_LABELS[cat]}
+                </h4>
+                <ul className="space-y-2">
+                  {entries.map((entry) => (
+                    <li
+                      key={entry.id}
+                      className="p-3 rounded border border-[var(--border-color)] bg-black/20 flex gap-3"
+                    >
+                      {entry.imageUrl && (
+                        <div className="w-12 h-12 shrink-0 rounded border border-[var(--border-color)] overflow-hidden bg-black/40">
+                          <img src={entry.imageUrl} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h5 className="font-display text-sm text-white">{entry.name}</h5>
+                        {entry.stats && (entry.stats.hp ?? entry.stats.attack ?? entry.stats.defense) != null && (
+                          <p className="text-[10px] text-gray-500 mt-0.5">
+                            HP {entry.stats.hp ?? "—"} · ATK {entry.stats.attack ?? "—"} · DEF {entry.stats.defense ?? "—"}
+                          </p>
+                        )}
+                        {entry.description && (
+                          <p className="text-xs text-gray-400 mt-1 leading-relaxed">{entry.description}</p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
         </div>
       )}
     </div>

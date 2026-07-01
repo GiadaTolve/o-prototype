@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Radar SVG</title>
+  <style>
+    :root {
+      --ui-bg: #0f0d12;
+      --ui-line: #4a4550;
+    }
+    body {
+      background: #080408;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 120 120" width="240" height="240">
+    <circle
+      cx="60"
+      cy="60"
+      r="50"
+      fill="var(--ui-bg)"
+      stroke="var(--ui-line)"
+      stroke-width="3"
+    />
+    <circle
+      cx="60"
+      cy="60"
+      r="30"
+      fill="none"
+      stroke="var(--ui-line)"
+      stroke-width="1"
+    />
+  </svg>
+</body>
+</html>

@@ -2,9 +2,16 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { Presente, ChatMessage } from "@/components/dashboard/types";
+import type { PendingLevelUpBanner } from "@domain/progression/level-up";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
+
+export type LevelUpWsPayload = {
+  pendingLevelUp: PendingLevelUpBanner;
+  newKeys?: number;
+  newExpTotal?: number;
+};
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -17,18 +24,26 @@ function getToken(): string | null {
  * Ritorna { users, messages, sendMessage, connected }.
  * Se !roomId, non si connette; usare mock per Lista Presenti.
  */
-export function useRealtime(roomId: string | null): {
+export function useRealtime(
+  roomId: string | null,
+  options?: { onLevelUp?: (payload: LevelUpWsPayload) => void },
+): {
   users: Presente[];
   messages: ChatMessage[];
   sendMessage: (text: string, locationTag?: string | null) => void;
   connected: boolean;
+  connectionFailed: boolean;
 } {
+  const onLevelUpRef = useRef(options?.onLevelUp);
+  onLevelUpRef.current = options?.onLevelUp;
   const [users, setUsers] = useState<Presente[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
+  const [connectionFailed, setConnectionFailed] = useState(false);
   const meIdRef = useRef<string | undefined>(undefined);
   const wsRef = useRef<WebSocket | null>(null);
   const roomRef = useRef<string | null>(roomId);
+  const clearedAtRef = useRef<string | null>(null);
   roomRef.current = roomId;
 
   const sendMessage = useCallback(
@@ -36,7 +51,7 @@ export function useRealtime(roomId: string | null): {
       const ws = wsRef.current;
       const r = roomRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN || !r) return;
-      const t = String(text).trim().slice(0, 2000);
+      const t = String(text).trim();
       if (!t) return;
       const tag = locationTag != null ? String(locationTag).trim().slice(0, 120) || undefined : undefined;
       ws.send(JSON.stringify({ type: "chat", zone: r, text: t, locationTag: tag }));
@@ -45,6 +60,8 @@ export function useRealtime(roomId: string | null): {
   );
 
   useEffect(() => {
+    clearedAtRef.current = null;
+    setConnectionFailed(false);
     if (!roomId) {
       setUsers([]);
       setMessages([]);
@@ -78,8 +95,20 @@ export function useRealtime(roomId: string | null): {
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
+    let didOpen = false;
+    const timeout = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        didOpen = false;
+        setConnectionFailed(true);
+        ws.close();
+      }
+    }, 8000);
+
     ws.onopen = () => {
+      didOpen = true;
+      clearTimeout(timeout);
       setConnected(true);
+      setConnectionFailed(false);
     };
 
     ws.onmessage = (ev) => {
@@ -97,7 +126,26 @@ export function useRealtime(roomId: string | null): {
           locationTag?: string;
           senderName?: string;
           timestamp?: string;
+          clearedAt?: string;
+          message?: string;
+          pendingLevelUp?: PendingLevelUpBanner;
+          newKeys?: number;
+          newExpTotal?: number;
         };
+        if (data.type === "error" && typeof data.message === "string") {
+          window.dispatchEvent(
+            new CustomEvent("chatSendError", { detail: { message: data.message } })
+          );
+          return;
+        }
+        if (data.type === "level_up" && data.pendingLevelUp) {
+          onLevelUpRef.current?.({
+            pendingLevelUp: data.pendingLevelUp as PendingLevelUpBanner,
+            newKeys: typeof data.newKeys === "number" ? data.newKeys : undefined,
+            newExpTotal: typeof data.newExpTotal === "number" ? data.newExpTotal : undefined,
+          });
+          return;
+        }
         if (data.type === "welcome" && data.me) {
           meIdRef.current = data.me.id;
           ws.send(JSON.stringify({ type: "join", zone: roomId }));
@@ -111,6 +159,8 @@ export function useRealtime(roomId: string | null): {
             zone: u.zone,
             room: u.zone,
             isMe: mid !== undefined && u.id === mid,
+            isShadow: (u as { isShadow?: boolean }).isShadow ?? false,
+            anonymousColor: (u as { anonymousColor?: string }).anonymousColor,
           }));
           setUsers(list);
           return;
@@ -124,6 +174,9 @@ export function useRealtime(roomId: string | null): {
           typeof data.content === "string" &&
           data.createdAt
         ) {
+          // Ignora messaggi con createdAt prima dell'ultimo clear (evita che messaggi "in ritardo" riappaiano)
+          const ca = clearedAtRef.current;
+          if (ca && data.createdAt <= ca) return;
           const m: ChatMessage = {
             id: data.id,
             zone: data.zone,
@@ -131,15 +184,71 @@ export function useRealtime(roomId: string | null): {
             name: data.name,
             surname: "surname" in data && typeof data.surname === "string" ? data.surname : undefined,
             miniAvatar: "miniAvatar" in data && typeof data.miniAvatar === "string" ? data.miniAvatar : undefined,
+            anonymousColor: "anonymousColor" in data && typeof data.anonymousColor === "string" ? data.anonymousColor : undefined,
             pixelIcons: "pixelIcons" in data && typeof data.pixelIcons === "object" && data.pixelIcons !== null ? data.pixelIcons as { ruolo?: string[]; ordine?: string[]; premioSpeciale?: string[] } : undefined,
             content: data.content,
             locationTag: "locationTag" in data && typeof data.locationTag === "string" ? data.locationTag : undefined,
             createdAt: data.createdAt,
+            isMasterscreen: "isMasterscreen" in data && data.isMasterscreen === true,
           };
           setMessages((prev) => {
             if (prev.some((p) => p.id === m.id)) return prev;
             return [...prev, m];
           });
+        }
+        if (
+          data.type === "character_status_updated" &&
+          typeof data.characterId === "string"
+        ) {
+          window.dispatchEvent(
+            new CustomEvent("characterStatusUpdated", {
+              detail: { characterId: data.characterId },
+            }),
+          );
+          return;
+        }
+        if (
+          data.type === "character_hp_updated" &&
+          typeof data.characterId === "string" &&
+          typeof data.hpCurrent === "number" &&
+          typeof data.hpMax === "number"
+        ) {
+          window.dispatchEvent(
+            new CustomEvent("characterHpUpdated", {
+              detail: {
+                characterId: data.characterId,
+                hpCurrent: data.hpCurrent,
+                hpMax: data.hpMax,
+              },
+            }),
+          );
+          window.dispatchEvent(new CustomEvent("characterStatusUpdated"));
+          return;
+        }
+        if (
+          data.type === "character_chrono_updated" &&
+          typeof data.characterId === "string" &&
+          typeof data.csCurrent === "number"
+        ) {
+          window.dispatchEvent(
+            new CustomEvent("characterChronoUpdated", {
+              detail: {
+                characterId: data.characterId,
+                csCurrent: data.csCurrent,
+                csCapacity: typeof data.csCapacity === "number" ? data.csCapacity : 20,
+                accumulating: data.accumulating === true,
+                isOverheated: data.isOverheated === true,
+              },
+            }),
+          );
+          return;
+        }
+        if (data.type === "chat_cleared" && data.zone === roomId) {
+          const clearedAt = typeof data.clearedAt === "string" ? data.clearedAt : new Date().toISOString();
+          clearedAtRef.current = clearedAt;
+          setMessages([]);
+          loadHistory();
+          return;
         }
         if (
           data.type === "global_message" &&
@@ -171,16 +280,20 @@ export function useRealtime(roomId: string | null): {
     };
 
     ws.onclose = () => {
+      clearTimeout(timeout);
       setConnected(false);
       setUsers([]);
       wsRef.current = null;
+      if (!didOpen) setConnectionFailed(true);
     };
 
     ws.onerror = () => {
+      if (!didOpen) setConnectionFailed(true);
       setConnected(false);
     };
 
     return () => {
+      clearTimeout(timeout);
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "leave" }));
       }
@@ -188,8 +301,9 @@ export function useRealtime(roomId: string | null): {
       wsRef.current = null;
       setConnected(false);
       setUsers([]);
+      setConnectionFailed(false);
     };
   }, [roomId]);
 
-  return { users, messages, sendMessage, connected };
+  return { users, messages, sendMessage, connected, connectionFailed };
 }

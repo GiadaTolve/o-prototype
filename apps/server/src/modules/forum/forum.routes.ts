@@ -76,11 +76,18 @@ export const forumRoutes = new Elysia({ prefix: "/forum" })
             return { error: "Non autenticato" };
           }
           try {
+            const boardId = body.bacheca_id || body.boardId;
+            const title = body.titolo || body.title;
+            const content = body.testo || body.content;
+            if (!boardId || !title || !content) {
+              set.status = 400;
+              return { error: "boardId, title e content sono obbligatori" };
+            }
             const topic = await forumService.createTopic({
-              boardId: body.bacheca_id || body.boardId,
+              boardId,
               characterId: user.characterId,
-              title: body.titolo || body.title,
-              content: body.testo || body.content,
+              title,
+              content,
             });
             return topic;
           } catch (e: unknown) {
@@ -112,10 +119,16 @@ export const forumRoutes = new Elysia({ prefix: "/forum" })
             return { error: "Non autenticato" };
           }
           try {
+            const topicId = body.topic_id || body.topicId;
+            const content = body.testo || body.content;
+            if (!topicId || !content) {
+              set.status = 400;
+              return { error: "topicId e content sono obbligatori" };
+            }
             const post = await forumService.createPost({
-              topicId: body.topic_id || body.topicId,
+              topicId,
               characterId: user.characterId,
-              content: body.testo || body.content,
+              content,
             });
             return post;
           } catch (e: unknown) {

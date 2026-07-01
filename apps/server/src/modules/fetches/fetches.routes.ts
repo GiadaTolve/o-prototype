@@ -1,9 +1,13 @@
 import { Elysia, t } from "elysia";
+import { eq } from "drizzle-orm";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { characterService } from "../characters/characters.service";
 import * as fetches from "./fetches.service";
+import * as gameSessions from "../game-sessions/game-sessions.service";
+import { broadcastFetchResponso } from "../realtime/ws.routes";
+import { createSystemNotification } from "../notifications/notifications.service";
 import { db } from "../../plugins/db";
-import { grades, levels } from "../../db/schema";
+import { grades, levels, fetchAssignments } from "../../db/schema";
 
 async function isShinigami(characterId: string): Promise<boolean> {
   const char = await characterService.getCharacterById(characterId);
@@ -69,6 +73,18 @@ export const fetchesRoutes = new Elysia({ prefix: "/fetches" })
         const list = await fetches.listPendingFetches();
         return list;
       })
+      .get("/awaiting-reward", async ({ characterId, set }) => {
+        if (!characterId) {
+          set.status = 401;
+          return { error: "Character not found" };
+        }
+        if (!(await canApproveFetch(characterId))) {
+          set.status = 403;
+          return { error: "Solo Admin/Mod/Capo Shinigami può vedere fetch in attesa responso" };
+        }
+        const list = await fetches.listAwaitingRewardFetches();
+        return list;
+      })
       .get("/my", async ({ characterId, set }) => {
         if (!characterId) {
           set.status = 401;
@@ -76,6 +92,14 @@ export const fetchesRoutes = new Elysia({ prefix: "/fetches" })
         }
         const assignment = await fetches.getAssignmentForCharacter(characterId);
         return assignment ?? { assigned: false };
+      })
+      .get("/my/concluded", async ({ characterId, set }) => {
+        if (!characterId) {
+          set.status = 401;
+          return { error: "Character not found" };
+        }
+        const list = await fetches.listConcludedFetchesForCharacter(characterId);
+        return list;
       })
       .get("/:id", async ({ characterId, params, set }) => {
         if (!characterId) {
@@ -88,6 +112,32 @@ export const fetchesRoutes = new Elysia({ prefix: "/fetches" })
           return { error: "Fetch not found" };
         }
         return f;
+      }, { params: t.Object({ id: t.String() }) })
+      .get("/:id/session", async ({ characterId, params, set }) => {
+        if (!characterId) {
+          set.status = 401;
+          return { error: "Character not found" };
+        }
+        if (!(await canApproveFetch(characterId))) {
+          set.status = 403;
+          return { error: "Solo Admin/Mod/Capo Shinigami può leggere la giocata" };
+        }
+        const f = await fetches.getFetch(params.id);
+        if (!f) {
+          set.status = 404;
+          return { error: "Fetch non trovata" };
+        }
+        if (f.completionStatus !== "AWAITING_REWARD") {
+          set.status = 400;
+          return { error: "Solo le fetch in attesa di responso hanno una giocata leggibile" };
+        }
+        const session = await gameSessions.getGameSessionByFetchId(params.id);
+        if (!session) {
+          set.status = 404;
+          return { error: "Giocata non trovata per questa fetch" };
+        }
+        const messages = await gameSessions.getGameSessionMessages(session.id);
+        return { session, messages };
       }, { params: t.Object({ id: t.String() }) })
       .post("/", async ({ characterId, body, set }) => {
         if (!characterId) {
@@ -118,6 +168,7 @@ export const fetchesRoutes = new Elysia({ prefix: "/fetches" })
             levelMax: t.Optional(t.Number()),
             gradeIds: t.Optional(t.Array(t.String())),
             order: t.Optional(t.Array(t.Union([t.Literal("MUGEN-TAI"), t.Literal("CHISEN-TAI")]))),
+            plotIds: t.Optional(t.Array(t.String())),
             limitPerDay: t.Optional(t.Number()),
             limitPerWeek: t.Optional(t.Number()),
           })),
@@ -175,7 +226,7 @@ export const fetchesRoutes = new Elysia({ prefix: "/fetches" })
           return { error: e instanceof Error ? e.message : "Errore assegnazione" };
         }
       }, { params: t.Object({ id: t.String() }) })
-      .post("/:id/complete", async ({ characterId, params, set }) => {
+      .post("/:id/complete", async ({ characterId, params, body, set }) => {
         if (!characterId) {
           set.status = 401;
           return { error: "Character not found" };
@@ -185,11 +236,33 @@ export const fetchesRoutes = new Elysia({ prefix: "/fetches" })
           return { error: "Solo Admin/Mod/Capo Shinigami può completare fetch" };
         }
         try {
-          const updated = await fetches.markFetchAsCompleted(params.id);
+          const updated = await fetches.markFetchAsCompleted(params.id, { comment: body?.comment });
+          const [assigned] = await db
+            .select({ characterId: fetchAssignments.characterId })
+            .from(fetchAssignments)
+            .where(eq(fetchAssignments.fetchId, params.id))
+            .limit(1);
+          if (assigned) {
+            const content = updated.responsoComment
+              ? `Responso per "${updated.title}": ${updated.responsoComment}`
+              : `Il Master ha completato il responso per "${updated.title}". Consulta la Scheda → Registrazioni.`;
+            createSystemNotification(assigned.characterId, "fetch_responso", {
+              title: `Responso: ${updated.title}`,
+              content,
+            });
+            broadcastFetchResponso(assigned.characterId, {
+              fetchId: params.id,
+              fetchTitle: updated.title,
+              comment: updated.responsoComment ?? null,
+            });
+          }
           return updated;
         } catch (e) {
           set.status = 400;
           return { error: e instanceof Error ? e.message : "Errore completamento" };
         }
-      }, { params: t.Object({ id: t.String() }) })
+      }, {
+        params: t.Object({ id: t.String() }),
+        body: t.Optional(t.Object({ comment: t.Optional(t.String({ maxLength: 2000 })) })),
+      })
   );

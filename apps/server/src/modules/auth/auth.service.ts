@@ -33,12 +33,11 @@ export async function registerUser(email: string, pass: string, characterName: s
     banState: 'NONE',
   }).returning()
 
-  // 4. Salviamo il PERSONAGGIO "Grezzo" (solo nome; onboarding completa dopo)
+  // 4. Salviamo il PERSONAGGIO attivo alla registrazione (nome PG; profilo e richieste dopo)
   const [newChar] = await db.insert(characters).values({
     userId: newUser.id,
     name: characterName,
-    isRaw: true,
-    // stats default 0, baseSlots 5, valute 0 – già in schema
+    isRaw: false,
   }).returning()
 
   return { user: newUser, character: newChar }

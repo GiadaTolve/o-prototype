@@ -82,21 +82,6 @@ export default function ForumPage() {
   return (
     <div className="min-h-screen bg-[var(--panel-bg)] p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div
-          className="w-full h-[50px] mb-8 rounded border-b border-[var(--accent-violet)]/30 flex justify-center items-center"
-          style={{
-            backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            boxShadow: "0 4px 15px rgba(0,0,0,0.5)",
-          }}
-        >
-          <h1 className="font-display font-bold text-[#c9a84a] text-lg tracking-[2px] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] m-0">
-            ARCHIVI DI OYASUMI
-          </h1>
-        </div>
-
         {/* Sezioni e Bacheche */}
         {sections.map((section) => (
           <div

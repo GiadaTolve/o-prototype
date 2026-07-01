@@ -1,49 +1,55 @@
 import { Elysia, t } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
-import { getMessages, isValidRoom, insertMessage } from "./chat.service";
-import { broadcastGlobalMessage } from "../realtime/ws.routes";
+import { getMessages, isValidRoom, insertMessage, clearRoom } from "./chat.service";
+import { canAccessPrivateChatAsync } from "../housing/housing.service";
+import { broadcastGlobalMessage, broadcastChatCleared } from "../realtime/ws.routes";
 import { characterService } from "../characters/characters.service";
+import { buildCharacterPixelIcons } from "../../lib/character-pixel-icons";
 
 export const chatRoutes = new Elysia({ prefix: "/chat" })
   .use(authPlugin)
   .guard({ isAuthenticated: true }, (app) =>
-    app.get(
+    app
+      .get(
       "/:roomId",
-      async ({ params, query, set }) => {
+      async ({ params, query, set, user }) => {
         if (!isValidRoom(params.roomId)) {
           set.status = 400;
           return { error: "Invalid room" };
+        }
+        if (params.roomId.startsWith("housing_")) {
+          const char = await characterService.getCharacterByUserId(user!.id);
+          if (!char || !(await canAccessPrivateChatAsync(char.id, params.roomId, user!, char))) {
+            set.status = 403;
+            return { error: "Accesso negato a questa chat" };
+          }
         }
         const limit = Math.min(Number(query.limit) || 50, 100);
         const before = typeof query.before === "string" ? query.before : undefined;
         const rows = await getMessages(params.roomId, limit, before);
         return rows.map((r) => {
-          const meta = (r.uiMetadata as { roleIcon?: string; orderIcon?: string } | null) ?? {};
-          const roleIcon = (meta.roleIcon ?? '').toLowerCase();
-          const orderIcon = (meta.orderIcon ?? '').toLowerCase();
-          
-          // Costruisci pixelIcons
-          const pixelIcons: { ruolo?: string[]; ordine?: string[] } = {};
-          if (roleIcon && ['admin', 'moderatore', 'capo-shinigami', 'shinigami'].includes(roleIcon)) {
-            pixelIcons.ruolo = [roleIcon];
-          }
-          if (orderIcon && ['mugen-tai', 'chisen-tai'].includes(orderIcon)) {
-            pixelIcons.ordine = [orderIcon];
-          } else if (r.order && r.order !== 'NONE') {
-            pixelIcons.ordine = [r.order.toLowerCase()];
-          }
-          
+          const meta = (r.uiMetadata as {
+            roleIcon?: string;
+            orderIcon?: string;
+            premioSpeciale?: string;
+          } | null) ?? {};
+          const pixelIcons = buildCharacterPixelIcons(meta, r.order);
+          const isAnonymous = !r.isGlobal && r.anonymousAnimalName;
+          const displayName = r.isGlobal ? `[GLOBAL] ${r.name}` : (isAnonymous ? r.anonymousAnimalName! : r.name);
+          const displayAvatar = isAnonymous ? "/anonymous/mask.svg" : (r.miniAvatar ?? undefined);
           return {
             id: r.id,
             zone: r.isGlobal ? "GLOBAL" : r.zone,
             characterId: r.characterId,
-            name: r.isGlobal ? `[GLOBAL] ${r.name}` : r.name,
-            surname: r.surname ?? undefined,
-            miniAvatar: r.miniAvatar ?? undefined,
-            pixelIcons: Object.keys(pixelIcons).length > 0 ? pixelIcons : undefined,
+            name: displayName,
+            surname: isAnonymous ? undefined : (r.surname ?? undefined),
+            miniAvatar: displayAvatar,
+            anonymousColor: isAnonymous ? (r.anonymousColor ?? undefined) : undefined,
+            pixelIcons,
             content: r.content,
             locationTag: r.locationTag ?? undefined,
             createdAt: r.createdAt,
+            isMasterscreen: r.isMasterscreen ?? false,
           };
         });
       },
@@ -54,6 +60,54 @@ export const chatRoutes = new Elysia({ prefix: "/chat" })
           before: t.Optional(t.String()),
         }),
       }
+    )
+    .post(
+      "/clear",
+      async ({ body, set, user }) => {
+        if (!user) {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+        const roomId = String(body?.roomId ?? "").trim();
+        if (!roomId) {
+          set.status = 400;
+          return { error: "roomId richiesto" };
+        }
+        if (!isValidRoom(roomId)) {
+          set.status = 400;
+          return { error: "Invalid room" };
+        }
+        if (roomId.startsWith("housing_")) {
+          const char = await characterService.getCharacterByUserId(user.id);
+          if (!char || !(await canAccessPrivateChatAsync(char.id, roomId, user, char))) {
+            set.status = 403;
+            return { error: "Accesso negato a questa chat" };
+          }
+        }
+        const char = await characterService.getCharacterByUserId(user.id);
+        if (!char) {
+          set.status = 404;
+          return { error: "Character not found" };
+        }
+        const userRole = (user.role ?? "").toUpperCase();
+        const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {};
+        const roleIcon = (meta.roleIcon ?? "").toLowerCase();
+        const canAccess =
+          userRole === "ADMIN" ||
+          userRole === "MASTER" ||
+          roleIcon === "moderatore" ||
+          roleIcon === "admin" ||
+          roleIcon === "capo-shinigami" ||
+          roleIcon === "shinigami";
+        if (!canAccess) {
+          set.status = 403;
+          return { error: "Solo cariche superiori (Admin/Mod/Shinigami) possono pulire la chat" };
+        }
+        await clearRoom(roomId, char.id);
+        broadcastChatCleared(roomId, new Date().toISOString());
+        return { success: true };
+      },
+      { body: t.Object({ roomId: t.String() }) }
     )
     .post(
       "/global-message",

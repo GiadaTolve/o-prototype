@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { formatFetchError } from "@/lib/format-fetch-error";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -27,7 +28,7 @@ export default function ForgotPasswordPage() {
       if (!res.ok) throw new Error(data.error || "Qualcosa è andato storto");
       setSent(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Errore");
+      setError(formatFetchError(err, API_BASE));
     } finally {
       setLoading(false);
     }

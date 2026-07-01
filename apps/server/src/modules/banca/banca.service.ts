@@ -124,9 +124,10 @@ export async function withdrawDailySalary(characterId: string) {
   })
 
   // Calcola affitto giornaliero (solo per Stanza dell'Ordine)
+  const housingType = housing?.housingType as { dailyRent?: number | null } | undefined
   let dailyRent: number | undefined = undefined
-  if (housing && !housing.evicted && housing.housingType.dailyRent) {
-    dailyRent = housing.housingType.dailyRent
+  if (housing && !housing.evicted && housingType?.dailyRent) {
+    dailyRent = housingType.dailyRent
   }
 
   // Calcola lo stipendio usando la logica del domain
@@ -137,17 +138,17 @@ export async function withdrawDailySalary(characterId: string) {
     currentBalance,
     baseSalary,
     mode: 'DAILY',
-    banState: user.banState,
+    banState: user.banState ?? 'NONE',
     dailyRent: dailyRent ? createRem(dailyRent) : undefined,
   })
 
-  if (!salaryResult.ok) {
-    throw new Error(`Non può ricevere stipendio: ${salaryResult.reason}`)
+  if (!('ok' in salaryResult) || !salaryResult.ok) {
+    throw new Error(`Non può ricevere stipendio: ${'reason' in salaryResult ? salaryResult.reason : 'unknown'}`)
   }
 
   // Aggiorna il balance del personaggio
   const newBalance = earn(currentBalance, salaryResult.amount)
-  const newRemValue = newBalance.newBalance as number
+  const newRemValue = 'newBalance' in newBalance ? newBalance.newBalance : 0
 
   await db.transaction(async (tx) => {
     // Aggiorna il balance

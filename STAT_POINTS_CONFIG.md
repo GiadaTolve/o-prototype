@@ -8,7 +8,7 @@ Il file di configurazione effettivo è: `apps/tester/src/statPointsConfig.ts`
 
 ## Gradi (carriera Analisti)
 
-Il grado è scelto a piacere; i livelli sono solo indicativi. I moltiplicatori Vel/Dmg sono usati per Velocità e Danno delle waza.
+I gradi sono assegnati dal Consiglio di gestione a sua discrezione. Non vincolati al livello. I moltiplicatori Vel/Dmg sono usati per Velocità e Danno delle waza.
 
 | Grado | Velocità | Danno |
 |-------|----------|-------|

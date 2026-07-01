@@ -1,0 +1,44 @@
+import { eq, and, desc, isNull } from "drizzle-orm";
+import { db } from "../../plugins/db";
+import { systemNotifications } from "../../db/schema";
+
+export async function getUnreadCount(characterId: string): Promise<number> {
+  const result = await db
+    .select({ id: systemNotifications.id })
+    .from(systemNotifications)
+    .where(and(eq(systemNotifications.characterId, characterId), isNull(systemNotifications.readAt)));
+  return result.length;
+}
+
+export async function createSystemNotification(
+  characterId: string,
+  type: "fetch_responso",
+  opts: { title?: string; content?: string }
+) {
+  const [row] = await db
+    .insert(systemNotifications)
+    .values({
+      characterId,
+      type,
+      title: opts.title ?? null,
+      content: opts.content ?? null,
+    })
+    .returning();
+  return row;
+}
+
+export async function getCharacterNotifications(characterId: string, limit = 20) {
+  return db
+    .select()
+    .from(systemNotifications)
+    .where(eq(systemNotifications.characterId, characterId))
+    .orderBy(desc(systemNotifications.createdAt))
+    .limit(limit);
+}
+
+export async function markNotificationRead(id: string, characterId: string) {
+  await db
+    .update(systemNotifications)
+    .set({ readAt: new Date() })
+    .where(and(eq(systemNotifications.id, id), eq(systemNotifications.characterId, characterId)));
+}

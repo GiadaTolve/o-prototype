@@ -23,7 +23,10 @@ type FetchItem = {
     levelMin?: number;
     levelMax?: number;
     gradeIds?: string[];
+    plotIds?: string[];
     order?: string[];
+    limitPerDay?: number;
+    limitPerWeek?: number;
   };
 };
 
@@ -98,7 +101,14 @@ export function ShinigamiContent({ char }: Props) {
   const [fetchMinActions, setFetchMinActions] = useState("");
   const [fetchRemReward, setFetchRemReward] = useState("");
   const [fetchExpReward, setFetchExpReward] = useState("");
-  const [fetchRequirements, setFetchRequirements] = useState<FetchItem["requirements"] | undefined>(undefined);
+  const [fetchLevelMin, setFetchLevelMin] = useState("");
+  const [fetchLevelMax, setFetchLevelMax] = useState("");
+  const [fetchOrder, setFetchOrder] = useState<string[]>([]);
+  const [fetchLimitPerDay, setFetchLimitPerDay] = useState("");
+  const [fetchLimitPerWeek, setFetchLimitPerWeek] = useState("");
+  const [fetchGradeIds, setFetchGradeIds] = useState<string[]>([]);
+  const [fetchPlotIds, setFetchPlotIds] = useState<string[]>([]);
+  const [grades, setGrades] = useState<Array<{ id: string; name: string }>>([]);
   const [submittingFetch, setSubmittingFetch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -133,12 +143,14 @@ export function ShinigamiContent({ char }: Props) {
 
         // Carica trame e proposte
         try {
-          const [plotsData, proposalsData] = await Promise.all([
+          const [plotsData, proposalsData, gradesData] = await Promise.all([
             api.get("/lore/plots").then((d) => (Array.isArray(d) ? d : []) as Plot[]).catch(() => []),
             api.get("/lore/proposals").then((d) => (Array.isArray(d) ? d : []) as PlotProposal[]).catch(() => []),
+            api.get("/fetches/grades").then((d) => (Array.isArray(d) ? d : []) as Array<{ id: string; name: string }>).catch(() => []),
           ]);
           setPlots(plotsData);
           setProposals(proposalsData);
+          setGrades(gradesData);
         } catch (e) {
           console.error("Errore caricamento lore:", e);
         }
@@ -392,8 +404,12 @@ export function ShinigamiContent({ char }: Props) {
                       <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
                         <span>{plot.questCount} quest</span>
                         <span>{plot.relatedFetchesCount} fetch</span>
-                        {plot.actualDuration && <span>Durata: {plot.actualDuration} giorni</span>}
-                        {plot.estimatedDuration && !plot.actualDuration && <span>Stimata: {plot.estimatedDuration} giorni</span>}
+                        {plot.actualDuration != null && (
+                          <span>Durata: {plot.actualDuration} giorni</span>
+                        )}
+                        {plot.estimatedDuration != null && plot.actualDuration == null && (
+                          <span>Stimata: {plot.estimatedDuration} giorni</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -425,22 +441,36 @@ export function ShinigamiContent({ char }: Props) {
               if (!fetchTitle.trim()) return;
               setSubmittingFetch(true);
               try {
+                const requirements: FetchItem["requirements"] & { gradeIds?: string[]; plotIds?: string[] } = {};
+                if (fetchLevelMin) requirements.levelMin = Number(fetchLevelMin);
+                if (fetchLevelMax) requirements.levelMax = Number(fetchLevelMax);
+                if (fetchOrder.length > 0) requirements.order = fetchOrder as ("MUGEN-TAI" | "CHISEN-TAI")[];
+                if (fetchLimitPerDay) requirements.limitPerDay = Number(fetchLimitPerDay);
+                if (fetchLimitPerWeek) requirements.limitPerWeek = Number(fetchLimitPerWeek);
+                if (fetchGradeIds.length > 0) requirements.gradeIds = fetchGradeIds;
+                if (fetchPlotIds.length > 0) requirements.plotIds = fetchPlotIds;
+                const rewardConfig: Record<string, number> = {};
+                if (fetchMinActions) rewardConfig.minActions = Number(fetchMinActions);
+                if (fetchRemReward) rewardConfig.remReward = Number(fetchRemReward);
+                if (fetchExpReward) rewardConfig.expReward = Number(fetchExpReward);
                 await api.post("/fetches", {
                   title: fetchTitle,
                   description: fetchDescription || undefined,
-                  requirements: fetchRequirements || undefined,
-                  rewardConfig: {
-                    minActions: fetchMinActions ? Number(fetchMinActions) : undefined,
-                    remReward: fetchRemReward ? Number(fetchRemReward) : undefined,
-                    expReward: fetchExpReward ? Number(fetchExpReward) : undefined,
-                  },
+                  requirements: Object.keys(requirements).length > 0 ? requirements : undefined,
+                  rewardConfig: Object.keys(rewardConfig).length > 0 ? rewardConfig : undefined,
                 });
                 setFetchTitle("");
                 setFetchDescription("");
                 setFetchMinActions("");
                 setFetchRemReward("");
                 setFetchExpReward("");
-                setFetchRequirements(undefined);
+                setFetchLevelMin("");
+                setFetchLevelMax("");
+                setFetchOrder([]);
+                setFetchLimitPerDay("");
+                setFetchLimitPerWeek("");
+                setFetchGradeIds([]);
+                setFetchPlotIds([]);
                 setShowFetchForm(false);
                 // Ricarica fetch
                 const updated = await api.get("/fetches").then((d) => (Array.isArray(d) ? d : []) as FetchItem[]).catch(() => []);
@@ -468,6 +498,95 @@ export function ShinigamiContent({ char }: Props) {
               className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/40 text-sm resize-none mb-2"
               rows={2}
             />
+            <div className="mb-2">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Requisiti (opzionale)</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                <input
+                  type="number"
+                  value={fetchLevelMin}
+                  onChange={(e) => setFetchLevelMin(e.target.value)}
+                  placeholder="Liv. min"
+                  className="px-2 py-1 rounded border border-[var(--border-color)] bg-black/40 text-xs"
+                  min="1"
+                />
+                <input
+                  type="number"
+                  value={fetchLevelMax}
+                  onChange={(e) => setFetchLevelMax(e.target.value)}
+                  placeholder="Liv. max"
+                  className="px-2 py-1 rounded border border-[var(--border-color)] bg-black/40 text-xs"
+                  min="1"
+                />
+                <input
+                  type="number"
+                  value={fetchLimitPerDay}
+                  onChange={(e) => setFetchLimitPerDay(e.target.value)}
+                  placeholder="Max/giorno"
+                  className="px-2 py-1 rounded border border-[var(--border-color)] bg-black/40 text-xs"
+                  min="1"
+                />
+                <input
+                  type="number"
+                  value={fetchLimitPerWeek}
+                  onChange={(e) => setFetchLimitPerWeek(e.target.value)}
+                  placeholder="Max/settimana"
+                  className="px-2 py-1 rounded border border-[var(--border-color)] bg-black/40 text-xs"
+                  min="1"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap mb-2">
+                <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={fetchOrder.includes("MUGEN-TAI")}
+                    onChange={(e) => setFetchOrder((o) => (e.target.checked ? [...o, "MUGEN-TAI"] : o.filter((x) => x !== "MUGEN-TAI")))}
+                  />
+                  Mugen-Tai
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={fetchOrder.includes("CHISEN-TAI")}
+                    onChange={(e) => setFetchOrder((o) => (e.target.checked ? [...o, "CHISEN-TAI"] : o.filter((x) => x !== "CHISEN-TAI")))}
+                  />
+                  Chisen-Tai
+                </label>
+              </div>
+              {grades.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  <p className="text-[10px] text-gray-500">Grado richiesto:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {grades.map((g) => (
+                      <label key={g.id} className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fetchGradeIds.includes(g.id)}
+                          onChange={(e) => setFetchGradeIds((o) => (e.target.checked ? [...o, g.id] : o.filter((x) => x !== g.id)))}
+                        />
+                        {g.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {plots.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  <p className="text-[10px] text-gray-500">Partecipazione a trama:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {plots.filter((p) => p.status === "ACTIVE" || p.status === "COMPLETED").map((p) => (
+                      <label key={p.id} className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fetchPlotIds.includes(p.id)}
+                          onChange={(e) => setFetchPlotIds((o) => (e.target.checked ? [...o, p.id] : o.filter((x) => x !== p.id)))}
+                        />
+                        {p.title}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="mb-2">
               <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Configurazione Premi (opzionale)</p>
               <div className="grid grid-cols-3 gap-2">

@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { characterService } from "../characters/characters.service";
+import { canAccessPrivateChatAsync } from "../housing/housing.service";
 import * as quests from "./quests.service";
 
 /**
@@ -47,12 +48,20 @@ export const questsRoutes = new Elysia({ prefix: "/quests" })
         const paused = await quests.getPausedQuests(characterId);
         return paused;
       })
-      .get("/by-room/:roomId", async ({ characterId, params, set }) => {
+      .get("/by-room/:roomId", async ({ characterId, params, user, set }) => {
         if (!characterId) {
           set.status = 401;
           return { error: "Character not found" };
         }
-        const quest = await quests.getActiveQuestForRoom(params.roomId);
+        const roomId = params.roomId;
+        if (roomId.startsWith("housing_")) {
+          const char = await characterService.getCharacterById(characterId);
+          if (!char || !(await canAccessPrivateChatAsync(characterId, roomId, user!, char))) {
+            set.status = 403;
+            return { error: "Accesso negato a questa chat privata" };
+          }
+        }
+        const quest = await quests.getActiveQuestForRoom(roomId);
         return quest ?? { active: false };
       }, { params: t.Object({ roomId: t.String() }) })
       .get("/:questId", async ({ characterId, params, set }) => {
@@ -189,7 +198,7 @@ export const questsRoutes = new Elysia({ prefix: "/quests" })
           return { error: "Character not found" };
         }
         try {
-          const vote = await quests.voteForCharacter(params.questId, characterId, body.votedFor);
+          const vote = await quests.voteForCharacter(params.questId, characterId, body.votedFor, body.motivation);
           return vote;
         } catch (e) {
           set.status = 400;
@@ -199,6 +208,7 @@ export const questsRoutes = new Elysia({ prefix: "/quests" })
         params: t.Object({ questId: t.String() }),
         body: t.Object({
           votedFor: t.String(),
+          motivation: t.String({ minLength: 1, maxLength: 2000 }),
         }),
       })
       .patch("/:questId/status", async ({ characterId, body, params, set }) => {

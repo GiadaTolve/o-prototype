@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
+import { formatNarrativeText } from "@/lib/narrative-parser";
+import { GestioneRichiestePanel } from "@/components/gestione/GestioneRichiestePanel";
+import { GestioneCombattimentoPanel } from "@/components/gestione/GestioneCombattimentoPanel";
 
 type User = {
   id: string;
@@ -30,9 +33,19 @@ export default function GestionePage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "forum" | "mondo" | "logs" | "maps" | "banners" | "events" | "jobs" | "housing">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "richieste" | "forum" | "mondo" | "logs" | "maps" | "banners" | "events" | "jobs" | "housing" | "bestiario" | "combattimento">("users");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [sanctions, setSanctions] = useState<Sanction[]>([]);
+  const [pendingRequests, setPendingRequests] = useState(0);
+
+  const fetchPendingRequests = useCallback(async () => {
+    try {
+      const data = (await api.get("/player-requests/admin/pending-count")) as { count?: number };
+      setPendingRequests(typeof data.count === "number" ? data.count : 0);
+    } catch {
+      setPendingRequests(0);
+    }
+  }, []);
 
   useEffect(() => {
     // Verifica autenticazione e permessi
@@ -44,7 +57,8 @@ export default function GestionePage() {
 
     // Carica lista utenti
     loadUsers();
-  }, [router]);
+    fetchPendingRequests();
+  }, [router, fetchPendingRequests]);
 
   const loadUsers = async () => {
     try {
@@ -83,6 +97,7 @@ export default function GestionePage() {
         <div className="flex items-center gap-1 border-b border-[var(--border-color)] mb-6 flex-wrap">
           {[
             { id: "users" as const, label: "Gestione Utenti" },
+            { id: "richieste" as const, label: "Richieste", badge: pendingRequests },
             { id: "forum" as const, label: "Moderazione Forum" },
             { id: "logs" as const, label: "Log Chat" },
             { id: "maps" as const, label: "Gestione Mappe" },
@@ -91,6 +106,8 @@ export default function GestionePage() {
             { id: "banners" as const, label: "Banner" },
             { id: "events" as const, label: "Eventi" },
             { id: "mondo" as const, label: "Gestione Mondo" },
+            { id: "combattimento" as const, label: "Combattimento" },
+            { id: "bestiario" as const, label: "Bestiario" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -102,7 +119,14 @@ export default function GestionePage() {
                   : "text-gray-500 border-transparent hover:text-gray-400"
               }`}
             >
-              {tab.label}
+              <span className="inline-flex items-center gap-2">
+                {tab.label}
+                {"badge" in tab && tab.badge != null && tab.badge > 0 && (
+                  <span className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-[var(--accent-gold)] text-[var(--background)] text-[9px] font-bold tabular-nums leading-none flex items-center justify-center">
+                    {tab.badge > 99 ? "99+" : tab.badge}
+                  </span>
+                )}
+              </span>
             </button>
           ))}
         </div>
@@ -223,9 +247,17 @@ export default function GestionePage() {
             </div>
           )}
 
+          {activeTab === "richieste" && (
+            <GestioneRichiestePanel onQueueChange={fetchPendingRequests} />
+          )}
+
           {activeTab === "forum" && <ForumManagement />}
 
-          {activeTab === "logs" && <LogViewer />}
+          {activeTab === "logs" && (
+            <div className="space-y-6">
+              <LogViewer />
+            </div>
+          )}
 
           {activeTab === "maps" && <MapManagement />}
 
@@ -240,6 +272,9 @@ export default function GestionePage() {
           {activeTab === "mondo" && (
             <PlaylistManagement />
           )}
+
+          {activeTab === "combattimento" && <GestioneCombattimentoPanel users={users} />}
+          {activeTab === "bestiario" && <BestiarioManagement />}
         </div>
       </div>
     </div>
@@ -1365,11 +1400,63 @@ function SongModal({
   );
 }
 
+// ─── Log Message Block (formattazione chat) ───
+function LogMessageBlock({
+  log,
+}: {
+  log: { id: string; timestamp: string; autore: string; tipo: string; testo: string };
+}) {
+  const formattedContent = formatNarrativeText(log.testo ?? "");
+  const isGlobal = log.tipo === "GLOBALE";
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+
+  if (isGlobal) {
+    return (
+      <div className="border border-[var(--accent-violet)] bg-gradient-to-r from-[var(--accent-violet)]/20 via-transparent to-[var(--accent-violet)]/20 py-3 px-4 text-center">
+        <strong className="block text-[var(--accent-violet)] mb-2 text-xs font-display">
+          ✦ MESSAGGIO GLOBALE ✦
+        </strong>
+        <p className="m-0 font-normal text-sm text-gray-200 leading-relaxed whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full text-[#b3b3c0] relative pl-3">
+      <div className="flex items-center mb-1.5 text-xs border-b border-white/5 pb-1 w-full">
+        <span className="mr-3 text-[10px] text-gray-600 font-sans">
+          {formatTime(log.timestamp)}
+        </span>
+        <span className="font-display font-bold text-[var(--accent-gold)] mr-2.5 tracking-wide text-[13px]">
+          {log.autore}
+        </span>
+      </div>
+      <p
+        className="m-0 leading-relaxed whitespace-pre-wrap break-words font-sans text-[13px] text-[#7d7f7d] text-justify"
+        dangerouslySetInnerHTML={{ __html: formattedContent }}
+      />
+    </div>
+  );
+}
+
 // ─── Log Viewer ───
 function LogViewer() {
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now);
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const toDatetimeLocal = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const [chatRooms, setChatRooms] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedChat, setSelectedChat] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedFrom, setSelectedFrom] = useState(toDatetimeLocal(todayStart));
+  const [selectedTo, setSelectedTo] = useState(toDatetimeLocal(todayEnd));
   const [logs, setLogs] = useState<Array<{ id: string; timestamp: string; autore: string; tipo: string; testo: string }>>([]);
   const [loading, setLoading] = useState(false);
 
@@ -1378,7 +1465,7 @@ function LogViewer() {
       try {
         const data = (await api.get("/admin/chat-rooms")) as Array<{ id: string; name: string }>;
         setChatRooms(Array.isArray(data) ? data : []);
-        if (data.length > 0) setSelectedChat(data[0].id);
+        if (data.length > 0 && !selectedChat) setSelectedChat(data[0].id);
       } catch (e) {
         console.error("Errore caricamento chat rooms:", e);
       }
@@ -1387,10 +1474,12 @@ function LogViewer() {
   }, []);
 
   const fetchLogs = useCallback(async () => {
-    if (!selectedChat || !selectedDate) return;
+    if (!selectedChat || !selectedFrom) return;
     setLoading(true);
     try {
-      const data = (await api.get(`/admin/logs?chatId=${selectedChat}&date=${selectedDate}`)) as Array<{
+      const params = new URLSearchParams({ chatId: selectedChat, from: selectedFrom });
+      if (selectedTo) params.set("to", selectedTo);
+      const data = (await api.get(`/admin/logs?${params}`)) as Array<{
         id: string;
         timestamp: string;
         autore: string;
@@ -1404,13 +1493,13 @@ function LogViewer() {
     } finally {
       setLoading(false);
     }
-  }, [selectedChat, selectedDate]);
+  }, [selectedChat, selectedFrom, selectedTo]);
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 items-end mb-4">
-        <div className="flex-1">
-          <label className="block text-sm text-gray-400 mb-1">Chat Room</label>
+      <div className="flex flex-wrap gap-4 items-end mb-4">
+        <div className="min-w-[200px]">
+          <label className="block text-sm text-gray-400 mb-1">Chat</label>
           <select
             value={selectedChat}
             onChange={(e) => setSelectedChat(e.target.value)}
@@ -1424,11 +1513,20 @@ function LogViewer() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Data</label>
+          <label className="block text-sm text-gray-400 mb-1">Da</label>
           <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            type="datetime-local"
+            value={selectedFrom}
+            onChange={(e) => setSelectedFrom(e.target.value)}
+            className="px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">A</label>
+          <input
+            type="datetime-local"
+            value={selectedTo}
+            onChange={(e) => setSelectedTo(e.target.value)}
             className="px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
           />
         </div>
@@ -1438,40 +1536,21 @@ function LogViewer() {
           disabled={loading}
           className="px-4 py-2 rounded border border-[var(--accent-violet)] bg-[var(--accent-violet)]/20 text-[var(--accent-violet)] text-xs hover:bg-[var(--accent-violet)]/30 disabled:opacity-50"
         >
-          {loading ? "Caricamento..." : "FILTRA"}
+          {loading ? "Caricamento..." : "LEGGI LOG"}
         </button>
       </div>
-      <div className="border border-[var(--border-color)] rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-black/40">
-            <tr>
-              <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Ora</th>
-              <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Autore</th>
-              <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Tipo</th>
-              <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Testo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.length > 0 ? (
-              logs.map((log) => (
-                <tr key={log.id} className="border-t border-[var(--border-color)] hover:bg-black/20">
-                  <td className="px-4 py-2 text-gray-400 text-xs">
-                    {new Date(log.timestamp).toLocaleTimeString()}
-                  </td>
-                  <td className="px-4 py-2 text-[var(--accent-gold)]">{log.autore}</td>
-                  <td className="px-4 py-2 text-gray-400">{log.tipo}</td>
-                  <td className="px-4 py-2 text-white">{log.testo}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-500 italic">
-                  Nessun log trovato.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="border border-[var(--border-color)] rounded-lg overflow-hidden bg-black/30 min-h-[200px] max-h-[500px] overflow-y-auto">
+        {logs.length > 0 ? (
+          <div className="p-4 space-y-6">
+            {logs.map((log) => (
+              <LogMessageBlock key={log.id} log={log} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 text-center text-gray-500 italic">
+            Nessun log trovato.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1881,6 +1960,270 @@ function DailyEventModal({
               type="submit"
               className="px-4 py-2 rounded border border-[var(--accent-gold)] bg-[var(--accent-gold)]/20 text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/30"
             >
+              Salva
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Bestiario Management ───
+type CreatureAdmin = {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  category: string;
+  stats: { hp?: number; attack?: number; defense?: number } | null;
+};
+
+function BestiarioManagement() {
+  const [creatures, setCreatures] = useState<CreatureAdmin[]>([]);
+  const [editing, setEditing] = useState<CreatureAdmin | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchCreatures = useCallback(async () => {
+    try {
+      const data = (await api.get("/admin/creatures")) as CreatureAdmin[];
+      setCreatures(Array.isArray(data) ? data : []);
+    } catch {
+      setCreatures([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCreatures();
+  }, [fetchCreatures]);
+
+  const handleSave = async (data: { name: string; description?: string; image_url?: string; category: string; hp?: number; attack?: number; defense?: number }) => {
+    setLoading(true);
+    try {
+      const stats = data.hp != null || data.attack != null || data.defense != null
+        ? { hp: data.hp, attack: data.attack, defense: data.defense }
+        : undefined;
+      if (editing?.id) {
+        await api.put(`/admin/creatures/${editing.id}`, {
+          name: data.name,
+          description: data.description || null,
+          image_url: data.image_url || null,
+          category: data.category,
+          stats,
+        });
+      } else {
+        await api.post("/admin/creatures", {
+          name: data.name,
+          description: data.description || null,
+          image_url: data.image_url || null,
+          category: data.category,
+          stats,
+        });
+      }
+      setEditing(null);
+      fetchCreatures();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Errore salvataggio.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Eliminare questo PNG?")) return;
+    try {
+      await api.delete(`/admin/creatures/${id}`);
+      fetchCreatures();
+    } catch {
+      alert("Errore eliminazione.");
+    }
+  };
+
+  const categoryLabels: Record<string, string> = { HOLIC: "Holic", PHOBIAS: "Phobias", MUEN: "Muen" };
+
+  return (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={() => setEditing({} as CreatureAdmin)}
+        className="px-4 py-2 rounded border border-[var(--accent-violet)] bg-[var(--accent-violet)]/20 text-[var(--accent-violet)] text-xs hover:bg-[var(--accent-violet)]/30"
+      >
+        + Nuovo PNG
+      </button>
+      <div className="border border-[var(--border-color)] rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-black/40">
+            <tr>
+              <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Nome</th>
+              <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Categoria</th>
+              <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            {creatures.length > 0 ? (
+              creatures.map((c) => (
+                <tr key={c.id} className="border-t border-[var(--border-color)] hover:bg-black/20">
+                  <td className="px-4 py-2 text-white">{c.name}</td>
+                  <td className="px-4 py-2 text-gray-400">{categoryLabels[c.category] ?? c.category}</td>
+                  <td className="px-4 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(c)}
+                      className="px-2 py-1 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:text-[var(--accent-gold)] mr-2"
+                    >
+                      <FontAwesomeIcon icon={icons.edit} className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(c.id)}
+                      className="px-2 py-1 rounded border border-red-500/60 text-xs text-red-400 hover:bg-red-500/10"
+                    >
+                      <FontAwesomeIcon icon={icons.trash} className="w-3 h-3" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="px-4 py-8 text-center text-gray-500 italic">
+                  Nessun PNG.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {editing && (
+        <CreatureModal
+          creature={editing}
+          onSave={handleSave}
+          onCancel={() => setEditing(null)}
+          loading={loading}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreatureModal({
+  creature,
+  onSave,
+  onCancel,
+  loading,
+}: {
+  creature: Partial<CreatureAdmin>;
+  onSave: (data: { name: string; description?: string; image_url?: string; category: string; hp?: number; attack?: number; defense?: number }) => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [name, setName] = useState(creature.name || "");
+  const [description, setDescription] = useState(creature.description || "");
+  const [imageUrl, setImageUrl] = useState(creature.imageUrl || "");
+  const [category, setCategory] = useState(creature.category || "HOLIC");
+  const [hp, setHp] = useState<string>(creature.stats?.hp?.toString() ?? "");
+  const [attack, setAttack] = useState<string>(creature.stats?.attack?.toString() ?? "");
+  const [defense, setDefense] = useState<string>(creature.stats?.defense?.toString() ?? "");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      name,
+      description: description || undefined,
+      image_url: imageUrl || undefined,
+      category,
+      hp: hp ? Number(hp) : undefined,
+      attack: attack ? Number(attack) : undefined,
+      defense: defense ? Number(defense) : undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onCancel}>
+      <div
+        className="bg-[var(--panel-bg)] border border-[var(--accent-gold)] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-display text-[var(--accent-gold)] mb-4">
+          {creature.id ? "Modifica" : "Nuovo"} PNG
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Nome</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Categoria</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+            >
+              <option value="HOLIC">Holic</option>
+              <option value="PHOBIAS">Phobias</option>
+              <option value="MUEN">Muen</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Descrizione</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white min-h-[80px]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">URL immagine</label>
+            <input
+              type="text"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+              placeholder="https://..."
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">HP</label>
+              <input
+                type="number"
+                value={hp}
+                onChange={(e) => setHp(e.target.value)}
+                className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                min={0}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">ATK</label>
+              <input
+                type="number"
+                value={attack}
+                onChange={(e) => setAttack(e.target.value)}
+                className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                min={0}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">DEF</label>
+              <input
+                type="number"
+                value={defense}
+                onChange={(e) => setDefense(e.target.value)}
+                className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                min={0}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={onCancel} className="px-4 py-2 rounded border border-[var(--border-color)] text-gray-400 text-xs">
+              Annulla
+            </button>
+            <button type="submit" disabled={loading} className="px-4 py-2 rounded border border-[var(--accent-gold)] bg-[var(--accent-gold)]/20 text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/30 disabled:opacity-50">
               Salva
             </button>
           </div>

@@ -87,6 +87,10 @@ export const loreRoutes = new Elysia({ prefix: '/lore' })
       .post(
         '/plots',
         async ({ body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -121,6 +125,10 @@ export const loreRoutes = new Elysia({ prefix: '/lore' })
       .patch(
         '/plots/:id',
         async ({ params, body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -130,10 +138,13 @@ export const loreRoutes = new Elysia({ prefix: '/lore' })
               return { error: 'Personaggio non trovato' }
             }
 
+            const validStatus = body.status && ['ACTIVE', 'COMPLETED', 'ARCHIVED'].includes(body.status)
+              ? (body.status as 'ACTIVE' | 'COMPLETED' | 'ARCHIVED')
+              : undefined
             const plot = await updatePlot(params.id, {
               title: body.title,
               description: body.description,
-              status: body.status,
+              status: validStatus,
               estimatedDuration: body.estimatedDuration,
             })
             return plot
@@ -157,6 +168,10 @@ export const loreRoutes = new Elysia({ prefix: '/lore' })
       .post(
         '/plots/:plotId/link-quest',
         async ({ params, body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -205,6 +220,10 @@ export const loreRoutes = new Elysia({ prefix: '/lore' })
       .post(
         '/proposals',
         async ({ body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
@@ -237,6 +256,10 @@ export const loreRoutes = new Elysia({ prefix: '/lore' })
       .post(
         '/proposals/:id/approve',
         async ({ params, body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const canManage = await canManageProposals(user.id)
             if (!canManage) {
@@ -277,6 +300,10 @@ export const loreRoutes = new Elysia({ prefix: '/lore' })
       .post(
         '/proposals/:id/reject',
         async ({ params, body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: "Non autenticato" }
+          }
           try {
             const canManage = await canManageProposals(user.id)
             if (!canManage) {

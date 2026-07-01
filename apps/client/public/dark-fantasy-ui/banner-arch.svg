@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 220" fill="none">
+  <!-- Clean arched top banner - half-circle style arch -->
+  <path d="M 20 70 A 50 50 0 0 1 120 70 L 124 200 L 16 200 L 20 70 Z" stroke="#4a4550" stroke-width="2" fill="#0f0d12" />
+  <!-- Inner arc -->
+  <path d="M 24 70 A 46 46 0 0 1 116 70" stroke="#1a161f" stroke-width="1" fill="none" />
+  <!-- Horizontal lines -->
+  <line x1="24" y1="88" x2="116" y2="88" stroke="#1a161f" stroke-width="1" />
+  <line x1="24" y1="192" x2="116" y2="192" stroke="#1a161f" stroke-width="1" />
+</svg>

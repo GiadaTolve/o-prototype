@@ -1,11 +1,33 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
+import { resolveWazaTagPreview, WAZA_TAG_INDEX } from "@domain/combat/waza-tag-index";
+import {
+  extractIrTagFromText,
+  extractWazaTagNames,
+  removeWazaTagsFromText,
+} from "@domain/combat/waza-tag-preview";
+import {
+  expandWazaSlashCommandInMessage,
+  extractHitDeclaredFromText,
+  extractLaunchSkiruId,
+  extractLaunchTierFromText,
+  extractWazaLaunchTargetSpec,
+  resolveLaunchIrFromMessage,
+} from "@domain/combat/waza-launch";
+import { getSkiruRider, computeLaunchDamagePreview } from "@domain/combat/waza-skiru-riders";
+import { getSkiruDef } from "@domain/skiru/catalog";
+import { normalizeWazaLookupKey } from "@domain/combat/waza-tag-preview";
 import { formatNarrativeText } from "@/lib/narrative-parser";
+import {
+  isDiceRollMessage,
+  extractDiceResultLabels,
+  formatDiceRollLine,
+} from "@domain/chat/dice-display";
 import { api } from "@/lib/api";
 import { toast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -25,9 +47,18 @@ import {
   type RoomId,
   getChatListForZone,
   getChatLocationByRoomId,
+  isPartychat,
 } from "@/config/map-config";
 import type { ChatMessage, Presente, CharacterSummary } from "./types";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { QuarterTurnHud } from "./QuarterTurnHud";
+import { ChatCombatPanel } from "./chat-combat/ChatCombatPanel";
+import { ChatInfoPanel } from "./ChatInfoPanel";
+import { WazaLaunchStrip } from "./WazaLaunchStrip";
+
+/** Bozza che invierà solo un tiro dado (nessun EXP). */
+function isDiceOnlyDraft(draft: string): boolean {
+  return /^\s*\/?(?:d|dado)\s+\d+\s*$/i.test(draft.trim());
+}
 
 type View = "root" | "game-map" | "zone-list" | "chat" | "shinigami" | "guida" | "ambientazione" | "forum" | "gestione";
 
@@ -42,6 +73,7 @@ type Props = {
   messages: ChatMessage[];
   sendMessage: (text: string, locationTag?: string | null) => void;
   chatConnected: boolean;
+  chatConnectionFailed?: boolean;
   /** Presenti in questa chat (solo quando roomId è impostato). */
   usersInRoom: Presente[];
   /** Solo Shinigami vedono "Registra Quest" in chat. */
@@ -63,6 +95,7 @@ export function DashboardCenter({
   messages,
   sendMessage,
   chatConnected,
+  chatConnectionFailed = false,
   usersInRoom,
   canAccessShinigami,
   canAccessGestione,
@@ -78,11 +111,19 @@ export function DashboardCenter({
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const tagLuogoRef = useRef<HTMLInputElement>(null);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     listRef.current?.scrollTo(0, listRef.current.scrollHeight);
   }, [messages]);
+
+  useEffect(() => {
+    const onChatError = (event: Event) => {
+      const msg = (event as CustomEvent<{ message?: string }>).detail?.message;
+      if (msg) toast.error(msg);
+    };
+    window.addEventListener("chatSendError", onChatError as EventListener);
+    return () => window.removeEventListener("chatSendError", onChatError as EventListener);
+  }, []);
 
   // Reagisce ai trigger per aprire le viste
   useEffect(() => {
@@ -179,17 +220,19 @@ export function DashboardCenter({
     };
   }, []);
 
-  // Ascolta eventi per aprire chat housing dalla scheda
+  // Ascolta eventi per aprire chat (housing o partychat Circus / Spazio Eventi)
   useEffect(() => {
-    const handleOpenHousingChat = (e: Event) => {
+    const handleOpenChat = (e: Event) => {
       const customEvent = e as CustomEvent<{ roomId: string }>;
-      const roomId = customEvent.detail.roomId as RoomId;
-      goChat(roomId);
+      const roomId = customEvent.detail?.roomId as RoomId;
+      if (roomId) goChat(roomId);
     };
 
-    window.addEventListener('openHousingChat', handleOpenHousingChat);
+    window.addEventListener('openHousingChat', handleOpenChat);
+    window.addEventListener('openChatRoom', handleOpenChat);
     return () => {
-      window.removeEventListener('openHousingChat', handleOpenHousingChat);
+      window.removeEventListener('openHousingChat', handleOpenChat);
+      window.removeEventListener('openChatRoom', handleOpenChat);
     };
   }, []);
 
@@ -199,13 +242,10 @@ export function DashboardCenter({
     const tagInput = tagLuogoRef.current;
     if (!input?.value.trim() || !chatConnected) return;
     
-    // Controllo limite mobile: 500 caratteri per azioni da smartphone
-    const messageText = input.value.trim();
-    if (isMobile && messageText.length > 500) {
-      toast.warning("Limite mobile: le azioni da smartphone non possono superare i 500 caratteri.");
-      return;
-    }
-    
+    const raw = input.value.trim();
+    const messageText = expandWazaSlashCommandInMessage(raw, WAZA_TAG_INDEX, {
+      skiruSheet: char?.skiruSheet ?? null,
+    });
     const tag = tagInput?.value.trim() || undefined;
     sendMessage(messageText, tag || undefined);
     input.value = "";
@@ -221,10 +261,6 @@ export function DashboardCenter({
 
   return (
     <main className="flex-[2.5] min-w-0 h-full bg-[var(--panel-bg)]/40 border border-[var(--border-color)] rounded-lg p-6 order-1 lg:order-2 flex flex-col overflow-hidden">
-      <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 font-display shrink-0">
-        Area centrale — Mappe e chat
-      </p>
-
       {view === "root" && (
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-lg border border-[var(--border-color)]">
           <MapViewRoot onSelectGameMap={goGameMap} />
@@ -255,8 +291,15 @@ export function DashboardCenter({
       )}
 
       {view === "shinigami" && (
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <h2 className="font-display text-lg text-[var(--accent-gold)]">Shinigami</h2>
             <button
               type="button"
@@ -266,17 +309,33 @@ export function DashboardCenter({
               ← Mappa
             </button>
           </div>
-          <iframe
-            src="/shinigami"
-            className="w-full h-full min-h-[600px] border border-[var(--border-color)] rounded bg-[var(--panel-bg)]"
-            title="Shinigami"
-          />
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src="/shinigami"
+              className="w-full h-full min-h-[600px] border-0"
+              title="Shinigami"
+            />
+          </div>
         </div>
       )}
 
       {view === "guida" && (
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <h2 className="font-display text-lg text-[var(--accent-gold)]">Guida</h2>
             <button
               type="button"
@@ -286,17 +345,33 @@ export function DashboardCenter({
               ← Mappa
             </button>
           </div>
-          <iframe
-            src="/guida"
-            className="w-full h-full min-h-[600px] border border-[var(--border-color)] rounded bg-[var(--panel-bg)]"
-            title="Guida"
-          />
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src="/guida"
+              className="w-full h-full min-h-[600px] border-0"
+              title="Guida"
+            />
+          </div>
         </div>
       )}
 
       {view === "ambientazione" && (
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <h2 className="font-display text-lg text-[var(--accent-gold)]">Ambientazione</h2>
             <button
               type="button"
@@ -306,17 +381,33 @@ export function DashboardCenter({
               ← Mappa
             </button>
           </div>
-          <iframe
-            src="/ambientazione"
-            className="w-full h-full min-h-[600px] border border-[var(--border-color)] rounded bg-[var(--panel-bg)]"
-            title="Ambientazione"
-          />
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src="/ambientazione"
+              className="w-full h-full min-h-[600px] border-0"
+              title="Ambientazione"
+            />
+          </div>
         </div>
       )}
 
       {view === "forum" && (
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <h2 className="font-display text-lg text-[var(--accent-gold)]">Forum</h2>
             <button
               type="button"
@@ -326,17 +417,33 @@ export function DashboardCenter({
               ← Mappa
             </button>
           </div>
-          <iframe
-            src="/forum"
-            className="w-full h-full min-h-[600px] border border-[var(--border-color)] rounded bg-[var(--panel-bg)]"
-            title="Forum"
-          />
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src="/forum"
+              className="w-full h-full min-h-[600px] border-0"
+              title="Forum"
+            />
+          </div>
         </div>
       )}
 
       {view === "gestione" && (
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <h2 className="font-display text-lg text-[var(--accent-gold)]">Gestione</h2>
             <button
               type="button"
@@ -346,11 +453,20 @@ export function DashboardCenter({
               ← Mappa
             </button>
           </div>
-          <iframe
-            src="/gestione"
-            className="w-full h-full min-h-[600px] border border-[var(--border-color)] rounded bg-[var(--panel-bg)]"
-            title="Gestione"
-          />
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src="/gestione"
+              className="w-full h-full min-h-[600px] border-0"
+              title="Gestione"
+            />
+          </div>
         </div>
       )}
 
@@ -362,6 +478,7 @@ export function DashboardCenter({
           messages={messages}
           sendMessage={sendMessage}
           chatConnected={chatConnected}
+          chatConnectionFailed={chatConnectionFailed}
           usersInRoom={usersInRoom}
           onSubmit={handleSubmit}
           inputRef={inputRef}
@@ -413,9 +530,6 @@ function MapViewRoot({ onSelectGameMap }: { onSelectGameMap: (id: GameMapId) => 
           />
         </button>
       ))}
-      <p className="absolute bottom-2 left-2 text-[10px] text-gray-500 z-10">
-        Clicca un pin per aprire la mappa di gioco.
-      </p>
     </div>
   );
 }
@@ -441,8 +555,15 @@ function MapViewGameMap({
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-      {/* Header: 1/3 titolo (indietro + nome), 2/3 banner */}
-      <div className="flex items-stretch gap-3 shrink-0 w-full min-h-0">
+      {/* Header: indietro + nome + banner */}
+      <div
+        className="flex items-stretch gap-3 shrink-0 w-full min-h-0 px-3 py-3 rounded-t border border-b-0 border-[var(--border-color)]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
         <div className="w-1/3 min-w-0 flex items-center gap-3 shrink-0">
           <button
             type="button"
@@ -477,15 +598,21 @@ function MapViewGameMap({
         </div>
       </div>
       {hasZones ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 flex-1 min-h-0 overflow-auto rounded-b border border-[var(--border-color)]"
+          style={{
+            backgroundImage: "url('/backgrounds/darkstone.png')",
+            backgroundRepeat: "repeat",
+            backgroundColor: "rgba(0,0,0,0.4)",
+          }}
+        >
           {gameMap.zones.map((z) => (
             <button
               key={z.id}
               type="button"
               onClick={() => onSelectZone(z)}
-              className="flex flex-col items-center justify-center min-h-[80px] rounded-lg border border-[var(--border-color)] bg-black/40 text-gray-400 hover:border-[var(--accent-gold)]/50 hover:text-[var(--accent-gold)] transition-colors"
+              className="group flex flex-col items-center justify-center min-h-[88px] rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)]/80 text-[var(--accent-violet-light)]/90 shadow-[0_2px_8px_var(--shadow-dark)] hover:border-[var(--accent-gold)]/60 hover:text-[var(--accent-gold)] hover:shadow-[0_0_12px_var(--shadow-gold),inset_0_0_20px_rgba(0,0,0,0.3)] transition-all duration-300 ease-out"
             >
-              <FontAwesomeIcon icon={icons.map} className="w-5 h-5 mb-1 opacity-70" />
               <span className="font-display text-sm uppercase tracking-wider">{z.label}</span>
             </button>
           ))}
@@ -514,8 +641,15 @@ function MapViewZoneList({
   const chats = getChatListForZone(zone);
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="flex items-center gap-3 shrink-0">
+    <div className="flex flex-col gap-0 flex-1 min-h-0">
+      <div
+        className="flex items-center gap-3 shrink-0 px-4 py-3 rounded-t border border-b-0 border-[var(--border-color)]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
         <button
           type="button"
           onClick={onBack}
@@ -531,7 +665,14 @@ function MapViewZoneList({
           </h2>
         </div>
       </div>
-      <div className="flex flex-col gap-2">
+      <div
+        className="flex flex-col gap-2 p-4 flex-1 min-h-0 overflow-auto rounded-b border border-[var(--border-color)]"
+        style={{
+          backgroundImage: "url('/backgrounds/darkstone.png')",
+          backgroundRepeat: "repeat",
+          backgroundColor: "rgba(0,0,0,0.4)",
+        }}
+      >
         <p className="text-[10px] uppercase tracking-widest text-gray-500">Chat</p>
         {chats.length === 0 ? (
           <p className="text-sm text-gray-500">Nessuna chat in questa zona.</p>
@@ -582,7 +723,7 @@ type GameSession = {
   }>;
 };
 
-function RegistraGiocataButton({ roomId }: { roomId: RoomId | null }) {
+function RegistraGiocataButton({ roomId, activeQuest }: { roomId: RoomId | null; activeQuest?: { id: string; title?: string } | null }) {
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState<GameSession | null>(null);
   const [myFetchId, setMyFetchId] = useState<string | null>(null);
@@ -635,6 +776,7 @@ function RegistraGiocataButton({ roomId }: { roomId: RoomId | null }) {
         roomId,
         title: title.trim() || undefined,
         fetchId: useFetch && myFetchId ? myFetchId : undefined,
+        questId: activeQuest?.id,
       }) as GameSession;
       setSession(newSession);
       setTitle("");
@@ -1062,6 +1204,115 @@ function MasterNotesBox({ roomId, canAccessShinigami }: { roomId: RoomId; canAcc
   );
 }
 
+// ─── Armadio Casa: inventario housing nella chat (propria casa: Prendi | casa altrui da ospite: Ruba) ───
+function ArmadioCasa({ roomId, characterId }: { roomId: RoomId; characterId?: string }) {
+  const [inventory, setInventory] = useState<{ items: Array<{ id: string; item: { name: string; type: string }; quantity: number; location: string }>; slots?: { housingOccupied?: number; housingSlots?: number } } | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
+
+  const isHousingRoom = roomId.startsWith("housing_");
+  const ownerId = useMemo(() => {
+    if (!isHousingRoom) return null;
+    const parts = roomId.split("_");
+    const last = parts[parts.length - 1];
+    return last && /^[a-f0-9-]{36}$/i.test(last) ? last : null;
+  }, [roomId, isHousingRoom]);
+  const isMyHouse = characterId && ownerId && characterId === ownerId;
+  const isGuest = isHousingRoom && ownerId && characterId && !isMyHouse;
+
+  useEffect(() => {
+    if (!isHousingRoom || !characterId) {
+      setInventory(null);
+      return;
+    }
+    if (isMyHouse) {
+      api.get("/inventory/me")
+        .then((d: any) => setInventory(d ?? null))
+        .catch(() => setInventory(null));
+    } else if (isGuest) {
+      api.get(`/housing/armadio?roomId=${encodeURIComponent(roomId)}`)
+        .then((d: any) => {
+          if (d && typeof d === "object" && "items" in d) {
+            setInventory({ items: d.items });
+          } else {
+            setInventory(null);
+          }
+        })
+        .catch(() => setInventory(null));
+    } else {
+      setInventory(null);
+    }
+  }, [isMyHouse, isGuest, roomId, characterId]);
+
+  const moveToCarry = async (invId: string) => {
+    if (!characterId || movingId) return;
+    setMovingId(invId);
+    try {
+      if (isMyHouse) {
+        await api.post(`/inventory/me/${invId}/move-to-carry`, {});
+        const updated = (await api.get("/inventory/me")) as typeof inventory;
+        setInventory(updated);
+      } else if (isGuest) {
+        await api.post("/housing/steal-item", { roomId, inventoryId: invId });
+        const refreshed = (await api.get(`/housing/armadio?roomId=${encodeURIComponent(roomId)}`)) as { items: typeof inventory extends { items: infer I } ? I : never };
+        setInventory(refreshed ? { items: refreshed.items } : null);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Errore durante il prelievo");
+    } finally {
+      setMovingId(null);
+    }
+  };
+
+  if (!isHousingRoom || (!isMyHouse && !isGuest)) return null;
+  const housingItems = inventory?.items?.filter((i) => i.location === "HOUSING") ?? (inventory?.items ?? []);
+  const slots = inventory?.slots;
+
+  return (
+    <div className="rounded border border-[var(--border-color)] bg-black/30 p-3 shrink-0">
+      <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
+        Armadio {isGuest && "(casa altrui)"}
+      </p>
+      {housingItems.length === 0 ? (
+        <p className="text-xs text-gray-500">
+          {isMyHouse ? "Nessun oggetto in casa." : "L'armadio è vuoto."}
+        </p>
+      ) : (
+        <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
+          {housingItems.map((inv) => (
+            <div
+              key={inv.id}
+              className="flex items-center justify-between gap-2 py-1.5 px-2 rounded border border-[var(--border-color)]/50 bg-black/20"
+            >
+              <span className="text-xs text-gray-200 truncate flex-1 min-w-0">
+                {inv.item?.name ?? "?"}
+                {inv.quantity > 1 && ` ×${inv.quantity}`}
+              </span>
+              <button
+                type="button"
+                onClick={() => moveToCarry(inv.id)}
+                disabled={!!movingId}
+                className={`px-2 py-0.5 rounded text-[10px] shrink-0 disabled:opacity-50 ${
+                  isGuest
+                    ? "border border-red-500/60 text-red-400 hover:bg-red-500/10"
+                    : "border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10"
+                }`}
+                title={isGuest ? "Ruba (solo ospiti)" : "Prendi (sposta nello zaino)"}
+              >
+                {movingId === inv.id ? "…" : isGuest ? "Ruba" : "Prendi"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {slots && isMyHouse && (slots.housingSlots != null || slots.housingOccupied != null) && (
+        <p className="text-[10px] text-gray-600 mt-1.5">
+          {slots.housingOccupied ?? housingItems.length}/{slots.housingSlots ?? "?"} slot
+        </p>
+      )}
+    </div>
+  );
+}
+
 const QUEST_TYPES = ["AMBIENT", "TRAMA", "BATTLE", "ONE_SHOT", "GLOBALE"] as const;
 
 function RegistraQuestButton({ 
@@ -1170,12 +1421,17 @@ function RegistraQuestButton({
     setError("");
     setFieldErrors({});
     try {
+      let plotId: string | undefined = type === "TRAMA" && selectedPlot && selectedPlot !== "new" ? selectedPlot : undefined;
+      if (type === "TRAMA" && selectedPlot === "new" && newPlotName.trim()) {
+        const newPlot = await api.post("/lore/plots", { title: newPlotName.trim() }) as { id?: string };
+        plotId = newPlot?.id;
+      }
       const response = await api.post("/quests", {
         title: title.trim(),
         description: description.trim() || undefined,
         roomId: type === "GLOBALE" ? undefined : (roomId || undefined),
         type,
-        plotId: type === "TRAMA" && selectedPlot !== "new" && selectedPlot ? selectedPlot : undefined,
+        plotId,
         participantIds: selectedParticipants.length > 0 ? selectedParticipants : undefined,
       }) as { id?: string; title?: string };
       
@@ -1504,14 +1760,19 @@ function RegistraQuestButton({
                 <label className="text-[10px] uppercase tracking-wider text-gray-500">Partecipanti</label>
                 <div className="max-h-[150px] overflow-y-auto border border-[var(--border-color)] rounded p-2 bg-black/20">
                   {usersInRoom.map((user) => (
-                    <label key={user.id} className="flex items-center gap-2 text-xs cursor-pointer hover:text-[var(--accent-gold)] py-1">
+                    <label key={user.id} className={`flex items-center gap-2 text-xs cursor-pointer hover:text-[var(--accent-gold)] py-1 ${user.isShadow ? "text-amber-400/90" : ""}`}>
                       <input
                         type="checkbox"
                         checked={selectedParticipants.includes(user.id)}
                         onChange={() => handleParticipantToggle(user.id)}
                         className="rounded border-[var(--border-color)]"
                       />
-                      <span>{user.name}</span>
+                      <span className="flex items-center gap-1.5">
+                        {user.name}
+                        {user.isShadow && (
+                          <FontAwesomeIcon icon={icons.eyeSlash} className="w-3 h-3 text-amber-400/80" title="Shadowban" aria-hidden />
+                        )}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -1570,6 +1831,7 @@ function ChatView({
   messages,
   sendMessage,
   chatConnected,
+  chatConnectionFailed = false,
   usersInRoom,
   onSubmit,
   inputRef,
@@ -1585,6 +1847,7 @@ function ChatView({
   messages: ChatMessage[];
   sendMessage: (text: string, locationTag?: string | null) => void;
   chatConnected: boolean;
+  chatConnectionFailed?: boolean;
   usersInRoom: Presente[];
   onSubmit: (e: React.FormEvent) => void;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -1596,12 +1859,51 @@ function ChatView({
   char?: CharacterSummary;
 }) {
   const place = getChatLocationByRoomId(roomId);
+  const isPartychatRoom = isPartychat(roomId);
+  const isHousingRoom = roomId.startsWith("housing_");
+  const [housingChatInfo, setHousingChatInfo] = useState<{ name: string; image: string | null; description: string | null; isOwner: boolean } | null>(null);
+  const [housingAccessDenied, setHousingAccessDenied] = useState(false);
+  const [housingEditOpen, setHousingEditOpen] = useState(false);
+  const [housingEditForm, setHousingEditForm] = useState({ name: "", image: "", description: "" });
+  const [housingEditSaving, setHousingEditSaving] = useState(false);
+  const [housingGuests, setHousingGuests] = useState<Array<{ id: string; guest: { id: string; name: string; surname: string } }>>([]);
+  const [housingInviteSearch, setHousingInviteSearch] = useState("");
+  const [housingInviteResults, setHousingInviteResults] = useState<Array<{ id: string; name: string; surname: string }>>([]);
+  const [housingInvitingId, setHousingInvitingId] = useState<string | null>(null);
+  const [housingRemovingGuestId, setHousingRemovingGuestId] = useState<string | null>(null);
   const [activeQuest, setActiveQuest] = useState<{ id: string; title?: string; creatorId?: string; createdAt?: string } | null>(null);
   const prevActiveQuestIdRef = useRef<string | null>(null);
   const [showQuestAnimation, setShowQuestAnimation] = useState(false);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [messageLength, setMessageLength] = useState(0);
-  const isMobile: boolean = useIsMobile();
+  const [messageDraft, setMessageDraft] = useState("");
+
+  const insertChatText = useCallback(
+    (text: string) => {
+      const ta = inputRef.current;
+      if (!ta) return;
+      const start = ta.selectionStart ?? ta.value.length;
+      const end = ta.selectionEnd ?? ta.value.length;
+      const next = ta.value.substring(0, start) + text + ta.value.substring(end);
+      ta.value = next;
+      ta.selectionStart = ta.selectionEnd = start + text.length;
+      ta.focus();
+      setMessageDraft(next);
+      setMessageLength(next.length);
+    },
+    [inputRef],
+  );
+
+  const sendLaunchFromPanel = useCallback(
+    (text: string) => {
+      const tag = tagLuogoRef.current?.value.trim() || undefined;
+      const expanded = expandWazaSlashCommandInMessage(text, WAZA_TAG_INDEX, {
+        skiruSheet: char?.skiruSheet ?? null,
+      });
+      sendMessage(expanded, tag || undefined);
+    },
+    [sendMessage, char?.skiruSheet, tagLuogoRef],
+  );
 
   // Scroll automatico quando viene mostrata l'animazione
   useEffect(() => {
@@ -1658,6 +1960,7 @@ function ChatView({
   }, [roomId]);
 
   useEffect(() => {
+    if (isPartychatRoom) return; // Circus: nessuna quest
     let done = false;
     const intervalId = setInterval(() => {
       if (done) return;
@@ -1674,7 +1977,113 @@ function ChatView({
         clearTimeout(animationTimeoutRef.current);
       }
     };
-  }, [roomId, refreshQuest]);
+  }, [roomId, refreshQuest, isPartychatRoom]);
+
+  // Carica metadata chat housing (nome, immagine, descrizione)
+  useEffect(() => {
+    if (!isHousingRoom) {
+      setHousingChatInfo(null);
+      setHousingAccessDenied(false);
+      return;
+    }
+    setHousingAccessDenied(false);
+    api.get(`/housing/chat-info?roomId=${encodeURIComponent(roomId)}`)
+      .then((d) => {
+        if (d && typeof d === "object" && "name" in d && !("error" in d)) {
+          setHousingChatInfo(d as { name: string; image: string | null; description: string | null; isOwner: boolean });
+          setHousingAccessDenied(false);
+          setHousingEditForm({
+            name: (d as { name?: string }).name ?? "",
+            image: (d as { image?: string | null }).image ?? "",
+            description: (d as { description?: string | null }).description ?? "",
+          });
+        } else if (d && typeof d === "object" && "error" in d) {
+          setHousingChatInfo(null);
+          setHousingAccessDenied(true);
+        } else {
+          setHousingChatInfo(null);
+          setHousingAccessDenied(false);
+        }
+      })
+      .catch(() => {
+        setHousingChatInfo(null);
+        setHousingAccessDenied(true);
+      });
+  }, [roomId, isHousingRoom]);
+
+  // Carica ospiti e search per invito (solo se proprietario housing)
+  useEffect(() => {
+    if (!isHousingRoom || !housingChatInfo?.isOwner) return;
+    api.get("/housing/guests").then((d) => (Array.isArray(d) ? d : []) as typeof housingGuests).then(setHousingGuests).catch(() => setHousingGuests([]));
+  }, [roomId, isHousingRoom, housingChatInfo?.isOwner]);
+
+  useEffect(() => {
+    const q = housingInviteSearch.trim();
+    if (q.length < 2) {
+      setHousingInviteResults([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      api.get(`/characters/search?q=${encodeURIComponent(q)}`).then((d) => {
+        setHousingInviteResults((Array.isArray(d) ? d : []).slice(0, 6));
+      }).catch(() => setHousingInviteResults([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [housingInviteSearch]);
+
+  const handleHousingInviteGuest = async (guestCharacterId: string) => {
+    setHousingInvitingId(guestCharacterId);
+    try {
+      await api.post("/housing/guests", { guestCharacterId });
+      const updated = await api.get("/housing/guests").then((d) => (Array.isArray(d) ? d : []) as typeof housingGuests);
+      setHousingGuests(updated);
+      setHousingInviteSearch("");
+      setHousingInviteResults([]);
+      toast.success("Ospite aggiunto");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Errore durante l'invito");
+    } finally {
+      setHousingInvitingId(null);
+    }
+  };
+
+  const handleHousingRemoveGuest = async (guestCharacterId: string) => {
+    setHousingRemovingGuestId(guestCharacterId);
+    try {
+      await api.delete(`/housing/guests/${guestCharacterId}`);
+      setHousingGuests((prev) => prev.filter((g) => g.guest.id !== guestCharacterId));
+      toast.success("Ospite rimosso");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Errore durante la rimozione");
+    } finally {
+      setHousingRemovingGuestId(null);
+    }
+  };
+
+  const displayLabel = isHousingRoom && housingChatInfo ? housingChatInfo.name : (isHousingRoom && housingAccessDenied ? "Chat privata" : placeLabel);
+  const displayImage = isHousingRoom && housingChatInfo?.image ? housingChatInfo.image : place?.image;
+  const displayDescription = isHousingRoom && housingChatInfo
+    ? (housingChatInfo.description ?? "La tua abitazione.")
+    : (place?.description ?? (isHousingRoom ? "La tua abitazione." : "Nessuna descrizione ambientale."));
+
+  const handleHousingEditSave = async () => {
+    setHousingEditSaving(true);
+    try {
+      const res = await api.patch("/housing/chat-customization", {
+        name: housingEditForm.name.trim() || null,
+        image: housingEditForm.image.trim() || null,
+        description: housingEditForm.description.trim() || null,
+      }) as { name?: string; image?: string | null; description?: string | null; isOwner?: boolean };
+      if (res && "name" in res) {
+        setHousingChatInfo((prev) => prev ? { ...prev, ...res } : null);
+        setHousingEditOpen(false);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Errore durante il salvataggio");
+    } finally {
+      setHousingEditSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
@@ -1696,27 +2105,38 @@ function ChatView({
             <FontAwesomeIcon icon={icons.back} className="w-4 h-4" />
           </button>
           <h2 className="font-display font-bold text-[#c9a84a] tracking-[2px] text-base uppercase flex items-center gap-2.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            <span className="text-[#60519b]">💬</span> {placeLabel}
-            {activeQuest && (
+            <span className="text-[#60519b]">💬</span> {displayLabel}
+            {!isPartychatRoom && activeQuest && (
               <span className="text-[#ff4d4d] text-[10px] border border-[#ff4d4d] px-1.5 py-0.5 rounded">
                 QUEST
               </span>
             )}
           </h2>
+          {(canAccessShinigami || canAccessGestione) && <PulisciChatButton roomId={roomId} />}
         </div>
-        {!chatConnected && (
+        {!chatConnected && !housingAccessDenied && (
           <span className="text-xs text-gray-500">(connessione…)</span>
         )}
       </div>
 
+      {isHousingRoom && housingAccessDenied ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center border border-[var(--accent-violet)]/20 rounded-lg bg-black/40 m-4">
+          <div className="w-16 h-16 rounded-full border-2 border-[var(--accent-violet)]/50 flex items-center justify-center bg-[var(--accent-violet)]/10">
+            <FontAwesomeIcon icon={icons.eye} className="w-8 h-8 text-[var(--accent-violet)]" />
+          </div>
+          <p className="font-display text-lg text-[var(--accent-gold)]">
+            Hey, questa è una conversazione privata!
+          </p>
+        </div>
+      ) : (
       <div className="flex flex-1 min-h-0 overflow-hidden gap-4">
         {/* Sinistra: immagine luogo, descrizione, note Master, presenti */}
         <aside className="w-[280px] flex-shrink-0 flex flex-col gap-3 min-h-0 overflow-y-auto pr-3 border-r border-white/5 bg-black/30 p-5">
           <div className="relative w-full h-[140px] rounded border border-[var(--accent-violet)]/30 overflow-hidden shrink-0">
-            {place?.image ? (
+            {displayImage ? (
               <Image 
-                src={place.image} 
-                alt={placeLabel} 
+                src={displayImage} 
+                alt={displayLabel} 
                 fill 
                 className="object-cover sepia-[0.2] brightness-90" 
                 sizes="280px" 
@@ -1728,8 +2148,174 @@ function ChatView({
             )}
           </div>
           <div className="text-xs text-gray-300 flex-grow italic leading-relaxed mb-3">
-            {place?.description ?? "Nessuna descrizione ambientale."}
+            {displayDescription}
           </div>
+          {isHousingRoom && housingChatInfo?.isOwner && (
+            <div className="mb-3">
+              {!housingEditOpen ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHousingEditForm({
+                      name: housingChatInfo.name,
+                      image: housingChatInfo.image ?? "",
+                      description: housingChatInfo.description ?? "",
+                    });
+                    setHousingEditOpen(true);
+                  }}
+                  className="w-full px-3 py-2 rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/10 transition-colors"
+                >
+                  <FontAwesomeIcon icon={icons.edit} className="w-3 h-3 mr-2" />
+                  Personalizza chat
+                </button>
+              ) : (
+                <div className="space-y-2 rounded border border-[var(--accent-gold)]/30 bg-black/30 p-3">
+                  <label className="block text-[10px] uppercase text-[var(--accent-gold)]">Nome</label>
+                  <input
+                    type="text"
+                    value={housingEditForm.name}
+                    onChange={(e) => setHousingEditForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Es. Casa di Luna"
+                    className="w-full px-2 py-1.5 rounded border border-white/20 bg-black/40 text-white text-sm"
+                  />
+                  <label className="block text-[10px] uppercase text-[var(--accent-gold)]">URL immagine</label>
+                  <input
+                    type="text"
+                    value={housingEditForm.image}
+                    onChange={(e) => setHousingEditForm((f) => ({ ...f, image: e.target.value }))}
+                    placeholder="Es. /backgrounds/cloudy.png"
+                    className="w-full px-2 py-1.5 rounded border border-white/20 bg-black/40 text-white text-sm"
+                  />
+                  <label className="block text-[10px] uppercase text-[var(--accent-gold)]">Descrizione</label>
+                  <textarea
+                    value={housingEditForm.description}
+                    onChange={(e) => setHousingEditForm((f) => ({ ...f, description: e.target.value }))}
+                    placeholder="Descrizione ambientale..."
+                    rows={3}
+                    className="w-full px-2 py-1.5 rounded border border-white/20 bg-black/40 text-white text-sm resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleHousingEditSave}
+                      disabled={housingEditSaving}
+                      className="flex-1 px-3 py-1.5 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+                    >
+                      {housingEditSaving ? "…" : "Salva"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHousingEditOpen(false)}
+                      className="px-3 py-1.5 rounded border border-white/30 text-gray-400 text-xs hover:bg-white/5"
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {isHousingRoom && housingChatInfo?.isOwner && (
+            <div className="mb-3 space-y-2">
+              <h5 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display flex items-center gap-1.5">
+                <FontAwesomeIcon icon={icons.presenti} className="w-3 h-3" />
+                Ospiti
+              </h5>
+              <input
+                type="text"
+                placeholder="Cerca personaggio… (min 2 caratteri)"
+                value={housingInviteSearch}
+                onChange={(e) => setHousingInviteSearch(e.target.value)}
+                className="w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/40 text-white text-xs placeholder-gray-500"
+              />
+              {housingInviteResults.length > 0 && (
+                <ul className="rounded border border-[var(--border-color)] bg-black/40 divide-y divide-[var(--border-color)] max-h-28 overflow-y-auto">
+                  {housingInviteResults.map((c) => {
+                    const alreadyGuest = housingGuests.some((g) => g.guest.id === c.id);
+                    return (
+                      <li key={c.id} className="flex items-center justify-between px-2 py-1.5 text-xs">
+                        <span className="text-white truncate">{c.name} {c.surname || ""}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleHousingInviteGuest(c.id)}
+                          disabled={housingInvitingId !== null || alreadyGuest}
+                          className="px-2 py-0.5 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-[10px] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50 shrink-0 ml-1"
+                        >
+                          {alreadyGuest ? "Già ospite" : housingInvitingId === c.id ? "…" : "Invita"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {housingGuests.length > 0 ? (
+                <ul className="space-y-1 border border-[var(--border-color)] rounded bg-black/20 divide-y divide-[var(--border-color)] max-h-24 overflow-y-auto">
+                  {housingGuests.map((g) => (
+                    <li key={g.id} className="flex items-center justify-between px-2 py-1.5 text-xs">
+                      <span className="text-white truncate">{g.guest.name} {g.guest.surname || ""}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleHousingRemoveGuest(g.guest.id)}
+                        disabled={housingRemovingGuestId !== null}
+                        className="px-2 py-0.5 rounded border border-red-500/60 text-red-400 text-[10px] hover:bg-red-500/10 disabled:opacity-50 shrink-0 ml-1"
+                      >
+                        {housingRemovingGuestId === g.guest.id ? "…" : "Rimuovi"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : housingInviteSearch.length < 2 && (
+                <p className="text-[10px] text-gray-500">Nessun ospite invitato.</p>
+              )}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("openHousingWindow"))}
+                className="w-full px-2 py-1.5 rounded border border-[var(--border-color)]/60 text-gray-400 text-[10px] hover:border-[var(--accent-gold)]/50 hover:text-[var(--accent-gold)] transition-colors"
+              >
+                Affitto e dettagli casa
+              </button>
+            </div>
+          )}
+          {isPartychatRoom && (
+            <div className="mb-3 space-y-2">
+              <h5 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display flex items-center gap-1.5">
+                <FontAwesomeIcon icon={icons.presenti} className="w-3 h-3" />
+                Nel Circus ora
+              </h5>
+              {usersInRoom.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {usersInRoom.map((u) => (
+                    <li
+                      key={u.id}
+                      className="flex items-center gap-2 px-2 py-1 rounded border border-[var(--accent-violet)]/20 bg-black/30"
+                      style={u.anonymousColor ? { borderLeft: `3px solid ${u.anonymousColor}` } : undefined}
+                    >
+                      <span
+                        className="font-display font-bold text-xs truncate"
+                        style={{ color: u.anonymousColor ?? "#c9a84a" }}
+                      >
+                        {u.name}
+                      </span>
+                      {u.isMe && <span className="text-[9px] text-gray-500">(tu)</span>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[10px] text-gray-500 italic">Nessuno al momento.</p>
+              )}
+            </div>
+          )}
+          <ArmadioCasa roomId={roomId} characterId={char?.id} />
+          <ChatCombatPanel
+            onInsertText={insertChatText}
+            onSendMessage={sendLaunchFromPanel}
+            chatConnected={chatConnected}
+            characterId={char?.id}
+            skiruSheet={char?.skiruSheet}
+            char={char}
+            usersInRoom={usersInRoom}
+            isMaster={Boolean(canAccessGestione || canAccessShinigami)}
+          />
           <MasterNotesBox roomId={roomId} canAccessShinigami={canAccessShinigami} />
         </aside>
 
@@ -1737,7 +2323,7 @@ function ChatView({
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div
             ref={listRef}
-            className="flex-1 overflow-y-auto overflow-x-visible min-h-[120px] py-5 px-10"
+            className="flex-1 overflow-y-auto overflow-x-visible min-h-[120px] py-6 px-8"
             style={{
               backgroundImage: "url('/backgrounds/darkstone.png')",
               backgroundRepeat: 'repeat',
@@ -1746,21 +2332,24 @@ function ChatView({
               position: 'relative',
             }}
           >
-            {messages.length === 0 && (
-              <p className="text-xs text-gray-500 p-2">Nessun messaggio. Scrivi qualcosa per iniziare.</p>
-            )}
             {messages.map((m) => (
-              <ChatMessageBlock 
-                key={m.id} 
-                message={m} 
-                placeLabel={placeLabel}
+              <ChatMessageBlock
+                key={m.id}
+                message={m}
+                placeLabel={displayLabel}
                 activeQuest={activeQuest}
                 currentCharacterId={char?.id}
+                currentCharacterName={char?.name ?? usersInRoom.find((u) => u.isMe || u.id === char?.id)?.name}
+                currentCharacterSurname={char?.surname}
+                actorSkiruSheet={
+                  m.characterId === char?.id ? char?.skiruSheet : undefined
+                }
+                isPartychat={isPartychatRoom}
               />
             ))}
             
-            {/* Banner Animazione Quest - IN FONDO, DOPO TUTTI I MESSAGGI */}
-            {showQuestAnimation && activeQuest && (
+            {/* Banner Animazione Quest - IN FONDO, DOPO TUTTI I MESSAGGI (non in Circus) */}
+            {!isPartychatRoom && showQuestAnimation && activeQuest && (
               <div 
                 id="quest-animation-wrapper" 
                 style={{ 
@@ -1776,21 +2365,45 @@ function ChatView({
           </div>
 
           {/* Tag luogo (posizione nel luogo) + messaggio + strumenti */}
-          <form onSubmit={onSubmit} className="flex flex-col gap-2 shrink-0 border-t border-[var(--accent-violet)]/20 bg-[rgba(15,15,20,0.95)] px-5 py-4">
-            <div className="flex gap-2.5 items-start">
-              <input
-                ref={tagLuogoRef}
-                type="text"
-                placeholder="Luogo..."
-                disabled={!chatConnected}
-                maxLength={120}
-                className="bg-white/5 border border-white/10 text-[#c9a84a] px-2.5 py-2.5 rounded text-xs font-display w-[150px] h-10 box-border text-center"
-              />
+          <form
+            onSubmit={(e) => {
+              onSubmit(e);
+              setMessageDraft("");
+              setMessageLength(0);
+            }}
+            className="flex flex-col gap-2 shrink-0 border-t border-[var(--accent-violet)]/20 px-5 py-4"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.75)",
+            }}
+          >
+            <div className="flex gap-2.5 items-end">
+              <div className="flex flex-col items-start gap-1 w-[150px] shrink-0">
+                <ChatInfoPanel />
+                <input
+                  ref={tagLuogoRef}
+                  type="text"
+                  placeholder={isPartychatRoom ? "Posizione..." : "Luogo..."}
+                  disabled={!chatConnected}
+                  maxLength={120}
+                  className="bg-white/5 border border-white/10 text-[#c9a84a] px-2.5 py-2.5 rounded text-xs font-display w-full h-10 box-border text-center shrink-0"
+                />
+              </div>
               <textarea
                 ref={inputRef}
-                placeholder={chatConnected ? "Azione..." : "Connessione in corso…"}
+                placeholder={
+                  chatConnected
+                    ? "Azione..."
+                    : chatConnectionFailed
+                    ? "Connessione fallita. Ricarica la pagina. Verifica che il server sia avviato (localhost:4000) e di usare localhost:3000."
+                    : "Connessione in corso…"
+                }
                 disabled={!chatConnected}
-                onChange={(e) => setMessageLength(e.target.value.length)}
+                onChange={(e) => {
+                  setMessageLength(e.target.value.length);
+                  setMessageDraft(e.target.value);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -1798,32 +2411,72 @@ function ChatView({
                   }
                 }}
                 rows={1}
-                className="flex-1 bg-white/5 border border-white/10 text-[#e6e0ff] px-2.5 py-2.5 rounded resize-none font-sans text-sm box-border h-10 leading-relaxed"
+                className="flex-1 bg-white/5 border border-white/10 text-[#e6e0ff] px-2.5 py-2.5 rounded resize-none font-sans text-sm box-border h-10 leading-relaxed shrink-0"
               />
               <button
                 type="submit"
                 disabled={!chatConnected}
-                className="px-6 py-2 border-none rounded cursor-pointer bg-gradient-to-r from-[#60519b] to-[#a270ff] text-white font-display font-bold text-xs h-10 box-border transition-all uppercase tracking-wide shadow-[0_0_10px_rgba(162,112,255,0.3)] disabled:opacity-50"
+                className="px-6 py-2 border-none rounded cursor-pointer bg-gradient-to-r from-[#60519b] to-[#a270ff] text-white font-display font-bold text-xs h-10 box-border shrink-0 transition-all uppercase tracking-wide shadow-[0_0_10px_rgba(162,112,255,0.3)] disabled:opacity-50"
                 title="Invia"
                 aria-label="Invia messaggio"
               >
                 INVIA
               </button>
             </div>
-            <div className="flex justify-between items-center mt-2.5 pl-[160px]">
-              <div className="flex gap-2">
-                {canAccessShinigami && <RegistraQuestButton roomId={roomId} activeQuest={activeQuest} usersInRoom={usersInRoom} canAccessGestione={canAccessGestione} onQuestCreated={() => refreshQuest(true)} />}
-                <RegistraGiocataButton roomId={roomId} />
+            <div className="flex justify-between items-center mt-2.5 pl-[160px] gap-3 flex-wrap">
+              <div className="flex gap-2 flex-wrap items-center">
+                {!isPartychatRoom && canAccessShinigami && <RegistraQuestButton roomId={roomId} activeQuest={activeQuest} usersInRoom={usersInRoom} canAccessGestione={canAccessGestione} onQuestCreated={() => refreshQuest(true)} />}
+                {!isPartychatRoom && <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} />}
                 {canAccessGestione && <GlobalMessageButton />}
               </div>
-              <span className="text-[10px] text-gray-500 font-mono">
-                {messageLength} CARATTERI
-              </span>
+              <div className="flex items-center gap-4 flex-wrap justify-end">
+                <QuarterTurnHud draft={messageDraft} />
+                <span className="text-[10px] text-gray-500 font-mono">
+                  {messageLength} caratteri
+                  {!isDiceOnlyDraft(messageDraft) && messageLength >= 500 && (
+                    <span className="text-[var(--accent-gold)]/80 ml-2">
+                      +{Math.floor(messageLength / 500)} EXP
+                    </span>
+                  )}
+                </span>
+              </div>
             </div>
           </form>
         </div>
       </div>
+      )}
     </div>
+  );
+}
+
+// ─── Pulisci Chat Button (Shinigami/Admin/Mod) ───
+function PulisciChatButton({ roomId }: { roomId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    if (!confirm("Vuoi pulire la chat? I messaggi resteranno nel Log ma non saranno più visibili nella vista chat.")) return;
+    setLoading(true);
+    try {
+      await api.post("/chat/clear", { roomId });
+      toast.success("Chat pulita.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Errore");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className="p-1.5 rounded border border-[var(--accent-violet)]/60 text-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/10 transition-colors disabled:opacity-50"
+      title="Pulisci chat (i messaggi restano nel Log)"
+      aria-label="Pulisci chat"
+    >
+      <FontAwesomeIcon icon={icons.clearChat} className="w-3.5 h-3.5" />
+    </button>
   );
 }
 
@@ -1871,10 +2524,9 @@ function GlobalMessageButton() {
                 className="w-full px-3 py-2 bg-black/40 border border-[var(--border-color)] rounded text-sm text-gray-200 resize-none"
                 rows={4}
                 placeholder="Inserisci il messaggio globale..."
-                maxLength={2000}
               />
               <p className="text-[10px] text-gray-600 mt-1">
-                {message.length}/2000 caratteri
+                {message.length} caratteri
               </p>
             </div>
             <div className="flex gap-2 justify-end">
@@ -1925,21 +2577,82 @@ function ChatMessageBlock({
   placeLabel,
   activeQuest,
   currentCharacterId,
+  currentCharacterName,
+  currentCharacterSurname,
+  actorSkiruSheet,
+  isPartychat = false,
 }: { 
   message: ChatMessage; 
   placeLabel: string;
   activeQuest?: { id: string; title?: string; creatorId?: string; createdAt?: string } | null;
   currentCharacterId?: string;
+  currentCharacterName?: string;
+  currentCharacterSurname?: string | null;
+  actorSkiruSheet?: Record<string, number>;
+  isPartychat?: boolean;
 }) {
-  const formattedContent = formatNarrativeText(message.content);
+  const highlightNames = useMemo(() => {
+    if (!currentCharacterName?.trim()) return undefined;
+    const names: string[] = [currentCharacterName.trim()];
+    if (currentCharacterSurname?.trim()) {
+      names.unshift(`${currentCharacterName.trim()} ${currentCharacterSurname.trim()}`);
+    }
+    return names;
+  }, [currentCharacterName, currentCharacterSurname]);
+  const messageIr = useMemo(() => extractIrTagFromText(message.content), [message.content]);
+  const launchSkiruId = useMemo(() => extractLaunchSkiruId(message.content), [message.content]);
+  const launchTargetSpec = useMemo(
+    () => extractWazaLaunchTargetSpec(message.content),
+    [message.content],
+  );
+  const wazaLaunches = useMemo(() => {
+    const skiruName = launchSkiruId ? getSkiruDef(launchSkiruId)?.name ?? launchSkiruId : null;
+    const riderLabel = launchSkiruId ? getSkiruRider(launchSkiruId)?.label ?? null : null;
+    const targetName =
+      launchTargetSpec?.nameQuery ??
+      (launchTargetSpec?.characterId ? `id:${launchTargetSpec.characterId.slice(0, 8)}…` : null);
+    const hitDeclared = extractHitDeclaredFromText(message.content);
+    const launchTier = extractLaunchTierFromText(message.content);
+    return extractWazaTagNames(message.content).map((name) => {
+      const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(name));
+      const dmg =
+        actorSkiruSheet && launchTier != null
+          ? computeLaunchDamagePreview({
+              tier: launchTier,
+              attackerSheet: actorSkiruSheet,
+              declaredSkiruId: launchSkiruId,
+              wazaEffectText: entry?.effect ?? entry?.description ?? null,
+            })
+          : null;
+      return {
+        preview: resolveWazaTagPreview(name, WAZA_TAG_INDEX),
+        ir: resolveLaunchIrFromMessage(message.content, actorSkiruSheet ?? null, messageIr),
+        skiruName,
+        riderLabel,
+        targetName,
+        hitDeclared,
+        damageGross: dmg?.totalBeforeMitigation ?? null,
+      };
+    });
+  }, [message.content, messageIr, launchSkiruId, launchTargetSpec, actorSkiruSheet]);
+  const narrativeBody = useMemo(
+    () => removeWazaTagsFromText(message.content),
+    [message.content],
+  );
+  const formattedContent = formatNarrativeText(narrativeBody, highlightNames);
+  const diceRollOnly = isDiceRollMessage(message.content);
+  const diceBodyHtml = diceRollOnly
+    ? formatNarrativeText(formatDiceRollLine(extractDiceResultLabels(message.content)), highlightNames)
+    : null;
   const isGlobal = message.zone === "GLOBAL" || message.name.startsWith("[GLOBAL]");
   
-  // Verifica se è un messaggio masterscreen (Shinigami autore della quest attiva)
-  // Solo se il messaggio è stato scritto DOPO la creazione della quest
-  const isMasterscreen = activeQuest?.creatorId && 
+  // Preferisco valore persistito; fallback: Shinigami autore quest attiva + messaggio dopo creazione
+  const isMasterscreen = message.isMasterscreen ?? (
+    activeQuest?.creatorId &&
     message.characterId === activeQuest.creatorId &&
     activeQuest.createdAt &&
-    new Date(message.createdAt) >= new Date(activeQuest.createdAt);
+    new Date(message.createdAt) >= new Date(activeQuest.createdAt)
+  );
   
   // Messaggio globale (Admin)
   if (isGlobal) {
@@ -1957,7 +2670,23 @@ function ChatMessageBlock({
   if (isMasterscreen) {
     return (
       <div className="w-full mb-6 p-5 bg-black/40 border border-[var(--accent-gold)]/30 rounded shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] relative">
-        <div className="font-sans italic text-[13px] text-[#ffe7a3] leading-relaxed whitespace-pre-wrap mb-4">
+        <div className="masterscreen-format font-sans text-[13px] leading-relaxed whitespace-pre-wrap mb-4">
+          {(wazaLaunches.length > 0) && (
+            <div className="mb-3 space-y-2">
+              {wazaLaunches.map(({ preview, ir, skiruName, riderLabel, targetName, hitDeclared, damageGross }, i) => (
+                <WazaLaunchStrip
+                  key={`${preview.name}-${i}`}
+                  preview={preview}
+                  ir={ir}
+                  skiruName={skiruName}
+                  riderLabel={riderLabel}
+                  targetName={targetName}
+                  hitDeclared={hitDeclared}
+                  damageGross={damageGross}
+                />
+              ))}
+            </div>
+          )}
           <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
         </div>
         <div className="text-right font-display text-[11px] font-bold text-[var(--accent-gold)] uppercase tracking-wider opacity-80">
@@ -1974,16 +2703,18 @@ function ChatMessageBlock({
   };
   
   return (
-    <div className="w-full mb-5 text-[#b3b3c0] relative pl-2.5">
-      {/* Header: Timestamp | Nome | Pixel-icons | Tag luogo (inserito dall'utente) */}
+    <div className={`w-full text-[#b3b3c0] relative pl-3 ${diceRollOnly ? "mb-4 chat-dice-roll" : "mb-6"}`}>
+      {/* Header: Timestamp | Nome | Pixel-icons | Tag luogo */}
       <div className="flex items-center mb-1.5 text-xs border-b border-white/5 pb-1 w-full">
         <span className="mr-3 text-[10px] text-gray-600 font-sans">
           {formatTimestamp(message.createdAt)}
         </span>
-        <span className="font-display font-bold text-[#c9a84a] mr-2.5 tracking-wide text-[13px]">
+        <span
+          className="font-display font-bold mr-2.5 tracking-wide text-[13px]"
+          style={{ color: message.anonymousColor ?? "#c9a84a" }}
+        >
           {message.name}{message.surname ? ` ${message.surname}` : ""}
         </span>
-        {/* Pixel-icons */}
         {message.pixelIcons && (
           <div className="flex items-center gap-1 mr-2">
             {message.pixelIcons.ruolo?.map((r) => {
@@ -2014,17 +2745,36 @@ function ChatMessageBlock({
             })}
           </div>
         )}
-        {/* Location tag (posizione nel luogo - inserito dall'utente) */}
         {message.locationTag && (
           <span className="bg-[var(--accent-violet)]/10 border border-[var(--accent-violet)]/30 text-[var(--accent-violet)] px-1.5 py-0.5 rounded text-[10px] font-sans uppercase">
             [{message.locationTag}]
           </span>
         )}
       </div>
-      
-      {/* Contenuto: Avatar + Testo */}
+
+      {diceRollOnly ? (
+        <p
+          className="m-0 leading-relaxed whitespace-pre-wrap break-words font-sans text-[13px] text-[#7d7f7d]"
+          dangerouslySetInnerHTML={{ __html: diceBodyHtml ?? "" }}
+        />
+      ) : (
       <div className="flow-root">
-        {/* Avatar 100x100px float left */}
+        {(wazaLaunches.length > 0) && (
+          <div className="mb-3 space-y-2 clear-both">
+            {wazaLaunches.map(({ preview, ir, skiruName, riderLabel, targetName, hitDeclared, damageGross }, i) => (
+              <WazaLaunchStrip
+                key={`${preview.name}-${i}`}
+                preview={preview}
+                ir={ir}
+                skiruName={skiruName}
+                riderLabel={riderLabel}
+                targetName={targetName}
+                hitDeclared={hitDeclared}
+                damageGross={damageGross}
+              />
+            ))}
+          </div>
+        )}
         {message.miniAvatar && (
           <div className="float-left mr-4 mb-1">
             <Image
@@ -2036,12 +2786,12 @@ function ChatMessageBlock({
             />
           </div>
         )}
-        {/* Testo giustificato */}
         <p
           className="m-0 leading-relaxed whitespace-pre-wrap break-words font-sans text-[13px] text-[#7d7f7d] text-justify"
           dangerouslySetInnerHTML={{ __html: formattedContent }}
         />
       </div>
+      )}
     </div>
   );
 }

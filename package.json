@@ -3,13 +3,35 @@
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bash scripts/dev-stack.sh",
+    "dev:server": "cd apps/server && bun run dev",
+    "dev:client": "cd apps/client && bun run dev",
+    "dev:tester": "cd apps/tester && bun run dev",
+    "dev:tester-api": "cd apps/tester-api && bun run dev",
+    "apply:tester-contributions": "bun scripts/apply-tester-contributions.ts",
+    "deploy:tester-altervista": "cd apps/tester && npm run deploy:altervista",
+    "kill:4000": "bash scripts/kill-port-4000.sh",
+    "start:server": "bun run kill:4000 && bun run dev:server",
+    "cloud:install": "bash scripts/cloud-agent-install.sh",
+    "cloud:verify": "bash scripts/cloud-agent-verify.sh",
+    "mobile:worker": "bash scripts/mobile-worker.sh"
   },
   "dependencies": {
-    "elysia": "latest"
+    "@elysiajs/cors": "^1.4.1",
+    "@elysiajs/jwt": "^1.4.0",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.45.1",
+    "elysia": "latest",
+    "jose": "^6.1.3",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.17.2",
+    "postgres": "^3.4.8",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.16.0",
+    "bun-types": "^1.3.6",
+    "drizzle-kit": "^0.31.8"
+  }
 }

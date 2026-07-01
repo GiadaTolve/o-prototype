@@ -140,6 +140,7 @@ export async function getUserShineRanking(month?: number, year?: number) {
       shinePoints: sql<number>`count(*)::int`.as('shine_points'),
     })
     .from(questVotes)
+    .where(sql`true`)
     .groupBy(questVotes.votedFor)
 
   // Se specificato mese/anno, filtra per le quest chiuse in quel periodo

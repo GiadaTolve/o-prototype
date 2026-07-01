@@ -8,14 +8,22 @@ import { jwtVerify } from "jose";
 import { JWT_SECRET } from "../../config";
 import { characterService } from "../characters/characters.service";
 import { insertMessage, isValidRoom } from "../chat/chat.service";
+import { getActiveQuestForRoom } from "../quests/quests.service";
+import { resolveDiceInMessage, messageNeedsDiceResolution } from "../../lib/dice-resolver";
+import { canAccessPrivateChatAsync } from "../housing/housing.service";
+import { getRoomState, joinSession, getParticipant } from "../anonymous-chat/anonymous-chat.service";
+import { buildCharacterPixelIcons } from "../../lib/character-pixel-icons";
 import * as presence from "./presence.store";
-import { db } from "../../db";
+import { db } from "../../plugins/db";
 import { characters } from "../../db/schema";
 import { eq } from "drizzle-orm";
 
 const SECRET = new TextEncoder().encode(JWT_SECRET);
+/** Room ID partychat (Circus) */
+const PARTYCHAT_ROOM = "edo__paradise";
+const PARADISE_ROOM = PARTYCHAT_ROOM;
 
-type WsUser = { userId: string; characterId: string; name: string };
+type WsUser = { userId: string; characterId: string; name: string; isShadow?: boolean };
 const wsSessions = new Map<string, WsUser>();
 
 /** roomId -> wsId -> ws (solo send per broadcast) */
@@ -38,6 +46,8 @@ function broadcastPresence(roomId: string): void {
     id: u.characterId,
     name: u.name,
     zone: roomId,
+    isShadow: u.isShadow ?? false,
+    ...(u.anonymousColor && { anonymousColor: u.anonymousColor }),
   }));
   const msg = JSON.stringify({ type: "presence", zone: roomId, users });
   const m = roomSockets.get(roomId);
@@ -47,6 +57,23 @@ function broadcastPresence(roomId: string): void {
       w.send(msg);
     } catch (e) {
       console.error("[realtime] broadcast send error:", e);
+    }
+  }
+}
+
+/**
+ * Notifica che una chat è stata pulita (messaggi nascosti dalla vista, restano nel Log).
+ * I client nella room refetchano la storia. clearedAt permette di ignorare chat_message "in ritardo".
+ */
+export function broadcastChatCleared(roomId: string, clearedAt: string): void {
+  const msg = JSON.stringify({ type: "chat_cleared", zone: roomId, clearedAt });
+  const m = roomSockets.get(roomId);
+  if (!m) return;
+  for (const [, w] of m) {
+    try {
+      w.send(msg);
+    } catch (e) {
+      console.error("[realtime] chat_cleared broadcast error:", e);
     }
   }
 }
@@ -71,6 +98,98 @@ export function broadcastGlobalMessage(content: string, senderName: string): voi
         console.error("[realtime] global message send error:", e);
       }
     }
+  }
+}
+
+/**
+ * Notifica aggiornamento HP combattimento (Master) a tutti i client connessi.
+ */
+export function broadcastCharacterHpUpdated(payload: {
+  characterId: string;
+  hpCurrent: number;
+  hpMax: number;
+}): void {
+  const msg = JSON.stringify({
+    type: "character_hp_updated",
+    ...payload,
+  });
+  for (const [, roomMap] of roomSockets) {
+    for (const [, ws] of roomMap) {
+      try {
+        ws.send(msg);
+      } catch (e) {
+        console.error("[realtime] character_hp_updated send error:", e);
+      }
+    }
+  }
+}
+
+/** Notifica aggiornamento status combattimento (DoT / decay / apply). */
+export function broadcastCharacterStatusUpdated(payload: { characterId: string }): void {
+  const msg = JSON.stringify({
+    type: "character_status_updated",
+    characterId: payload.characterId,
+  });
+  for (const [, roomMap] of roomSockets) {
+    for (const [, ws] of roomMap) {
+      try {
+        ws.send(msg);
+      } catch (e) {
+        console.error("[realtime] character_status_updated send error:", e);
+      }
+    }
+  }
+}
+
+/** Notifica aggiornamento Chrono Stack (Tenkan / tick / colpo subito). */
+export function broadcastCharacterChronoUpdated(payload: {
+  characterId: string;
+  csCurrent: number;
+  csCapacity: number;
+  accumulating: boolean;
+  overheatTurns: number;
+  skipNextTurn: boolean;
+  isOverheated: boolean;
+  overheatDamagePerTurn: number;
+  stacksOverCapacity: number;
+}): void {
+  const msg = JSON.stringify({
+    type: "character_chrono_updated",
+    ...payload,
+  });
+  for (const [, roomMap] of roomSockets) {
+    for (const [, ws] of roomMap) {
+      try {
+        ws.send(msg);
+      } catch (e) {
+        console.error("[realtime] character_chrono_updated send error:", e);
+      }
+    }
+  }
+}
+
+/**
+ * Notifica al giocatore che il Master ha dato il responso alla sua fetch.
+ * Arriva come messaggio di sistema (System notification).
+ */
+export function broadcastFetchResponso(
+  characterId: string,
+  payload: { fetchId: string; fetchTitle: string; comment: string | null }
+): void {
+  const ws = characterSockets.get(characterId);
+  if (!ws) return;
+  try {
+    ws.send(
+      JSON.stringify({
+        type: "fetch_responso",
+        fetchId: payload.fetchId,
+        fetchTitle: payload.fetchTitle,
+        comment: payload.comment,
+        timestamp: new Date().toISOString(),
+      })
+    );
+  } catch (e) {
+    console.error("[realtime] fetch_responso broadcast error:", e);
   }
 }
 
@@ -133,14 +252,16 @@ export const realtimeRoutes = new Elysia()
         ws.close(4403, "Character not found");
         return;
       }
+      const userRow = await characterService.getUserByCharacterId(char.id);
+      const isShadow = userRow?.banState === "SHADOW";
       const user: WsUser = {
         userId,
         characterId: char.id,
         name: char.name,
+        isShadow,
       };
       wsSessions.set(ws.id, user);
-      // Registra come online globale (anche senza join room)
-      presence.markOnline(ws.id, user);
+      presence.markOnline(ws.id, { ...user, isShadow });
       // Registra per SMS broadcast
       characterSockets.set(char.id, { send: (d) => ws.send(d) });
       try {
@@ -158,17 +279,44 @@ export const realtimeRoutes = new Elysia()
       if (msg.type === "join" && typeof msg.zone === "string") {
         const roomId = msg.zone as string;
         if (!isValidRoom(roomId)) return;
+        if (roomId.startsWith("housing_")) {
+          const char = await db.query.characters.findFirst({ where: eq(characters.id, user.characterId), columns: { id: true, uiMetadata: true } });
+          const userRow = char ? await characterService.getUserByCharacterId(user.characterId) : null;
+          const mockUser = { role: userRow?.role ?? "PLAYER" };
+          const canAccess = char && (await canAccessPrivateChatAsync(user.characterId, roomId, mockUser, char));
+          if (!canAccess) return;
+        }
+        // Partychat (Circus): stanza deve essere aperta dall'admin; joinSession assegna animale+colore
+        if (roomId === PARADISE_ROOM) {
+          const state = await getRoomState(roomId);
+          if (!state.isOpen) {
+            try {
+              ws.send(JSON.stringify({ type: "error", message: "Area interdetta. La stanza non è aperta." }));
+            } catch (e) {
+              console.error("[realtime] partychat closed notify:", e);
+            }
+            return;
+          }
+        }
         const prev = presence.getRoom(ws.id);
-        if (prev) {
+        if (prev && prev !== roomId) {
+          // Circus: non rimuovere partecipante su cambio room — mantiene nome animale
           presence.leave(ws.id);
           getSockets(prev).delete(ws.id);
           broadcastPresence(prev);
         }
-        presence.join(roomId, ws.id, user);
+        if (roomId === PARADISE_ROOM) {
+          const participant = await joinSession(roomId, user.characterId);
+          if (!participant) return;
+          presence.join(roomId, ws.id, { ...user, name: participant.animalName, anonymousColor: participant.color });
+        } else {
+          presence.join(roomId, ws.id, user);
+        }
         getSockets(roomId).set(ws.id, { send: (d) => ws.send(d) });
         broadcastPresence(roomId);
       } else if (msg.type === "leave") {
         const roomId = presence.leave(ws.id);
+        // Circus: non rimuovere partecipante — mantiene nome animale se rientra nella stessa sessione
         if (roomId) {
           getSockets(roomId).delete(ws.id);
           broadcastPresence(roomId);
@@ -176,65 +324,212 @@ export const realtimeRoutes = new Elysia()
       } else if (msg.type === "chat" && typeof msg.text === "string" && typeof msg.zone === "string") {
         const roomId = msg.zone as string;
         if (!isValidRoom(roomId)) return;
+        if (roomId.startsWith("housing_")) {
+          const char = await db.query.characters.findFirst({ where: eq(characters.id, user.characterId), columns: { id: true, uiMetadata: true } });
+          const userRow = char ? await characterService.getUserByCharacterId(user.characterId) : null;
+          const mockUser = { role: userRow?.role ?? "PLAYER" };
+          const canAccess = char && (await canAccessPrivateChatAsync(user.characterId, roomId, mockUser, char));
+          if (!canAccess) return;
+        }
         const cur = presence.getRoom(ws.id);
         if (cur !== roomId) return;
-        const text = String(msg.text).trim().slice(0, 2000);
+        const text = String(msg.text).trim();
         if (!text) return;
+        // Shadowban: messaggi non persistiti né trasmessi (OYASUMI_CONTEXT §6)
+        const senderUser = await characterService.getUserByCharacterId(user.characterId);
+        if (senderUser?.banState === "SHADOW") return;
         const locationTag = typeof msg.locationTag === "string" ? msg.locationTag : undefined;
+        // Risolvi /d N e [dado:…] con stats del personaggio
+        let resolvedText = text;
+        if (messageNeedsDiceResolution(text)) {
+          const charStats = await db.query.characters.findFirst({
+            where: eq(characters.id, user.characterId),
+            columns: { mind: true, dexterity: true, strength: true, constitution: true, empathy: true },
+          });
+          const stats = {
+            mind: charStats?.mind ?? 0,
+            dexterity: charStats?.dexterity ?? 0,
+            strength: charStats?.strength ?? 0,
+            constitution: charStats?.constitution ?? 0,
+            empathy: charStats?.empathy ?? 0,
+          };
+          resolvedText = resolveDiceInMessage(text, stats);
+        }
         try {
-          const row = await insertMessage(roomId, user.characterId, text, locationTag);
-          // Carica dati completi del personaggio per il messaggio
+          const participant = roomId === PARADISE_ROOM ? await getParticipant(roomId, user.characterId) : null;
+          const activeQuest = await getActiveQuestForRoom(roomId);
+          const isMasterscreen = !!(activeQuest && activeQuest.creatorId === user.characterId);
+          const { row, levelUp } = await insertMessage(
+            roomId,
+            user.characterId,
+            resolvedText,
+            locationTag,
+            false,
+            participant?.animalName ?? undefined,
+            participant?.color ?? undefined,
+            isMasterscreen
+          );
+
+          try {
+            const chrono = await characterService.processChatChronoOnMessage(
+              user.characterId,
+              resolvedText,
+              row.totalChars ?? resolvedText.length,
+              { isMasterscreen },
+            );
+            if (chrono?.chronoStack) {
+              broadcastCharacterChronoUpdated({
+                characterId: user.characterId,
+                ...chrono.chronoStack,
+              });
+            }
+            if (
+              chrono?.vitals &&
+              chrono.overheatHpDamage > 0
+            ) {
+              broadcastCharacterHpUpdated({
+                characterId: user.characterId,
+                hpCurrent: chrono.vitals.hpCurrent,
+                hpMax: chrono.vitals.hpMax,
+              });
+            }
+          } catch (e) {
+            console.error("[realtime] chrono chat:", e);
+          }
+
+          if (!isMasterscreen) {
+            try {
+              const roomParticipants = presence.getPresence(roomId).map((u) => ({
+                characterId: u.characterId,
+                name: u.name,
+              }));
+              const wazaAuto = await characterService.processChatWazaAutomation(
+                user.characterId,
+                resolvedText,
+                { roomParticipants, isMasterscreen },
+              );
+              if (wazaAuto) {
+                broadcastCharacterChronoUpdated({
+                  characterId: user.characterId,
+                  ...wazaAuto.chronoStack,
+                });
+                for (const cid of wazaAuto.affectedCharacterIds) {
+                  broadcastCharacterStatusUpdated({ characterId: cid });
+                  const needsHpBroadcast = wazaAuto.effects.some(
+                    (e) =>
+                      (e.kind === 'debito_collection' &&
+                        e.debtorCharacterId === cid &&
+                        e.damage > 0) ||
+                      (e.kind === 'shinryaku_contact_damage' && e.victimCharacterId === cid) ||
+                      (e.kind === 'waza_launch_damage' && e.victimCharacterId === cid),
+                  );
+                  if (needsHpBroadcast) {
+                    const vitals = await characterService.getCombatVitals(cid);
+                    broadcastCharacterHpUpdated({
+                      characterId: cid,
+                      hpCurrent: vitals.hpCurrent,
+                      hpMax: vitals.hpMax,
+                    });
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("[realtime] waza automation chat:", e);
+            }
+          }
+
+          if (!isMasterscreen) {
+            try {
+              const chronoCs = (
+                await characterService.getCombatChronoVitals(user.characterId)
+              ).csCurrent;
+              const statusTick = await characterService.tickCharacterStatusAfterChatAction(
+                user.characterId,
+                chronoCs,
+              );
+              broadcastCharacterStatusUpdated({ characterId: user.characterId });
+              const selfDamage = statusTick.tick?.selfDamage ?? 0;
+              const vitals = statusTick.vitals as { hpCurrent: number; hpMax: number };
+              if (selfDamage > 0) {
+                broadcastCharacterHpUpdated({
+                  characterId: user.characterId,
+                  hpCurrent: vitals.hpCurrent,
+                  hpMax: vitals.hpMax,
+                });
+              }
+            } catch (e) {
+              console.error("[realtime] status tick chat:", e);
+            }
+          }
+
+          // Carica dati completi del personaggio per il messaggio (non usati in Paradise)
           const char = await db.query.characters.findFirst({
             where: eq(characters.id, user.characterId),
-            columns: { surname: true, miniAvatar: true, uiMetadata: true, order: true },
+            columns: { surname: true, miniAvatar: true, uiMetadata: true, order: true, keys: true, experienceTotal: true },
           });
-          
-          const meta = (char?.uiMetadata as { roleIcon?: string; orderIcon?: string } | null) ?? {};
-          const roleIcon = (meta.roleIcon ?? '').toLowerCase();
-          const orderIcon = (meta.orderIcon ?? '').toLowerCase();
-          
-          // Costruisci pixelIcons
-          const pixelIcons: { ruolo?: string[]; ordine?: string[] } = {};
-          if (roleIcon && ['admin', 'moderatore', 'capo-shinigami', 'shinigami'].includes(roleIcon)) {
-            pixelIcons.ruolo = [roleIcon];
-          }
-          if (orderIcon && ['mugen-tai', 'chisen-tai'].includes(orderIcon)) {
-            pixelIcons.ordine = [orderIcon];
-          } else if (char?.order && char.order !== 'NONE') {
-            pixelIcons.ordine = [char.order.toLowerCase()];
-          }
-          
+
+          const isPartychat = roomId === PARTYCHAT_ROOM;
+          const displayName = isPartychat && row.anonymousAnimalName ? row.anonymousAnimalName : user.name;
+          const displaySurname = isPartychat ? undefined : char?.surname;
+          const displayAvatar = isPartychat ? "/anonymous/mask.svg" : char?.miniAvatar ?? undefined;
+
+          const meta = (char?.uiMetadata as {
+            roleIcon?: string;
+            orderIcon?: string;
+            premioSpeciale?: string;
+          } | null) ?? {};
+          const pixelIcons = isPartychat
+            ? undefined
+            : buildCharacterPixelIcons(meta, char?.order);
+
           const payload = JSON.stringify({
             type: "chat_message",
             id: row.id,
             zone: roomId,
             characterId: user.characterId,
-            name: user.name,
-            surname: char?.surname ?? undefined,
-            miniAvatar: char?.miniAvatar ?? undefined,
-            pixelIcons: Object.keys(pixelIcons).length > 0 ? pixelIcons : undefined,
+            name: displayName,
+            surname: displaySurname,
+            miniAvatar: displayAvatar,
+            anonymousColor: isPartychat ? row.anonymousColor ?? undefined : undefined,
+            pixelIcons,
             content: row.content,
             locationTag: row.locationTag ?? undefined,
             createdAt: row.createdAt,
+            isMasterscreen: row.isMasterscreen ?? false,
           });
           const m = roomSockets.get(roomId);
           if (m) for (const [, w] of m) try { w.send(payload); } catch (e) { console.error("[realtime] chat broadcast:", e); }
+
+          if (levelUp) {
+            try {
+              ws.send(JSON.stringify({
+                type: "level_up",
+                pendingLevelUp: levelUp,
+                newKeys: char?.keys,
+                newExpTotal: char?.experienceTotal,
+              }));
+            } catch (e) {
+              console.error("[realtime] level_up notify:", e);
+            }
+          }
         } catch (e) {
           console.error("[realtime] chat persist:", e);
+          try {
+            ws.send(JSON.stringify({ type: "error", message: e instanceof Error ? e.message : "Errore nell'invio" }));
+          } catch (_) {}
         }
       }
     },
 
     close(ws) {
       const roomId = presence.leave(ws.id);
+      // Circus: non rimuovere partecipante — mantiene nome animale se rientra nella stessa sessione
       if (roomId) {
         getSockets(roomId).delete(ws.id);
         broadcastPresence(roomId);
       }
       const user = wsSessions.get(ws.id);
-      if (user) {
-        characterSockets.delete(user.characterId);
-      }
+      if (user) characterSockets.delete(user.characterId);
       presence.markOffline(ws.id);
       wsSessions.delete(ws.id);
     },
