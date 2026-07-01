@@ -11,14 +11,18 @@ import {
 } from "@domain/combat/waza-tag-preview";
 import {
   buildFullWazaLaunchLine,
-  listInvestedChannelSkiru,
+  resolveAutoLaunchSkiruId,
 } from "@domain/combat/waza-launch";
 import { computeDeclaredActionIr, computeLaunchDamagePreview, extractMechanicTagsFromEffect, getSkiruRider } from "@domain/combat/waza-skiru-riders";
 import { getSkiruDef } from "@domain/skiru/catalog";
 import { useDoMechanicsSnapshot } from "@/hooks/useDoMechanicsSnapshot";
 import type { Presente } from "../types";
 
-type WazaRow = { id: string; name: string };
+type WazaRow = {
+  id: string;
+  name: string;
+  isPassive?: boolean;
+};
 
 export function WazaLaunchPanel({
   characterId,
@@ -50,8 +54,6 @@ export function WazaLaunchPanel({
   const [wazaLoading, setWazaLoading] = useState(false);
   const [filter, setFilter] = useState("");
   const [selectedWazaId, setSelectedWazaId] = useState("");
-  const [declaredSkiruId, setDeclaredSkiruId] = useState("");
-  const [csOverride, setCsOverride] = useState<number | "">("");
   const [targetCharacterId, setTargetCharacterId] = useState("");
   const [declareHit, setDeclareHit] = useState(false);
   const [narrative, setNarrative] = useState("");
@@ -71,10 +73,13 @@ export function WazaLaunchPanel({
         if (cancelled || !mountedRef.current) return;
         const arr = Array.isArray(d) ? d : [];
         setWazaList(
-          arr.map((w: { id?: string; name?: string }) => ({
-            id: w.id ?? "",
-            name: w.name ?? "",
-          })),
+          arr
+            .filter((w: { isPassive?: boolean }) => !w.isPassive)
+            .map((w: { id?: string; name?: string; isPassive?: boolean }) => ({
+              id: w.id ?? "",
+              name: w.name ?? "",
+              isPassive: w.isPassive,
+            })),
         );
       })
       .catch(() => {
@@ -88,29 +93,24 @@ export function WazaLaunchPanel({
     };
   }, [characterId]);
 
-  const channelSkiru = useMemo(
-    () => listInvestedChannelSkiru(skiruSheet ?? null),
-    [skiruSheet],
-  );
-
-  useEffect(() => {
-    setCsOverride("");
-  }, [selectedWazaId]);
-
-  useEffect(() => {
-    if (declaredSkiruId || channelSkiru.length === 0) return;
-    setDeclaredSkiruId(channelSkiru[0].id);
-  }, [channelSkiru, declaredSkiruId]);
+  const launchableWaza = useMemo(() => {
+    return wazaList.filter((w) => {
+      const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(w.name));
+      if (!entry || entry.isPassive) return false;
+      const preview = resolveWazaTagPreview(w.name, WAZA_TAG_INDEX);
+      return preview.tier != null && preview.csCost != null;
+    });
+  }, [wazaList]);
 
   const filteredWaza = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return wazaList;
-    return wazaList.filter((w) => w.name.toLowerCase().includes(q));
-  }, [wazaList, filter]);
+    if (!q) return launchableWaza;
+    return launchableWaza.filter((w) => w.name.toLowerCase().includes(q));
+  }, [launchableWaza, filter]);
 
   const selectedWaza = useMemo(
-    () => wazaList.find((w) => w.id === selectedWazaId) ?? null,
-    [wazaList, selectedWazaId],
+    () => launchableWaza.find((w) => w.id === selectedWazaId) ?? null,
+    [launchableWaza, selectedWazaId],
   );
 
   const targetOptions = useMemo(
@@ -140,6 +140,11 @@ export function WazaLaunchPanel({
   const wazaPreview = preview?.preview ?? null;
   const wazaEntry = preview?.entry;
 
+  const autoSkiruId = useMemo(() => {
+    if (!skiruSheet || !wazaEntry || wazaPreview?.isPassive) return null;
+    return resolveAutoLaunchSkiruId(skiruSheet, wazaEntry);
+  }, [skiruSheet, wazaEntry, wazaPreview?.isPassive]);
+
   const mechanicTags = useMemo(
     () => extractMechanicTagsFromEffect(wazaEntry?.effect ?? wazaEntry?.description),
     [wazaEntry],
@@ -150,24 +155,21 @@ export function WazaLaunchPanel({
     return computeLaunchDamagePreview({
       tier: wazaPreview.tier,
       attackerSheet: skiruSheet ?? null,
-      declaredSkiruId: declaredSkiruId || null,
+      declaredSkiruId: autoSkiruId,
       wazaEffectText: wazaEntry?.effect ?? wazaEntry?.description ?? null,
     });
-  }, [wazaPreview?.tier, skiruSheet, declaredSkiruId, wazaEntry]);
+  }, [wazaPreview?.tier, skiruSheet, autoSkiruId, wazaEntry]);
 
-  const effectiveCs = useMemo(() => {
-    if (csOverride !== "" && Number.isFinite(csOverride)) return Math.max(0, csOverride);
-    return wazaPreview?.csCost ?? 0;
-  }, [csOverride, wazaPreview?.csCost]);
+  const effectiveCs = wazaPreview?.csCost ?? 0;
 
   const csInsufficient =
     currentCs != null && effectiveCs > 0 && effectiveCs > currentCs;
 
   const launchIr = useMemo(() => {
     if (!skiruSheet || wazaPreview?.isPassive) return null;
-    if (declaredSkiruId) return computeDeclaredActionIr(skiruSheet, declaredSkiruId);
+    if (autoSkiruId) return computeDeclaredActionIr(skiruSheet, autoSkiruId);
     return null;
-  }, [skiruSheet, declaredSkiruId, wazaPreview?.isPassive]);
+  }, [skiruSheet, autoSkiruId, wazaPreview?.isPassive]);
 
   const launchLinePreview = useMemo(() => {
     if (!selectedWaza) return null;
@@ -175,8 +177,7 @@ export function WazaLaunchPanel({
       targetCharacterId !== "" ? { characterId: targetCharacterId } : null;
     return buildFullWazaLaunchLine(selectedWaza.name, WAZA_TAG_INDEX, {
       skiruSheet: skiruSheet ?? null,
-      declaredSkiruId: declaredSkiruId || null,
-      csOverride: csOverride !== "" ? csOverride : null,
+      declaredSkiruId: autoSkiruId,
       target,
       declareHit,
       currentCs: currentCs ?? null,
@@ -186,88 +187,63 @@ export function WazaLaunchPanel({
     selectedWaza,
     targetCharacterId,
     skiruSheet,
-    declaredSkiruId,
-    csOverride,
+    autoSkiruId,
     declareHit,
     currentCs,
     wazaResolveExtras,
   ]);
 
-  const rider = declaredSkiruId ? getSkiruRider(declaredSkiruId) : null;
-  const skiruLabel = declaredSkiruId ? getSkiruDef(declaredSkiruId)?.name : null;
+  const rider = autoSkiruId ? getSkiruRider(autoSkiruId) : null;
+  const skiruLabel = autoSkiruId ? getSkiruDef(autoSkiruId)?.name : null;
 
-  const insertLaunch = useCallback(() => {
-    if (!selectedWaza) return;
+  const buildLaunchBody = useCallback(() => {
+    if (!selectedWaza) return null;
     const target =
       targetCharacterId != null && targetCharacterId !== ""
         ? { characterId: targetCharacterId }
         : null;
     const line = buildFullWazaLaunchLine(selectedWaza.name, WAZA_TAG_INDEX, {
       skiruSheet: skiruSheet ?? null,
-      declaredSkiruId: declaredSkiruId || null,
-      csOverride: csOverride !== "" ? csOverride : null,
+      declaredSkiruId: autoSkiruId,
       target,
       declareHit,
       currentCs: currentCs ?? null,
       ...wazaResolveExtras,
     });
-    const body = narrative.trim() ? `${narrative.trim()}\n${line}` : line;
-    onInsertText(`${body}\n`);
-    setNarrative("");
+    return narrative.trim() ? `${narrative.trim()}\n${line}` : line;
   }, [
     selectedWaza,
     targetCharacterId,
     skiruSheet,
-    declaredSkiruId,
-    csOverride,
+    autoSkiruId,
     declareHit,
     currentCs,
     wazaResolveExtras,
     narrative,
-    onInsertText,
   ]);
 
+  const insertLaunch = useCallback(() => {
+    const body = buildLaunchBody();
+    if (!body) return;
+    onInsertText(`${body}\n`);
+    setNarrative("");
+  }, [buildLaunchBody, onInsertText]);
+
   const sendLaunch = useCallback(() => {
-    if (!selectedWaza || !onSendMessage) return;
-    const target =
-      targetCharacterId != null && targetCharacterId !== ""
-        ? { characterId: targetCharacterId }
-        : null;
-    const line = buildFullWazaLaunchLine(selectedWaza.name, WAZA_TAG_INDEX, {
-      skiruSheet: skiruSheet ?? null,
-      declaredSkiruId: declaredSkiruId || null,
-      csOverride: csOverride !== "" ? csOverride : null,
-      target,
-      declareHit,
-      currentCs: currentCs ?? null,
-      ...wazaResolveExtras,
-    });
-    const body = narrative.trim() ? `${narrative.trim()}\n${line}` : line;
+    const body = buildLaunchBody();
+    if (!body || !onSendMessage) return;
     onSendMessage(body);
     setNarrative("");
     setSelectedWazaId("");
     setTargetCharacterId("");
-    setCsOverride("");
     setDeclareHit(false);
-  }, [
-    selectedWaza,
-    targetCharacterId,
-    skiruSheet,
-    declaredSkiruId,
-    csOverride,
-    declareHit,
-    currentCs,
-    wazaResolveExtras,
-    narrative,
-    onSendMessage,
-  ]);
+  }, [buildLaunchBody, onSendMessage]);
 
-  const needsSkiru = wazaPreview != null && !wazaPreview.isPassive && wazaPreview.tier != null;
   const canLaunch =
     !!selectedWaza &&
     chatConnected &&
     !csInsufficient &&
-    (!needsSkiru || (declaredSkiruId !== "" && channelSkiru.some((s) => s.id === declaredSkiruId)));
+    effectiveCs > 0;
 
   if (!characterId) {
     return (
@@ -304,14 +280,22 @@ export function WazaLaunchPanel({
           </label>
 
           <label className="block">
-            <span className="text-[9px] uppercase text-gray-500 font-display">Waza</span>
+            <span className="text-[9px] uppercase text-gray-500 font-display">
+              Waza possedute ({launchableWaza.length})
+            </span>
             <select
               value={selectedWazaId}
               onChange={(e) => setSelectedWazaId(e.target.value)}
               className="mt-0.5 w-full rounded border border-[var(--border-color)] bg-black/40 px-2 py-1.5 text-[11px] text-white"
               disabled={wazaLoading}
             >
-              <option value="">{wazaLoading ? "Caricamento…" : "— scegli —"}</option>
+              <option value="">
+                {wazaLoading
+                  ? "Caricamento…"
+                  : launchableWaza.length === 0
+                    ? "Nessuna waza attiva posseduta"
+                    : "— scegli —"}
+              </option>
               {filteredWaza.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -322,99 +306,51 @@ export function WazaLaunchPanel({
 
           {wazaPreview && (
             <div className="text-[9px] text-[var(--accent-violet-light)]/90 leading-relaxed border border-[var(--border-color)]/60 rounded px-2 py-1.5 bg-black/20 space-y-1">
-              {wazaPreview.isPassive ? (
-                <span>Dō passiva · nessun lancio meccanico</span>
-              ) : (
-                <>
-                  <span>
-                    {wazaPreview.styleLabel && <>{wazaPreview.styleLabel} · </>}
-                    T{wazaPreview.tier}
-                    {wazaPreview.damage != null && <> · {wazaPreview.damage} dmg tier</>}
-                    {effectiveCs > 0 && <> · {effectiveCs} CS</>}
-                    {launchIr != null && <> · IR {launchIr}</>}
-                  </span>
-                  {mechanicTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {mechanicTags.slice(0, 6).map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded border border-[var(--accent-violet)]/30 px-1 py-0.5 text-[8px] text-[var(--accent-violet-light)]"
-                        >
-                          [{tag}]
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {damagePreview && (
-                    <p className="text-[8px] text-[var(--accent-gold)]/90">
-                      Danno indicativo: {damagePreview.summary} →{" "}
-                      <strong>{damagePreview.totalBeforeMitigation}</strong> (pre-mitig.)
-                    </p>
-                  )}
-                </>
-              )}
+              <>
+                <span>
+                  {wazaPreview.styleLabel && <>{wazaPreview.styleLabel} · </>}
+                  T{wazaPreview.tier}
+                  {wazaPreview.damage != null && <> · {wazaPreview.damage} dmg tier</>}
+                  {effectiveCs > 0 && <> · {effectiveCs} CS</>}
+                  {launchIr != null && <> · IR {launchIr}</>}
+                </span>
+                {autoSkiruId && skiruLabel && (
+                  <p className="text-[8px] text-[var(--accent-gold)]/90">
+                    Skiru: {skiruLabel}
+                    {rider ? ` · ${rider.label}` : ""}
+                  </p>
+                )}
+                {mechanicTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {mechanicTags.slice(0, 6).map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded border border-[var(--accent-violet)]/30 px-1 py-0.5 text-[8px] text-[var(--accent-violet-light)]"
+                      >
+                        [{tag}]
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {damagePreview && (
+                  <p className="text-[8px] text-[var(--accent-gold)]/90">
+                    Danno indicativo: {damagePreview.summary} →{" "}
+                    <strong>{damagePreview.totalBeforeMitigation}</strong> (pre-mitig.)
+                  </p>
+                )}
+              </>
               {wazaPreview.personalHint && (
                 <p className="text-[8px] text-gray-500">{wazaPreview.personalHint}</p>
+              )}
+              {csInsufficient && (
+                <p className="text-[8px] text-red-400/90">
+                  CS insufficienti ({currentCs} disponibili, {effectiveCs} richiesti).
+                </p>
               )}
             </div>
           )}
 
-          {needsSkiru && (
-            <label className="block">
-              <span className="text-[9px] uppercase text-gray-500 font-display">Skiru incanalamento</span>
-              <select
-                value={declaredSkiruId}
-                onChange={(e) => setDeclaredSkiruId(e.target.value)}
-                className="mt-0.5 w-full rounded border border-[var(--accent-gold)]/40 bg-black/40 px-2 py-1.5 text-[11px] text-[var(--accent-gold)]"
-              >
-                {channelSkiru.length === 0 ? (
-                  <option value="">Nessuna Skiru investita</option>
-                ) : (
-                  channelSkiru.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.points}pt)
-                    </option>
-                  ))
-                )}
-              </select>
-              {rider && (
-                <p className="mt-1 text-[8px] text-[var(--accent-violet-light)]">
-                  Rider {skiruLabel}: {rider.label}
-                </p>
-              )}
-            </label>
-          )}
-
-          {needsSkiru && wazaPreview?.csCost != null && (
-            <label className="block">
-              <span className="text-[9px] uppercase text-gray-500 font-display">
-                CS ({wazaPreview.csCost} base
-                {currentCs != null ? ` · hai ${currentCs}` : ""})
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={currentCs != null ? Math.max(currentCs, wazaPreview.csCost) : 99}
-                value={csOverride === "" ? wazaPreview.csCost : csOverride}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setCsOverride(v === "" ? "" : Number(v) || 0);
-                }}
-                className={`mt-0.5 w-full rounded border bg-black/40 px-2 py-1 text-[11px] text-white tabular-nums ${
-                  csInsufficient
-                    ? "border-red-400/60"
-                    : "border-[var(--border-color)]"
-                }`}
-              />
-              {csInsufficient && (
-                <p className="mt-1 text-[8px] text-red-400/90">
-                  CS insufficienti ({currentCs} disponibili, {effectiveCs} richiesti).
-                </p>
-              )}
-            </label>
-          )}
-
-          {needsSkiru && targetOptions.length > 0 && (
+          {wazaPreview && targetOptions.length > 0 && (
             <label className="block">
               <span className="text-[9px] uppercase text-gray-500 font-display">Bersaglio (opz.)</span>
               <select
@@ -432,7 +368,7 @@ export function WazaLaunchPanel({
             </label>
           )}
 
-          {needsSkiru && targetCharacterId !== "" && (
+          {wazaPreview && targetCharacterId !== "" && (
             <label className="flex items-start gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -494,9 +430,9 @@ export function WazaLaunchPanel({
           </div>
 
           <p className="text-[8px] text-gray-600 leading-relaxed">
-            Oppure:{" "}
+            CS e Skiru sono calcolati dal tier e dalla waza scelta. Per override manuale:{" "}
             <code className="text-[var(--accent-violet-light)]/80">
-              /waza Nome --skiru seimitsu --cs 2 --target Aoi
+              /waza Nome --skiru seimitsu --target Aoi
             </code>
           </p>
         </div>

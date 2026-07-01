@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { WAZA_TAG_INDEX } from './waza-tag-index'
-import { buildWazaLaunchInsertLine } from './waza-tag-preview'
+import { buildWazaLaunchInsertLine, normalizeWazaLookupKey } from './waza-tag-preview'
 import {
   buildFullWazaLaunchLine,
   expandWazaSlashCommandInMessage,
@@ -9,6 +9,8 @@ import {
   extractLaunchTierFromText,
   extractWazaLaunchTargetSpec,
   parseWazaSlashCommand,
+  resolveAutoLaunchSkiruId,
+  resolveRelevantLaunchSkiruCandidates,
 } from './waza-launch'
 import {
   computeDeclaredActionIr,
@@ -120,5 +122,43 @@ describe('waza launch', () => {
     const sheet = { seimitsu: 5, kensei: 6, bakuryoku: 3 }
     const input = buildIndicativeActionIndex(sheet)
     expect(calculateSuccessIndex(sheet, input).successIndex).toBe(computeIndicativeActionIr(sheet))
+  })
+
+  it('resolveRelevantLaunchSkiruCandidates limita a Skiru pertinenti', () => {
+    const sheet = {
+      seimitsu: 6,
+      kensei: 4,
+      'itten-kokan': 3,
+      bakuryoku: 8,
+      dokusei: 5,
+      fudoshin: 4,
+    }
+    const entry = WAZA_TAG_INDEX.get(
+      normalizeWazaLookupKey('Hōshutsu (放出) — Rilascio della Fiamma'),
+    )
+    expect(entry).toBeTruthy()
+    const candidates = resolveRelevantLaunchSkiruCandidates(sheet, entry)
+    expect(candidates).toContain('bakuryoku')
+    expect(candidates).not.toContain('dokusei')
+    expect(candidates).not.toContain('fudoshin')
+  })
+
+  it('resolveAutoLaunchSkiruId su proiettile preferisce la Skiru pertinente con più punti', () => {
+    const sheet = { seimitsu: 6, kensei: 4, 'itten-kokan': 8, bakuryoku: 2 }
+    const entry = WAZA_TAG_INDEX.get(
+      normalizeWazaLookupKey('Shinya (心矢) — Dardo Psichico'),
+    )
+    const candidates = resolveRelevantLaunchSkiruCandidates(sheet, entry)
+    expect(candidates).toContain('seimitsu')
+    expect(candidates).toContain('itten-kokan')
+    expect(resolveAutoLaunchSkiruId(sheet, entry)).toBe('itten-kokan')
+  })
+
+  it('resolveAutoLaunchSkiruId usa Skiru mentali su Ubaiito', () => {
+    const sheet = { fudoshin: 3, kansatsu: 7, kensei: 5 }
+    const entry = WAZA_TAG_INDEX.get(
+      normalizeWazaLookupKey('Ubaiito (奪い糸) — Filo Rubato'),
+    )
+    expect(resolveAutoLaunchSkiruId(sheet, entry)).toBe('kansatsu')
   })
 })

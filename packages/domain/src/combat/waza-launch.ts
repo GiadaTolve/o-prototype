@@ -1,10 +1,21 @@
-import { SKIRU_CATALOG } from '../skiru/catalog'
+import { listSkiruByDomain } from '../skiru/catalog'
 import { getSkiruPoints } from '../skiru/progression'
 import type { SkiruSheet } from '../skiru/types'
 import { extractGenericheHitTargetSpec } from '../styles/generiche/generiche-effects'
+import { buildIndicativeActionIndex } from './resolution'
 import { normalizeWazaLookupKey, type WazaTagCatalogEntry } from './waza-tag-preview'
 import { buildWazaLaunchInsertLine } from './waza-tag-preview'
-import { computeDeclaredActionIr } from './waza-skiru-riders'
+import {
+  SKIRU_ID_KONJOU,
+  SKIRU_ID_SEIMITSU,
+  UBAIITO_MENTAL_SKIRU_IDS,
+} from './waza-resolve'
+import {
+  computeDeclaredActionIr,
+  extractMechanicTagsFromEffect,
+  getSkiruRider,
+  wazaEffectDeclaresContact,
+} from './waza-skiru-riders'
 
 export type WazaLaunchTargetSpec = {
   characterId?: string
@@ -33,13 +44,14 @@ export function listInvestedChannelSkiru(sheet: SkiruSheet | null | undefined): 
   domain: string
 }> {
   if (!sheet) return []
-  return SKIRU_CATALOG.filter(
-    (s) =>
-      s.kind === 'standard' &&
-      s.branchId !== 'sokaiju' &&
-      (s.domain === 'chi' || s.domain === 'jin' || s.domain === 'ten') &&
-      getSkiruPoints(sheet, s.id) > 0,
-  )
+  return listSkiruByDomain('chi')
+    .concat(listSkiruByDomain('jin'), listSkiruByDomain('ten'))
+    .filter(
+      (s) =>
+        s.kind === 'standard' &&
+        s.branchId !== 'sokaiju' &&
+        getSkiruPoints(sheet, s.id) > 0,
+    )
     .map((s) => ({
       id: s.id,
       name: s.name,
@@ -47,6 +59,122 @@ export function listInvestedChannelSkiru(sheet: SkiruSheet | null | undefined): 
       domain: s.domain,
     }))
     .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'it'))
+}
+
+const RANGED_TAG_RE = /proiettile|raggio|emissione|propagazione/i
+const JIN_CHANNEL_IDS = ['itten-kokan', 'juuryoku-kokan', 'shintai-kokan'] as const
+const OFFENSIVE_RIDER_IDS = ['bakuryoku', 'goatsu', 'shintai-kokan', 'seimitsu'] as const
+
+function skiruInvested(sheet: SkiruSheet, id: string): boolean {
+  return getSkiruPoints(sheet, id) > 0
+}
+
+function addInvestedSkiru(sheet: SkiruSheet, ids: readonly string[], out: Set<string>) {
+  for (const id of ids) {
+    if (skiruInvested(sheet, id)) out.add(id)
+  }
+}
+
+function sortSkiruCandidates(sheet: SkiruSheet, ids: Iterable<string>): string[] {
+  return [...ids]
+    .filter((id) => skiruInvested(sheet, id))
+    .sort(
+      (a, b) =>
+        getSkiruPoints(sheet, b) - getSkiruPoints(sheet, a) ||
+        a.localeCompare(b, 'it'),
+    )
+}
+
+export type WazaLaunchSkiruContext = Pick<
+  WazaTagCatalogEntry,
+  'poolId' | 'effect' | 'description' | 'isPassive'
+>
+
+/**
+ * Skiru candidate al lancio — solo quelle pertinenti alla waza (non l'intera scheda).
+ */
+export function resolveRelevantLaunchSkiruCandidates(
+  sheet: SkiruSheet,
+  entry?: WazaLaunchSkiruContext | null,
+): string[] {
+  if (!entry || entry.isPassive) return []
+
+  const effect = (entry.effect ?? entry.description ?? '').trim()
+  const tags = extractMechanicTagsFromEffect(effect)
+  const candidates = new Set<string>()
+  const isRanged = tags.some((t) => RANGED_TAG_RE.test(t))
+  const isPotenziamento = tags.some((t) => /potenziamento/i.test(t))
+  const isContact = wazaEffectDeclaresContact(effect)
+
+  if (entry.poolId === 'ubaiito-filo-rubato' || /Skiru mentali/i.test(effect)) {
+    addInvestedSkiru(sheet, UBAIITO_MENTAL_SKIRU_IDS, candidates)
+  }
+  if (/\(Konjou\)/i.test(effect) && skiruInvested(sheet, SKIRU_ID_KONJOU)) {
+    candidates.add(SKIRU_ID_KONJOU)
+  }
+
+  if (isContact) {
+    addInvestedSkiru(sheet, ['shintai-kokan'], candidates)
+    for (const def of listSkiruByDomain('chi')) {
+      if (def.branchId === 'tosou' && skiruInvested(sheet, def.id)) candidates.add(def.id)
+    }
+  }
+
+  if (isRanged || entry.poolId === 'michishirube-luce-guida') {
+    if (skiruInvested(sheet, SKIRU_ID_SEIMITSU)) candidates.add(SKIRU_ID_SEIMITSU)
+    addInvestedSkiru(sheet, JIN_CHANNEL_IDS, candidates)
+    for (const def of listSkiruByDomain('chi')) {
+      if (def.branchId === 'binsho' && skiruInvested(sheet, def.id)) candidates.add(def.id)
+    }
+  }
+
+  if (isPotenziamento) {
+    addInvestedSkiru(sheet, JIN_CHANNEL_IDS, candidates)
+  }
+
+  const offensiveWaza = !isPotenziamento
+  for (const id of OFFENSIVE_RIDER_IDS) {
+    if (!skiruInvested(sheet, id) || !getSkiruRider(id)) continue
+    if (id === 'shintai-kokan' && !isContact) continue
+    if (
+      id === 'seimitsu' &&
+      !isRanged &&
+      entry.poolId !== 'michishirube-luce-guida'
+    ) {
+      continue
+    }
+    if ((id === 'bakuryoku' || id === 'goatsu') && !offensiveWaza) continue
+    candidates.add(id)
+  }
+
+  if (candidates.size === 0) {
+    const indicative = buildIndicativeActionIndex(sheet)
+    if (skiruInvested(sheet, indicative.physicalSkiruId)) {
+      candidates.add(indicative.physicalSkiruId)
+    }
+    if (skiruInvested(sheet, indicative.channelingSkiruId)) {
+      candidates.add(indicative.channelingSkiruId)
+    }
+  }
+
+  return sortSkiruCandidates(sheet, candidates)
+}
+
+/** Skiru dichiarata automaticamente al lancio (miglior candidata pertinente). */
+export function resolveAutoLaunchSkiruId(
+  sheet: SkiruSheet | null | undefined,
+  entry?: WazaLaunchSkiruContext | null,
+): string | null {
+  if (!sheet || !entry || entry.isPassive) return null
+
+  const candidates = resolveRelevantLaunchSkiruCandidates(sheet, entry)
+  if (candidates.length > 0) return candidates[0] ?? null
+
+  const indicative = buildIndicativeActionIndex(sheet)
+  const chiPts = getSkiruPoints(sheet, indicative.physicalSkiruId)
+  const jinPts = getSkiruPoints(sheet, indicative.channelingSkiruId)
+  if (chiPts <= 0 && jinPts <= 0) return null
+  return chiPts >= jinPts ? indicative.physicalSkiruId : indicative.channelingSkiruId
 }
 
 export function extractLaunchSkiruId(text: string): string | null {
