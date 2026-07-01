@@ -153,7 +153,7 @@ export const characterPlayerRequests = pgTable(
     characterId: uuid('character_id')
       .references(() => characters.id, { onDelete: 'cascade' })
       .notNull(),
-    kind: text('kind').$type<'MADOSHO' | 'ORDER' | 'PREMIO'>().notNull(),
+    kind: text('kind').$type<'MADOSHO' | 'ORDER' | 'PREMIO' | 'TENKAN'>().notNull(),
     requestedValue: text('requested_value').notNull(),
     status: text('status')
       .$type<'PENDING' | 'APPROVED' | 'REJECTED'>()

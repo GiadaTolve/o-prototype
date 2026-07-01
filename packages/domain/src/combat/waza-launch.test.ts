@@ -3,7 +3,11 @@ import { WAZA_TAG_INDEX } from './waza-tag-index'
 import { buildWazaLaunchInsertLine, normalizeWazaLookupKey } from './waza-tag-preview'
 import {
   buildFullWazaLaunchLine,
+  expandWazaLaunchInMessage,
   expandWazaSlashCommandInMessage,
+  parseNaturalWazaLaunchLine,
+  validateWazaChatPrerequisites,
+  validateWazaChatCsAffordability,
   extractHitDeclaredFromText,
   extractLaunchSkiruId,
   extractLaunchTierFromText,
@@ -192,5 +196,52 @@ describe('waza launch', () => {
       normalizeWazaLookupKey('Ubaiito (奪い糸) — Filo Rubato'),
     )
     expect(resolveAutoLaunchSkiruId(sheet, entry)).toBe('kansatsu')
+  })
+
+  it('parseNaturalWazaLaunchLine estrae waza, skiru, cs e target', () => {
+    const parsed = parseNaturalWazaLaunchLine('Lancio Hōshutsu con Seimitsu, 2 CS, contro Aoi.')
+    expect(parsed?.wazaQuery).toMatch(/Hōshutsu/i)
+    expect(parsed?.skiruId).toBe('seimitsu')
+    expect(parsed?.cs).toBe(2)
+    expect(parsed?.target).toBe('Aoi')
+  })
+
+  it('expandWazaLaunchInMessage espande frase naturale', () => {
+    const expanded = expandWazaLaunchInMessage(
+      'Lancio Hōshutsu con seimitsu, 1 cs, contro Aoi',
+      WAZA_TAG_INDEX,
+      { skiruSheet: { seimitsu: 5, kensei: 4 } },
+    )
+    expect(expanded).toMatch(/\[waza:/)
+    expect(expanded).toMatch(/\[skiru:seimitsu\]/)
+    expect(expanded).toMatch(/\[cs:1\]/)
+    expect(expanded).toMatch(/\[target:Aoi\]/i)
+  })
+
+  it('validateWazaChatPrerequisites blocca waza non posseduta e CS insufficienti', () => {
+    const entry = WAZA_TAG_INDEX.get(
+      normalizeWazaLookupKey('Hōshutsu (放出) — Rilascio della Fiamma'),
+    )
+    expect(entry?.poolId).toBeTruthy()
+    const noOwned = validateWazaChatPrerequisites({
+      content: '[waza:Hōshutsu (放出) — Rilascio della Fiamma] [cs:5]',
+      wazaIndex: WAZA_TAG_INDEX,
+      chronoCsAvailable: 10,
+      ownedWazaPoolIds: new Set<string>(),
+    })
+    expect(noOwned.ok).toBe(false)
+    expect(noOwned.errors.some((e) => /non possiedi/i.test(e))).toBe(true)
+
+    const noCs = validateWazaChatPrerequisites({
+      content: '[waza:Hōshutsu (放出) — Rilascio della Fiamma] [cs:8]',
+      wazaIndex: WAZA_TAG_INDEX,
+      chronoCsAvailable: 3,
+      ownedWazaPoolIds: new Set([entry!.poolId!]),
+    })
+    expect(noCs.ok).toBe(false)
+    expect(noCs.errors.some((e) => /CS insufficienti/i.test(e))).toBe(true)
+
+    expect(validateWazaChatCsAffordability(-6, 4)).toMatch(/CS insufficienti/)
+    expect(validateWazaChatCsAffordability(-2, 5)).toBeNull()
   })
 })

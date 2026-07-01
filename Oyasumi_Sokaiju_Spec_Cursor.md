@@ -17,15 +17,15 @@ Legenda stato:
 |----|--------------|-------|------------------|-------|-----------------|
 | `tenkan` | Corona | Accumulo CS / Overheat | +3 CS/turno con Corona aperta e azione ≥500 caratteri. Overheat >20 stack → −2 HP/stack a fine turno; 3 turni → Defaticamento. | WIRED | `chronoStack` |
 | `goju` | Comprensione | Elementi + status | 5 affinità, max 1 attiva (non-EXP, narrativa). **Auto-apply**: waza `[Elementale]` + `[hit:1]` + affinità attiva → status elementale (durata + Shōdō/Fudoshin). | WIRED | `elementalStatus` |
-| `jikai` | Misericordia | Cure & potenziamenti | Le cure e i buff che applichi valgono `+jikai` (al valore di cura o al bonus del buff). | PARZIALE (helper `applySokaijuSupportValue`; non su tutte le cure chat) | `supportPower` |
+| `jikai` | Misericordia | Cure & potenziamenti | Le cure e i buff che applichi valgono `+jikai` (al valore di cura o al bonus del buff). | WIRED (`applySokaijuSupportValue` su cure chat) | `supportPower` |
 | `gojin` | Giustizia | Counter / ritorsione | I contrattacchi e le risposte reattive fanno `+gojin` danno. (Il *floor* di danno resta su Kongen; qui solo la ritorsione.) | WIRED (`damage-pipeline` + `isReactiveCounter`) | `counterBonus` |
 | `kashin` | Bellezza | Iniziativa (tie-break IR) | A parità di IR, agisce/risolve prima chi ha `kashin` più alto. Se ancora pari → priorità `[Energetiche]` → poi all'attaccante. | WIRED (`resolution.ts`) | `initiativeTiebreak` |
 | `shodo` | Vittoria | Durata effetti | Gli effetti a tempo che applichi (status, buff, costrutti) durano `+floor(shodo/2)` turni. | WIRED (status generiche + Gojū chat) | `effectDuration` |
 | `eiga` | Gloria | Status emotivi | Gli status emotivi che applichi (Paura, Ira, ecc.) hanno `+floor(eiga/2)` stack. | WIRED (status generiche chat) | `emotionalPower` |
 | `kongen` | Fondamento | **DANNO (mole di Jigo-Ka)** | Floor di danno su OGNI waza: `+round(kongen × 1.5)`. | WIRED (`damage-pipeline`, lancio chat `[hit:1]`) | `damageFloor` |
-| `hikan` | Anello Segreto | Sorpresa | Se il bersaglio non poteva percepire il colpo (fuori vista / prima azione non dichiarata) **e** `hikan > chokaku_bersaglio` → l'attacco ignora la schivata reattiva. | PARZIALE (helper `canHikanBypassDodge`; non in flusso schivata chat) | `surprise` |
+| `hikan` | Anello Segreto | Sorpresa | Se il bersaglio non poteva percepire il colpo (fuori vista / prima azione non dichiarata) **e** `hikan > chokaku_bersaglio` → l'attacco ignora la schivata reattiva. | WIRED (`[sorpresa:1]` + `checkHikanSurpriseBypass` su `[hit:1]`) | `surprise` |
 | `genkai` | Regno | Resistenza costrutti | `Res = (genkai + tier_waza) × moltiplicatore_taglia`. | WIRED | `constructResistance` |
-| `chiko` | Saggezza | Costrutti: numero/complessità | Costrutti attivi max = `1 + chiko`. Taglia massima dichiarabile sale di 1 ogni 2 rank. | WIRED (`canPlaceFieldConstruct` in `createFieldConstructForCharacter`) | `maxConstructs` |
+| `chiko` | Saggezza | Costrutti: numero/complessità | Costrutti attivi max = `1 + chiko`. Taglia massima dichiarabile sale di 1 ogni 2 rank. | WIRED (cap numero + taglia max in evocazione) | `maxConstructs` |
 
 > **Facce Shiju (Morte)** — fase 2, non ora: ogni nodo ha una faccia oscura (es. `tenkan`→Overheat già attivo; `kongen`→Senkaku "guscio di guerra" = burst quando sei ferito/aggressore). Implementare solo dopo che le facce Meiju girano.
 
@@ -56,9 +56,9 @@ oppure linguaggio naturale (futuro), parsato:
 - [x] Danno automatico con `[hit:1]` + bersaglio (`waza_launch_damage` server)
 - [x] IR dichiarato = `(skiru + complementare) / 2`
 - [x] Confronto IR automatico attaccante vs difensore prima del danno (`[hit:1]` + indicativo difesa)
-- [ ] Parser linguaggio naturale
+- [x] Parser linguaggio naturale — `parseNaturalWazaLaunchLine` + `expandWazaLaunchInMessage`
 - [x] Rider Seimitsu su evasione — `resolveCombatConfrontationBetween` (−2 IR difensore se `[skiru:seimitsu]` nell'attacco)
-- [ ] Tenkan accademico: gate `tenkan:1` senza flusso narrativo automatico
+- [x] Tenkan accademico — richiesta staff (`TENKAN` in Scheda Richieste → `grantSokaijuTenkan` su approvazione)
 
 ### Rider della Skiru dichiarata
 La Skiru scelta aggiunge un piccolo effetto (tabella base, ampliabile):
@@ -118,7 +118,7 @@ Per ogni lancio:
 - `waza-chat-automation.ts` — CS, status, Gojū, danno `[hit:1]`.
 - `sokaiju-combat.ts`, `resolution.ts` — Kashin tie-break, hook durata/stack.
 - `apps/client/.../chat-combat/WazaLaunchPanel.tsx` — pannello lancio.
-- Parser chat: `/waza --skiru` (fatto); NL parsing (da fare).
+- Parser chat: `/waza --skiru` + NL «Lancio … con …» (`expandWazaLaunchInMessage`).
 
 ### Valori chiave (già decisi)
 - Kongen: coefficiente **×1,5** (floor +0…+7,5, arrotondato).

@@ -49,9 +49,9 @@ export function getPixelIconUrlRuolo(ruolo: PixelIconRuolo): string {
   return `${PIXEL_ICON_BASE}/${file}.webp`;
 }
 
-/** Restituisce il path per ordine. Asset non ancora presenti — opzionale. */
-export function getPixelIconUrlOrdine(_ordine: PixelIconOrdine): string | null {
-  return null;
+/** Restituisce il path per ordine (20×20 accanto al nome). */
+export function getPixelIconUrlOrdine(ordine: PixelIconOrdine): string {
+  return `${PIXEL_ICON_BASE}/${ordine}.png`;
 }
 
 /** Etichetta tooltip per premio speciale / milestone Jiga. */

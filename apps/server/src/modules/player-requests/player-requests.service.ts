@@ -3,10 +3,12 @@ import {
   isValidMadoshoRequest,
   isValidOrderRequest,
   isValidPremioRequest,
+  isValidTenkanRequest,
   labelForPlayerRequest,
   type PlayerRequestKind,
 } from '@domain/progression/player-requests'
 import { applyJigaMilestone, resolvePremioToMilestoneId } from '@domain/skiru/milestones'
+import { grantSokaijuTenkan, isSokaijuGateOpen, validateSkiruSheet } from '@domain/skiru/progression'
 import { db } from '../../plugins/db'
 import { characterPlayerRequests, characters } from '../../db/schema'
 import { resolveCharacterSkiruSheet } from '../characters/skiru-sheet'
@@ -46,6 +48,9 @@ function validateRequestValue(kind: PlayerRequestKind, value: string) {
       break
     case 'PREMIO':
       if (!isValidPremioRequest(value)) throw new Error('Premio non valido.')
+      break
+    case 'TENKAN':
+      if (!isValidTenkanRequest(value)) throw new Error('Richiesta Tenkan non valida.')
       break
   }
 }
@@ -157,6 +162,43 @@ export class PlayerRequestsService {
           order: requestedValue as 'MUGEN-TAI' | 'CHISEN-TAI',
           uiMetadata: { ...meta, orderIcon },
         })
+        .where(eq(characters.id, characterId))
+      return
+    }
+
+    if (kind === 'TENKAN') {
+      const char = await db.query.characters.findFirst({
+        where: eq(characters.id, characterId),
+        columns: {
+          skiruSheet: true,
+          strength: true,
+          constitution: true,
+          dexterity: true,
+          mind: true,
+          empathy: true,
+        },
+      })
+      if (!char) throw new Error('Personaggio non trovato.')
+
+      const skiruSheet = resolveCharacterSkiruSheet(
+        char.skiruSheet as Record<string, number> | undefined,
+        {
+          strength: char.strength,
+          constitution: char.constitution,
+          dexterity: char.dexterity,
+          mind: char.mind,
+          empathy: char.empathy,
+        },
+      )
+      if (isSokaijuGateOpen(skiruSheet)) return
+
+      const newSheet = grantSokaijuTenkan(skiruSheet)
+      const validation = validateSkiruSheet(newSheet)
+      if (!validation.ok) throw new Error(validation.errors.join('; '))
+
+      await db
+        .update(characters)
+        .set({ skiruSheet: newSheet as Record<string, number> })
         .where(eq(characters.id, characterId))
       return
     }

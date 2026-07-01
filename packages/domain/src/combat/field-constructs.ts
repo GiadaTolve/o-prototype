@@ -9,7 +9,8 @@ import {
   CONSTRUCT_SIZES,
   type ConstructSizeId,
 } from './constructs'
-import { calculateMaxActiveConstructs } from '../skiru/sokaiju-combat'
+import { CONSTRUCT_SIZE_IDS, type ConstructSizeId } from './constructs'
+import { calculateMaxActiveConstructs, calculateConstructMaxSizeRankBonus } from '../skiru/sokaiju-combat'
 import type { SkiruSheet } from '../skiru/types'
 import { isWazaTier, type WazaTier } from './tier'
 
@@ -96,4 +97,21 @@ export function isConstructSizeId(value: string): value is ConstructSizeId {
 /** Chikō: cap al numero di costrutti attivi sul campo per creatore. */
 export function canPlaceFieldConstruct(activeCount: number, creatorSheet: SkiruSheet): boolean {
   return activeCount < calculateMaxActiveConstructs(creatorSheet)
+}
+
+/** Taglia massima dichiarabile: Media + floor(Chikō/2) gradi (Piccola→Enorme). */
+export function getMaxAllowedConstructSizeId(sheet: SkiruSheet): ConstructSizeId {
+  const maxIndex = Math.min(
+    CONSTRUCT_SIZE_IDS.length - 1,
+    1 + calculateConstructMaxSizeRankBonus(sheet),
+  )
+  return CONSTRUCT_SIZE_IDS[maxIndex]!
+}
+
+export function isConstructSizeAllowedForCreator(
+  size: ConstructSizeId,
+  sheet: SkiruSheet,
+): boolean {
+  const max = getMaxAllowedConstructSizeId(sheet)
+  return CONSTRUCT_SIZE_IDS.indexOf(size) <= CONSTRUCT_SIZE_IDS.indexOf(max)
 }

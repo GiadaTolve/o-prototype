@@ -11,6 +11,10 @@ import {
   resolveGojuElementalAutoApply,
   resolveSokaijuFlatDamageBonus,
 } from './sokaiju-combat.ts'
+import {
+  getMaxAllowedConstructSizeId,
+  isConstructSizeAllowedForCreator,
+} from '../combat/field-constructs.ts'
 
 describe('sokaiju-combat', () => {
   test('rank capped at 5', () => {
@@ -26,6 +30,14 @@ describe('sokaiju-combat', () => {
   test('chiko construct cap', () => {
     expect(calculateMaxActiveConstructs({ chiko: 0 })).toBe(1)
     expect(calculateMaxActiveConstructs({ chiko: 3 })).toBe(4)
+  })
+
+  test('chiko max construct size', () => {
+    expect(getMaxAllowedConstructSizeId({ chiko: 0 })).toBe('media')
+    expect(getMaxAllowedConstructSizeId({ chiko: 2 })).toBe('grande')
+    expect(getMaxAllowedConstructSizeId({ chiko: 4 })).toBe('enorme')
+    expect(isConstructSizeAllowedForCreator('grande', { chiko: 0 })).toBe(false)
+    expect(isConstructSizeAllowedForCreator('media', { chiko: 0 })).toBe(true)
   })
 
   test('goju elemental auto-apply', () => {

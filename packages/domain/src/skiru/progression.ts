@@ -75,6 +75,11 @@ export function isSokaijuGateOpen(sheet: SkiruSheet): boolean {
   return getSkiruPoints(sheet, SOKAIJU_GATE_SKIRU_ID) >= 1
 }
 
+/** Concede Tenkan accademica (non comprabile con EXP). */
+export function grantSokaijuTenkan(sheet: SkiruSheet): SkiruSheet {
+  return { ...sheet, [SOKAIJU_GATE_SKIRU_ID]: 1 }
+}
+
 /** Messaggio UI se il nodo è bloccato dal prerequisito padre. */
 export function getSkiruParentUnlockMessage(sheet: SkiruSheet, skiruId: string): string | null {
   if (isSkiruParentUnlocked(sheet, skiruId)) return null

@@ -101,6 +101,8 @@ import {
   fieldConstructToApi,
   isConstructSizeId,
   canPlaceFieldConstruct,
+  isConstructSizeAllowedForCreator,
+  getMaxAllowedConstructSizeId,
   type StatusContainer,
   type StatusId,
   type ElementId,
@@ -150,7 +152,11 @@ import {
   buildActionIndexFromDeclaredSkiru,
   wazaEffectDeclaresContact,
 } from '@domain/combat/waza-skiru-riders';
-import { extractLaunchSkiruId } from '@domain/combat/waza-launch';
+import {
+  extractLaunchSkiruId,
+  validateWazaChatPrerequisites,
+  validateWazaChatCsAffordability,
+} from '@domain/combat/waza-launch';
 import { messageDeclaresSurpriseAttack } from '@domain/combat/waza-launch-extras';
 import { readShakkinDebts } from '@domain/styles/hado/debito-shakkin';
 import { applySutura } from '@domain/styles/naikan/hogo';
@@ -1629,6 +1635,11 @@ export class CharacterService {
     const genkaiPoints = resolveGenkaiPointsFromSheet(skiruSheet);
 
     const size = input.size && isConstructSizeId(input.size) ? input.size : 'media';
+    if (!isConstructSizeAllowedForCreator(size, skiruSheet)) {
+      const maxSize = getMaxAllowedConstructSizeId(skiruSheet);
+      throw new Error(`Taglia costrutto non consentita (Chikō): massimo «${maxSize}».`);
+    }
+
     const id = crypto.randomUUID();
     const built = createFieldConstruct({
       id,
@@ -1921,6 +1932,22 @@ export class CharacterService {
     const chronoBefore = chronoState.current;
     const statusContainer = await this.loadCharacterStatusContainer(characterId);
     const equippedPassivePoolIds = await this.getEquippedPassivePoolIds(characterId);
+    const ownedWazaPoolIds = await this.getOwnedWazaPoolIds(characterId);
+
+    const prereq = validateWazaChatPrerequisites({
+      content,
+      wazaIndex: WAZA_TAG_INDEX,
+      chronoCsAvailable: chronoBefore,
+      ownedWazaPoolIds,
+    });
+    if (!prereq.ok) {
+      return {
+        log: [...prereq.errors, ...prereq.warnings],
+        effects: [],
+        affectedCharacterIds: [],
+        chronoStack: await this.getCombatChronoVitals(characterId),
+      };
+    }
 
     const automation = processWazaChatAutomation({
       content,
@@ -1934,6 +1961,16 @@ export class CharacterService {
       actorSkiruSheet,
       equippedPassivePoolIds,
     });
+
+    const csBlock = validateWazaChatCsAffordability(automation.csDelta, chronoBefore);
+    if (csBlock) {
+      return {
+        log: [csBlock, ...prereq.warnings],
+        effects: [],
+        affectedCharacterIds: [],
+        chronoStack: await this.getCombatChronoVitals(characterId),
+      };
+    }
 
     let nextChrono = chronoState;
     if (automation.csDelta !== 0) {

@@ -3,6 +3,7 @@ import { authPlugin } from '../../plugins/auth.plugin'
 import { userHasGestioneAccess } from '../../lib/gestione-access'
 import { characterService } from '../characters/characters.service'
 import { playerRequestsService } from './player-requests.service'
+import { isSokaijuGateOpen } from '@domain/skiru/progression'
 
 export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
   .use(authPlugin)
@@ -19,6 +20,7 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
             set.status = 404
             return { error: 'Personaggio non trovato' }
           }
+          const skiruSheet = (char.skiruSheet ?? {}) as Record<string, number>
           const requests = await playerRequestsService.listForCharacter(char.id)
           return {
             requests,
@@ -29,6 +31,7 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
                 ((char.uiMetadata as { premioSpeciale?: string } | null)?.premioSpeciale as
                   | string
                   | undefined) ?? null,
+              tenkanOpen: isSokaijuGateOpen(skiruSheet),
             },
           }
         } catch (e) {
@@ -69,6 +72,7 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
                 t.Literal('MADOSHO'),
                 t.Literal('ORDER'),
                 t.Literal('PREMIO'),
+                t.Literal('TENKAN'),
               ]),
               requestedValue: t.String({ minLength: 1 }),
             }),

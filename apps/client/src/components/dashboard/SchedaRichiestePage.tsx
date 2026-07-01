@@ -6,6 +6,7 @@ import {
   MADOSHO_CATALOG,
   ORDER_REQUEST_VALUES,
   PREMIO_REQUEST_OPTIONS,
+  TENKAN_REQUEST_VALUE,
   labelForOrderRequest,
   labelForPremioRequest,
   type PlayerRequestKind,
@@ -28,6 +29,7 @@ type Assigned = {
   madoshoId: string | null;
   order: string;
   premioSpeciale: string | null;
+  tenkanOpen?: boolean;
 };
 
 const KIND_META: Record<
@@ -48,6 +50,11 @@ const KIND_META: Record<
     title: "Premi",
     hint: "Premio speciale / milestone Jiga no Shihaisha.",
     emptyOption: "— Scegli premio —",
+  },
+  TENKAN: {
+    title: "Tenkan — Terzo Occhio",
+    hint: "Apertura accademica Sōkaiju. Non si compra con EXP: approvazione staff dopo evento narrativo.",
+    emptyOption: "",
   },
 };
 
@@ -83,6 +90,9 @@ function assignedLabel(kind: PlayerRequestKind, assigned: Assigned): string {
     if (assigned.order === "CHISEN-TAI") return "Chisen-Tai";
     return "Nessuno";
   }
+  if (kind === "TENKAN") {
+    return assigned.tenkanOpen ? "Terzo Occhio aperto" : "Non ancora aperto";
+  }
   return assigned.premioSpeciale
     ? labelForPremioRequest(assigned.premioSpeciale)
     : "Nessuno";
@@ -102,6 +112,7 @@ export function SchedaRichiestePage() {
     MADOSHO: "",
     ORDER: "",
     PREMIO: "",
+    TENKAN: TENKAN_REQUEST_VALUE,
   });
 
   const load = useCallback(async () => {
@@ -129,7 +140,7 @@ export function SchedaRichiestePage() {
     requests.find((r) => r.kind === kind) ?? null;
 
   const submitKind = async (kind: PlayerRequestKind) => {
-    const value = draft[kind].trim();
+    const value = kind === "TENKAN" ? TENKAN_REQUEST_VALUE : draft[kind].trim();
     if (!value) {
       setError(`Seleziona un valore per ${KIND_META[kind].title}.`);
       return;
@@ -163,7 +174,7 @@ export function SchedaRichiestePage() {
           Richieste
         </h2>
         <p className="text-[11px] text-[var(--accent-violet-light)]/70 mt-1 max-w-lg">
-          Indica le tue preferenze per Madoshō, Ordine e Premi. Lo staff le valuta dal pannello Gestione →
+          Indica le tue preferenze per Madoshō, Ordine, Premi e Tenkan. Lo staff le valuta dal pannello Gestione →
           Richieste.
         </p>
       </div>
@@ -173,7 +184,7 @@ export function SchedaRichiestePage() {
       )}
 
       <div className="space-y-4">
-        {(["MADOSHO", "ORDER", "PREMIO"] as const).map((kind) => {
+        {(["MADOSHO", "ORDER", "PREMIO", "TENKAN"] as const).map((kind) => {
           const meta = KIND_META[kind];
           const current = requestForKind(kind);
           return (
@@ -205,38 +216,48 @@ export function SchedaRichiestePage() {
               )}
 
               <div className="flex flex-col sm:flex-row gap-2">
-                <select
-                  value={draft[kind]}
-                  onChange={(e) => setDraft((d) => ({ ...d, [kind]: e.target.value }))}
-                  className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none"
-                >
-                  <option value="">{meta.emptyOption}</option>
-                  {kind === "MADOSHO" &&
-                    (MADOSHO_CATALOG ?? []).map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  {kind === "ORDER" &&
-                    (ORDER_REQUEST_VALUES ?? []).map((o) => (
-                      <option key={o} value={o}>
-                        {labelForOrderRequest(o)}
-                      </option>
-                    ))}
-                  {kind === "PREMIO" &&
-                    (PREMIO_REQUEST_OPTIONS ?? []).map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
-                      </option>
-                    ))}
-                </select>
+                {kind !== "TENKAN" ? (
+                  <select
+                    value={draft[kind]}
+                    onChange={(e) => setDraft((d) => ({ ...d, [kind]: e.target.value }))}
+                    className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none"
+                  >
+                    <option value="">{meta.emptyOption}</option>
+                    {kind === "MADOSHO" &&
+                      (MADOSHO_CATALOG ?? []).map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    {kind === "ORDER" &&
+                      (ORDER_REQUEST_VALUES ?? []).map((o) => (
+                        <option key={o} value={o}>
+                          {labelForOrderRequest(o)}
+                        </option>
+                      ))}
+                    {kind === "PREMIO" &&
+                      (PREMIO_REQUEST_OPTIONS ?? []).map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.label}
+                        </option>
+                      ))}
+                  </select>
+                ) : (
+                  <p className="flex-1 text-[11px] text-[var(--accent-violet-light)]/80 px-1 py-2">
+                    Richiedi l&apos;inserimento di <strong className="text-[var(--accent-gold)]">tenkan: 1</strong> in
+                    scheda dopo l&apos;evento narrativo di apertura del Terzo Occhio.
+                  </p>
+                )}
                 <button
                   type="button"
-                  disabled={saving === kind || !draft[kind]}
+                  disabled={
+                    saving === kind ||
+                    (kind === "TENKAN" ? assigned.tenkanOpen : !draft[kind])
+                  }
                   onClick={() => submitKind(kind)}
                   className="shrink-0 px-4 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs font-display uppercase tracking-wider hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
                 >
-                  {saving === kind ? "…" : "Invia richiesta"}
+                  {saving === kind ? "…" : kind === "TENKAN" ? "Richiedi Tenkan" : "Invia richiesta"}
                 </button>
               </div>
             </section>

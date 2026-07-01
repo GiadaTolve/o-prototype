@@ -7,7 +7,7 @@ import { MADOSHO_CATALOG, type MadoshoId } from './madosho'
 
 export { MADOSHO_CATALOG } from './madosho'
 
-export const PLAYER_REQUEST_KINDS = ['MADOSHO', 'ORDER', 'PREMIO'] as const
+export const PLAYER_REQUEST_KINDS = ['MADOSHO', 'ORDER', 'PREMIO', 'TENKAN'] as const
 export type PlayerRequestKind = (typeof PLAYER_REQUEST_KINDS)[number]
 
 export const PLAYER_REQUEST_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const
@@ -25,6 +25,13 @@ export const PREMIO_REQUEST_OPTIONS: Array<{ id: string; label: string }> = [
   { id: 'renkinjutsushi', label: 'Renkinjutsushi — 4 Waza stessa Consistenza' },
   { id: 'daisei-renkin', label: 'Daisei no Renkin — 8 Waza stessa Consistenza' },
 ]
+
+/** Apertura accademica Terzo Occhio — unica voce, approvazione staff. */
+export const TENKAN_REQUEST_VALUE = 'terzo-occhio' as const
+
+export function labelForTenkanRequest(_value: string): string {
+  return 'Apertura Terzo Occhio (Tenkan)'
+}
 
 export function labelForMadoshoRequest(value: string): string {
   return MADOSHO_CATALOG.find((m) => m.id === value)?.name ?? value
@@ -48,6 +55,8 @@ export function labelForPlayerRequest(kind: PlayerRequestKind, value: string): s
       return labelForOrderRequest(value)
     case 'PREMIO':
       return labelForPremioRequest(value)
+    case 'TENKAN':
+      return labelForTenkanRequest(value)
     default:
       return value
   }
@@ -63,4 +72,8 @@ export function isValidOrderRequest(value: string): value is OrderRequestValue {
 
 export function isValidPremioRequest(value: string): boolean {
   return PREMIO_REQUEST_OPTIONS.some((p) => p.id === value)
+}
+
+export function isValidTenkanRequest(value: string): boolean {
+  return value === TENKAN_REQUEST_VALUE
 }

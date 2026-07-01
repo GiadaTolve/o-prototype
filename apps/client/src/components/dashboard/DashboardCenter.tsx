@@ -12,7 +12,7 @@ import {
   removeWazaTagsFromText,
 } from "@domain/combat/waza-tag-preview";
 import {
-  expandWazaSlashCommandInMessage,
+  expandWazaLaunchInMessage,
   extractHitDeclaredFromText,
   extractLaunchSkiruId,
   extractLaunchTierFromText,
@@ -243,7 +243,7 @@ export function DashboardCenter({
     if (!input?.value.trim() || !chatConnected) return;
     
     const raw = input.value.trim();
-    const messageText = expandWazaSlashCommandInMessage(raw, WAZA_TAG_INDEX, {
+    const messageText = expandWazaLaunchInMessage(raw, WAZA_TAG_INDEX, {
       skiruSheet: char?.skiruSheet ?? null,
     });
     const tag = tagInput?.value.trim() || undefined;
@@ -1897,7 +1897,7 @@ function ChatView({
   const sendLaunchFromPanel = useCallback(
     (text: string) => {
       const tag = tagLuogoRef.current?.value.trim() || undefined;
-      const expanded = expandWazaSlashCommandInMessage(text, WAZA_TAG_INDEX, {
+      const expanded = expandWazaLaunchInMessage(text, WAZA_TAG_INDEX, {
         skiruSheet: char?.skiruSheet ?? null,
       });
       sendMessage(expanded, tag || undefined);

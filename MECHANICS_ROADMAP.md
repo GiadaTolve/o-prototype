@@ -354,7 +354,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 - [x] Genkai (Malkut) · Sōmei (Thaumiel) → **Resistenza Costrutti**
 - [x] Kongen floor danno · Gōjin counter · Kashin tie-break — `sokaiju-combat.ts` + `damage-pipeline.ts` + `resolution.ts`
 - [x] Shōdō durata · Eiga stack emotivi — hook in `waza-chat-automation` (status colpiti)
-- [x] Chikō cap costrutti — `canPlaceFieldConstruct()` + blocco in `createFieldConstructForCharacter`
+- [x] Chikō cap costrutti — numero attivi + taglia massima (`getMaxAllowedConstructSizeId`)
 - [x] Rider Seimitsu (−2 IR difensore) — `resolveCombatConfrontationBetween`
 - [x] Confronto IR pre-danno su `[hit:1]` — attaccante (Skiru dichiarata o indicativo) vs difesa indicativa bersaglio
 - [x] Jikai cure/buff · Hikan sorpresa/schivata — `applySokaijuSupportValue` su cure; `checkHikanSurpriseBypass` su `[hit:1]`

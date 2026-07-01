@@ -1,9 +1,9 @@
-import { listSkiruByDomain } from '../skiru/catalog'
+import { getSkiruDef, listSkiruByDomain, SKIRU_CATALOG } from '../skiru/catalog'
 import { getSkiruPoints } from '../skiru/progression'
 import type { SkiruSheet } from '../skiru/types'
 import { extractGenericheHitTargetSpec } from '../styles/generiche/generiche-effects'
 import { buildIndicativeActionIndex } from './resolution'
-import { normalizeWazaLookupKey, type WazaTagCatalogEntry } from './waza-tag-preview'
+import { normalizeWazaLookupKey, type WazaTagCatalogEntry, extractWazaTagNames } from './waza-tag-preview'
 import { buildWazaLaunchInsertLine } from './waza-tag-preview'
 import {
   SKIRU_ID_KONJOU,
@@ -351,6 +351,58 @@ function resolveWazaNameFromQuery(
   return null
 }
 
+function resolveSkiruIdFromNaturalToken(token: string): string | null {
+  const raw = token.trim()
+  if (!raw) return null
+  const idGuess = raw.toLowerCase().replace(/\s+/g, '-')
+  if (getSkiruDef(idGuess)) return idGuess
+  const lower = raw.toLowerCase()
+  for (const s of SKIRU_CATALOG) {
+    if (s.name.toLowerCase() === lower) return s.id
+    if (s.nameRomaji?.toLowerCase() === lower) return s.id
+  }
+  return null
+}
+
+export type NaturalWazaLaunchParse = {
+  wazaQuery: string
+  skiruId?: string
+  cs?: number
+  target?: string
+  declareHit?: boolean
+}
+
+/** «Lancio Hōsha con Seimitsu, 2 CS, contro Aoi.» */
+export function parseNaturalWazaLaunchLine(text: string): NaturalWazaLaunchParse | null {
+  let trimmed = text.trim()
+  if (!/^lancio\s+/i.test(trimmed)) return null
+  if (/\[waza:/i.test(trimmed)) return null
+
+  const declareHit = /\bcolpo\s+a\s+segno\b/i.test(trimmed)
+  trimmed = trimmed.replace(/\s*[,.]?\s*colpo\s+a\s+segno\s*[.!?]?\s*$/i, '').trim()
+
+  const m =
+    /^lancio\s+(.+?)(?:\s+con\s+([^,]+?))?(?:\s*,\s*(\d+)\s*cs)?(?:\s*,?\s*contro\s+(.+?))?\s*([.!?])?\s*$/i.exec(
+      trimmed,
+    )
+  if (!m) return null
+
+  const wazaQuery = m[1]?.trim()
+  if (!wazaQuery) return null
+
+  const skiruToken = m[2]?.trim()
+  const cs = m[3] != null ? Number(m[3]) : undefined
+  const target = m[4]?.trim().replace(/\s*[.!?]\s*$/, '')
+
+  return {
+    wazaQuery,
+    skiruId: skiruToken ? (resolveSkiruIdFromNaturalToken(skiruToken) ?? undefined) : undefined,
+    cs: Number.isFinite(cs) ? cs : undefined,
+    target: target || undefined,
+    declareHit: declareHit || undefined,
+  }
+}
+
 /** Se il messaggio è solo `/waza …`, lo espande in tag chat. */
 export function expandWazaSlashCommandInMessage(
   text: string,
@@ -386,6 +438,37 @@ export function expandWazaSlashCommandInMessage(
   return line + origine
 }
 
+/** Espande `/waza …` o frase naturale «Lancio … con …» in tag chat. */
+export function expandWazaLaunchInMessage(
+  text: string,
+  index: ReadonlyMap<string, WazaTagCatalogEntry>,
+  options?: WazaLaunchBuildOptions,
+): string {
+  const fromSlash = expandWazaSlashCommandInMessage(text, index, options)
+  if (fromSlash !== text) return fromSlash
+
+  const natural = parseNaturalWazaLaunchLine(text)
+  if (!natural) return text
+
+  const wazaName = resolveWazaNameFromQuery(natural.wazaQuery, index)
+  if (!wazaName) return text
+
+  const entry = index.get(normalizeWazaLookupKey(wazaName))
+  const autoSkiru =
+    options?.skiruSheet && entry
+      ? resolveAutoLaunchSkiruId(options.skiruSheet, entry)
+      : null
+
+  return buildFullWazaLaunchLine(wazaName, index, {
+    ...options,
+    poolId: entry?.poolId ?? options?.poolId,
+    declaredSkiruId: natural.skiruId ?? options?.declaredSkiruId ?? autoSkiru,
+    csOverride: natural.cs ?? options?.csOverride,
+    target: natural.target ? { nameQuery: natural.target } : options?.target ?? undefined,
+    declareHit: natural.declareHit ?? options?.declareHit,
+  })
+}
+
 export function resolveLaunchIrFromMessage(
   text: string,
   sheet: SkiruSheet | null | undefined,
@@ -394,4 +477,59 @@ export function resolveLaunchIrFromMessage(
   const declared = extractLaunchSkiruId(text)
   if (declared && sheet) return computeDeclaredActionIr(sheet, declared)
   return fallbackIr
+}
+
+export type WazaChatPrerequisiteResult = {
+  ok: boolean
+  errors: string[]
+  warnings: string[]
+}
+
+/** Verifica possesso waza (poolId) e CS dichiarati `[cs:N]` prima dell'automazione. */
+export function validateWazaChatPrerequisites(input: {
+  content: string
+  wazaIndex: ReadonlyMap<string, WazaTagCatalogEntry>
+  chronoCsAvailable: number
+  ownedWazaPoolIds?: ReadonlySet<string> | readonly string[]
+  /** true = non blocca per waza non in inventario (Master / narrativo). */
+  skipOwnershipCheck?: boolean
+}): WazaChatPrerequisiteResult {
+  const errors: string[] = []
+  const warnings: string[] = []
+  const wazaNames = extractWazaTagNames(input.content)
+  if (wazaNames.length === 0) return { ok: true, errors, warnings }
+
+  if (!input.skipOwnershipCheck && input.ownedWazaPoolIds) {
+    const owned = new Set(input.ownedWazaPoolIds)
+    for (const name of wazaNames) {
+      const entry = input.wazaIndex.get(normalizeWazaLookupKey(name))
+      if (!entry?.poolId) {
+        warnings.push(`Waza «${name}» non nel catalogo tag — verifica con il Master.`)
+        continue
+      }
+      if (!owned.has(entry.poolId)) {
+        errors.push(`Non possiedi la waza «${entry.name}».`)
+      }
+    }
+  }
+
+  const csSpend = extractLaunchCsOverride(input.content)
+  if (csSpend != null && csSpend > 0 && csSpend > input.chronoCsAvailable) {
+    errors.push(
+      `CS insufficienti per il lancio: richiesti ${csSpend}, disponibili ${input.chronoCsAvailable}.`,
+    )
+  }
+
+  return { ok: errors.length === 0, errors, warnings }
+}
+
+/** Blocca automazione se il delta CS totale supera il serbatoio (dopo parse effetti). */
+export function validateWazaChatCsAffordability(
+  csDelta: number,
+  chronoCsAvailable: number,
+): string | null {
+  if (csDelta >= 0) return null
+  const needed = -csDelta
+  if (chronoCsAvailable >= needed) return null
+  return `CS insufficienti: servono ${needed}, disponibili ${chronoCsAvailable}.`
 }
