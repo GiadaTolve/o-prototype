@@ -218,14 +218,62 @@ describe('waza chat automation', () => {
   it('Eden rigenera costrutti con tag dedicato', () => {
     const r = processWazaChatAutomation({
       content: '[eden:rigenera:2]',
-      meta: { genzaiEden: { turnsLeft: 3 } },
+      meta: {
+        genzaiEden: { turnsLeft: 3 },
+        genzaiEdenDestroyedQueue: [
+          { label: 'Pilastro', wazaTier: 3, size: 'media', stationary: true },
+          { label: 'Muro', wazaTier: 4, size: 'grande', stationary: true },
+        ],
+      },
       statusContainer: emptyContainer,
       wazaIndex: index,
       chronoCsAvailable: 10,
       actorCharacterId: 'a',
     })
     expect(r.csDelta).toBe(-4)
-    expect(r.log.some((l) => l.includes('rigenera 2'))).toBe(true)
+    expect(r.effects.some((e) => e.kind === 'eden_regen')).toBe(true)
+    const regen = r.effects.find((e) => e.kind === 'eden_regen')
+    expect(regen && regen.kind === 'eden_regen' && regen.constructs).toHaveLength(2)
+  })
+
+  it('Investimento riscosso applica flat damage al prossimo colpo', () => {
+    let meta = openInvestimento({})
+    meta = depositInvestimento(meta, 3).meta
+    const cash = cashOutInvestimento(meta)
+    const r = processWazaChatAutomation({
+      content: '[waza:Shoken] [tier:2] [hit:1] [target:Maria]',
+      meta: cash.meta,
+      statusContainer: emptyContainer,
+      wazaIndex: buildWazaTagIndex([
+        ...CATALOG_ENTRIES,
+        {
+          name: 'Shoken',
+          poolId: 'generiche-shoken-eco-pugno',
+          rank: 'T1',
+          styleId: null,
+          isPassive: false,
+        },
+      ]),
+      chronoCsAvailable: 10,
+      actorCharacterId: 'a',
+      roomParticipants: [{ characterId: 'b', name: 'Maria', surname: 'Rossi' }],
+    })
+    const dmg = r.effects.find((e) => e.kind === 'waza_launch_damage')
+    expect(dmg && dmg.kind === 'waza_launch_damage' && dmg.flatBonus).toBe(6)
+    expect(readInvestimentoFromMeta(r.meta).payoutPending).toBeNull()
+  })
+
+  it('Mugen dominio reclama genera tensione', () => {
+    const r = processWazaChatAutomation({
+      content: '[dominio:reclama]',
+      meta: { itoMugenShihai: { turnsLeft: 3 } },
+      statusContainer: emptyContainer,
+      wazaIndex: index,
+      chronoCsAvailable: 10,
+      actorCharacterId: 'a',
+    })
+    expect(r.effects.some((e) => e.kind === 'mugen_dominio_claim')).toBe(true)
+    expect(r.meta.itoTension).toBe(1)
   })
 
   it('Shinryaku contatto infligge danno tier 5', () => {

@@ -1,6 +1,8 @@
 /** Meisaku (銘作) — Opera Prima · Genzai-dō. */
 
 export const MEISAKU_CS_COST = 6
+export const MEISAKU_WAZA_TIER = 5
+export const MEISAKU_CONSTRUCT_SIZE = 'grande' as const
 
 export type GenzaiMeisakuState = {
   active: boolean

@@ -8,8 +8,17 @@ export type GenzaiEdenState = {
   turnsLeft: number
 }
 
+export type EdenDestroyedConstructSnapshot = {
+  label: string
+  wazaTier: number
+  size: string
+  stationary: boolean
+}
+
 export type GenzaiEdenMeta = {
   genzaiEden?: GenzaiEdenState | null
+  /** Costrutti distrutti in Eden — rigenerabili con [eden:rigenera]. */
+  genzaiEdenDestroyedQueue?: EdenDestroyedConstructSnapshot[]
 }
 
 export function readEdenState(meta: GenzaiEdenMeta | null | undefined): GenzaiEdenState | null {
@@ -27,10 +36,35 @@ export function activateEden(meta: GenzaiEdenMeta): GenzaiEdenMeta {
 
 export function tickEdenEndOfTurn(meta: GenzaiEdenMeta): GenzaiEdenMeta {
   const e = readEdenState(meta)
-  if (!e) return { ...meta, genzaiEden: null }
+  if (!e) return { ...meta, genzaiEden: null, genzaiEdenDestroyedQueue: [] }
   const turnsLeft = e.turnsLeft - 1
-  if (turnsLeft <= 0) return { ...meta, genzaiEden: null }
+  if (turnsLeft <= 0) {
+    return { ...meta, genzaiEden: null, genzaiEdenDestroyedQueue: [] }
+  }
   return { ...meta, genzaiEden: { turnsLeft } }
+}
+
+export function recordEdenDestroyedConstruct(
+  meta: GenzaiEdenMeta,
+  snapshot: EdenDestroyedConstructSnapshot,
+): GenzaiEdenMeta {
+  if (!readEdenState(meta)) return meta
+  const queue = [...(meta.genzaiEdenDestroyedQueue ?? []), snapshot]
+  return { ...meta, genzaiEdenDestroyedQueue: queue }
+}
+
+export function consumeEdenRegenConstructs(
+  meta: GenzaiEdenMeta,
+  count: number,
+): { meta: GenzaiEdenMeta; snapshots: EdenDestroyedConstructSnapshot[] } {
+  const queue = [...(meta.genzaiEdenDestroyedQueue ?? [])]
+  const n = Math.min(Math.max(0, Math.floor(count)), queue.length)
+  const snapshots = queue.slice(0, n)
+  const rest = queue.slice(n)
+  return {
+    meta: { ...meta, genzaiEdenDestroyedQueue: rest },
+    snapshots,
+  }
 }
 
 export function formatEdenSegment(meta: GenzaiEdenMeta): string | null {

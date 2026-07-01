@@ -39,8 +39,12 @@ export function tickMugenShihaiEndOfTurn(meta: ItoMugenShihaiMeta): ItoMugenShih
   return { ...meta, itoMugenShihai: { turnsLeft } }
 }
 
+export function hasDominioClaimTag(text: string): boolean {
+  return /\[dominio:\s*reclama\s*\]/i.test(text)
+}
+
 export function formatMugenShihaiSegment(meta: ItoMugenShihaiMeta): string | null {
   const z = readMugenShihaiState(meta)
   if (!z) return null
-  return `Dominazione Onirica: raggio 10 m (${z.turnsLeft} turni)`
+  return `Dominazione Onirica: raggio 10 m (${z.turnsLeft} turni) · [dominio:reclama]`
 }

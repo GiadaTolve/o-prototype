@@ -91,6 +91,8 @@ import {
   onSuccessfulHitTaken,
   onConfrontationStatusEvent,
   compileCombatModifiers,
+  statusToOffensiveDamageBonuses,
+  statusToDamageTakenFlatBonus,
   rowsToStatusContainer,
   toStatusEffectApiItems,
   parseStatusIdInput,
@@ -157,6 +159,21 @@ import { tickKomonoireEndOfTurn } from '@domain/styles/madosho/komonoire';
 import { applyKomeiRoventeOnContactHit } from '@domain/styles/naikan/komei';
 import { processShokushinHitExchange } from '@domain/styles/naikan/shokushin';
 import { SHINRYAKU_CONSTRUCT_SIZE, SHINRYAKU_WAZA_TIER } from '@domain/styles/genzai/shinryaku';
+import {
+  MEISAKU_CONSTRUCT_SIZE,
+  MEISAKU_WAZA_TIER,
+} from '@domain/styles/genzai/meisaku';
+import {
+  readEdenState,
+  recordEdenDestroyedConstruct,
+  type EdenDestroyedConstructSnapshot,
+} from '@domain/styles/genzai/rakuen';
+import {
+  KAJIBA_POOL,
+  noteDamageDealtToTarget,
+  onActorHpCrossedBelowHalf,
+  tickGenericheIaiEndOfTurn,
+} from '@domain/styles/generiche/passive-triggers';
 import { clampJunkanPhase } from '@domain/styles/naikan/junkan';
 import { isYuragiPhase } from '@domain/styles/hensei/yuragi';
 import { clampAtsuryoku } from '@domain/styles/hado/atsuryoku';
@@ -1051,6 +1068,20 @@ export class CharacterService {
     };
   }
 
+  private async getEquippedPassivePoolIds(characterId: string): Promise<string[]> {
+    const passiveState = await this.getPassiveSlotsState(characterId);
+    const poolIds: string[] = [];
+    for (const slot of passiveState.slots) {
+      if (!slot.equipped) continue;
+      const skill = await db.query.skills.findFirst({
+        where: eq(skills.id, slot.equipped.id),
+        columns: { poolId: true },
+      });
+      if (skill?.poolId) poolIds.push(skill.poolId);
+    }
+    return poolIds;
+  }
+
   private async compileModifiersForCharacter(
     characterId: string,
     container: StatusContainer,
@@ -1155,6 +1186,7 @@ export class CharacterService {
     await this.persistStoredChronoState(characterId, tick.state);
     const vitals = await this.getCombatVitals(characterId);
     await this.tickItoTensionEndOfTurn(characterId);
+    await this.tickGenerichePassivesEndOfTurn(characterId);
 
     return {
       chronoStack: vitals.chronoStack,
@@ -1209,6 +1241,7 @@ export class CharacterService {
     }
 
     const hpMax = bundle.computed.hpMax ?? 0;
+    const hpBefore = char.currentHp;
     const next = applyHpDelta(char.currentHp, hpMax, appliedDelta);
 
     const defenderMeta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
@@ -1221,6 +1254,21 @@ export class CharacterService {
       const t = Math.floor(options.hitTier);
       if (t >= 1 && t <= 5) {
         nextDefenderMeta.lastReceivedHitTier = t;
+        defenderMetaDirty = true;
+      }
+    }
+
+    if (delta < 0 && appliedDelta < 0) {
+      const passivePools = await this.getEquippedPassivePoolIds(characterId);
+      const kajiba = onActorHpCrossedBelowHalf(
+        nextDefenderMeta,
+        hpBefore,
+        next,
+        hpMax,
+        passivePools.includes(KAJIBA_POOL),
+      );
+      if (kajiba.triggered) {
+        nextDefenderMeta = { ...nextDefenderMeta, ...kajiba.meta };
         defenderMetaDirty = true;
       }
     }
@@ -1318,12 +1366,40 @@ export class CharacterService {
       throw new Error('Personaggio non trovato');
     }
 
+    const attackerContainer = await this.loadCharacterStatusContainer(attackerCharacterId);
+    const victimContainer = await this.loadCharacterStatusContainer(victimCharacterId);
+    const attackerChar = await db.query.characters.findFirst({
+      where: eq(characters.id, attackerCharacterId),
+      columns: { uiMetadata: true },
+    });
+    const victimChar = await db.query.characters.findFirst({
+      where: eq(characters.id, victimCharacterId),
+      columns: { uiMetadata: true },
+    });
+    const attackerMeta = (attackerChar?.uiMetadata ?? {}) as DoMechanicsUiMeta;
+    const victimMeta = (victimChar?.uiMetadata ?? {}) as DoMechanicsUiMeta;
+
+    const offensive = statusToOffensiveDamageBonuses(
+      attackerContainer,
+      tier as WazaTier,
+      attackerMeta,
+    );
+    const takenFlat = statusToDamageTakenFlatBonus(victimContainer, tier as WazaTier);
+    const victimMods = compileCombatModifiers(victimContainer, victimMeta);
+    const riderAndOptionBonus = options.flatBonus ?? 0;
+    const totalFlatBonus =
+      riderAndOptionBonus + (offensive.flatBonus ?? 0) + takenFlat;
+
     const breakdown = resolveDamageToHp({
       tier: tier as WazaTier,
       attackerSheet: attackerBundle.skiruSheet as SkiruSheet,
       targetSheet: victimBundle.skiruSheet as SkiruSheet,
       isReactiveCounter: options.isReactiveCounter,
-      bonuses: options.flatBonus != null ? { flatBonus: options.flatBonus } : undefined,
+      bonuses: {
+        flatBonus: totalFlatBonus,
+        damageMultiplier: offensive.damageMultiplier,
+      },
+      extraMitigationPercent: victimMods.mitigationBonusPercent,
     });
 
     const vitals = await this.applyCombatHpDelta(victimCharacterId, -breakdown.hpDamage, {
@@ -1623,6 +1699,12 @@ export class CharacterService {
     const result = applyDamageToFieldConstruct(current, incomingDamage);
 
     if (result.destroyed) {
+      await this.recordEdenDestroyedConstructIfActive(row.creatorCharacterId, {
+        label: row.label,
+        wazaTier: row.wazaTier,
+        size: row.size,
+        stationary: row.stationary,
+      });
       await db.delete(fieldConstructs).where(eq(fieldConstructs.id, constructId));
     } else {
       await db
@@ -1646,6 +1728,12 @@ export class CharacterService {
       where: eq(fieldConstructs.id, constructId),
     });
     if (!row) throw new Error('Costrutto non trovato');
+    await this.recordEdenDestroyedConstructIfActive(row.creatorCharacterId, {
+      label: row.label,
+      wazaTier: row.wazaTier,
+      size: row.size,
+      stationary: row.stationary,
+    });
     await db.delete(fieldConstructs).where(eq(fieldConstructs.id, constructId));
     return this.listFieldConstructsForCharacter(row.creatorCharacterId);
   }
@@ -1832,6 +1920,7 @@ export class CharacterService {
     const chronoState = await this.loadStoredChronoState(characterId);
     const chronoBefore = chronoState.current;
     const statusContainer = await this.loadCharacterStatusContainer(characterId);
+    const equippedPassivePoolIds = await this.getEquippedPassivePoolIds(characterId);
 
     const automation = processWazaChatAutomation({
       content,
@@ -1843,6 +1932,7 @@ export class CharacterService {
       roomParticipants: options.roomParticipants,
       madoshoId: char.madoshoId,
       actorSkiruSheet,
+      equippedPassivePoolIds,
     });
 
     let nextChrono = chronoState;
@@ -1914,6 +2004,28 @@ export class CharacterService {
           isNewForm: true,
         });
       }
+      if (effect.kind === 'meisaku_construct') {
+        await this.createFieldConstructForCharacter(characterId, {
+          label: effect.label,
+          wazaTier: MEISAKU_WAZA_TIER,
+          size: MEISAKU_CONSTRUCT_SIZE,
+          stationary: true,
+          isNewForm: true,
+        });
+      }
+      if (effect.kind === 'eden_regen') {
+        for (const snap of effect.constructs) {
+          const size = isConstructSizeId(snap.size) ? snap.size : 'media';
+          const tier = isWazaTier(snap.wazaTier) ? snap.wazaTier : 1;
+          await this.createFieldConstructForCharacter(characterId, {
+            label: snap.label,
+            wazaTier: tier,
+            size,
+            stationary: snap.stationary,
+            isNewForm: false,
+          });
+        }
+      }
       if (effect.kind === 'shinryaku_contact_damage' && effect.damage > 0) {
         await this.applyCombatTierDamage(effect.victimCharacterId, characterId, SHINRYAKU_WAZA_TIER, {
           contactHit: true,
@@ -1978,10 +2090,12 @@ export class CharacterService {
         }
 
         const riderBonus = computeSkiruRiderFlatBonus(effect.skiruId, effectText);
+        const launchFlatBonus = (effect.flatBonus ?? 0) + riderBonus;
         await this.applyCombatTierDamage(effect.victimCharacterId, characterId, effect.tier, {
-          flatBonus: riderBonus,
+          flatBonus: launchFlatBonus,
           contactHit: wazaEffectDeclaresContact(effectText),
         });
+        automation.meta = noteDamageDealtToTarget(automation.meta, effect.victimCharacterId);
         automation.log.push(
           `Lancio waza: colpo a segno su ${effect.displayName} (IR ${confrontation.actor.successIndex} vs ${confrontation.defender.successIndex})`,
         );
@@ -2060,7 +2174,6 @@ export class CharacterService {
     await this.persistCharacterStatusContainer(characterId, container);
   }
 
-  /** Fine turno Itō: −1 Tensione se nessun filo dichiarato nel turno. */
   async tickItoTensionEndOfTurn(characterId: string) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
@@ -2081,6 +2194,43 @@ export class CharacterService {
       skippedDecay: tick.decayed === 0 && (meta.itoUsedThisTurn ?? false),
       tension: readDoMechanicsFromMeta(tick.meta).ito,
     };
+  }
+
+  /** Fine turno: aggiorna stato Iai (turno senza waza → incombenza pronta). */
+  async tickGenerichePassivesEndOfTurn(characterId: string) {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { uiMetadata: true },
+    });
+    if (!char) return;
+
+    const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
+    const next = tickGenericheIaiEndOfTurn(meta, meta.genericheTurnWazaUsed === true);
+
+    await db
+      .update(characters)
+      .set({ uiMetadata: next })
+      .where(eq(characters.id, characterId));
+  }
+
+  private async recordEdenDestroyedConstructIfActive(
+    creatorCharacterId: string,
+    snapshot: EdenDestroyedConstructSnapshot,
+  ) {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, creatorCharacterId),
+      columns: { uiMetadata: true },
+    });
+    if (!char) return;
+
+    const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
+    if (!readEdenState(meta)) return;
+
+    const patched = recordEdenDestroyedConstruct(meta, snapshot);
+    await db
+      .update(characters)
+      .set({ uiMetadata: patched })
+      .where(eq(characters.id, creatorCharacterId));
   }
 
   async patchDoMechanics(

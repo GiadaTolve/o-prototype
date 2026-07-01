@@ -54,10 +54,18 @@ export type DoMechanicsUiMeta = {
   itoMugenShihai?: import('./ito/mugen-shihai').ItoMugenShihaiState | null
   /** Rakuen · Eden Genzai */
   genzaiEden?: import('./genzai/rakuen').GenzaiEdenState | null
+  genzaiEdenDestroyedQueue?: import('./genzai/rakuen').EdenDestroyedConstructSnapshot[]
   /** Meisaku · Opera Prima */
   genzaiMeisaku?: import('./genzai/meisaku').GenzaiMeisakuState | null
   /** Hōgō · Sutura (sul bersaglio) */
   naikanSutura?: import('./naikan/hogo').NaikanSuturaState | null
+  /** Passive Generiche · Kajiba / Iai */
+  genericheKajibaHalfHpTriggered?: boolean
+  genericheKajibaTierBonusPending?: boolean
+  genericheIaiReady?: boolean
+  genericheIaiWazaLaunchesThisTurn?: number
+  genericheIaiDamagedTargetIds?: string[]
+  genericheTurnWazaUsed?: boolean
   /** Omocha · Arma Psichica */
   tokaOmocha?: import('./toka/omocha').TokaOmochaState | null
   /** Gangushi · multi Tōrō */

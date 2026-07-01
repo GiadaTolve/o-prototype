@@ -9,6 +9,7 @@ import type { DoMechanicsUiMeta } from '../styles/do-mechanics'
 import { accumulateItoTensionInMeta } from '../styles/do-mechanics'
 import {
   cashOutInvestimento,
+  clearInvestimentoPayout,
   depositInvestimento,
   INVESTIMENTO_DURATION_TURNS,
   INVESTIMENTO_OPEN_CS_COST,
@@ -70,18 +71,21 @@ import {
   activateMugenShihai,
   breakMugenShihai,
   formatMugenShihaiSegment,
+  hasDominioClaimTag,
   MUGEN_SHIHAI_CS_COST,
   readMugenShihaiState,
   tickMugenShihaiEndOfTurn,
 } from '../styles/ito/mugen-shihai'
 import {
   activateEden,
+  consumeEdenRegenConstructs,
   extractEdenRegenCount,
   formatEdenSegment,
   RAKUEN_CS_COST,
   RAKUEN_REGEN_CS_PER_CONSTRUCT,
   readEdenState,
   tickEdenEndOfTurn,
+  type EdenDestroyedConstructSnapshot,
 } from '../styles/genzai/rakuen'
 import {
   activateMeisaku,
@@ -89,6 +93,8 @@ import {
   extractMeisakuLabel,
   formatMeisakuSegment,
   MEISAKU_CS_COST,
+  MEISAKU_CONSTRUCT_SIZE,
+  MEISAKU_WAZA_TIER,
   readMeisakuState,
 } from '../styles/genzai/meisaku'
 import {
@@ -166,6 +172,11 @@ import {
   KYOSHIN_POOL,
   readKyoshinState,
 } from '../styles/generiche/kyoshin'
+import {
+  noteWazaLaunchThisTurn,
+  resolvePassiveLaunchTierBonus,
+} from '../styles/generiche/passive-triggers'
+import { isWazaTier, type WazaTier } from './tier'
 
 export type WazaChatParticipant = {
   characterId: string
@@ -185,6 +196,8 @@ export type WazaChatAutomationInput = {
   madoshoId?: string | null
   /** Scheda Skiru attore — automatismi Sōkaiju (Gojū su hit elementale, ecc.). */
   actorSkiruSheet?: SkiruSheet
+  /** Pool id delle passive equipaggiate (Kajiba, Iai, …). */
+  equippedPassivePoolIds?: readonly string[]
 }
 
 export type WazaChatAutomationEffect =
@@ -205,10 +218,16 @@ export type WazaChatAutomationEffect =
   | { kind: 'giurisdizione_claim' }
   | { kind: 'decreto_imposed'; text: string }
   | { kind: 'eden_activated' }
+  | {
+      kind: 'eden_regen'
+      constructs: EdenDestroyedConstructSnapshot[]
+    }
   | { kind: 'meisaku_activated'; label?: string }
+  | { kind: 'meisaku_construct'; label: string }
   | { kind: 'meisaku_cleared' }
   | { kind: 'mugen_shihai_activated' }
   | { kind: 'mugen_shihai_broken' }
+  | { kind: 'mugen_dominio_claim' }
   | {
       kind: 'sutura_applied'
       victimCharacterId: string
@@ -258,6 +277,7 @@ export type WazaChatAutomationEffect =
       tier: number
       wazaName: string
       skiruId?: string
+      flatBonus?: number
     }
 
 export type WazaChatAutomationResult = {
@@ -501,14 +521,25 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
   if (edenRegenCount != null && readEdenState(meta)) {
     const regenCost = RAKUEN_REGEN_CS_PER_CONSTRUCT * edenRegenCount
     csDelta -= regenCost
-    log.push(`Eden: rigenera ${edenRegenCount} costrutto/i (−${regenCost} CS)`)
+    const consumed = consumeEdenRegenConstructs(meta, edenRegenCount)
+    meta = consumed.meta
+    if (consumed.snapshots.length > 0) {
+      effects.push({ kind: 'eden_regen', constructs: consumed.snapshots })
+    }
+    log.push(
+      consumed.snapshots.length > 0
+        ? `Eden: rigenerati ${consumed.snapshots.length} costrutto/i (−${regenCost} CS)`
+        : `Eden: nessun costrutto in coda (−${regenCost} CS)`,
+    )
   }
 
   if (poolIds.includes(MEISAKU_POOL)) {
     const label = extractMeisakuLabel(input.content)
     meta = activateMeisaku(meta, label)
     csDelta -= MEISAKU_CS_COST
+    const constructLabel = label ?? 'Opera Prima'
     effects.push({ kind: 'meisaku_activated', label: label ?? undefined })
+    effects.push({ kind: 'meisaku_construct', label: constructLabel })
     log.push(label ? `Meisaku: Opera Prima «${label}»` : 'Meisaku: Opera Prima attiva')
   }
 
@@ -529,6 +560,13 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
     meta = breakMugenShihai(meta)
     effects.push({ kind: 'mugen_shihai_broken' })
     log.push('Dominazione Onirica spezzata')
+  }
+
+  if (hasDominioClaimTag(input.content) && readMugenShihaiState(meta)) {
+    const tension = accumulateItoTensionInMeta(meta, 1)
+    meta = tension.meta
+    effects.push({ kind: 'mugen_dominio_claim' })
+    log.push('Dominazione Onirica: waza reclamata (+1 Tensione)')
   }
 
   if (poolIds.includes(HOGO_POOL)) {
@@ -862,11 +900,40 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
     extractHitDeclaredFromText(input.content) &&
     input.roomParticipants?.length
   ) {
-    const tier = extractLaunchTierFromText(input.content)
+    const tierRaw = extractLaunchTierFromText(input.content)
     const hitSpec = extractWazaLaunchTargetSpec(input.content)
-    if (tier != null && hitSpec) {
+    if (tierRaw != null && hitSpec) {
       const target = resolveParticipantBySpec(hitSpec, input.roomParticipants, input.actorCharacterId)
       if (target) {
+        let launchTier = tierRaw
+        let flatBonus = 0
+
+        const payout = readInvestimentoFromMeta(meta).payoutPending
+        if (payout) {
+          flatBonus += payout.flatDamage
+          meta = clearInvestimentoPayout(meta)
+          log.push(`Investimento: +${payout.flatDamage} danno sul colpo`)
+          if (payout.rangeBonusM > 0) {
+            log.push(`Investimento: +${payout.rangeBonusM} m gittata (narrativo)`)
+          }
+        }
+
+        const passiveBonus = resolvePassiveLaunchTierBonus(
+          meta,
+          target.characterId,
+          input.equippedPassivePoolIds,
+        )
+        meta = passiveBonus.meta
+        if (passiveBonus.tierSteps > 0) {
+          const bumped = Math.min(5, launchTier + passiveBonus.tierSteps)
+          launchTier = bumped
+          log.push(`Passive: +${passiveBonus.tierSteps} tier (${passiveBonus.sources.join(', ')})`)
+        }
+
+        meta = noteWazaLaunchThisTurn(meta)
+
+        const tier = isWazaTier(launchTier) ? launchTier : (Math.min(5, Math.max(1, launchTier)) as WazaTier)
+
         effects.push({
           kind: 'waza_launch_damage',
           victimCharacterId: target.characterId,
@@ -874,6 +941,7 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
           tier,
           wazaName: launchedWaza[0]!,
           skiruId: extractLaunchSkiruId(input.content) ?? undefined,
+          flatBonus: flatBonus > 0 ? flatBonus : undefined,
         })
         log.push(`Lancio waza dichiarato: T${tier} vs ${target.displayName}`)
       }
