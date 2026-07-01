@@ -357,7 +357,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 - [x] Chikō cap costrutti — `canPlaceFieldConstruct()` + blocco in `createFieldConstructForCharacter`
 - [x] Rider Seimitsu (−2 IR difensore) — `resolveCombatConfrontationBetween`
 - [x] Confronto IR pre-danno su `[hit:1]` — attaccante (Skiru dichiarata o indicativo) vs difesa indicativa bersaglio
-- [~] Jikai cure/buff · Hikan sorpresa/schivata — helper in domain; flussi chat incompleti
+- [x] Jikai cure/buff · Hikan sorpresa/schivata — `applySokaijuSupportValue` su cure; `checkHikanSurpriseBypass` su `[hit:1]`
 - [x] UI scheda: tab Sōkaiju, lore, formule live, automatismi collassabili — `SchedaSkiruPage.tsx`
 - [ ] Meccaniche runtime per nodi Shiju oltre Shikai (narrativo / fase 2)
 
@@ -886,7 +886,7 @@ Legenda sotto-sezioni:
 | Area | Fatto | Manca |
 |------|-------|-------|
 | Generiche batch 1 | 6 passive + 4 accademia | Ippuku, Ukenagashi, Shukuchi, Chōyaku, Kaginawa, Nenwa, proiettili/raggi/coni/scudi/emanazione (~30 waza ROADMAP_CONTEXT) |
-| Automazione avanzata | Tōshi, Shakkin, Kōmei, Nagori, Hōgō (parz.), Shinryaku contatto, Eden rigenera, Ippuku, status-on-hit generiche, Kyōshin, Komonoire dado/Debitore | Giurisdizione reclaim, Chokurei enforcement, Mugen dominion, Meisaku permanenza, Nagori gassoso/elementale/sonoro completo, passive generiche (Kajiba, Iai…) |
+| Automazione avanzata | Tōshi (riscossione→danno), Shakkin, Kōmei, Nagori, Hōgō, Shinryaku, Eden rigenera+server, Ippuku, status-on-hit, Kyōshin, Komonoire, Meisaku costrutto, Mugen `[dominio:reclama]`, passive Kajiba/Iai, modifier Nagori/Kōmei in pipeline danno | Giurisdizione reclaim enforcement, Chokurei enforcement, Nagori gassoso/elementale/sonoro completo |
 | Tag catalog | Dō 112 | Rigenerare con Generiche; aggiornare test `waza-tag-preview.test.ts` |
 | Ordine / Oni | Classifier UI | Pool, sync, contenuto manuale |
 | Komonoire | Status Debitore in engine | Waza pool + dado demoniaco + tag chat |
@@ -1016,3 +1016,4 @@ Oggi A è in `WazaInsertionTool` (~2600 LOC), B/C sono sparsi in domain TS — *
 | Luglio 2026 | Sōkaiju + lancio waza | Tab scheda, `sokaiju-combat.ts`, Kongen/Gojū/Shōdō/Eiga in chat, `WazaLaunchPanel`, `/waza`, `[hit:1]` danno |
 | Luglio 2026 | Pannello lancio auto | Solo waza possedute; CS/Skiru automatici; tag extra Giurisdizione/Hōgō/Decreto; Hikan `[sorpresa:1]`; Jikai su cure |
 | Luglio 2026 | Mobile Cursor | `AGENTS.md`, `.cursor/environment.json`, worker My Machines |
+| Luglio 2026 | Automazioni chat complete (batch 2) | Modifier offensivi in `applyCombatTierDamage`; Meisaku→costrutto T5; Eden coda rigenera; Mugen dominio; Investimento→`[hit:1]`; passive Kajiba/Iai |
