@@ -29,6 +29,10 @@ import {
   isChronoQualifyingAction,
 } from '@domain/combat/tenkan-chat';
 import {
+  applySokaijuSupportValue,
+  checkHikanSurpriseBypass,
+} from '@domain/skiru/sokaiju-combat';
+import {
   canAffordSkiruRaise,
   expCostToRaiseSkiru,
   expCostForNextSkiruPoint,
@@ -145,6 +149,7 @@ import {
   wazaEffectDeclaresContact,
 } from '@domain/combat/waza-skiru-riders';
 import { extractLaunchSkiruId } from '@domain/combat/waza-launch';
+import { messageDeclaresSurpriseAttack } from '@domain/combat/waza-launch-extras';
 import { readShakkinDebts } from '@domain/styles/hado/debito-shakkin';
 import { applySutura } from '@domain/styles/naikan/hogo';
 import { applyKyoshinVibration, tickKyoshinEndOfTurn } from '@domain/styles/generiche/kyoshin';
@@ -1175,7 +1180,13 @@ export class CharacterService {
   async applyCombatHpDelta(
     characterId: string,
     delta: number,
-    options?: { hitTier?: number; attackerCharacterId?: string; contactHit?: boolean },
+    options?: {
+      hitTier?: number;
+      attackerCharacterId?: string;
+      contactHit?: boolean;
+      /** Curatore Jikai — bonus cure/buff sul valore positivo. */
+      supporterCharacterId?: string;
+    },
   ) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
@@ -1186,8 +1197,19 @@ export class CharacterService {
     const bundle = await this.getSkiruBundleForCharacter(characterId);
     if (!bundle) throw new Error('Personaggio non trovato');
 
+    let appliedDelta = delta;
+    if (appliedDelta > 0 && options?.supporterCharacterId) {
+      const supporterBundle = await this.getSkiruBundleForCharacter(options.supporterCharacterId);
+      if (supporterBundle) {
+        appliedDelta = applySokaijuSupportValue(
+          appliedDelta,
+          supporterBundle.skiruSheet as SkiruSheet,
+        );
+      }
+    }
+
     const hpMax = bundle.computed.hpMax ?? 0;
-    const next = applyHpDelta(char.currentHp, hpMax, delta);
+    const next = applyHpDelta(char.currentHp, hpMax, appliedDelta);
 
     const defenderMeta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
     let nextDefenderMeta: DoMechanicsUiMeta = { ...defenderMeta };
@@ -1936,7 +1958,19 @@ export class CharacterService {
           { actorContent: content },
         );
 
-        if (!didOffensiveActionLand(confrontation)) {
+        let landed = didOffensiveActionLand(confrontation);
+        if (
+          !landed &&
+          messageDeclaresSurpriseAttack(content) &&
+          checkHikanSurpriseBypass(actorSkiruSheet, defenderSheet, false)
+        ) {
+          landed = true;
+          automation.log.push(
+            `Hikan: sorpresa su ${effect.displayName} — schivata reattiva ignorata`,
+          );
+        }
+
+        if (!landed) {
           automation.log.push(
             `Lancio waza: colpo mancato su ${effect.displayName} (IR ${confrontation.actor.successIndex} vs ${confrontation.defender.successIndex})`,
           );

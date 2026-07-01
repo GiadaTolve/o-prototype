@@ -1014,4 +1014,5 @@ Oggi A è in `WazaInsertionTool` (~2600 LOC), B/C sono sparsi in domain TS — *
 | Giugno 2026 | Pulizia P1–P3 | Tag catalog 122, script seed deprecati, dist rimosso, Skiru adapter domain, ANALISI_WAZA rimosso |
 | Giugno 2026 | Richieste PG | Tab scheda (fuoco) + Gestione → Richieste; Madoshō/Ordine/Premi approvati staff |
 | Luglio 2026 | Sōkaiju + lancio waza | Tab scheda, `sokaiju-combat.ts`, Kongen/Gojū/Shōdō/Eiga in chat, `WazaLaunchPanel`, `/waza`, `[hit:1]` danno |
+| Luglio 2026 | Pannello lancio auto | Solo waza possedute; CS/Skiru automatici; tag extra Giurisdizione/Hōgō/Decreto; Hikan `[sorpresa:1]`; Jikai su cure |
 | Luglio 2026 | Mobile Cursor | `AGENTS.md`, `.cursor/environment.json`, worker My Machines |

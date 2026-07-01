@@ -16,6 +16,10 @@ import {
   getSkiruRider,
   wazaEffectDeclaresContact,
 } from './waza-skiru-riders'
+import {
+  buildWazaLaunchExtraTags,
+  type WazaLaunchExtras,
+} from './waza-launch-extras'
 
 export type WazaLaunchTargetSpec = {
   characterId?: string
@@ -34,6 +38,10 @@ export type WazaLaunchBuildOptions = {
   lastReceivedHitTier?: import('./tier').WazaTier | null
   yuragiParityNext?: boolean
   itoIrBonus?: number | null
+  /** Tag extra per waza avanzate (Giurisdizione, Hōgō, Decreto…). */
+  launchExtras?: WazaLaunchExtras | null
+  /** poolId waza — per tag extra. */
+  poolId?: string | null
 }
 
 /** Skiru investite utilizzabili come incanalamento (chi/jin/ten, escluso Sōkaiju). */
@@ -258,6 +266,12 @@ export function buildFullWazaLaunchLine(
   if (options?.declareHit) {
     parts.push('[hit:1]')
   }
+  const poolId =
+    options?.poolId ??
+    index.get(normalizeWazaLookupKey(wazaName.trim()))?.poolId ??
+    null
+  const extraTags = buildWazaLaunchExtraTags(poolId, options?.launchExtras ?? null, options?.target)
+  parts.push(...extraTags)
   return parts.join(' ')
 }
 
@@ -353,9 +367,16 @@ export function expandWazaSlashCommandInMessage(
       ? ({ nameQuery: parsed.target } satisfies WazaLaunchTargetSpec)
       : options?.target
 
+  const entry = index.get(normalizeWazaLookupKey(wazaName))
+  const autoSkiru =
+    options?.skiruSheet && entry
+      ? resolveAutoLaunchSkiruId(options.skiruSheet, entry)
+      : null
+
   const line = buildFullWazaLaunchLine(wazaName, index, {
     ...options,
-    declaredSkiruId: parsed.skiruId ?? options?.declaredSkiruId,
+    poolId: entry?.poolId ?? options?.poolId,
+    declaredSkiruId: parsed.skiruId ?? options?.declaredSkiruId ?? autoSkiru,
     csOverride: parsed.cs ?? options?.csOverride,
     target: target ?? undefined,
   })

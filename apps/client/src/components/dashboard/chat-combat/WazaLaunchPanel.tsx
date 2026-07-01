@@ -13,8 +13,10 @@ import {
   buildFullWazaLaunchLine,
   resolveAutoLaunchSkiruId,
 } from "@domain/combat/waza-launch";
+import { getWazaLaunchProfile } from "@domain/combat/waza-launch-extras";
 import { computeDeclaredActionIr, computeLaunchDamagePreview, extractMechanicTagsFromEffect, getSkiruRider } from "@domain/combat/waza-skiru-riders";
 import { getSkiruDef } from "@domain/skiru/catalog";
+import { getSokaijuRank } from "@domain/skiru/sokaiju-combat";
 import { useDoMechanicsSnapshot } from "@/hooks/useDoMechanicsSnapshot";
 import type { Presente } from "../types";
 
@@ -56,6 +58,11 @@ export function WazaLaunchPanel({
   const [selectedWazaId, setSelectedWazaId] = useState("");
   const [targetCharacterId, setTargetCharacterId] = useState("");
   const [declareHit, setDeclareHit] = useState(false);
+  const [surpriseAttack, setSurpriseAttack] = useState(false);
+  const [giurisdizioneCategory, setGiurisdizioneCategory] = useState<"proiettile" | "raggio">("proiettile");
+  const [suturaKind, setSuturaKind] = useState<"offensiva" | "stile" | "elementale">("offensiva");
+  const [decretoText, setDecretoText] = useState("");
+  const [meisakuLabel, setMeisakuLabel] = useState("");
   const [narrative, setNarrative] = useState("");
 
   const { extras: wazaResolveExtras } = useDoMechanicsSnapshot(currentCs ?? null, open);
@@ -140,6 +147,47 @@ export function WazaLaunchPanel({
   const wazaPreview = preview?.preview ?? null;
   const wazaEntry = preview?.entry;
 
+  const launchProfile = useMemo(
+    () => getWazaLaunchProfile(wazaEntry?.poolId),
+    [wazaEntry?.poolId],
+  );
+
+  const hikanRank = useMemo(
+    () => (skiruSheet ? getSokaijuRank(skiruSheet, "hikan") : 0),
+    [skiruSheet],
+  );
+
+  useEffect(() => {
+    setSurpriseAttack(false);
+    setGiurisdizioneCategory("proiettile");
+    setSuturaKind("offensiva");
+    setDecretoText("");
+    setMeisakuLabel("");
+    setDeclareHit(false);
+    setTargetCharacterId("");
+  }, [selectedWazaId]);
+
+  const launchExtras = useMemo(
+    () => ({
+      giurisdizioneCategory: launchProfile?.needsGiurisdizioneCategory
+        ? giurisdizioneCategory
+        : null,
+      suturaKind: launchProfile?.needsSuturaKind ? suturaKind : null,
+      surpriseAttack: surpriseAttack && hikanRank > 0,
+      decretoText: launchProfile?.needsDecreto ? decretoText : null,
+      meisakuLabel: launchProfile?.needsMeisakuLabel ? meisakuLabel : null,
+    }),
+    [
+      launchProfile,
+      giurisdizioneCategory,
+      suturaKind,
+      surpriseAttack,
+      hikanRank,
+      decretoText,
+      meisakuLabel,
+    ],
+  );
+
   const autoSkiruId = useMemo(() => {
     if (!skiruSheet || !wazaEntry || wazaPreview?.isPassive) return null;
     return resolveAutoLaunchSkiruId(skiruSheet, wazaEntry);
@@ -178,6 +226,8 @@ export function WazaLaunchPanel({
     return buildFullWazaLaunchLine(selectedWaza.name, WAZA_TAG_INDEX, {
       skiruSheet: skiruSheet ?? null,
       declaredSkiruId: autoSkiruId,
+      poolId: wazaEntry?.poolId ?? null,
+      launchExtras,
       target,
       declareHit,
       currentCs: currentCs ?? null,
@@ -188,6 +238,8 @@ export function WazaLaunchPanel({
     targetCharacterId,
     skiruSheet,
     autoSkiruId,
+    wazaEntry?.poolId,
+    launchExtras,
     declareHit,
     currentCs,
     wazaResolveExtras,
@@ -205,6 +257,8 @@ export function WazaLaunchPanel({
     const line = buildFullWazaLaunchLine(selectedWaza.name, WAZA_TAG_INDEX, {
       skiruSheet: skiruSheet ?? null,
       declaredSkiruId: autoSkiruId,
+      poolId: wazaEntry?.poolId ?? null,
+      launchExtras,
       target,
       declareHit,
       currentCs: currentCs ?? null,
@@ -216,6 +270,8 @@ export function WazaLaunchPanel({
     targetCharacterId,
     skiruSheet,
     autoSkiruId,
+    wazaEntry?.poolId,
+    launchExtras,
     declareHit,
     currentCs,
     wazaResolveExtras,
@@ -237,13 +293,20 @@ export function WazaLaunchPanel({
     setSelectedWazaId("");
     setTargetCharacterId("");
     setDeclareHit(false);
+    setSurpriseAttack(false);
   }, [buildLaunchBody, onSendMessage]);
+
+  const needsTarget = Boolean(launchProfile?.needsTarget);
+  const missingTarget = needsTarget && targetCharacterId === "";
+  const missingDecreto = Boolean(launchProfile?.needsDecreto && !decretoText.trim());
 
   const canLaunch =
     !!selectedWaza &&
     chatConnected &&
     !csInsufficient &&
-    effectiveCs > 0;
+    effectiveCs > 0 &&
+    !missingTarget &&
+    !missingDecreto;
 
   if (!characterId) {
     return (
@@ -350,9 +413,72 @@ export function WazaLaunchPanel({
             </div>
           )}
 
-          {wazaPreview && targetOptions.length > 0 && (
+          {wazaPreview && launchProfile?.needsGiurisdizioneCategory && (
             <label className="block">
-              <span className="text-[9px] uppercase text-gray-500 font-display">Bersaglio (opz.)</span>
+              <span className="text-[9px] uppercase text-gray-500 font-display">
+                Categoria Giurisdizione
+              </span>
+              <select
+                value={giurisdizioneCategory}
+                onChange={(e) =>
+                  setGiurisdizioneCategory(e.target.value as "proiettile" | "raggio")
+                }
+                className="mt-0.5 w-full rounded border border-[var(--accent-violet)]/40 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+              >
+                <option value="proiettile">Proiettile</option>
+                <option value="raggio">Raggio</option>
+              </select>
+            </label>
+          )}
+
+          {wazaPreview && launchProfile?.needsDecreto && (
+            <label className="block">
+              <span className="text-[9px] uppercase text-gray-500 font-display">Decreto</span>
+              <input
+                type="text"
+                value={decretoText}
+                onChange={(e) => setDecretoText(e.target.value)}
+                placeholder='Es. «Quella Proiettile torna al mittente»'
+                className="mt-0.5 w-full rounded border border-[var(--border-color)] bg-black/40 px-2 py-1 text-[11px] text-white"
+              />
+            </label>
+          )}
+
+          {wazaPreview && launchProfile?.needsSuturaKind && (
+            <label className="block">
+              <span className="text-[9px] uppercase text-gray-500 font-display">Tipo sutura</span>
+              <select
+                value={suturaKind}
+                onChange={(e) =>
+                  setSuturaKind(e.target.value as "offensiva" | "stile" | "elementale")
+                }
+                className="mt-0.5 w-full rounded border border-[var(--accent-violet)]/40 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+              >
+                <option value="offensiva">Offensiva</option>
+                <option value="stile">Di stile</option>
+                <option value="elementale">Elementale</option>
+              </select>
+            </label>
+          )}
+
+          {wazaPreview && launchProfile?.needsMeisakuLabel && (
+            <label className="block">
+              <span className="text-[9px] uppercase text-gray-500 font-display">Nome Opera Prima</span>
+              <input
+                type="text"
+                value={meisakuLabel}
+                onChange={(e) => setMeisakuLabel(e.target.value)}
+                placeholder="Nome del costrutto permanente"
+                className="mt-0.5 w-full rounded border border-[var(--border-color)] bg-black/40 px-2 py-1 text-[11px] text-white"
+              />
+            </label>
+          )}
+
+          {wazaPreview && (launchProfile?.needsTarget || targetOptions.length > 0) && (
+            <label className="block">
+              <span className="text-[9px] uppercase text-gray-500 font-display">
+                Bersaglio{launchProfile?.needsTarget ? " (richiesto)" : " (opz.)"}
+              </span>
               <select
                 value={targetCharacterId}
                 onChange={(e) => setTargetCharacterId(e.target.value)}
@@ -382,6 +508,24 @@ export function WazaLaunchPanel({
                 </span>
                 Aggiunge <code className="text-[8px]">[hit:1]</code> — il motore applica danno tier
                 (+ Kongen, rider Skiru) al bersaglio. Il Master può arbitrare in narrato.
+              </span>
+            </label>
+          )}
+
+          {wazaPreview && hikanRank > 0 && launchProfile?.allowsSurprise !== false && (
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={surpriseAttack}
+                onChange={(e) => setSurpriseAttack(e.target.checked)}
+                className="mt-0.5 accent-[var(--accent-violet)]"
+              />
+              <span className="text-[9px] text-[var(--accent-violet-light)] leading-relaxed">
+                <span className="uppercase tracking-wider text-gray-500 font-display block mb-0.5">
+                  Sorpresa (Hikan rank {hikanRank})
+                </span>
+                Aggiunge <code className="text-[8px]">[sorpresa:1]</code> — se il bersaglio non ti
+                percepiva, può ignorare la schivata reattiva (Hikan &gt; Chōkaku).
               </span>
             </label>
           )}

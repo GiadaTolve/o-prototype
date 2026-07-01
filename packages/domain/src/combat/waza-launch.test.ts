@@ -12,6 +12,7 @@ import {
   resolveAutoLaunchSkiruId,
   resolveRelevantLaunchSkiruCandidates,
 } from './waza-launch'
+import { buildWazaLaunchExtraTags, messageDeclaresSurpriseAttack } from './waza-launch-extras'
 import {
   computeDeclaredActionIr,
   computeLaunchDamagePreview,
@@ -152,6 +153,37 @@ describe('waza launch', () => {
     expect(candidates).toContain('seimitsu')
     expect(candidates).toContain('itten-kokan')
     expect(resolveAutoLaunchSkiruId(sheet, entry)).toBe('itten-kokan')
+  })
+
+  it('expandWazaSlashCommandInMessage auto-skiru senza --skiru', () => {
+    const expanded = expandWazaSlashCommandInMessage(
+      '/waza Shinya',
+      WAZA_TAG_INDEX,
+      { skiruSheet: { seimitsu: 6, kensei: 4, 'itten-kokan': 3, bakuryoku: 2 } },
+    )
+    expect(expanded).toMatch(/\[skiru:seimitsu\]/)
+    expect(expanded).toMatch(/\[cs:1\]/)
+  })
+
+  it('buildWazaLaunchExtraTags per Giurisdizione e Sorpresa', () => {
+    const tags = buildWazaLaunchExtraTags(
+      'kankatsu-giurisdizione',
+      { giurisdizioneCategory: 'raggio', surpriseAttack: true },
+      null,
+    )
+    expect(tags).toEqual(['[giurisdizione:raggio]', '[sorpresa:1]'])
+    expect(messageDeclaresSurpriseAttack(tags.join(' '))).toBe(true)
+  })
+
+  it('buildFullWazaLaunchLine appende tag extra Hōgō', () => {
+    const line = buildFullWazaLaunchLine('Hōgō (縫合) — Sutura dell\'Ego', WAZA_TAG_INDEX, {
+      skiruSheet: { kensei: 5, 'itten-kokan': 4 },
+      declaredSkiruId: 'kensei',
+      poolId: 'hogo-sutura-ego',
+      launchExtras: { suturaKind: 'offensiva' },
+      target: { nameQuery: 'Aoi' },
+    })
+    expect(line).toMatch(/\[sutura:Aoi:offensiva\]/)
   })
 
   it('resolveAutoLaunchSkiruId usa Skiru mentali su Ubaiito', () => {
