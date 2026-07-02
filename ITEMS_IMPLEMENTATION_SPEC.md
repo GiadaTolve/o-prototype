@@ -61,8 +61,9 @@ Pickup/add bloccato se `occupied + slotCost > cap`.
 
 Senza lista esterna: script `seed-item-catalog.ts` genera da domain:
 
-- 18 voci **junk** (`junk-*` → `junk_template_id`)
-- 15 voci **materiale** (`mat-*` → `material_id`)
+- 19 voci **junk** (`junk-*` → `junk_template_id`)
+- 16 voci **materiale** (`mat-*` → `material_id`, include `carburante`)
+- 35 voci **equip mercato** (`equip-*`, `consumable-kaen-bin` → `market-equipment-catalog.ts`)
 
 Blueprint/craft/consumabili: tool Shakai Kaikyū (blocco successivo).
 

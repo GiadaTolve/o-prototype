@@ -243,6 +243,16 @@ export const SOCIAL_BLUEPRINTS: readonly SocialBlueprintDef[] = [
     materials: [mat('legno', 1), mat('stoffa', 1)],
   },
   {
+    id: 'artigiano-kaen-bin',
+    tag: '#Artigiano',
+    classId: 'shokunin',
+    requiredSubclassId: 'shokunin-kajishi',
+    kind: 'project',
+    name: 'Kaen-bin (火炎瓶)',
+    description: 'Molotov artigianale. Area 2 m in fiamme per 2 turni.',
+    materials: [mat('reagente', 1), mat('stoffa', 1)],
+  },
+  {
     id: 'artigiano-arma-bianca',
     tag: '#Artigiano',
     classId: 'shokunin',

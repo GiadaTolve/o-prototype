@@ -1,5 +1,5 @@
 // apps/server/scripts/seed-item-catalog.ts
-// Seed catalogo oggetti Fase 1: junk (18) + materiali (15).
+// Seed catalogo oggetti: junk (19) + materiali (16) + equip mercato (35).
 // Uso: cd apps/server && bun run scripts/seed-item-catalog.ts
 
 import { config } from 'dotenv'
@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { ECONOMY_MATERIAL_LABELS, JUNK_ITEMS } from '@domain/economy/junklist'
+import { MARKET_EQUIPMENT_CATALOG } from '@domain/economy/market-equipment-catalog'
 import * as schema from '../src/db/schema'
 
 const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/oyasumi_2'
@@ -21,20 +22,21 @@ async function upsertCatalogItem(values: typeof schema.items.$inferInsert) {
   const existing = await db.query.items.findFirst({
     where: eq(schema.items.catalogKey, values.catalogKey),
   })
+  const fields = {
+    name: values.name,
+    description: values.description,
+    category: values.category,
+    junkTemplateId: values.junkTemplateId,
+    materialId: values.materialId,
+    inventorySlotCost: values.inventorySlotCost ?? 1,
+    isStackable: values.isStackable ?? true,
+    type: values.type ?? 'GENERIC',
+    integrityMax: values.integrityMax,
+    effectText: values.effectText,
+    blueprintId: values.blueprintId,
+  }
   if (existing) {
-    await db
-      .update(schema.items)
-      .set({
-        name: values.name,
-        description: values.description,
-        category: values.category,
-        junkTemplateId: values.junkTemplateId,
-        materialId: values.materialId,
-        inventorySlotCost: values.inventorySlotCost ?? 1,
-        isStackable: values.isStackable ?? true,
-        type: values.type ?? 'GENERIC',
-      })
-      .where(eq(schema.items.id, existing.id))
+    await db.update(schema.items).set(fields).where(eq(schema.items.id, existing.id))
     return existing.id
   }
   const [row] = await db.insert(schema.items).values(values).returning({ id: schema.items.id })
@@ -42,7 +44,7 @@ async function upsertCatalogItem(values: typeof schema.items.$inferInsert) {
 }
 
 async function main() {
-  console.log('Seed catalogo oggetti (junk + materiali)...')
+  console.log('Seed catalogo oggetti (junk + materiali + equip mercato)...')
 
   for (const junk of JUNK_ITEMS) {
     await upsertCatalogItem({
@@ -70,7 +72,28 @@ async function main() {
     })
   }
 
-  console.log(`OK — ${JUNK_ITEMS.length} junk + ${Object.keys(ECONOMY_MATERIAL_LABELS).length} materiali`)
+  for (const equip of MARKET_EQUIPMENT_CATALOG) {
+    await upsertCatalogItem({
+      catalogKey: equip.id,
+      name: equip.name,
+      description: equip.description,
+      category: equip.category,
+      integrityMax: equip.integrityMax,
+      effectText: equip.effectText,
+      inventorySlotCost: equip.inventorySlotCost,
+      isStackable: equip.isStackable,
+      type: equip.type,
+      blueprintId: equip.blueprintId,
+    })
+  }
+
+  const total =
+    JUNK_ITEMS.length +
+    Object.keys(ECONOMY_MATERIAL_LABELS).length +
+    MARKET_EQUIPMENT_CATALOG.length
+  console.log(
+    `OK — ${JUNK_ITEMS.length} junk + ${Object.keys(ECONOMY_MATERIAL_LABELS).length} materiali + ${MARKET_EQUIPMENT_CATALOG.length} equip = ${total} voci`,
+  )
   await client.end()
 }
 
