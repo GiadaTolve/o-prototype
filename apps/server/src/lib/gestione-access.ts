@@ -17,3 +17,19 @@ export async function userHasGestioneAccess(
   const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
   return icon === 'moderatore' || icon === 'admin' || icon === 'capo-shinigami'
 }
+
+/** Master/Mod/Shinigami — permesso comandi `/drop`. */
+export async function userCanExecuteDrop(
+  userId: string,
+  userRole?: string | null,
+  characterId?: string | null,
+): Promise<boolean> {
+  if (await userHasGestioneAccess(userId, userRole)) return true
+  if (!characterId) return false
+  const char = await db.query.characters.findFirst({
+    where: eq(characters.id, characterId),
+    columns: { uiMetadata: true },
+  })
+  const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
+  return icon === 'shinigami' || icon === 'capo-shinigami'
+}
