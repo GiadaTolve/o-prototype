@@ -1,4 +1,4 @@
-import { pgTable, text, integer, uuid, boolean, jsonb, timestamp, date, unique, foreignKey } from 'drizzle-orm/pg-core'
+import { pgTable, text, integer, uuid, boolean, jsonb, timestamp, date, unique, foreignKey, primaryKey } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
 // ==========================================
@@ -319,6 +319,29 @@ export const inventory = pgTable('inventory', {
 
   createdAt: timestamp('created_at').defaultNow()
 })
+
+/** Loot a terra in una scena/chat (modalità /drop @aterra). */
+export const sceneGroundLoot = pgTable('scene_ground_loot', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  roomId: text('room_id').notNull(),
+  catalogKey: text('catalog_key').notNull(),
+  quantity: integer('quantity').default(1).notNull(),
+  createdByCharacterId: uuid('created_by_character_id').references(() => characters.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+/** Anti-farming: drop da tabella per PG per giornata UTC. */
+export const dropTableDailyUsage = pgTable(
+  'drop_table_daily_usage',
+  {
+    characterId: uuid('character_id')
+      .references(() => characters.id)
+      .notNull(),
+    dayKey: text('day_key').notNull(),
+    count: integer('count').default(0).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.dayKey] })],
+)
 
 // ==========================================
 // 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC §7)

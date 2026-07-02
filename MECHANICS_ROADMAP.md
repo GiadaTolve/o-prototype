@@ -325,7 +325,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 
 | Sistema | Stato design | Domain |
 |---------|--------------|--------|
-| Drop in chat (`/drop`, `/prendi`, tabelle) | [x] spec | `drop-tables.ts` |
+| Drop in chat (`/drop`, `/prendi`, tabelle) | [x] server | `drop.service.ts`, `drop-commands.ts`, WS chat |
 | Schema oggetti (6 categorie, Integrità, Firma) | [~] Fase 1 | `types.ts`, `items.ts`, `ITEMS_IMPLEMENTATION_SPEC.md` |
 | Smantellamento (**solo Artigiano**, 10/giorno) | [x] spec | `dismantle.ts`, `junklist.ts` |
 | Mercato (Banco + Piazza 10%) | [x] spec | `market.ts` |

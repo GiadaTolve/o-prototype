@@ -40,7 +40,8 @@ export async function insertMessage(
   isGlobal: boolean = false,
   anonymousAnimalName?: string | null,
   anonymousColor?: string | null,
-  isMasterscreen: boolean = false
+  isMasterscreen: boolean = false,
+  skipExpGain: boolean = false,
 ) {
   // Anti-spam: verifica rate limit (solo per messaggi normali, non globali)
   if (!isGlobal && !canSendMessage(characterId)) {
@@ -73,7 +74,7 @@ export async function insertMessage(
   const totalChars = finalContent.length;
   const parsed = isGlobal ? { netChars: 0 } : parseNarrativeMessage(finalContent);
   let expGained = 0;
-  if (!isGlobal) {
+  if (!isGlobal && !skipExpGain) {
     if (containsResolvedDice(content) && isDiceRollMessage(content)) {
       expGained = 0;
     } else if (containsResolvedDice(content)) {

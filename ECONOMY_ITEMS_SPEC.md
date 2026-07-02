@@ -11,6 +11,8 @@ I quattro sistemi formano un anello: **drop** → junk → **smantellamento** (s
 
 ## 1) Drop in chat
 
+**Stato implementazione:** Fase 2 ✅ (server) — comandi in WebSocket chat, richiede Fase 1 oggetti (`seed-item-catalog`).
+
 **Chi genera:** solo Master/moderazione, mai i giocatori. Ricompensa materiale di scena (esplorazione, combattimento, ricerca).
 
 ### Comandi chat

@@ -8,6 +8,8 @@ import { jwtVerify } from "jose";
 import { JWT_SECRET } from "../../config";
 import { characterService } from "../characters/characters.service";
 import { insertMessage, isValidRoom } from "../chat/chat.service";
+import { userCanExecuteDrop } from "../../lib/gestione-access";
+import { executeDropCommand, executePrendiCommand } from "../drop/drop.service";
 import { getActiveQuestForRoom } from "../quests/quests.service";
 import { resolveDiceInMessage, messageNeedsDiceResolution } from "../../lib/dice-resolver";
 import { canAccessPrivateChatAsync } from "../housing/housing.service";
@@ -61,8 +63,19 @@ function broadcastPresence(roomId: string): void {
   }
 }
 
+export function broadcastInventoryUpdated(characterId: string): void {
+  const msg = JSON.stringify({ type: 'inventory_updated', characterId });
+  const ws = characterSockets.get(characterId);
+  if (ws) {
+    try {
+      ws.send(msg);
+    } catch (e) {
+      console.error('[realtime] inventory_updated send error:', e);
+    }
+  }
+}
+
 /**
- * Notifica che una chat è stata pulita (messaggi nascosti dalla vista, restano nel Log).
  * I client nella room refetchano la storia. clearedAt permette di ignorare chat_message "in ritardo".
  */
 export function broadcastChatCleared(roomId: string, clearedAt: string): void {
@@ -335,10 +348,94 @@ export const realtimeRoutes = new Elysia()
         if (cur !== roomId) return;
         const text = String(msg.text).trim();
         if (!text) return;
-        // Shadowban: messaggi non persistiti né trasmessi (OYASUMI_CONTEXT §6)
+        const locationTag = typeof msg.locationTag === "string" ? msg.locationTag : undefined;
         const senderUser = await characterService.getUserByCharacterId(user.characterId);
         if (senderUser?.banState === "SHADOW") return;
-        const locationTag = typeof msg.locationTag === "string" ? msg.locationTag : undefined;
+
+        const lowerCmd = text.toLowerCase();
+        if (lowerCmd.startsWith("/drop ") || lowerCmd.startsWith("/prendi ")) {
+          try {
+            if (lowerCmd.startsWith("/drop ")) {
+              const canDrop = await userCanExecuteDrop(
+                user.userId,
+                senderUser?.role,
+                user.characterId,
+              );
+              if (!canDrop) {
+                ws.send(
+                  JSON.stringify({
+                    type: "error",
+                    message: "Solo Master/Moderazione può usare /drop.",
+                  }),
+                );
+                return;
+              }
+            }
+
+            const roomParticipants = presence.getPresence(roomId).map((p) => ({
+              characterId: p.characterId,
+              name: p.name,
+            }));
+
+            const dropResult = lowerCmd.startsWith("/drop ")
+              ? await executeDropCommand(text, roomId, user.characterId, roomParticipants)
+              : await executePrendiCommand(text, roomId, user.characterId);
+
+            const participant =
+              roomId === PARADISE_ROOM ? await getParticipant(roomId, user.characterId) : null;
+            const { row } = await insertMessage(
+              roomId,
+              user.characterId,
+              dropResult.eventMessage,
+              locationTag,
+              false,
+              participant?.animalName ?? undefined,
+              participant?.color ?? undefined,
+              true,
+              true,
+            );
+
+            const char = await db.query.characters.findFirst({
+              where: eq(characters.id, user.characterId),
+              columns: { surname: true, miniAvatar: true, uiMetadata: true, order: true },
+            });
+            const isPartychat = roomId === PARTYCHAT_ROOM;
+            const displayName =
+              isPartychat && row.anonymousAnimalName ? row.anonymousAnimalName : user.name;
+            const payload = JSON.stringify({
+              type: "chat_message",
+              id: row.id,
+              zone: roomId,
+              characterId: user.characterId,
+              name: displayName,
+              surname: isPartychat ? undefined : char?.surname,
+              miniAvatar: isPartychat ? "/anonymous/mask.svg" : char?.miniAvatar ?? undefined,
+              anonymousColor: isPartychat ? row.anonymousColor ?? undefined : undefined,
+              content: row.content,
+              locationTag: row.locationTag ?? undefined,
+              createdAt: row.createdAt,
+              isMasterscreen: true,
+              isDropEvent: true,
+            });
+            const m = roomSockets.get(roomId);
+            if (m) for (const [, w] of m) try { w.send(payload); } catch (_) {}
+
+            for (const cid of dropResult.affectedCharacterIds) {
+              broadcastInventoryUpdated(cid);
+            }
+          } catch (e) {
+            try {
+              ws.send(
+                JSON.stringify({
+                  type: "error",
+                  message: e instanceof Error ? e.message : "Errore comando drop/prendi",
+                }),
+              );
+            } catch (_) {}
+          }
+          return;
+        }
+
         // Risolvi /d N e [dado:…] con stats del personaggio
         let resolvedText = text;
         if (messageNeedsDiceResolution(text)) {

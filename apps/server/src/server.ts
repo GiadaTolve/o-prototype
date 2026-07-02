@@ -23,6 +23,7 @@ import { housingRoutes } from './modules/housing/housing.routes'
 import { masterStatsRoutes } from './modules/master-stats/master-stats.routes'
 import { loreRoutes } from './modules/lore/lore.routes'
 import { inventoryRoutes } from './modules/inventory/inventory.routes'
+import { dropRoutes } from './modules/drop/drop.routes'
 import { shopRoutes } from './modules/shop/shop.routes'
 import { bancaRoutes } from './modules/banca/banca.routes'
 import { adminRoutes } from './modules/admin/admin.routes'
@@ -63,6 +64,7 @@ const app = new Elysia()
   .use(masterStatsRoutes)
   .use(loreRoutes)
   .use(inventoryRoutes)
+  .use(dropRoutes)
   .use(shopRoutes)
   .use(bancaRoutes)
   .use(adminRoutes)
