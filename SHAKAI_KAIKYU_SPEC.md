@@ -201,7 +201,7 @@ socialDailyBudget: { ... }        // HP curati, integrità, raccolta, ecc. — r
 - [ ] **3.3** — `PATCH /characters/me/social-subclass` — sblocco sottoclasse (spesa XP)
 - [ ] **3.4** — Endpoint moderazione — cambio classe / reset sottoclassi (staff only)
 - [ ] **3.5** — Validazione anti-cheat allineata a `validateSkiruSheet`
-- [ ] **3.6** — `GET /characters/:id/public` — classe visibile? (solo nome classe o nascosta)
+- [ ] **3.6** — `GET /characters/:id/public` — **non** espone `socialClass` (decisione: No)
 
 ### Fase 4 — UI scelta classe
 
@@ -270,7 +270,7 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 | **Q2** | **Valuta** sottoclassi (5 / 10 / 20 XP) | **A)** `experienceSpendable` condiviso |
 | **Q3** | **Più sentieri** (10 XP) sulla stessa classe | **Un solo sentiero** sbloccabile |
 | **Q4** | **Reset giornaliero** limiti | **A)** 00:00 UTC con stipendio REM |
-| **Q5** | **Visibilità** classe agli altri PG | **D)** macro-classe **pubblica** in scheda; **sottoclassi nascoste** |
+| **Q5** | **Visibilità** classe agli altri PG | **D→3.6:** macro-classe visibile **solo al proprio PG** in scheda; **non** in profilo pubblico; sottoclassi sempre nascoste agli altri |
 | **Q6** | **Costrutti materiali** (Artigiano) | **D)** ibrido: piccoli = item; grandi = entità campo separate da Genkai |
 | **Q7** | **Patti** (Politico) | **C)** solo narrativa — log chat + note Master; **zero automazione** DB |
 | **Q8** | **Ofuda** (Sacerdote) | **D)** item in inventario → attivazione crea **buff temporaneo** |
@@ -280,21 +280,15 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 | **Q12** | **Blueprint** contenuto | Seed da `SHAKAI_KAIKYU_TOOLS_BLUEPRINTS.md` + `blueprint-catalog.ts` |
 | **1.4** | Migrazione PG esistenti | **B)** solo nuovi PG / scelta esplicita UI; nessun auto-promote |
 | **1.5** | Tag `#Medico` in DB | **A)** derivato da `social_class`, mai salvato |
-| **3.6** | Classe in profilo pubblico | **Allineato Q5-D:** espone **nome macro-classe** (es. Medico); **non** elenco sottoclassi |
+| **3.6** | Classe in profilo pubblico | **No** — `GET /characters/:id/public` **non** espone `socialClass` |
 | **I1** | Cura Medico | **A)** applicazione HP **automatica** dal tool (entro budget) |
-| **I2** | Log azioni tool in chat | *Da chiudere* — vedi nota sotto |
+| **I2** | Log azioni tool in chat | **B)** **nessun** messaggio automatico; solo narrativa PG/Master; la tool aggiorna solo dati |
 | **I3** | Scadenza Patti | **A)** solo narrativa; nessuna scadenza automatica |
 | **I4** | Gate smantellamento | **A)** Skiru `shokunin ≥ 1` (fino a `social_class` DB) |
 
-### Nota I2 (log chat tool)
+## Domande aperte
 
-Quando un PG usa una tool di classe (cura, craft, patto, ofuda), il sistema deve pubblicare un messaggio automatico in chat?
-
-- **Proposta default:** sì per azioni **pubbliche** (Medico cura in scena, Artigiano ripara); no per leve **sotterranee** Politico (Kagenui) — solo nota Master.
-
-## Domande aperte (prima di Fase 1–3)
-
-*Nessuna bloccante — resta solo **I2** (log chat tool).*
+*Tutte le decisioni Fase 0 / economia E1–E8 sono chiuse (Luglio 2026).*
 
 ---
 
