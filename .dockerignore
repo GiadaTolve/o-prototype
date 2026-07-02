@@ -1,0 +1,11 @@
+**/node_modules
+**/.git
+**/.env
+**/.env.*
+**/.DS_Store
+**/.next
+**/dist
+**/build
+apps/client
+apps/tester
+apps/tester-api
