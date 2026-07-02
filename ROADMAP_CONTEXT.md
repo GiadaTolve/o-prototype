@@ -521,7 +521,7 @@ Ordine consigliato: **deploy → UI economia giocabile → fondamenta Shakai →
 
 | Step | Blocco | Cosa | Output | Dipendenze | Stato |
 |------|--------|------|--------|------------|-------|
-| **0** | Deploy | Merge PR stack economia (#3→#9), `db:push`, `seed-item-catalog`, smoke API | DB + server allineati | Mac con `DATABASE_URL` | 🔲 |
+| **0** | Deploy | Merge PR stack economia (#3→#9), `db:push`, `seed-item-catalog`, smoke API | DB + server allineati | Mac con `DATABASE_URL` | ✅ cloud + main |
 | **1** | UI economia | Scheda oggetto: categorie, integrità, firma, origine, `isBroken` | Inventario leggibile in gioco | Step 0 | 🔲 |
 | **2** | UI economia | Sezione `MARKET` + slot; refresh su WS `inventory_updated` | Oggetti in vendita visibili | Step 1 | 🔲 |
 | **3** | UI economia | Pannello **Mercato** (Banco vendi/compra + Piazza inserzioni/feed) | Loop junk→Rem giocabile | Step 0 | 🔲 |
@@ -544,4 +544,6 @@ Ordine consigliato: **deploy → UI economia giocabile → fondamenta Shakai →
 
 **PR aperti (economia + Shakai design):** #3–#9 — mergiare prima dello Step 0.
 
-**Step corrente consigliato:** **0** (deploy Mac) poi **1** (UI scheda oggetto).
+**Step corrente consigliato:** **1** (UI scheda oggetto).
+
+**Step 0 completato (2026-07-02):** PR #3–#9 mergiate in `main`; `db:push` + seed (34 voci catalogo); smoke `/health`, `/market/banco/catalog`, `/inventory/me`, `/drop/ground`.
