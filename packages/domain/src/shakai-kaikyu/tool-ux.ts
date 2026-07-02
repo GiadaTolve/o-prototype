@@ -21,7 +21,7 @@ export const SOCIAL_TOOL_UX: readonly SocialToolUxDef[] = [
     panelA: 'Riparazione',
     panelB: 'Costruzione',
     summary:
-      'Riparazione scala budget Integrità; Costruzione verifica materiali e crea oggetti con Integrità massima.',
+      'Riparazione scala budget Integrità; Costruzione verifica materiali; Smantellamento junk/rotti (solo Artigiano, max 10/giorno).',
   },
   {
     classId: 'ryoshi',
