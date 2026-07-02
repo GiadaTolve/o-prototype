@@ -308,8 +308,8 @@ export const inventory = pgTable('inventory', {
 
   quantity: integer('quantity').default(1),
   isEquipped: boolean('is_equipped').default(false), // Importante per applicare slotBonus
-  /** Dove si trova fisicamente l'oggetto: addosso/nel corpo (CARRY) o depositato in abitazione (HOUSING). */
-  location: text('location').$type<'CARRY' | 'HOUSING'>().default('CARRY').notNull(),
+  /** Dove si trova fisicamente l'oggetto: CARRY, HOUSING, o MARKET (inserzione Piazza). */
+  location: text('location').$type<'CARRY' | 'HOUSING' | 'MARKET'>().default('CARRY').notNull(),
 
   integrityCurrent: integer('integrity_current'),
   origin: text('origin').$type<'craftato' | 'droppato' | 'comprato'>(),
@@ -742,6 +742,39 @@ export const gameSessionParticipantsRelations = relations(gameSessionParticipant
   session: one(gameSessions, { fields: [gameSessionParticipants.sessionId], references: [gameSessions.id] }),
   character: one(characters, { fields: [gameSessionParticipants.characterId], references: [characters.id] }),
 }))
+
+// ==========================================
+// 10b. MERCATO (Banco + Piazza)
+// ==========================================
+
+export const marketListings = pgTable('market_listings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sellerCharacterId: uuid('seller_character_id')
+    .references(() => characters.id)
+    .notNull(),
+  inventoryId: uuid('inventory_id')
+    .references(() => inventory.id)
+    .notNull()
+    .unique(),
+  priceRem: integer('price_rem').notNull(),
+  itemName: text('item_name').notNull(),
+  itemCategory: text('item_category').notNull(),
+  craftedByName: text('crafted_by_name'),
+  quantity: integer('quantity').default(1).notNull(),
+  status: text('status').$type<'active' | 'sold' | 'cancelled'>().default('active').notNull(),
+  buyerCharacterId: uuid('buyer_character_id').references(() => characters.id),
+  soldAt: timestamp('sold_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const marketTradeFeed = pgTable('market_trade_feed', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  message: text('message').notNull(),
+  sellerCharacterId: uuid('seller_character_id').references(() => characters.id),
+  buyerCharacterId: uuid('buyer_character_id').references(() => characters.id),
+  grossRem: integer('gross_rem'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
 
 // ==========================================
 // 11. LEDGER (Registro Transazioni)
