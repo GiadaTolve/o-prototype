@@ -30,7 +30,7 @@ export type CharacterSummary = {
   keys?: number;
   /** Madoshō (clan) scelta in onboarding. */
   madoshoId?: string | null;
-  computed?: CharacterComputed & Record<string, number>;
+  computed?: CharacterComputed & Record<string, number | boolean>;
   /** Indici domini Skiru (Ten / Chi / Jin). */
   skiruDomains?: SkiruDomainIndex[];
   skiruSheet?: Record<string, number>;
@@ -44,6 +44,8 @@ export type CharacterSummary = {
   canAccessShinigami?: boolean;
   /** Solo Admin/Mod/Capo: vedere link Gestione. */
   canAccessGestione?: boolean;
+  /** Solo Moderatori/Admin/Fixer: vedere link Sviluppo. */
+  canAccessSviluppo?: boolean;
   /** Banner PG personalizzabile (URL immagine). */
   bannerPg?: string | null;
   /** Banner level-up in attesa (Skiru v3). */

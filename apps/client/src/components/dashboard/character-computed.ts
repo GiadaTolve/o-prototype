@@ -11,6 +11,9 @@ export type CharacterComputed = {
   jigokaMax?: number;
   reflexes?: number;
   velocity?: number;
+  csCurrent?: number;
+  csCapacity?: number;
+  csAccumulating?: boolean;
 };
 
 export type ResolvedSkiruStats = {
