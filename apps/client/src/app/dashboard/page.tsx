@@ -540,6 +540,7 @@ export default function DashboardPage() {
           char={char}
           onOpenScheda={() => char?.id && openCharacterSheet(char.id)}
           onOpenShop={() => open("shop")}
+          onOpenMercato={() => open("mercato")}
           onOpenSms={() => open("sms")}
           onOpenBanca={() => open("banca")}
           onOpenWaza={() => open("waza")}
@@ -579,7 +580,15 @@ export default function DashboardPage() {
           windowId={openWindow}
           onLower={lower}
           onClose={close}
-          char={openWindow === "scheda" || openWindow === "shop" || openWindow === "waza" ? char : undefined}
+          char={
+            openWindow === "scheda" ||
+            openWindow === "shop" ||
+            openWindow === "mercato" ||
+            openWindow === "banca" ||
+            openWindow === "waza"
+              ? char
+              : undefined
+          }
           presenti={openWindow === "presenti" ? presenti : undefined}
           presentiAreMock={openWindow === "presenti" ? presentiAreMock : undefined}
           profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}

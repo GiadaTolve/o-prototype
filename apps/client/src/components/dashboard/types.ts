@@ -1,4 +1,4 @@
-export type WindowId = "scheda" | "presenti" | "shop" | "sms" | "fetch" | "banca" | "housing" | "profilo" | "waza" | "ordine" | "bestiario" | "notifiche" | "spazioEventi";
+export type WindowId = "scheda" | "presenti" | "shop" | "sms" | "fetch" | "banca" | "mercato" | "housing" | "profilo" | "waza" | "ordine" | "bestiario" | "notifiche" | "spazioEventi";
 
 import type { PendingLevelUpBanner } from "@domain/progression/level-up";
 import type { CharacterComputed } from "./character-computed";
@@ -59,6 +59,7 @@ export const WINDOW_LABELS: Record<WindowId, string> = {
   sms: "SMS",
   fetch: "Assegnazioni",
   banca: "Banca",
+  mercato: "Mercato",
   housing: "Housing",
   profilo: "Profilo Personaggio",
   waza: "Skiru & Waza",

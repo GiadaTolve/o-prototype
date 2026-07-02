@@ -12,6 +12,7 @@ const DOCK_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   sms: icons.message,
   fetch: icons.trophy,
   banca: icons.banca,
+  mercato: icons.mercato,
   housing: icons.home,
   profilo: icons.user,
   waza: icons.waza,

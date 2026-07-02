@@ -228,6 +228,7 @@ export function DashboardMobileLayout({
           <div className="p-4 grid grid-cols-2 gap-3">
             {[
               { id: "shop" as WindowId, label: "Shop", icon: icons.shop },
+              { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },
               { id: "banca" as WindowId, label: "Banca", icon: icons.banca },
               { id: "waza" as WindowId, label: "Skiru & Waza", icon: icons.waza },
               { id: "ordine" as WindowId, label: "Ordine", icon: icons.ordine },
@@ -284,7 +285,15 @@ export function DashboardMobileLayout({
             windowId={openWindow}
             onLower={(id) => onClose(id)}
             onClose={(id) => onClose(id)}
-            char={openWindow === "scheda" || openWindow === "shop" || openWindow === "waza" ? char : undefined}
+            char={
+              openWindow === "scheda" ||
+              openWindow === "shop" ||
+              openWindow === "mercato" ||
+              openWindow === "banca" ||
+              openWindow === "waza"
+                ? char
+                : undefined
+            }
             presenti={openWindow === "presenti" ? presenti : undefined}
             profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}
             smsTargetCharacterId={openWindow === "sms" ? smsTargetCharacterId : undefined}

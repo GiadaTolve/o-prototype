@@ -16,6 +16,7 @@ import { SchedaSkiruPage } from "./SchedaSkiruPage";
 import { SchedaWazaPage } from "./SchedaWazaPage";
 import { SchedaRichiestePage } from "./SchedaRichiestePage";
 import { SkiruWazaPanel } from "./SkiruWazaPanel";
+import { MercatoPanel } from "./mercato/MercatoPanel";
 import { resolveCharacterComputed, formatMovementMeters } from "./character-computed";
 import { getMadoshoDef } from "@domain/progression/madosho";
 import { resolveLevelFromExp, presentiNameClass } from "@/lib/leveling";
@@ -48,6 +49,7 @@ const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   sms: icons.message,
   fetch: icons.trophy,
   banca: icons.banca,
+  mercato: icons.mercato,
   housing: icons.home,
   profilo: icons.user,
   waza: icons.waza,
@@ -86,7 +88,7 @@ type Props = {
 };
 
 /** Finestre con dimensione unificata: 80% della zona centrale */
-const UNIFIED_PANEL_IDS = ["sms", "banca", "shop", "ordine", "bestiario", "notifiche", "spazioEventi", "fetch"] as const;
+const UNIFIED_PANEL_IDS = ["sms", "banca", "shop", "mercato", "ordine", "bestiario", "notifiche", "spazioEventi", "fetch"] as const;
 
 /** Stesse dimensioni della colonna centrale (chat / main area) */
 const MAIN_AREA_PANEL_IDS = ["scheda", "profilo", "waza"] as const;
@@ -161,6 +163,7 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
           {windowId === "fetch" && <FetchContent />}
           {windowId === "sms" && <SmsContent onUnreadChange={onUnreadChange} initialTargetCharacterId={smsTargetCharacterId ?? undefined} />}
           {windowId === "banca" && <BancaContent char={char} onCharUpdate={onCharUpdate} />}
+          {windowId === "mercato" && <MercatoPanel char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "housing" && <HousingContent char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "waza" && (
             <div className="h-full">

@@ -12,7 +12,9 @@
 | 3 Smantellamento | ✅ | `POST /artigiano/me/dismantle` (solo Artigiano) |
 | 4 Mercato | ✅ | `GET/POST /market/banco/*`, `GET/POST/DELETE /market/piazza/*` |
 
-**Fuori scope (prossimo blocco):** UI client (scheda oggetto, pannello mercato, tool Artigiano), baratto Piazza, craft da blueprint.
+**Fuori scope (prossimo blocco):** tool Artigiano smantellamento UI, baratto Piazza, craft da blueprint.
+
+**UI Mercato (Step 3):** finestra `mercato` nel dashboard — Il Banco (vendi/compra) + La Piazza (inserzioni, feed).
 
 ---
 
@@ -148,4 +150,5 @@ bun run seed-item-catalog   # dalla root o apps/server
 - [x] Fase 4 — mercato Banco + Piazza
 - [x] Test domain `packages/domain/src/economy/*.test.ts`
 - [ ] `db:push` su ambiente con DATABASE_URL (Mac)
-- [ ] UI client (scheda oggetto, mercato, tool Artigiano)
+- [ ] UI client (scheda oggetto, tool Artigiano)
+- [x] UI client — pannello Mercato (Banco + Piazza)
