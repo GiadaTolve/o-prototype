@@ -51,6 +51,14 @@ export function canUnlockSocialSubclass(
     }
   }
 
+  if (def.role === 'path') {
+    const paths = getPathsForClass(def.classId)
+    const otherPathUnlocked = paths.some((p) => p.id !== subclassId && hasUnlocked(sheet, p.id))
+    if (otherPathUnlocked) {
+      errors.push('È consentito un solo sentiero per classe.')
+    }
+  }
+
   if (def.role === 'capstone') {
     const paths = getPathsForClass(def.classId)
     const hasPath = paths.some((p) => hasUnlocked(sheet, p.id))

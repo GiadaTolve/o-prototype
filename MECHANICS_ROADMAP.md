@@ -276,7 +276,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 
 | Fase | Contenuto | Stato |
 |------|-----------|-------|
-| **0** | Decisioni design (Skiru vs classe, valuta XP, reset giornaliero) | [~] |
+| **0** | Decisioni design (Skiru gate, valuta XP, sentiero unico, reset UTC) | [x] |
 | **1** | DB: `social_class`, `social_subclass_sheet`, `social_daily_usage` | [ ] |
 | **2** | Domain: catalogo ✅, prerequisiti ✅, budget, assign/unlock | [~] |
 | **3** | API: scelta classe, sblocco sottoclasse, moderazione | [ ] |
@@ -291,15 +291,14 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 - [x] Spec regole + 5 classi + 25 sottoclassi (`SHAKAI_KAIKYU_SPEC.md`)
 - [x] `@domain/shakai-kaikyu/catalog.ts` — limiti numerici, trade-off testuali
 - [x] `@domain/shakai-kaikyu/progression.ts` — `canUnlockSocialSubclass()`, `resolveDailyLimitFromSubclasses()`
-- [x] 5 voci Skiru base (`ishi` … `shisai`) — solo lore, **non ancora** collegate a tool
+- [x] 5 voci Skiru gate (`ishi` … `shisai`) — max 1 pt, mutuamente esclusive; sottoclassi = albero XP parallelo
 
 **Prossimi step consigliati (ordine)**
-1. Rispondere **Q1–Q4** in `SHAKAI_KAIKYU_SPEC.md` (Skiru, valuta, sentieri, reset)
-2. Schema DB + migrazione (Fase 1)
-3. `POST /characters/me/social-class` + UI scelta (Fasi 3–4)
-4. Albero sottoclassi + spesa XP (Fasi 2–4)
-5. Prima tool: **Medico** (Fase 5.1–5.2) con budget HP giornaliero
-6. Blueprint minimo `#Medico` (Fase 6.2)
+1. Schema DB + migrazione (Fase 1)
+2. `POST /characters/me/social-class` + UI scelta (Fasi 3–4)
+3. Albero sottoclassi + spesa XP (Fasi 2–4)
+4. Prima tool: **Medico** (Fase 5.1–5.2) con budget HP giornaliero — **serve UX tool da design**
+5. Blueprint minimo `#Medico` (Fase 6.2)
 
 **Tool per classe (quando pronte)**
 
@@ -311,7 +310,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 | `#Politico` | Seijika | Patti + richiamo favori (leve) |
 | `#Sacerdote` | Shisai | Ofuda + interpretazione (riti) |
 
-**Domande aperte:** vedi tabella Q1–Q12 in `SHAKAI_KAIKYU_SPEC.md`.
+**Domande aperte:** Q5–Q12 in `SHAKAI_KAIKYU_SPEC.md` (Q1–Q4 risolte).
 
 #### Seishin Tanren — Disciplina Mentale
 - [x] Fudōshin (Fermezza)
@@ -870,7 +869,7 @@ Legenda sotto-sezioni:
 | **Oni no Mori** | `onimori-waza-pool.ts` | **7** | stesso sync | classifier famiglia | Espansione regionale |
 | **Skiru** | `packages/domain/src/skiru/catalog.ts` | **41** | jsonb `skiru_sheet` | via IR (`waza-resolve`) | Tester `skiruPool.ts` **non allineato** (4 voci) |
 
-**Pool totale waza:** `WAZA_POOL` = **122** (112 + 10). **Tag catalog generato:** **112** → drift da rigenerare.
+**Pool totale waza:** `WAZA_POOL` = **161** (Dō + Generiche + Ordine + Onimori). **Madoshō** separato: **66** (`sync-madosho-manual`).
 
 ## Come sono definiti gli effetti oggi (4 strati)
 

@@ -54,8 +54,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     domain: 'ten',
     branchId: 'shakai-kaikyu',
     description:
-      'Colui che studia il corpo e le sue afflizioni. Specializzato nella cura, nella diagnosi e nella conoscenza anatomica.',
+      'Colui che studia il corpo e le sue afflizioni. Un punto sblocca la classe sociale Medico (#Medico) e la tool dedicata; non è potenziabile oltre.',
     kind: 'standard',
+    maxPoints: 1,
   },
   {
     id: 'shokunin',
@@ -65,8 +66,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     domain: 'ten',
     branchId: 'shakai-kaikyu',
     description:
-      'Maestro della creazione e della lavorazione. Eccelle nella costruzione, riparazione e modifica di oggetti e strumenti.',
+      'Maestro della creazione e della lavorazione. Un punto sblocca la classe sociale Artigiano (#Artigiano) e la tool dedicata; non è potenziabile oltre.',
     kind: 'standard',
+    maxPoints: 1,
   },
   {
     id: 'ryoshi',
@@ -76,8 +78,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     domain: 'ten',
     branchId: 'shakai-kaikyu',
     description:
-      'Esperto della natura e della sopravvivenza. Traccia prede, raccoglie risorse e si orienta negli ambienti più ostili.',
+      'Esperto della natura e della sopravvivenza. Un punto sblocca la classe sociale Cacciatore (#Cacciatore) e la tool dedicata; non è potenziabile oltre.',
     kind: 'standard',
+    maxPoints: 1,
   },
   {
     id: 'seijika',
@@ -87,8 +90,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     domain: 'ten',
     branchId: 'shakai-kaikyu',
     description:
-      'Abile nelle relazioni sociali e nelle dinamiche di potere. Sa influenzare, negoziare e muoversi tra alleanze e conflitti.',
+      'Abile nelle relazioni sociali e nelle dinamiche di potere. Un punto sblocca la classe sociale Politico (#Politico) e la tool dedicata; non è potenziabile oltre.',
     kind: 'standard',
+    maxPoints: 1,
   },
   {
     id: 'shisai',
@@ -98,8 +102,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     domain: 'ten',
     branchId: 'shakai-kaikyu',
     description:
-      'Custode di tradizioni, culti e pratiche spirituali. Interpreta simboli, rituali e fenomeni trascendenti.',
+      'Custode di tradizioni, culti e pratiche spirituali. Un punto sblocca la classe sociale Sacerdote (#Sacerdote) e la tool dedicata; non è potenziabile oltre.',
     kind: 'standard',
+    maxPoints: 1,
   },
 
   // ─── Ten · Seishin Tanren ───
