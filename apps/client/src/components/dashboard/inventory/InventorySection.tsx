@@ -12,6 +12,11 @@ function isLegacyEquipType(type: string): boolean {
   return type === 'WEAPON' || type === 'ARMOR' || type === 'ACCESSORY'
 }
 
+function isEquippableRow(inv: InventoryItemRow): boolean {
+  if (inv.item.type === 'BAG' || isLegacyEquipType(inv.item.type)) return true
+  return inv.economy?.category === 'equipaggiamento'
+}
+
 function normalizeInventory(data: CharacterInventoryResponse): CharacterInventoryResponse {
   const items = data.items ?? []
   return {
@@ -28,12 +33,14 @@ export function InventorySection({ characterId }: { characterId?: string }) {
   const [loading, setLoading] = useState(true)
   const [detailItem, setDetailItem] = useState<InventoryItemRow | null>(null)
   const [isMyCharacter, setIsMyCharacter] = useState(false)
+  const [canStaffInventory, setCanStaffInventory] = useState(false)
 
   const reloadInventory = useCallback(async () => {
     if (!characterId) return null
-    const myChar = (await api.get('/characters/me')) as { id?: string }
+    const myChar = (await api.get('/characters/me')) as { id?: string; canAccessGestione?: boolean }
     const mine = myChar?.id === characterId
     setIsMyCharacter(mine)
+    setCanStaffInventory(Boolean(myChar?.canAccessGestione))
     const data = mine
       ? ((await api.get('/inventory/me')) as CharacterInventoryResponse)
       : ((await api.get(`/inventory/character/${characterId}`)) as CharacterInventoryResponse)
@@ -104,7 +111,7 @@ export function InventorySection({ characterId }: { characterId?: string }) {
   const housingItems = inventory.housingItems ?? []
   const marketItems = inventory.marketItems ?? []
 
-  const equippedGear = carryItems.filter((inv) => inv.isEquipped && isLegacyEquipType(inv.item.type))
+  const equippedGear = carryItems.filter((inv) => inv.isEquipped && isEquippableRow(inv))
   const equippedBag = carryItems.find((inv) => inv.isEquipped && inv.item.type === 'BAG')
   const carryStorageItems = carryItems.filter((inv) => !inv.isEquipped)
 
@@ -112,7 +119,7 @@ export function InventorySection({ characterId }: { characterId?: string }) {
     ? {
         onSelect: setDetailItem,
         onToggleEquip: toggleEquip,
-        onRemove: removeItem,
+        ...(canStaffInventory ? { onRemove: removeItem } : {}),
         onMoveToHousing: moveToHousing,
         onMoveToCarry: moveToCarry,
       }

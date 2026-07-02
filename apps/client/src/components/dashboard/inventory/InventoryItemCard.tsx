@@ -21,6 +21,11 @@ function isLegacyEquipType(type: string): boolean {
   return type === 'WEAPON' || type === 'ARMOR' || type === 'ACCESSORY'
 }
 
+function canShowEquipButton(inv: InventoryItemRow): boolean {
+  if (inv.item.type === 'BAG' || isLegacyEquipType(inv.item.type)) return true
+  return inv.economy?.category === 'equipaggiamento'
+}
+
 export function InventoryItemCard({
   inv,
   showEquipButton = true,
@@ -112,9 +117,7 @@ export function InventoryItemCard({
 
         {!readOnly && (
           <div className="flex flex-col gap-1.5 shrink-0">
-            {showEquipButton &&
-              (inv.item.type === 'BAG' || isLegacyEquipType(inv.item.type)) &&
-              onToggleEquip && (
+            {showEquipButton && canShowEquipButton(inv) && onToggleEquip && (
                 <button
                   type="button"
                   onClick={() => onToggleEquip(inv.id)}
