@@ -50,7 +50,7 @@ export interface SocialSubclassDef {
 /** Sottoclassi sbloccate su un personaggio. */
 export type SocialSubclassSheet = Readonly<Record<string, boolean>>
 
-/** Materiali da crafting / junklist (Shakai Kaikyū). */
+/** Materiali da crafting / junklist (alias di `@domain/economy`). */
 export type SocialMaterialId =
   | 'rottame_metallico'
   | 'componente_meccanico'

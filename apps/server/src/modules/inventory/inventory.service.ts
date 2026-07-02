@@ -1,6 +1,16 @@
 import { eq, and, desc, sql, inArray } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import { inventory, items, characters, characterHousing, housingTypes, housingGuests } from '../../db/schema'
+import {
+  canFitInSlots,
+  canStackCategory,
+  getInventorySlotCost,
+  isItemBroken,
+  sumInventorySlotUsage,
+  usesIntegrity,
+} from '@domain/economy/items'
+import { isMarketableCategory } from '@domain/economy/market'
+import type { ItemCategory, ItemOrigin } from '@domain/economy/types'
 
 /**
  * Calcola gli slot totali disponibili per un personaggio.
@@ -63,6 +73,50 @@ export async function calculateTotalSlots(characterId: string): Promise<{
   }
 }
 
+type ItemRow = typeof items.$inferSelect
+type InventoryRow = typeof inventory.$inferSelect
+
+function mapItemEconomyFields(item: ItemRow, inv: InventoryRow) {
+  const category = (item.category ?? 'junk') as ItemCategory
+  const integrityMax = item.integrityMax ?? null
+  const integrityCurrent = inv.integrityCurrent ?? integrityMax
+  return {
+    category,
+    integrityCurrent,
+    integrityMax,
+    effectText: item.effectText ?? null,
+    inventorySlotCost: getInventorySlotCost(item.inventorySlotCost),
+    junkTemplateId: item.junkTemplateId ?? null,
+    materialId: item.materialId ?? null,
+    blueprintId: inv.blueprintId ?? item.blueprintId ?? null,
+    origin: inv.origin ?? null,
+    craftedByName: inv.craftedByName ?? null,
+    isStackable: item.isStackable ?? true,
+    isBroken: usesIntegrity(category)
+      ? isItemBroken(integrityCurrent, integrityMax)
+      : false,
+    isMarketable: isMarketableCategory(category),
+  }
+}
+
+async function getCarrySlotUsage(characterId: string): Promise<{
+  rows: Array<{ inventorySlotCost: number; location: 'CARRY' | 'HOUSING' }>
+  occupied: number
+  capacity: number
+}> {
+  const slotInfo = await calculateTotalSlots(characterId)
+  const invRows = await db.query.inventory.findMany({
+    where: eq(inventory.characterId, characterId),
+    with: { item: true },
+  })
+  const rows = invRows.map((r) => ({
+    inventorySlotCost: getInventorySlotCost(r.item.inventorySlotCost),
+    location: r.location as 'CARRY' | 'HOUSING',
+  }))
+  const occupied = sumInventorySlotUsage(rows, 'CARRY')
+  return { rows, occupied, capacity: slotInfo.totalSlots }
+}
+
 /**
  * Ottiene l'inventario completo di un personaggio con informazioni sugli slot.
  */
@@ -87,13 +141,26 @@ export async function getCharacterInventory(characterId: string) {
         inventory_location: inventory.location,
         inventory_createdAt: inventory.createdAt,
         item_id: items.id,
+        item_catalogKey: items.catalogKey,
         item_name: items.name,
         item_description: items.description,
         item_iconUrl: items.iconUrl,
         item_type: items.type,
         item_slotsBonus: items.slotsBonus,
         item_price: items.price,
+        item_category: items.category,
+        item_integrityMax: items.integrityMax,
+        item_effectText: items.effectText,
+        item_inventorySlotCost: items.inventorySlotCost,
+        item_junkTemplateId: items.junkTemplateId,
+        item_materialId: items.materialId,
+        item_blueprintId: items.blueprintId,
+        item_isStackable: items.isStackable,
         item_createdAt: items.createdAt,
+        inv_integrityCurrent: inventory.integrityCurrent,
+        inv_origin: inventory.origin,
+        inv_craftedByName: inventory.craftedByName,
+        inv_blueprintId: inventory.blueprintId,
       })
       .from(inventory)
       .leftJoin(items, eq(inventory.itemId, items.id))
@@ -102,16 +169,9 @@ export async function getCharacterInventory(characterId: string) {
 
     // Mappa i risultati nel formato atteso
     const mappedItems = invRows
-      .filter((row) => row.item_id !== null) // Filtra solo righe con item valido
-      .map((row) => ({
-        id: row.inventory_id!,
-        characterId: row.inventory_characterId!,
-        itemId: row.inventory_itemId!,
-        quantity: row.inventory_quantity!,
-        isEquipped: row.inventory_isEquipped!,
-        location: row.inventory_location as 'CARRY' | 'HOUSING',
-        createdAt: row.inventory_createdAt!,
-        item: {
+      .filter((row) => row.item_id !== null)
+      .map((row) => {
+        const itemRow = {
           id: row.item_id!,
           name: row.item_name!,
           description: row.item_description,
@@ -120,21 +180,73 @@ export async function getCharacterInventory(characterId: string) {
           slotsBonus: row.item_slotsBonus!,
           price: row.item_price,
           createdAt: row.item_createdAt!,
-        },
-      }))
+          catalogKey: row.item_catalogKey ?? null,
+          category: row.item_category ?? 'junk',
+          integrityMax: row.item_integrityMax,
+          effectText: row.item_effectText,
+          inventorySlotCost: row.item_inventorySlotCost ?? 1,
+          junkTemplateId: row.item_junkTemplateId,
+          materialId: row.item_materialId,
+          blueprintId: row.item_blueprintId,
+          isStackable: row.item_isStackable ?? true,
+        }
+        const invRow = {
+          id: row.inventory_id!,
+          characterId: row.inventory_characterId!,
+          itemId: row.inventory_itemId!,
+          quantity: row.inventory_quantity!,
+          isEquipped: row.inventory_isEquipped!,
+          location: row.inventory_location as 'CARRY' | 'HOUSING',
+          createdAt: row.inventory_createdAt!,
+          integrityCurrent: row.inv_integrityCurrent,
+          origin: row.inv_origin,
+          craftedByCharacterId: null,
+          craftedByName: row.inv_craftedByName,
+          blueprintId: row.inv_blueprintId,
+        }
+        return {
+          id: invRow.id,
+          characterId: invRow.characterId,
+          itemId: invRow.itemId,
+          quantity: invRow.quantity,
+          isEquipped: invRow.isEquipped,
+          location: invRow.location,
+          createdAt: invRow.createdAt,
+          item: {
+            id: itemRow.id,
+            name: itemRow.name,
+            description: itemRow.description,
+            iconUrl: itemRow.iconUrl,
+            type: itemRow.type,
+            slotsBonus: itemRow.slotsBonus,
+            price: itemRow.price,
+            createdAt: itemRow.createdAt,
+          },
+          economy: mapItemEconomyFields(itemRow as ItemRow, invRow as InventoryRow),
+        }
+      })
 
     const slotInfo = await calculateTotalSlots(characterId)
 
-    // Separa oggetti portati addosso e oggetti in abitazione
     const carryItems = mappedItems.filter((i) => i.location === 'CARRY')
     const housingItems = mappedItems.filter((i) => i.location === 'HOUSING')
 
-    // Conta slot occupati per l'inventario "addosso"
-    const occupiedCarrySlots = carryItems.length
+    const occupiedCarrySlots = sumInventorySlotUsage(
+      carryItems.map((i) => ({
+        inventorySlotCost: i.economy.inventorySlotCost,
+        location: i.location,
+      })),
+      'CARRY',
+    )
     const availableCarrySlots = slotInfo.totalSlots - occupiedCarrySlots
 
-    // Conteggio per inventario casa (usa housingSlots come capacità massimo)
-    const occupiedHousingSlots = housingItems.length
+    const occupiedHousingSlots = sumInventorySlotUsage(
+      housingItems.map((i) => ({
+        inventorySlotCost: i.economy.inventorySlotCost,
+        location: i.location,
+      })),
+      'HOUSING',
+    )
     const availableHousingSlots = Math.max(0, (slotInfo.housingSlots || 0) - occupiedHousingSlots)
 
     return {
@@ -160,7 +272,15 @@ export async function getCharacterInventory(characterId: string) {
 export async function addItemToInventory(
   characterId: string,
   itemId: string,
-  quantity: number = 1
+  quantity: number = 1,
+  options?: {
+    origin?: ItemOrigin
+    craftedByCharacterId?: string
+    craftedByName?: string
+    blueprintId?: string
+    integrityCurrent?: number
+    location?: 'CARRY' | 'HOUSING'
+  },
 ) {
   const char = await db.query.characters.findFirst({
     where: eq(characters.id, characterId),
@@ -178,28 +298,73 @@ export async function addItemToInventory(
     throw new Error('Oggetto non trovato')
   }
 
-  // Verifica spazio disponibile
-  const slotInfo = await calculateTotalSlots(characterId)
-  const currentItems = await db.query.inventory.findMany({
-    where: eq(inventory.characterId, characterId),
-  })
+  const location = options?.location ?? 'CARRY'
+  const slotCost = getInventorySlotCost(item.inventorySlotCost)
+  const category = (item.category ?? 'junk') as ItemCategory
 
-  const occupiedSlots = currentItems.length
-  const availableSlots = slotInfo.totalSlots - occupiedSlots
-
-  if (availableSlots < 1) {
-    throw new Error('Inventario pieno. Libera spazio prima di aggiungere oggetti.')
+  if (location === 'CARRY') {
+    const { occupied, capacity } = await getCarrySlotUsage(characterId)
+    if (!canFitInSlots(occupied, capacity, slotCost)) {
+      throw new Error('Inventario pieno. Libera spazio prima di aggiungere oggetti.')
+    }
   }
 
-  // Aggiungi l'oggetto
-  const [newInv] = await db.insert(inventory).values({
-    characterId,
-    itemId,
-    quantity,
-    isEquipped: false,
-  }).returning()
+  if (canStackCategory(category) && !usesIntegrity(category)) {
+    const existing = await db.query.inventory.findFirst({
+      where: and(
+        eq(inventory.characterId, characterId),
+        eq(inventory.itemId, itemId),
+        eq(inventory.location, location),
+      ),
+    })
+    if (existing) {
+      const [updated] = await db
+        .update(inventory)
+        .set({ quantity: (existing.quantity ?? 0) + quantity })
+        .where(eq(inventory.id, existing.id))
+        .returning()
+      return updated
+    }
+  }
+
+  const integrityMax = item.integrityMax ?? null
+  const integrityCurrent =
+    options?.integrityCurrent ??
+    (usesIntegrity(category) ? integrityMax : null)
+
+  const [newInv] = await db
+    .insert(inventory)
+    .values({
+      characterId,
+      itemId,
+      quantity: usesIntegrity(category) ? 1 : quantity,
+      isEquipped: false,
+      location,
+      integrityCurrent,
+      origin: options?.origin,
+      craftedByCharacterId: options?.craftedByCharacterId,
+      craftedByName: options?.craftedByName,
+      blueprintId: options?.blueprintId,
+    })
+    .returning()
 
   return newInv
+}
+
+/** Aggiunge per catalog_key (drop/mod). */
+export async function addItemByCatalogKey(
+  characterId: string,
+  catalogKey: string,
+  quantity: number = 1,
+  options?: Parameters<typeof addItemToInventory>[3],
+) {
+  const item = await db.query.items.findFirst({
+    where: eq(items.catalogKey, catalogKey),
+  })
+  if (!item) {
+    throw new Error(`Oggetto catalogo «${catalogKey}» non trovato. Esegui seed-item-catalog.`)
+  }
+  return addItemToInventory(characterId, item.id, quantity, options)
 }
 
 /**
@@ -425,12 +590,8 @@ export async function stealFromHousing(
   }
 
   const slotInfo = await calculateTotalSlots(thiefCharacterId)
-  const thiefItems = await db.query.inventory.findMany({
-    where: eq(inventory.characterId, thiefCharacterId),
-  })
-  const occupiedSlots = thiefItems.length
-  const availableSlots = slotInfo.totalSlots - occupiedSlots
-  if (availableSlots < 1) {
+  const thiefCarry = await getCarrySlotUsage(thiefCharacterId)
+  if (!canFitInSlots(thiefCarry.occupied, slotInfo.totalSlots, 1)) {
     throw new Error('Inventario pieno. Libera spazio prima di rubare.')
   }
 

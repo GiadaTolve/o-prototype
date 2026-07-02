@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { canDismantleAsArtigiano, yieldFromBrokenEquipment } from './dismantle'
 import { DROP_TABLE_DAILY_CAP_PER_PLAYER, getDropTable, rollDropTableJunk } from './drop-tables'
+import {
+  canFitInSlots,
+  isItemBroken,
+  sumInventorySlotUsage,
+  usesIntegrity,
+} from './items'
 import { isMarketableCategory, piazzaCommission, piazzaSellerProceeds } from './market'
 
 describe('dismantle', () => {
@@ -31,6 +37,29 @@ describe('drop-tables', () => {
 
   it('caps table drops per player per day', () => {
     expect(DROP_TABLE_DAILY_CAP_PER_PLAYER).toBe(3)
+  })
+})
+
+describe('items', () => {
+  it('detects broken equipment', () => {
+    expect(isItemBroken(0, 30)).toBe(true)
+    expect(isItemBroken(5, 30)).toBe(false)
+    expect(usesIntegrity('equipaggiamento')).toBe(true)
+    expect(usesIntegrity('junk')).toBe(false)
+  })
+
+  it('sums slot usage by location', () => {
+    const used = sumInventorySlotUsage(
+      [
+        { inventorySlotCost: 1, location: 'CARRY' },
+        { inventorySlotCost: 2, location: 'CARRY' },
+        { inventorySlotCost: 1, location: 'HOUSING' },
+      ],
+      'CARRY',
+    )
+    expect(used).toBe(3)
+    expect(canFitInSlots(4, 5, 1)).toBe(true)
+    expect(canFitInSlots(5, 5, 1)).toBe(false)
   })
 })
 
