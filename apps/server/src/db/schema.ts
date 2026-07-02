@@ -343,6 +343,19 @@ export const dropTableDailyUsage = pgTable(
   (t) => [primaryKey({ columns: [t.characterId, t.dayKey] })],
 )
 
+/** Smantellamento Artigiano — max 10/giorno UTC. */
+export const dismantleDailyUsage = pgTable(
+  'dismantle_daily_usage',
+  {
+    characterId: uuid('character_id')
+      .references(() => characters.id)
+      .notNull(),
+    dayKey: text('day_key').notNull(),
+    count: integer('count').default(0).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.dayKey] })],
+)
+
 // ==========================================
 // 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC §7)
 // ==========================================

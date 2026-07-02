@@ -87,6 +87,8 @@ Integrità cala solo per **eventi Master** (colpo critico, uso estremo, scena) �
 
 ## 3) Smantellamento
 
+**Stato implementazione:** Fase 3 ✅ (API) — `POST /artigiano/me/dismantle`, gate Skiru `shokunin ≥ 1`.
+
 **Regola unica: solo `#Artigiano` smantella.** Qualsiasi sottoclasse dal keystone Minarai Shokunin in su — funzione base del keystone.
 
 ### Flusso tool

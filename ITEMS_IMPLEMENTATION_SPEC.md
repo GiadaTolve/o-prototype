@@ -90,3 +90,4 @@ Blueprint/craft/consumabili: Fase 2 (dopo tool Medico/Artigiano).
 - [x] Test domain `items.ts`
 - [ ] `db:push` su ambiente con DATABASE_URL
 - [ ] UI client scheda oggetto
+- [x] Smantellamento Artigiano API — `ITEMS_IMPLEMENTATION_SPEC` + `/artigiano/me/dismantle`
