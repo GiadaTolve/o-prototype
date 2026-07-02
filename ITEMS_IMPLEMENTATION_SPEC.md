@@ -78,7 +78,7 @@ Blueprint/craft/consumabili: Fase 2 (dopo tool Medico/Artigiano).
 
 - Drop chat `/drop` (Fase 2)
 - Smantellamento tool (Fase 3)
-- Mercato Banco/Piazza (Fase 4)
+- Mercato Banco/Piazza (Fase 4) — ✅ `/market/*`
 - UI client scheda oggetto completa
 
 ## Checklist

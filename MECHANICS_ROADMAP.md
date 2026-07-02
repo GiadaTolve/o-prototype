@@ -328,10 +328,10 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 | Drop in chat (`/drop`, `/prendi`, tabelle) | [x] server | `drop.service.ts`, `drop-commands.ts`, WS chat |
 | Schema oggetti (6 categorie, Integrità, Firma) | [~] Fase 1 | `types.ts`, `items.ts`, `ITEMS_IMPLEMENTATION_SPEC.md` |
 | Smantellamento (**solo Artigiano**, 10/giorno) | [x] API | `dismantle.ts`, `/artigiano/me/dismantle` |
-| Mercato (Banco + Piazza 10%) | [x] spec | `market.ts` |
-| Implementazione server/chat/DB | [ ] | — |
+| Mercato (Banco + Piazza 10%) | [x] API | `market.ts`, `/market/*` |
+| Implementazione server/chat/DB | [x] Fasi 1–4 | `inventory`, `drop`, `artigiano`, `market` |
 
-**Ordine implementazione:** 1 Oggetti ✅ → 2 Drop ✅ → 3 Smantellamento ✅ (API) → 4 Mercato.
+**Ordine implementazione:** 1 Oggetti ✅ → 2 Drop ✅ → 3 Smantellamento ✅ → 4 Mercato ✅.
 
 **Decisioni:** nessuna scadenza consumabili; junk solo smantellata da Artigiano; tetto drop tabella 3/giorno (tarabile).
 

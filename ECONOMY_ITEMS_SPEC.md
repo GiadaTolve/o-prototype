@@ -164,10 +164,24 @@ Vedi `packages/domain/src/economy/junklist.ts`. Tutte le voci sono **Junk**; sol
 
 ## Ordine implementazione consigliato
 
-1. **Oggetti** — schema DB + categorie + Integrità/Firma/Origine — **Fase 1 in corso** (`ITEMS_IMPLEMENTATION_SPEC.md`)
-2. **Drop in chat** — comandi `/drop`, `/prendi`, tabelle, anti-farming
-3. **Smantellamento** — tool Artigiano + junklist + resa 50% rotti
-4. **Mercato** — Banco + Piazza + commissione
+1. **Oggetti** — schema DB + categorie + Integrità/Firma/Origine — ✅ (`ITEMS_IMPLEMENTATION_SPEC.md`)
+2. **Drop in chat** — comandi `/drop`, `/prendi`, tabelle, anti-farming — ✅
+3. **Smantellamento** — tool Artigiano + junklist + resa 50% rotti — ✅ API `/artigiano/me/dismantle`
+4. **Mercato** — Banco + Piazza + commissione — ✅ API `/market/*`
+
+### API Mercato (Fase 4)
+
+| Endpoint | Descrizione |
+|----------|-------------|
+| `GET /market/banco/catalog` | Listino NPC (compra junk/materiali/equip; vende materiali comuni) |
+| `POST /market/banco/sell` | `{ inventoryId }` — vendi al Banco |
+| `POST /market/banco/buy` | `{ catalogKey, quantity? }` — compra materiale comune |
+| `GET /market/piazza/listings` | Inserzioni attive |
+| `GET /market/piazza/me/listings` | Le mie inserzioni |
+| `POST /market/piazza/listings` | `{ inventoryId, priceRem }` — crea inserzione (max 5) |
+| `DELETE /market/piazza/listings/:id` | Annulla inserzione |
+| `POST /market/piazza/listings/:id/buy` | Acquista inserzione (commissione 10%) |
+| `GET /market/piazza/feed` | Feed pubblico scambi |
 
 ---
 
