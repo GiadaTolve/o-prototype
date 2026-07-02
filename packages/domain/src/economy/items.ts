@@ -39,6 +39,16 @@ export function isEquippableLegacyType(type: string): boolean {
   return type === 'WEAPON' || type === 'ARMOR' || type === 'BAG'
 }
 
+/** Equipaggiamento indossabile (legacy type o categoria economy). */
+export function isEquippableItem(
+  type: string,
+  category: ItemCategory | string | null | undefined,
+): boolean {
+  if (type === 'ACCESSORY') return true
+  if (isEquippableLegacyType(type)) return true
+  return category === 'equipaggiamento'
+}
+
 export interface InventorySlotUsageInput {
   readonly inventorySlotCost: number
   readonly location: 'CARRY' | 'HOUSING'

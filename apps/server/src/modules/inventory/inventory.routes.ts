@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import { characters } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth.plugin'
+import { userHasGestioneAccess } from '../../lib/gestione-access'
 import {
   getCharacterInventory,
   addItemToInventory,
@@ -113,6 +114,12 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
         async ({ params, user, set }) => {
           if (!user) { set.status = 401; return { error: 'Unauthorized' } }
           try {
+            const canStaff = await userHasGestioneAccess(user.id, user.role)
+            if (!canStaff) {
+              set.status = 403
+              return { error: 'Solo staff può rimuovere oggetti dall\'inventario.' }
+            }
+
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
             })
