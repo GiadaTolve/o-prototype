@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { icons } from '@/lib/icons'
 import { api } from '@/lib/api'
+import { useInventoryUpdatedListener } from '@/hooks/useInventoryUpdatedListener'
 import { InventoryItemCard } from './InventoryItemCard'
 import { InventoryItemDetailModal } from './InventoryItemDetailModal'
 import type { CharacterInventoryResponse, InventoryItemRow } from './types'
@@ -61,6 +62,8 @@ export function InventorySection({ characterId }: { characterId?: string }) {
       })
       .finally(() => setLoading(false))
   }, [characterId, reloadInventory])
+
+  useInventoryUpdatedListener(characterId, reloadInventory)
 
   const toggleEquip = async (inventoryId: string) => {
     try {

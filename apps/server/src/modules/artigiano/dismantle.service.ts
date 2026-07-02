@@ -13,6 +13,7 @@ import { getSocialBlueprint } from '@domain/shakai-kaikyu/blueprint-catalog'
 import { db } from '../../plugins/db'
 import { characters, dismantleDailyUsage, inventory } from '../../db/schema'
 import { addItemByCatalogKey, getCharacterInventory } from '../inventory/inventory.service'
+import { broadcastInventoryUpdated } from '../realtime/ws.routes'
 
 function utcDayKey(d = new Date()): string {
   return d.toISOString().slice(0, 10)
@@ -192,6 +193,8 @@ export async function dismantleInventoryItems(
   }
 
   const newUsed = await incrementDismantleCount(characterId, dayKey, uniqueIds.length)
+
+  broadcastInventoryUpdated(characterId)
 
   return {
     dismantled: results,

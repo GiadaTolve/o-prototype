@@ -23,6 +23,7 @@ import { getSkiruRider, computeLaunchDamagePreview } from "@domain/combat/waza-s
 import { getSkiruDef } from "@domain/skiru/catalog";
 import { normalizeWazaLookupKey } from "@domain/combat/waza-tag-preview";
 import { formatNarrativeText } from "@/lib/narrative-parser";
+import { useInventoryUpdatedListener } from "@/hooks/useInventoryUpdatedListener";
 import {
   isDiceRollMessage,
   extractDiceResultLabels,
@@ -1219,29 +1220,27 @@ function ArmadioCasa({ roomId, characterId }: { roomId: RoomId; characterId?: st
   const isMyHouse = characterId && ownerId && characterId === ownerId;
   const isGuest = isHousingRoom && ownerId && characterId && !isMyHouse;
 
-  useEffect(() => {
+  const reloadArmadio = useCallback(async () => {
     if (!isHousingRoom || !characterId) {
       setInventory(null);
       return;
     }
     if (isMyHouse) {
-      api.get("/inventory/me")
-        .then((d: any) => setInventory(d ?? null))
-        .catch(() => setInventory(null));
+      const d = await api.get("/inventory/me").catch(() => null);
+      setInventory((d as typeof inventory) ?? null);
     } else if (isGuest) {
-      api.get(`/housing/armadio?roomId=${encodeURIComponent(roomId)}`)
-        .then((d: any) => {
-          if (d && typeof d === "object" && "items" in d) {
-            setInventory({ items: d.items });
-          } else {
-            setInventory(null);
-          }
-        })
-        .catch(() => setInventory(null));
-    } else {
-      setInventory(null);
+      const d = await api
+        .get(`/housing/armadio?roomId=${encodeURIComponent(roomId)}`)
+        .catch(() => null) as { items?: typeof inventory extends { items: infer I } ? I : never } | null;
+      setInventory(d?.items ? { items: d.items } : null);
     }
-  }, [isMyHouse, isGuest, roomId, characterId]);
+  }, [isHousingRoom, characterId, isMyHouse, isGuest, roomId]);
+
+  useEffect(() => {
+    void reloadArmadio();
+  }, [reloadArmadio]);
+
+  useInventoryUpdatedListener(isMyHouse ? characterId : undefined, reloadArmadio);
 
   const moveToCarry = async (invId: string) => {
     if (!characterId || movingId) return;

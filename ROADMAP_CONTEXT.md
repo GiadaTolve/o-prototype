@@ -523,7 +523,7 @@ Ordine consigliato: **deploy → UI economia giocabile → fondamenta Shakai →
 |------|--------|------|--------|------------|-------|
 | **0** | Deploy | Merge PR stack economia (#3→#9), `db:push`, `seed-item-catalog`, smoke API | DB + server allineati | Mac con `DATABASE_URL` | ✅ cloud + main |
 | **1** | UI economia | Scheda oggetto: categorie, integrità, firma, origine, `isBroken` | Inventario leggibile in gioco | Step 0 | ✅ |
-| **2** | UI economia | Sezione `MARKET` + slot; refresh su WS `inventory_updated` | Oggetti in vendita visibili | Step 1 | [~] sezione MARKET ✅, WS 🔲 |
+| **2** | UI economia | Sezione `MARKET` + slot; refresh su WS `inventory_updated` | Oggetti in vendita visibili | Step 1 | ✅ |
 | **3** | UI economia | Pannello **Mercato** (Banco vendi/compra + Piazza inserzioni/feed) | Loop junk→Rem giocabile | Step 0 | 🔲 |
 | **4** | UI economia | Pannello **Smantellamento** Artigiano (gate Shokunin temporaneo) | Junk → materiali in UI | Step 0, API ✅ | 🔲 |
 | **5** | Shakai DB | `social_class`, `social_subclass_sheet`, `social_daily_usage` | Schema + migrazione | Step 0 | 🔲 |
