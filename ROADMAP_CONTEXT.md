@@ -506,20 +506,42 @@ Frequenza Disarmante: "+X costo" → +2 CS; il danno da mancata scarica → = ti
 
 > **Spec:** [`SHAKAI_KAIKYU_SPEC.md`](./SHAKAI_KAIKYU_SPEC.md) · **Roadmap meccaniche:** `MECHANICS_ROADMAP.md` § Shakai Kaikyū · **Domain:** `@domain/shakai-kaikyu`
 
-**Obiettivo:** scelta unica di classe (Medico, Artigiano, Cacciatore, Politico, Sacerdote) → tag invisibile → tool dedicata + albero sottoclassi (5 / 10 / 20 XP) + blueprint per tag.
+**Obiettivo:** scelta unica di classe → tag invisibile → tool dedicata + albero sottoclassi (5 / 10 / 20 XP) + blueprint per tag.
 
 **Già pronto**
-- [x] Spec completa (5 classi, 25 sottoclassi, limiti giornalieri, trade-off)
-- [x] Catalogo domain + validazione prerequisiti capstone
+- [x] Q1–Q4, Q10, Q12 (Skiru gate, XP condiviso, sentiero unico, reset UTC, capstone blueprint)
+- [x] Spec + catalogo 5×5 sottoclassi + `blueprint-catalog.ts` + `tool-ux.ts`
+- [x] Economia oggetti Fasi 1–4 (drop, inventario, smantellamento Artigiano, mercato) — v. tabella sotto
 
-**Step principali (in ordine)**
-1. [ ] Decisioni Q1–Q4 (Skiru vs classe, valuta XP, sentieri multipli, reset giornaliero)
-2. [ ] DB `social_class` + `social_subclass_sheet` + budget giornaliero
-3. [ ] API scelta classe + sblocco sottoclassi
-4. [ ] UI scheda: scelta classe + albero sottoclassi
-5. [ ] Tool Medico (prima implementazione) + blueprint `#Medico`
-6. [ ] Tool Artigiano, Cacciatore, Politico, Sacerdote
-7. [ ] Integrazione HP / inventario / costrutti materiali / patti / ofuda
-8. [ ] Pannello moderazione (cambio classe)
+---
 
-**Domande aperte:** tabella Q1–Q12 in `SHAKAI_KAIKYU_SPEC.md` — da chiudere prima del DB/API.
+## Tabella di marcia — Prossimi step (Luglio 2026)
+
+Ordine consigliato: **deploy → UI economia giocabile → fondamenta Shakai → tool per classe**.
+
+| Step | Blocco | Cosa | Output | Dipendenze | Stato |
+|------|--------|------|--------|------------|-------|
+| **0** | Deploy | Merge PR stack economia (#3→#9), `db:push`, `seed-item-catalog`, smoke API | DB + server allineati | Mac con `DATABASE_URL` | 🔲 |
+| **1** | UI economia | Scheda oggetto: categorie, integrità, firma, origine, `isBroken` | Inventario leggibile in gioco | Step 0 | 🔲 |
+| **2** | UI economia | Sezione `MARKET` + slot; refresh su WS `inventory_updated` | Oggetti in vendita visibili | Step 1 | 🔲 |
+| **3** | UI economia | Pannello **Mercato** (Banco vendi/compra + Piazza inserzioni/feed) | Loop junk→Rem giocabile | Step 0 | 🔲 |
+| **4** | UI economia | Pannello **Smantellamento** Artigiano (gate Shokunin temporaneo) | Junk → materiali in UI | Step 0, API ✅ | 🔲 |
+| **5** | Shakai DB | `social_class`, `social_subclass_sheet`, `social_daily_usage` | Schema + migrazione | Step 0 | 🔲 |
+| **6** | Shakai domain | `assignSocialClass`, `unlockSocialSubclass`, budget giornaliero + test | `@domain/shakai-kaikyu` completo | Step 5 | 🔲 |
+| **7** | Shakai API | `POST /social-class`, `PATCH /social-subclass`, espansione `GET /characters/me` | Scelta classe via API | Step 6 | 🔲 |
+| **8** | Shakai UI | Scelta classe (una tantum) + albero sottoclassi XP in scheda | PG con classe visibile | Step 7 | 🔲 |
+| **9** | Tool Medico | 5.1 Cura HP (target, budget giornaliero, log chat) | Prima tool Shakai | Step 8 | 🔲 |
+| **10** | Tool Medico | 5.2 Preparati da blueprint `#Medico` → inventario | Craft consumabili medico | Step 9 + blueprint DB | 🔲 |
+| **11** | Tool Artigiano | 5.3 Ripara integrità + 5.4 Costruisce da blueprint | Completa loop craft | Step 8; smantellamento ✅ | 🔲 |
+| **12** | Tool Cacciatore | 5.5 Traccia/preda + raccolta (budget) | Terza classe | Step 8 | 🔲 |
+| **13** | Tool Politico | 5.6 Patti + richiamo favori | Quarta classe | Step 8; Q politico | 🔲 |
+| **14** | Tool Sacerdote | 5.7 Ofuda (potere, attivi max) | Quinta classe | Step 8 | 🔲 |
+| **15** | Blueprint | Sync `blueprint-catalog` in DB + API craft generica | Ricette giocabili oltre Medico | Step 10 | 🔲 |
+| **16** | Integrazione | HP, costrutti materiali, patti, ofuda collegati a combattimento/inventario | Shakai end-to-end | Step 11–14 | 🔲 |
+| **17** | Staff | Moderazione cambio classe + audit | Pannello gestione | Step 7 | 🔲 |
+
+**Rimandato (non blocca la marcia):** baratto Piazza; drop UI Master; `social_class` derivata solo da Skiru senza colonna DB; Q5–Q11 in `SHAKAI_KAIKYU_SPEC.md`.
+
+**PR aperti (economia + Shakai design):** #3–#9 — mergiare prima dello Step 0.
+
+**Step corrente consigliato:** **0** (deploy Mac) poi **1** (UI scheda oggetto).
