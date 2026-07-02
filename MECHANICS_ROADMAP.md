@@ -671,7 +671,7 @@ Legenda sotto-sezioni:
 - [x] Tool authoring Idee e sviluppo allineato a tier/consistenza/categoria — tier da CS §2.10, chip tag §2.5 in WazaInsertionTool
 - [x] Tag chat `[waza:Nome]` con anteprima tier/CS/IR suggerito — `@domain/combat/waza-tag-preview` + catalogo generato
 - [x] **Waza Generiche** — pool `generiche-waza-pool.ts` (**34**); acquisto EXP senza Esagono; status `[Rallentato]` in domain; semi-auto Ippuku + status-on-hit (Suishin, Nenmō, Kyōkan, Hankyō)
-- [~] **Ordine / Oni no Mori** — pool vuoti (`ordine-waza-pool.ts`, `onimori-waza-pool.ts`) + regole acquisto Ordine (Sentō Senshi + ordine militare); tab UI + classifier famiglia
+- [x] **Ordine / Oni no Mori** — pool starter (`ordine-waza-pool.ts` **8**, `onimori-waza-pool.ts` **7**); classifier + acquisto Sentō Senshi; sync DB con `sync-waza-manual`
 
 ---
 
@@ -684,7 +684,7 @@ Legenda sotto-sezioni:
 - [x] Scelta Madoshō — richiesta giocatore in Scheda → Richieste; approvazione staff Gestione
 - [x] Campo `madoshoId` su character — assegnato solo ad approvazione
 - [x] Waza Madoshō senza vincoli Esagono/Key — disponibili se `madoshoId` PG coincide (`characters.service`); costo EXP 0 fino a milestone Jiga
-- [x] Pool `apps/tester/src/madoshoPool.ts` — **55 waza** (11×5 lignaggi; Komonoire vuoto)
+- [x] Pool `apps/tester/src/madoshoPool.ts` — **66 waza** (6×11 lignaggi; Komonoire completato)
 - [x] Taxonomy `madoshoTaxonomy.ts` — 6 lignaggi allineati al domain
 - [x] `MANUAL_MADOSHO_POOL_IDS` in `@domain/progression/madosho` + test allineamento pool
 
@@ -733,9 +733,9 @@ Legenda sotto-sezioni:
 ## 4.3 Komonoire — patto sbagliato
 
 ### Meccanica: dado demoniaco + Debitore
-- [~] Invocazione arma casuale ogni turno — tag `[komonoire:tira:N]` / `[komonoire:dado:N]` (N=1–6)
+- [x] Invocazione arma casuale ogni turno — tag `[komonoire:tira:N]` / `[komonoire:dado:N]` (N=1–6)
 - [x] Status Debitore su rifiuto/opposizione — `[komonoire:rifiuta]` / `[komonoire:opposizione]`
-- [ ] 🔮 Waza del lignaggio: **lore presente, elenco waza da completare nel manuale**
+- [x] Waza del lignaggio — **11** voci in `madosho-waza-pool.ts` (authoring Luglio 2026; da allineare al manuale quando disponibile)
 
 ---
 
@@ -837,8 +837,8 @@ Legenda sotto-sezioni:
 ## Server & domain
 - [x] `packages/domain` — motore Skiru + combat v3 (Parte II core)
 - [ ] API combattimento (opzionale): validazione CS/quarti
-- [x] Seed skills/waza — `sync-waza-manual.ts` (**122** voci pool: 112 Dō + 10 Generiche · eseguire `bun run sync-waza-manual` in `apps/server`)
-- [~] Tag catalog generato — `generate-waza-tag-catalog.ts` → **122** entry (112 Dō + 10 Generiche); rigenerare dopo ogni modifica pool
+- [x] Seed skills/waza — `sync-waza-manual.ts` (**161** voci `WAZA_POOL` · eseguire `bun run sync-waza-manual` in `apps/server`)
+- [x] Tag catalog generato — `generate-waza-tag-catalog.ts` → **161** entry; rigenerare dopo ogni modifica pool
 - [x] Seed waza Madoshō — `sync-madosho-manual.ts` (55 waza · `bun run sync-madosho-manual`)
 
 ---
@@ -864,10 +864,10 @@ Legenda sotto-sezioni:
 | Catalogo | Fonte authoring | Conteggio | DB sync | Automazione chat | Note |
 |----------|-----------------|-----------|---------|------------------|------|
 | **Dō** | `apps/tester/src/pools/*-waza-pool.ts` | **112** | `sync-waza-manual.ts` | ~15 waza avanzate (SB/K) | Keystone + Esagono OK |
-| **Generiche** | `generiche-waza-pool.ts` | **10** | stesso sync | solo prosa Master | `[Rallentato]` OK; tag `[waza:…]` **fuori** catalogo generato |
-| **Madoshō** | `madosho-waza-pool.ts` | **55** | `sync-madosho-manual.ts` | parziale (Hōgō, Shinryaku, Eden…) | Komonoire **0** waza |
-| **Ordine** | `ordine-waza-pool.ts` | **0** | stesso sync | — | pool + acquisto Sentō Senshi |
-| **Oni no Mori** | `onimori-waza-pool.ts` | **0** | stesso sync | — | pool vuoto, EXP senza Esagono |
+| **Generiche** | `generiche-waza-pool.ts` | **34** | stesso sync | Ippuku, status-on-hit, passive Kajiba/Iai | Batch 3+ (scudi avanzati, emanazioni extra) |
+| **Madoshō** | `madosho-waza-pool.ts` | **66** | `sync-madosho-manual.ts` | parziale (Hōgō, Shinryaku, Eden…) | Automazione waza Komonoire oltre dado |
+| **Ordine** | `ordine-waza-pool.ts` | **8** | stesso sync | classifier + Sentō Senshi | Espansione arsenale per ordine |
+| **Oni no Mori** | `onimori-waza-pool.ts` | **7** | stesso sync | classifier famiglia | Espansione regionale |
 | **Skiru** | `packages/domain/src/skiru/catalog.ts` | **41** | jsonb `skiru_sheet` | via IR (`waza-resolve`) | Tester `skiruPool.ts` **non allineato** (4 voci) |
 
 **Pool totale waza:** `WAZA_POOL` = **122** (112 + 10). **Tag catalog generato:** **112** → drift da rigenerare.
@@ -1017,3 +1017,4 @@ Oggi A è in `WazaInsertionTool` (~2600 LOC), B/C sono sparsi in domain TS — *
 | Luglio 2026 | Pannello lancio auto | Solo waza possedute; CS/Skiru automatici; tag extra Giurisdizione/Hōgō/Decreto; Hikan `[sorpresa:1]`; Jikai su cure |
 | Luglio 2026 | Mobile Cursor | `AGENTS.md`, `.cursor/environment.json`, worker My Machines |
 | Luglio 2026 | Automazioni chat complete (batch 2) | Modifier offensivi in `applyCombatTierDamage`; Meisaku→costrutto T5; Eden coda rigenera; Mugen dominio; Investimento→`[hit:1]`; passive Kajiba/Iai |
+| Luglio 2026 | Contenuto batch 3 | Komonoire 11 waza Madoshō; Ordine 8 + Onimori 7; catalogo tag **161** voci |
