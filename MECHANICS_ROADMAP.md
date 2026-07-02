@@ -70,6 +70,7 @@
 | Jigo-Ka | [ ] 🔮 Capitolo «Ego» citato ma non ancora nel doc; oggi esiste come `jigokaMax` da stats legacy |
 | Skiru | [~] Catalogo + regole exp in `@domain/skiru`; DB/UI ancora legacy |
 | Shakai Kaikyū (classi sociali) | [~] Spec + catalogo domain; tool/DB/API da fare — `SHAKAI_KAIKYU_SPEC.md` |
+| Economia oggetti (drop, mercato, junk) | [~] Spec + `@domain/economy`; chat/DB da fare — `ECONOMY_ITEMS_SPEC.md` |
 | Indice di Riuscita | [x] `@domain/combat/resolution` |
 | Waza | [~] Pool tester + tag chat `[waza:…]`; formule legacy |
 | Chronostack (CS) | [x] Motore `@domain/combat/chrono-stack` |
@@ -317,6 +318,22 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 | `#Sacerdote` | Shisai | Ofuda + interpretazione (riti) |
 
 **Domande aperte:** Q5–Q11 in `SHAKAI_KAIKYU_SPEC.md` (Q1–Q4, Q10, Q12 risolte).
+
+#### Economia oggetti (drop · inventario · smantellamento · mercato)
+
+> **Spec:** [`ECONOMY_ITEMS_SPEC.md`](./ECONOMY_ITEMS_SPEC.md) · domain `@domain/economy`
+
+| Sistema | Stato design | Domain |
+|---------|--------------|--------|
+| Drop in chat (`/drop`, `/prendi`, tabelle) | [x] spec | `drop-tables.ts` |
+| Schema oggetti (6 categorie, Integrità, Firma) | [x] spec | `types.ts` |
+| Smantellamento (**solo Artigiano**, 10/giorno) | [x] spec | `dismantle.ts`, `junklist.ts` |
+| Mercato (Banco + Piazza 10%) | [x] spec | `market.ts` |
+| Implementazione server/chat/DB | [ ] | — |
+
+**Ordine implementazione:** 1 Oggetti (schema DB) → 2 Drop → 3 Smantellamento → 4 Mercato.
+
+**Decisioni:** nessuna scadenza consumabili; junk solo smantellata da Artigiano; tetto drop tabella 3/giorno (tarabile).
 
 #### Seishin Tanren — Disciplina Mentale
 - [x] Fudōshin (Fermezza)

@@ -167,13 +167,13 @@ Valori piatti, coerenti con i cap giornalieri (15/20/30 HP, Integrità, Raccolta
 
 # JUNKLIST — comune a tutte le classi
 
-Oggetti senza valore d'uso: esplorazione, saccheggio, bottino minore. **Smantellare** in materiali richiede tool di classe (Artigiano: tutto; altre: solo voci del proprio dominio tra parentesi).
+Oggetti senza valore d'uso: esplorazione, saccheggio, bottino minore. **Solo `#Artigiano` smantella** (keystone in su) — le altre classi vendono junk al Banco o la portano all'artigiano. Vedi anche `ECONOMY_ITEMS_SPEC.md` §3.
 
 **Metallo e meccanica**
 - Lattine e scatolame arrugginito → 1 Rottame metallico
 - Utensili spezzati → 1 Rottame metallico
 - Elettrodomestico sventrato → 2 Rottami metallici, 1 Componente meccanico
-- Orologio fermo → 1 Componente fine *(#Medico)*
+- Orologio fermo → 1 Componente fine
 - Serratura divelta → 1 Componente meccanico
 
 **Stoffa, cuoio, legno**
@@ -182,17 +182,17 @@ Oggetti senza valore d'uso: esplorazione, saccheggio, bottino minore. **Smantell
 - Mobili sfasciati → 2 Legni
 - Ombrello rotto → 1 Stoffa, 1 Rottame metallico
 
-**Chimica e medicina** *(#Medico)*
+**Chimica e medicina**
 - Flaconi scaduti → 1 Reagente
 - Kit di pronto soccorso saccheggiato → 1 Stoffa, 1 Reagente
 - Batterie corrose → 1 Reagente
 
-**Natura e caccia** *(#Cacciatore)*
+**Natura e caccia**
 - Carcassa fresca → 1 Carne, 1 Cuoio
 - Nido abbandonato → 1 Erba comune
 - Ossa sbiancate → 1 Componente fine
 
-**Carta e culto** *(#Sacerdote)*
+**Carta e culto**
 - Libri gonfi d'umidità → 2 Carte
 - Fotografie sbiadite → 1 Carta
 - Piccolo altare domestico (butsudan) → 2 Carte, 1 Legno
@@ -200,4 +200,10 @@ Oggetti senza valore d'uso: esplorazione, saccheggio, bottino minore. **Smantell
 
 **Materiali risultanti:** Rottame metallico · Componente meccanico · Componente fine · Stoffa · Cuoio · Legno · Carta · Reagente · Erba comune · Erba rara *(solo raccolta)* · Carne / Carne pregiata · Frammento onirico · Trofeo / Trofeo maggiore.
 
-**Politico:** nessun materiale (voluto). Opzione futura: voce junk «Oggetto di valore» come tangente per Patti ad alto Peso — non in scope attuale.
+**Politico:** nessun materiale (voluto). Junk degli altri PG → Banco o Artigiano.
+
+---
+
+## Economia collegata
+
+Drop in chat, schema oggetti, smantellamento e mercato: **`ECONOMY_ITEMS_SPEC.md`** · domain `@domain/economy`.

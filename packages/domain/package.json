@@ -13,6 +13,8 @@
       "./progression/*": "./src/progression/*.ts",
       "./shakai-kaikyu": "./src/shakai-kaikyu/index.ts",
       "./shakai-kaikyu/*": "./src/shakai-kaikyu/*.ts",
+      "./economy": "./src/economy/index.ts",
+      "./economy/*": "./src/economy/*.ts",
       "./*": "./src/*.ts"
     }
   }

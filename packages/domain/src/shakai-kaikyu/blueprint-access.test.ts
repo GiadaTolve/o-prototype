@@ -49,10 +49,11 @@ describe('JUNK_ITEMS', () => {
     }
   })
 
-  it('restricts medico junk to tagged items', () => {
+  it('only artigiano can dismantle junk', () => {
     const orologio = JUNK_ITEMS.find((j) => j.id === 'junk-orologio')!
-    const lattine = JUNK_ITEMS.find((j) => j.id === 'junk-lattine')!
-    expect(canDismantleJunkItem('#Medico', orologio)).toBe(true)
-    expect(canDismantleJunkItem('#Medico', lattine)).toBe(false)
+    expect(canDismantleJunkItem('#Artigiano', orologio)).toBe(true)
+    expect(canDismantleJunkItem('#Medico', orologio)).toBe(false)
+    expect(canDismantleJunkItem('#Cacciatore', orologio)).toBe(false)
+    expect(canDismantleJunkItem(null, orologio)).toBe(false)
   })
 })
