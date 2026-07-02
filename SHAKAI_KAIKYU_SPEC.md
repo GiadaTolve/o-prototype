@@ -174,6 +174,7 @@ socialDailyBudget: { ... }        // HP curati, integrità, raccolta, ecc. — r
 - [x] **D0.3** — Reset budget giornaliero: **00:00 UTC** con tick REM (opzione A)
 - [x] **D0.4** — Capstone: **un solo sentiero** (10 XP) prima del 20 XP
 - [ ] **D0.5** — Artigiano: Costrutti materiali condividono tabella `field_constructs` o entità separate da Genkai?
+- [x] **D0.6** — Politico: **nessun materiale** (Patti in gioco); junklist opzionale «Oggetto di valore» rimandata
 
 ### Fase 1 — Modello dati (DB)
 
@@ -211,6 +212,8 @@ socialDailyBudget: { ... }        // HP curati, integrità, raccolta, ecc. — r
 
 ### Fase 5 — Tool dedicate (dashboard)
 
+> **UX e blueprint:** [`SHAKAI_KAIKYU_TOOLS_BLUEPRINTS.md`](./SHAKAI_KAIKYU_TOOLS_BLUEPRINTS.md) · catalogo domain `blueprint-catalog.ts`, `materials.ts`, `tool-ux.ts`
+
 Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdote**.
 
 | Step | Tool | Funzioni minime |
@@ -227,12 +230,12 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 
 ### Fase 6 — Blueprint per tag
 
-- [ ] **6.1** — Schema blueprint: `requiredTag: '#Medico' | …`
-- [ ] **6.2** — Seed ricette medico (medicinali, veleni, droghe)
-- [ ] **6.3** — Seed progetti artigiano (oggetti, equip, costrutti materiali)
-- [ ] **6.4** — Seed tracce/prede cacciatore
-- [ ] **6.5** — Seed modelli Patto / leve politico
-- [ ] **6.6** — Seed riti e Ofuda sacerdote
+- [ ] **6.1** — Schema blueprint DB/API: `requiredTag` + id da `SOCIAL_BLUEPRINTS`
+- [x] **6.2** — Seed ricette medico — design in `blueprint-catalog.ts`
+- [x] **6.3** — Seed progetti artigiano — design in `blueprint-catalog.ts`
+- [x] **6.4** — Seed tracce/prede cacciatore — design in `blueprint-catalog.ts`
+- [x] **6.5** — Seed modelli Patto politico — design in `blueprint-catalog.ts`
+- [x] **6.6** — Seed riti Ofuda sacerdote — design in `blueprint-catalog.ts`
 - [ ] **6.7** — API lista blueprint filtrata per tag classe PG
 
 ### Fase 7 — Integrazione sistemi esistenti
@@ -277,9 +280,9 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 | **Q7** | **Patti** (Politico) | Entità DB dedicate (`pacts`)? Solo jsonb su PG? Interazione con Ordini? |
 | **Q8** | **Ofuda** (Sacerdote) | Item inventario, buff attivo, o entità campo come costrutti? |
 | **Q9** | **Trade-off** sentieri (Meishi informale 0, Senseki ritardo, …) | Automatizzati nel motore o arbitraggio Master con tool che mostra solo i limiti? |
-| **Q10** | **Capstone** «tutti i metodi» | Unifica i limiti al massimo (30/30/4·5) o abilita literalmente ogni blueprint di tutti i sentieri? |
+| **Q10** | **Capstone** «tutti i metodi» | **Risolto:** capstone sblocca tutti i blueprint craft/gather della classe + voci capstone; limiti numerici al massimo |
 | **Q11** | **Prima classe** | Obbligatoria in creazione PG o scelta successiva con blocco tool fino alla scelta? |
-| **Q12** | **Blueprint** contenuto | Chi scrive le ricette iniziali (JSON seed, admin UI, import manuale)? |
+| **Q12** | **Blueprint** contenuto | **Risolto:** seed da `SHAKAI_KAIKYU_TOOLS_BLUEPRINTS.md` + `blueprint-catalog.ts` |
 
 ---
 
