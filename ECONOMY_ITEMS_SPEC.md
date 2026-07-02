@@ -1,7 +1,14 @@
 # Economia oggetti — Drop, Inventario, Smantellamento, Mercato
 
-> **Stato:** design lock (Luglio 2026) · domain `@domain/economy`  
+> **Stato:** design lock + **implementazione server Fasi 1–4 ✅** (Luglio 2026) · domain `@domain/economy`  
 > **Contesto:** play-by-chat asincrono; junklist in `economy/junklist.ts` (condivisa con Shakai Kaikyū)
+
+| Fase | Stato | Riferimento implementativo |
+|------|-------|---------------------------|
+| 1 Oggetti | ✅ | `ITEMS_IMPLEMENTATION_SPEC.md` |
+| 2 Drop | ✅ | §1, `drop.service.ts`, WS chat |
+| 3 Smantellamento | ✅ | §3, `/artigiano/me/dismantle` |
+| 4 Mercato | ✅ | §4, `/market/*` |
 
 I quattro sistemi formano un anello: **drop** → junk → **smantellamento** (solo Artigiano) → **materiali** → **craft** → **oggetti** → **mercato** → commissione esce dal sistema.
 
@@ -46,6 +53,14 @@ Richiamo per contesto — il sistema estrae con pesi fissi (nessun tiro visibile
 
 - Drop da **tabella:** max **N volte/giornata reale** per giocatore (da tarare, es. **3**)
 - Drop **manuale** Master: nessun limite (giudizio narrativo)
+
+### API REST
+
+| Endpoint | Descrizione |
+|----------|-------------|
+| `GET /drop/ground/:roomId` | Loot a terra nella stanza chat |
+
+Comandi WS documentati in `packages/domain/src/economy/drop-commands.ts`.
 
 ---
 
@@ -110,9 +125,19 @@ Integrità cala solo per **eventi Master** (colpo critico, uso estremo, scena) �
 
 Junk degli altri PG → vendere al Banco (poco Rem) **oppure** portarla all'Artigiano. Interdipendenza voluta per PbC.
 
+### API
+
+| Endpoint | Descrizione |
+|----------|-------------|
+| `GET /artigiano/me/dismantle/status` | Usi rimanenti oggi (max 10 UTC) |
+| `GET /artigiano/me/dismantle/inventory` | Oggetti smantellabili |
+| `POST /artigiano/me/dismantle` | `{ inventoryIds[] }` |
+
 ---
 
 ## 4) Mercato e vendita
+
+**Stato implementazione:** Fase 4 ✅ (API) — Banco NPC + Piazza PG con commissione 10%, max 5 inserzioni.
 
 ### A. Il Banco (NPC, mercato di sistema)
 

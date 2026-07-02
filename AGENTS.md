@@ -8,6 +8,7 @@ Monorepo RPG **Oyasumi 2.0**: `apps/server` (Elysia/Bun), `apps/client` (Next.js
 |-----------|------|
 | Contesto prodotto | `OYASUMI_CONTEXT.md` |
 | Combattimento in chat | `COMBAT_SPEC.md`, `CHRONO_STACK.md`, `WAZA_CALCOLI.md` |
+| Economia oggetti (drop · inventario · mercato) | `ECONOMY_ITEMS_SPEC.md`, `ITEMS_IMPLEMENTATION_SPEC.md` |
 | Sōkaiju | `Oyasumi_Sokaiju_Spec_Cursor.md` |
 | Roadmap | `MECHANICS_ROADMAP.md`, `ROADMAP_CONTEXT.md` |
 | UI Dark Arcane | `.cursor/rules/design-dark-arcane.mdc` |
@@ -16,8 +17,12 @@ Monorepo RPG **Oyasumi 2.0**: `apps/server` (Elysia/Bun), `apps/client` (Next.js
 ## Struttura
 
 - `packages/domain/src/combat/` — motore combattimento, waza, status, Sōkaiju
+- `packages/domain/src/economy/` — drop, junklist, smantellamento, mercato
 - `packages/domain/src/skiru/` — albero Skiru, progressione
 - `apps/server/src/modules/characters/` — automazione waza in chat, HP, status
+- `apps/server/src/modules/drop/` — drop chat e loot a terra
+- `apps/server/src/modules/artigiano/` — smantellamento (gate Shokunin)
+- `apps/server/src/modules/market/` — Banco NPC + Piazza PG
 - `apps/client/src/components/dashboard/chat-combat/` — pannello combattimento e lancio waza
 
 ## Setup locale (Mac)
@@ -39,6 +44,12 @@ bash scripts/cloud-agent-verify.sh
 ```
 
 Oppure: `bunx vitest run packages/domain/src/combat/*.test.ts`
+
+Economia oggetti (senza DB):
+
+```bash
+bunx vitest run packages/domain/src/economy/*.test.ts
+```
 
 ## Cursor Cloud specific instructions
 

@@ -12,6 +12,8 @@ import {
 import { isMarketableCategory } from '@domain/economy/market'
 import type { ItemCategory, ItemOrigin } from '@domain/economy/types'
 
+type InventoryLocation = 'CARRY' | 'HOUSING' | 'MARKET'
+
 /**
  * Calcola gli slot totali disponibili per un personaggio.
  * Formula: baseSlots (5) + slot bonus da zaini equipaggiati + slot bonus da housing
@@ -100,7 +102,7 @@ function mapItemEconomyFields(item: ItemRow, inv: InventoryRow) {
 }
 
 async function getCarrySlotUsage(characterId: string): Promise<{
-  rows: Array<{ inventorySlotCost: number; location: 'CARRY' | 'HOUSING' }>
+  rows: Array<{ inventorySlotCost: number; location: InventoryLocation }>
   occupied: number
   capacity: number
 }> {
@@ -111,9 +113,12 @@ async function getCarrySlotUsage(characterId: string): Promise<{
   })
   const rows = invRows.map((r) => ({
     inventorySlotCost: getInventorySlotCost(r.item.inventorySlotCost),
-    location: r.location as 'CARRY' | 'HOUSING',
+    location: r.location as InventoryLocation,
   }))
-  const occupied = sumInventorySlotUsage(rows, 'CARRY')
+  const occupied = sumInventorySlotUsage(
+    rows.filter((r) => r.location === 'CARRY'),
+    'CARRY',
+  )
   return { rows, occupied, capacity: slotInfo.totalSlots }
 }
 
@@ -196,7 +201,7 @@ export async function getCharacterInventory(characterId: string) {
           itemId: row.inventory_itemId!,
           quantity: row.inventory_quantity!,
           isEquipped: row.inventory_isEquipped!,
-          location: row.inventory_location as 'CARRY' | 'HOUSING',
+          location: row.inventory_location as InventoryLocation,
           createdAt: row.inventory_createdAt!,
           integrityCurrent: row.inv_integrityCurrent,
           origin: row.inv_origin,
@@ -230,6 +235,7 @@ export async function getCharacterInventory(characterId: string) {
 
     const carryItems = mappedItems.filter((i) => i.location === 'CARRY')
     const housingItems = mappedItems.filter((i) => i.location === 'HOUSING')
+    const marketItems = mappedItems.filter((i) => i.location === 'MARKET')
 
     const occupiedCarrySlots = sumInventorySlotUsage(
       carryItems.map((i) => ({
@@ -251,12 +257,16 @@ export async function getCharacterInventory(characterId: string) {
 
     return {
       items: mappedItems,
+      carryItems,
+      housingItems,
+      marketItems,
       slots: {
         ...slotInfo,
         occupied: occupiedCarrySlots,
         available: availableCarrySlots,
         housingOccupied: occupiedHousingSlots,
         housingAvailable: availableHousingSlots,
+        marketListed: marketItems.length,
       },
     }
   } catch (error) {
