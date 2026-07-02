@@ -1,6 +1,6 @@
-import { desc, eq, and, lt, gt, gte, lte, ne } from "drizzle-orm";
+import { desc, eq, and, lt, gt, gte, lte, ne, sql } from "drizzle-orm";
 import { db } from "../../plugins/db";
-import { zoneMessages, characters, users, roomCleared } from "../../db/schema";
+import { zoneMessages, characters, users, roomCleared, sceneGroundLoot } from "../../db/schema";
 import { parseNarrativeMessage, calculateExpFromTotalChars } from "./narrative-parser";
 import { containsResolvedDice, isDiceRollMessage, stripDiceTags } from "@domain/chat/dice-display";
 import { canSendMessage } from "./rate-limiter";
@@ -130,6 +130,7 @@ export async function clearRoom(roomId: string, clearedByCharacterId: string): P
       target: roomCleared.roomId,
       set: { clearedAt: sql`CURRENT_TIMESTAMP`, clearedById: clearedByCharacterId },
     });
+  await db.delete(sceneGroundLoot).where(eq(sceneGroundLoot.roomId, roomId));
 }
 
 /** Azioni durano 1h30 in chat (MAP_AND_CHAT_SPEC §4.6). Dopo scadono dalla vista (restano nel Log). */

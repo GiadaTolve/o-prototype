@@ -35,8 +35,8 @@ describe('drop-tables', () => {
     expect(id).toBeTruthy()
   })
 
-  it('caps table drops per player per day', () => {
-    expect(DROP_TABLE_DAILY_CAP_PER_PLAYER).toBe(3)
+  it('has no daily cap on table drops (Master-administered)', () => {
+    expect(DROP_TABLE_DAILY_CAP_PER_PLAYER).toBeNull()
   })
 })
 
