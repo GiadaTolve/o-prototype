@@ -282,7 +282,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 | **3** | API: scelta classe, sblocco sottoclasse, moderazione | [ ] |
 | **4** | UI: scelta classe, albero sottoclassi in scheda | [ ] |
 | **5** | Tool dashboard (×5 classi) | [ ] |
-| **6** | Blueprint filtrati per tag `#Medico` … `#Sacerdote` | [ ] |
+| **6** | Blueprint filtrati per tag `#Medico` … `#Sacerdote` | [~] design seed ✅, DB/API [ ] |
 | **7** | Integrazione HP, inventario, costrutti, patti, ofuda | [ ] |
 | **8** | Moderazione staff + audit | [ ] |
 | **9** | Docs, onboarding, allineamento Skiru catalogo | [ ] |
@@ -293,12 +293,18 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 - [x] `@domain/shakai-kaikyu/progression.ts` — `canUnlockSocialSubclass()`, `resolveDailyLimitFromSubclasses()`
 - [x] 5 voci Skiru gate (`ishi` … `shisai`) — max 1 pt, mutuamente esclusive; sottoclassi = albero XP parallelo
 
+- [x] `SHAKAI_KAIKYU_TOOLS_BLUEPRINTS.md` — UX tool ×5 + junklist
+- [x] `@domain/shakai-kaikyu/blueprint-catalog.ts` — ~70 voci seed
+- [x] `@domain/shakai-kaikyu/materials.ts` — junklist + regole smantellamento
+- [x] `@domain/shakai-kaikyu/tool-ux.ts` — pannelli per classe
+- [x] `@domain/shakai-kaikyu/blueprint-access.ts` — visibilità per sottoclasse/capstone
+
 **Prossimi step consigliati (ordine)**
 1. Schema DB + migrazione (Fase 1)
 2. `POST /characters/me/social-class` + UI scelta (Fasi 3–4)
 3. Albero sottoclassi + spesa XP (Fasi 2–4)
-4. Prima tool: **Medico** (Fase 5.1–5.2) con budget HP giornaliero — **serve UX tool da design**
-5. Blueprint minimo `#Medico` (Fase 6.2)
+4. Prima tool: **Medico** (Fase 5.1–5.2) — implementare da `tool-ux` + `blueprint-catalog`
+5. Sync blueprint in DB (Fase 6.1 / 6.7)
 
 **Tool per classe (quando pronte)**
 
@@ -310,7 +316,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 | `#Politico` | Seijika | Patti + richiamo favori (leve) |
 | `#Sacerdote` | Shisai | Ofuda + interpretazione (riti) |
 
-**Domande aperte:** Q5–Q12 in `SHAKAI_KAIKYU_SPEC.md` (Q1–Q4 risolte).
+**Domande aperte:** Q5–Q11 in `SHAKAI_KAIKYU_SPEC.md` (Q1–Q4, Q10, Q12 risolte).
 
 #### Seishin Tanren — Disciplina Mentale
 - [x] Fudōshin (Fermezza)
