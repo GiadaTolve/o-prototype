@@ -274,16 +274,30 @@ export const creatures = pgTable('creatures', {
 
 export const items = pgTable('items', {
   id: uuid('id').defaultRandom().primaryKey(),
+  /** Chiave stabile per seed/sync (es. junk-lattine, mat-stoffa). */
+  catalogKey: text('catalog_key').unique(),
   name: text('name').notNull(),
   description: text('description'),
   iconUrl: text('icon_url'),
   type: text('type').$type<'GENERIC' | 'WEAPON' | 'ARMOR' | 'BAG'>().default('GENERIC'),
-  
+  /** junk · materiale · consumabile · equipaggiamento · costrutto_materiale · oggetto_trama */
+  category: text('category').$type<
+    'junk' | 'materiale' | 'consumabile' | 'equipaggiamento' | 'costrutto_materiale' | 'oggetto_trama'
+  >().default('junk'),
+  integrityMax: integer('integrity_max'),
+  effectText: text('effect_text'),
+  /** Slot inventario occupati da questa riga (default 1). */
+  inventorySlotCost: integer('inventory_slot_cost').default(1).notNull(),
+  junkTemplateId: text('junk_template_id'),
+  materialId: text('material_id'),
+  blueprintId: text('blueprint_id'),
+  isStackable: boolean('is_stackable').default(true).notNull(),
+
   // Se è uno Zaino, quanti slot aggiunge all'inventario?
   slotsBonus: integer('slots_bonus').default(0),
   /** Prezzo in REM (null = non in vendita). */
   price: integer('price'),
-  
+
   createdAt: timestamp('created_at').defaultNow()
 })
 
@@ -291,12 +305,18 @@ export const inventory = pgTable('inventory', {
   id: uuid('id').defaultRandom().primaryKey(),
   characterId: uuid('character_id').references(() => characters.id).notNull(),
   itemId: uuid('item_id').references(() => items.id).notNull(),
-  
+
   quantity: integer('quantity').default(1),
   isEquipped: boolean('is_equipped').default(false), // Importante per applicare slotBonus
   /** Dove si trova fisicamente l'oggetto: addosso/nel corpo (CARRY) o depositato in abitazione (HOUSING). */
   location: text('location').$type<'CARRY' | 'HOUSING'>().default('CARRY').notNull(),
-  
+
+  integrityCurrent: integer('integrity_current'),
+  origin: text('origin').$type<'craftato' | 'droppato' | 'comprato'>(),
+  craftedByCharacterId: uuid('crafted_by_character_id').references(() => characters.id),
+  craftedByName: text('crafted_by_name'),
+  blueprintId: text('blueprint_id'),
+
   createdAt: timestamp('created_at').defaultNow()
 })
 

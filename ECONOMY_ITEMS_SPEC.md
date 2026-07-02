@@ -160,7 +160,7 @@ Vedi `packages/domain/src/economy/junklist.ts`. Tutte le voci sono **Junk**; sol
 
 ## Ordine implementazione consigliato
 
-1. **Oggetti** — schema DB + categorie + Integrità/Firma/Origine (fondazione)
+1. **Oggetti** — schema DB + categorie + Integrità/Firma/Origine — **Fase 1 in corso** (`ITEMS_IMPLEMENTATION_SPEC.md`)
 2. **Drop in chat** — comandi `/drop`, `/prendi`, tabelle, anti-farming
 3. **Smantellamento** — tool Artigiano + junklist + resa 50% rotti
 4. **Mercato** — Banco + Piazza + commissione
