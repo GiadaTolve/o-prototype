@@ -10,5 +10,5 @@ export type MadoshoDef = Omit<WazaDef, 'branch'> & { branch: MadoshoRamo }
 
 import { MADOSHO_WAZA_POOL } from './pools/madosho-waza-pool'
 
-/** 55 waza da Parte IV PDF (5 lignaggi; Komonoire senza elenco nel manuale). */
+/** 66 waza da Parte IV PDF (6 lignaggi × 11; Komonoire completato Luglio 2026). */
 export const MADOSHO_POOL: MadoshoDef[] = MADOSHO_WAZA_POOL

@@ -18,8 +18,8 @@
 | Seijika — Politico | `seijika` | `#Politico` | Patti + richiamo favori |
 | Shisai — Sacerdote | `shisai` | `#Sacerdote` | Ofuda + interpretazione |
 
-3. **Sottoclassi** — albero di progressione **per classe** (non misto tra classi). Costi in **XP** (exp spendibile), non EXP Skiru.
-4. **Capstone** — richiede **keystone + esattamente un sentiero** (sottoclasse da 10 XP) prima dell’acquisto (20 XP).
+3. **Sottoclassi** — albero di progressione **per classe** (non misto tra classi), **sistema parallelo** al ramo Skiru. Costi in **XP** (`experienceSpendable` condiviso con Skiru/Waza), non EXP Skiru.
+4. **Capstone** — richiede **keystone + esattamente un sentiero** (10 XP; **un solo sentiero** sbloccabile per classe) prima dell’acquisto (20 XP).
 5. **Blueprint** — ricette/progetti/tracce/riti filtrati dal tag classe (`#Medico`, …).
 
 ---
@@ -117,24 +117,30 @@ Keystone (5 XP)
 
 ---
 
+## Note nomenclatura (kanji)
+
+Alcuni nomi sottoclasse usano **kanji composti** per coerenza semantica (es. Karakurishi 絡繰師, Michimori 道守, Kojin 口人, Senseki 煽石) — non sempre termini attestati. Verifica finale prima del manuale definitivo.
+
+---
+
 ## Note implementative (per dopo)
 
 ### Separazione da Skiru «normale»
 
-Le 5 classi in `SKIRU_CATALOG` oggi sono nodi investibili 0–10 con EXP Skiru. Il design qui usa:
+Le 5 classi in `SKIRU_CATALOG` (`ishi`…`shisai`) sono **solo gate di acquisizione** (max **1** punto ciascuna, non potenziabili 0–10). Servono a **sbloccare la classe** e la tool; **non** rappresentano maestria professionale.
 
-- **Classe** = scelta binaria unica (0 o 1) + tag + tool
-- **Sottoclassi** = progressione XP dedicata (5 / 10 / 20), con prerequisiti
+- **Classe (Skiru)** = scelta unica tra le 5 (mutuamente esclusive) — 1 punto = classe attiva + tag + tool
+- **Sottoclassi** = albero XP dedicato parallelo (5 / 10 / 20), con prerequisiti — **non** passano dal ramo Skiru
 
-**Proposta dati PG:**
+**Dati PG:**
 
 ```ts
 socialClass: 'ishi' | 'shokunin' | 'ryoshi' | 'seijika' | 'shisai' | null
 socialSubclassUnlocked: string[]  // id sottoclassi acquistate
-socialDailyBudget: { ... }        // HP curati, integrità, raccolta, ecc. — reset giornaliero
+socialDailyBudget: { ... }        // HP curati, integrità, raccolta, ecc. — reset 00:00 UTC
 ```
 
-Valutare se rimuovere i punti Skiru multipli sulle 5 classi o mantenerli come «maestria professionale» separata dalla scelta classe.
+`socialClass` può derivare dal nodo Skiru a 1 pt (o essere campo dedicato sincronizzato in migrazione).
 
 ### Componenti da costruire
 
@@ -163,10 +169,10 @@ Valutare se rimuovere i punti Skiru multipli sulle 5 classi o mantenerli come «
 
 - [x] Spec regole (classe unica, tag, albero sottoclassi, limiti giornalieri)
 - [x] Catalogo 5 classi + 25 sottoclassi in `@domain/shakai-kaikyu`
-- [ ] **D0.1** — Skiru `ishi`…`shisai`: restano punti 0–10 o diventano solo flag classe (0/1)?
-- [ ] **D0.2** — XP sottoclassi = `experienceSpendable` attuale o valuta separata?
-- [ ] **D0.3** — Reset budget giornaliero: mezzanotte server (come REM) o tick Master?
-- [ ] **D0.4** — Capstone: si può avere **più di un sentiero** (10 XP) o solo uno prima del 20 XP?
+- [x] **D0.1** — Skiru `ishi`…`shisai`: **solo gate classe** (max 1 pt, non potenziabili); sottoclassi = sistema parallelo XP
+- [x] **D0.2** — XP sottoclassi = **`experienceSpendable`** condiviso (opzione A)
+- [x] **D0.3** — Reset budget giornaliero: **00:00 UTC** con tick REM (opzione A)
+- [x] **D0.4** — Capstone: **un solo sentiero** (10 XP) prima del 20 XP
 - [ ] **D0.5** — Artigiano: Costrutti materiali condividono tabella `field_constructs` o entità separate da Genkai?
 
 ### Fase 1 — Modello dati (DB)
@@ -253,14 +259,19 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 
 ---
 
-## Domande aperte (da risolvere prima di Fase 1–3)
+## Decisioni registrate (Fase 0)
+
+| # | Domanda | Decisione |
+|---|---------|-----------|
+| **Q1** | Relazione **classe** vs **punti Skiru** su `ishi`…`shisai` | **C (variante):** punti Skiru servono **solo ad acquisire** la classe (max 1, non potenziabili); sottoclassi = **sistema parallelo** XP |
+| **Q2** | **Valuta** sottoclassi (5 / 10 / 20 XP) | **A)** `experienceSpendable` condiviso |
+| **Q3** | **Più sentieri** (10 XP) sulla stessa classe | **Un solo sentiero** sbloccabile |
+| **Q4** | **Reset giornaliero** limiti | **A)** 00:00 UTC con stipendio REM |
+
+## Domande aperte (prima di Fase 1–3)
 
 | # | Domanda | Opzioni / note |
 |---|---------|----------------|
-| **Q1** | Relazione **classe** vs **punti Skiru** su `ishi`…`shisai` | A) Classe sostituisce i punti Skiru (max 1). B) Coesistono: classe = tool, punti = maestria. C) Punti Skiru rimossi dal ramo. |
-| **Q2** | **Valuta** sottoclassi (5 / 10 / 20 XP) | A) `experienceSpendable` condiviso con Skiru/Waza. B) Track XP «professionale» separato. |
-| **Q3** | **Più sentieri** (10 XP) sulla stessa classe | Testo dice «keystone + uno dei sentieri» per capstone — confermare: **un solo** sentiero sbloccabile? |
-| **Q4** | **Reset giornaliero** limiti | A) 00:00 UTC con stipendio. B) Reset manuale Master. C) Rolling 24h. |
 | **Q5** | **Visibilità** classe agli altri PG | Pubblica in scheda / nascosta / solo Shinigami? |
 | **Q6** | **Costrutti materiali** (Artigiano) | Stessa meccanica resistenza di Genkai senza Jigo-Ka? Tabella separata? |
 | **Q7** | **Patti** (Politico) | Entità DB dedicate (`pacts`)? Solo jsonb su PG? Interazione con Ordini? |

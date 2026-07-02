@@ -11,6 +11,15 @@ export const GOJU_ELEMENTAL_SKIRU_IDS = [
   'goju-aria',
 ] as const
 
+/** Classi sociali Shakai Kaikyū — mutuamente esclusive (max 1 attiva, gate 1 pt). */
+export const SHAKAI_KAIKYU_CLASS_SKIRU_IDS = [
+  'ishi',
+  'shokunin',
+  'ryoshi',
+  'seijika',
+  'shisai',
+] as const
+
 /** Tetto punti per singola Skiru (UltimateManual §2.7). */
 export const SKIRU_MAX_POINTS = 10
 
@@ -138,6 +147,11 @@ export function validateSkiruSheet(sheet: SkiruSheet): SkiruValidationResult {
   const activeGojuElements = GOJU_ELEMENTAL_SKIRU_IDS.filter((id) => getSkiruPoints(sheet, id) > 0)
   if (activeGojuElements.length > 1) {
     errors.push('Gojū: una sola affinità elementale può essere attiva.')
+  }
+
+  const activeSocialClasses = SHAKAI_KAIKYU_CLASS_SKIRU_IDS.filter((id) => getSkiruPoints(sheet, id) > 0)
+  if (activeSocialClasses.length > 1) {
+    errors.push('Shakai Kaikyū: una sola classe sociale può essere attiva.')
   }
 
   return { ok: errors.length === 0, errors }
