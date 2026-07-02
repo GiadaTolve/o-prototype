@@ -1,6 +1,5 @@
 import { and, eq } from 'drizzle-orm'
 import {
-  DROP_TABLE_DAILY_CAP_PER_PLAYER,
   formatDropEventMessage,
   getDropTable,
   parseDropCommand,
@@ -11,16 +10,12 @@ import {
 } from '@domain/economy'
 import { getJunkItemDef } from '@domain/economy/junklist'
 import { db } from '../../plugins/db'
-import { characters, dropTableDailyUsage, items, sceneGroundLoot } from '../../db/schema'
+import { characters, items, sceneGroundLoot } from '../../db/schema'
 import { addItemByCatalogKey } from '../inventory/inventory.service'
 
 export interface RoomParticipant {
   characterId: string
   name: string
-}
-
-function utcDayKey(d = new Date()): string {
-  return d.toISOString().slice(0, 10)
 }
 
 async function getCharacterDisplayName(characterId: string): Promise<string> {
@@ -47,40 +42,6 @@ function resolvePlayersInRoom(
     if (exact.length === 1) return exact
   }
   return []
-}
-
-async function getTableUsageCount(characterId: string, dayKey: string): Promise<number> {
-  const row = await db.query.dropTableDailyUsage.findFirst({
-    where: and(
-      eq(dropTableDailyUsage.characterId, characterId),
-      eq(dropTableDailyUsage.dayKey, dayKey),
-    ),
-  })
-  return row?.count ?? 0
-}
-
-async function incrementTableUsage(characterId: string, dayKey: string): Promise<number> {
-  const existing = await db.query.dropTableDailyUsage.findFirst({
-    where: and(
-      eq(dropTableDailyUsage.characterId, characterId),
-      eq(dropTableDailyUsage.dayKey, dayKey),
-    ),
-  })
-  if (existing) {
-    const next = (existing.count ?? 0) + 1
-    await db
-      .update(dropTableDailyUsage)
-      .set({ count: next })
-      .where(
-        and(
-          eq(dropTableDailyUsage.characterId, characterId),
-          eq(dropTableDailyUsage.dayKey, dayKey),
-        ),
-      )
-    return next
-  }
-  await db.insert(dropTableDailyUsage).values({ characterId, dayKey, count: 1 })
-  return 1
 }
 
 async function grantCatalogLoot(
@@ -206,25 +167,16 @@ async function executeTableDrop(
     throw new Error('Destinatario non trovato nella room.')
   }
 
-  const dayKey = utcDayKey()
   const lines: string[] = []
   const affected: string[] = []
 
   for (const t of targets) {
-    const used = await getTableUsageCount(t.characterId, dayKey)
-    if (used >= DROP_TABLE_DAILY_CAP_PER_PLAYER) {
-      const label = await getCharacterDisplayName(t.characterId)
-      lines.push(`📦 ${label}: limite giornaliero drop da tabella raggiunto.`)
-      continue
-    }
-
     const junkId = rollDropTableJunk(cmd.tableId)
     if (!junkId) {
       lines.push(`📦 ${t.name}: estrazione fallita.`)
       continue
     }
 
-    await incrementTableUsage(t.characterId, dayKey)
     const line = await grantCatalogLoot(t.characterId, junkId, 1)
     const label = await getCharacterDisplayName(t.characterId)
     lines.push(formatDropEventMessage(label, [line]))

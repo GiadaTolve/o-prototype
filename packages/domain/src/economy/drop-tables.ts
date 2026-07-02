@@ -49,8 +49,8 @@ export const DROP_TABLES: readonly DropTableDef[] = [
   },
 ] as const
 
-/** Max drop da tabella per PG per giornata reale (anti-farming). */
-export const DROP_TABLE_DAILY_CAP_PER_PLAYER = 3
+/** Drop da tabella: nessun tetto giornaliero — amministrato da Master / quest / fetch (D-E5). */
+export const DROP_TABLE_DAILY_CAP_PER_PLAYER: number | null = null
 
 /** Mapping pool → voci junk (per roll server-side). */
 export const DROP_POOL_JUNK_IDS: Readonly<Record<DropPoolCategory, readonly string[]>> = {
