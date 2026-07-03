@@ -104,3 +104,11 @@ export const MANUAL_MADOSHO_POOL_IDS: Record<MadoshoId, readonly string[]> = {
 export function totalManualMadoshoWazaCount(): number {
   return MADOSHO_IDS.reduce((n, id) => n + MANUAL_MADOSHO_POOL_IDS[id].length, 0)
 }
+
+/** Risale al Madoshō proprietario di un poolId waza, cercando nell'elenco manuale. */
+export function resolveMadoshoIdFromPoolId(poolId: string): MadoshoId | null {
+  for (const id of MADOSHO_IDS) {
+    if (MANUAL_MADOSHO_POOL_IDS[id].includes(poolId)) return id
+  }
+  return null
+}
