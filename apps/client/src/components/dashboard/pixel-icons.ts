@@ -34,6 +34,23 @@ export const PIXEL_ICON_RUOLI: PixelIconRuolo[] = [
   "shinigami",
 ];
 
+/** Pannelli sbloccati dalla pixel-icon ruolo (icona staff === ruolo). */
+export const STAFF_ROLE_ACCESS_HINT: Record<PixelIconRuolo, string> = {
+  admin: "Gestionale + Sviluppo",
+  moderatore: "Gestionale",
+  fixer: "Sviluppo",
+  "capo-shinigami": "Shinigami + comandi master",
+  shinigami: "Shinigami + comandi master",
+};
+
+export function descriptionForRuoloPixelIcon(ruolo: PixelIconRuolo): string {
+  return STAFF_ROLE_ACCESS_HINT[ruolo];
+}
+
+export function optionLabelForRuoloPixelIcon(ruolo: PixelIconRuolo): string {
+  return `${labelForRuoloPixelIcon(ruolo)} — ${STAFF_ROLE_ACCESS_HINT[ruolo]}`;
+}
+
 export const PIXEL_ICON_ORDINI: PixelIconOrdine[] = ["mugen-tai", "chisen-tai"];
 
 /** Mapping ruolo → file. Capo-shinigami usa shinigami (fino a asset dedicato). */

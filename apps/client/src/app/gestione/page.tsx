@@ -9,9 +9,13 @@ import { formatNarrativeText } from "@/lib/narrative-parser";
 import { GestioneRichiestePanel } from "@/components/gestione/GestioneRichiestePanel";
 import {
   PIXEL_ICON_RUOLI,
+  PIXEL_ICON_SIZE,
+  getPixelIconUrlRuolo,
   labelForRuoloPixelIcon,
+  optionLabelForRuoloPixelIcon,
   type PixelIconRuolo,
 } from "@/components/dashboard/pixel-icons";
+import Image from "next/image";
 
 type User = {
   id: string;
@@ -167,8 +171,8 @@ export default function GestionePage() {
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">ID</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Email</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Nome PG</th>
-                        <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Ruolo</th>
-                        <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Staff</th>
+                        <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Ruolo staff</th>
+                        <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Account</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Ban State</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Azioni</th>
                       </tr>
@@ -212,17 +216,10 @@ export default function GestionePage() {
                               );
                             })()}
                           </td>
-                          <td className="px-4 py-2 text-gray-400 font-mono text-xs">{user.role}</td>
-                          <td className="px-4 py-2 text-[var(--accent-violet-light)] text-xs">
-                            {(() => {
-                              const character = user.characters?.[0];
-                              const icon = (character?.uiMetadata?.roleIcon ?? "").toLowerCase();
-                              if (!icon || !PIXEL_ICON_RUOLI.includes(icon as PixelIconRuolo)) {
-                                return <span className="text-gray-600">—</span>;
-                              }
-                              return labelForRuoloPixelIcon(icon as PixelIconRuolo);
-                            })()}
+                          <td className="px-4 py-2">
+                            <StaffRoleDisplay roleIcon={(user.characters?.[0]?.uiMetadata?.roleIcon ?? "").toLowerCase()} />
                           </td>
+                          <td className="px-4 py-2 text-gray-500 font-mono text-xs">{user.role}</td>
                           <td className="px-4 py-2">
                             <span className={`text-xs ${
                               user.banState === "FULL" ? "text-red-400" :
@@ -298,6 +295,26 @@ export default function GestionePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function StaffRoleDisplay({ roleIcon }: { roleIcon: string }) {
+  if (!roleIcon || !PIXEL_ICON_RUOLI.includes(roleIcon as PixelIconRuolo)) {
+    return <span className="text-gray-600 text-xs">—</span>;
+  }
+  const ruolo = roleIcon as PixelIconRuolo;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--accent-violet-light)]">
+      <Image
+        src={getPixelIconUrlRuolo(ruolo)}
+        alt=""
+        title={labelForRuoloPixelIcon(ruolo)}
+        width={PIXEL_ICON_SIZE}
+        height={PIXEL_ICON_SIZE}
+        className="w-4 h-4 shrink-0"
+      />
+      <span>{optionLabelForRuoloPixelIcon(ruolo)}</span>
+    </span>
   );
 }
 
@@ -450,8 +467,63 @@ function UserManagementModal({
             </div>
           )}
 
+          {character && canChangeUserRole && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Ruolo staff (pixel-icon)</p>
+              <p className="text-xs text-gray-500 mb-2">
+                Icona accanto al nome in chat e scheda. Fixer → Sviluppo · Moderatore/Proprietario → Gestionale · Shinigami/Capo → pannello Shinigami.
+              </p>
+              <div className="flex gap-2">
+                <select
+                  value={newRoleIcon}
+                  onChange={(e) => setNewRoleIcon(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                >
+                  <option value="">Nessuna</option>
+                  {PIXEL_ICON_RUOLI.map((icon) => (
+                    <option key={icon} value={icon}>
+                      {optionLabelForRuoloPixelIcon(icon)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleUpdateRoleIcon}
+                  disabled={
+                    saving ||
+                    newRoleIcon === (character.uiMetadata?.roleIcon ?? "").toLowerCase()
+                  }
+                  className="px-3 py-2 rounded border border-[var(--accent-violet)] text-[var(--accent-violet-light)] text-xs hover:bg-[var(--accent-violet)]/10 disabled:opacity-50"
+                >
+                  Aggiorna
+                </button>
+              </div>
+              {newRoleIcon && PIXEL_ICON_RUOLI.includes(newRoleIcon as PixelIconRuolo) && (
+                <div className="mt-2 inline-flex items-center gap-2 rounded border border-[var(--border-color)] bg-black/30 px-2 py-1">
+                  <Image
+                    src={getPixelIconUrlRuolo(newRoleIcon as PixelIconRuolo)}
+                    alt=""
+                    width={PIXEL_ICON_SIZE}
+                    height={PIXEL_ICON_SIZE}
+                    className="w-5 h-5"
+                  />
+                  <span className="text-xs text-[var(--accent-violet-light)]">
+                    {optionLabelForRuoloPixelIcon(newRoleIcon as PixelIconRuolo)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {character && !canChangeUserRole && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Ruolo staff</p>
+              <StaffRoleDisplay roleIcon={(character.uiMetadata?.roleIcon ?? "").toLowerCase()} />
+            </div>
+          )}
+
           <div>
-            <p className="text-sm text-gray-400 mb-1">Ruolo</p>
+            <p className="text-sm text-gray-400 mb-1">Ruolo account (sistema)</p>
             {canChangeUserRole ? (
               <div className="flex gap-2">
                 <select
@@ -475,44 +547,10 @@ function UserManagementModal({
             ) : (
               <div className="space-y-1">
                 <p className="text-sm text-white font-mono">{user.role}</p>
-                <p className="text-xs text-gray-500">Solo Admin può modificare il ruolo.</p>
+                <p className="text-xs text-gray-500">Privilegio tecnico DB — non è il ruolo staff visibile in chat.</p>
               </div>
             )}
           </div>
-
-          {character && canChangeUserRole && (
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Icona staff (pixel)</p>
-              <p className="text-xs text-gray-500 mb-2">
-                Ruolo visibile accanto al nome. Fixer = Sviluppo; Moderatore/Admin = Gestionale; Shinigami/Capo = pannello Shinigami e comandi master.
-              </p>
-              <div className="flex gap-2">
-                <select
-                  value={newRoleIcon}
-                  onChange={(e) => setNewRoleIcon(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
-                >
-                  <option value="">Nessuna</option>
-                  {PIXEL_ICON_RUOLI.map((icon) => (
-                    <option key={icon} value={icon}>
-                      {labelForRuoloPixelIcon(icon)}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleUpdateRoleIcon}
-                  disabled={
-                    saving ||
-                    newRoleIcon === (character.uiMetadata?.roleIcon ?? "").toLowerCase()
-                  }
-                  className="px-3 py-2 rounded border border-[var(--accent-violet)] text-[var(--accent-violet-light)] text-xs hover:bg-[var(--accent-violet)]/10 disabled:opacity-50"
-                >
-                  Aggiorna
-                </button>
-              </div>
-            </div>
-          )}
 
           <div>
             <p className="text-sm text-gray-400 mb-1">Ban State</p>
