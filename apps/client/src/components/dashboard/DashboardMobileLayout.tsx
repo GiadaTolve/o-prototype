@@ -26,6 +26,7 @@ type Props = {
   ambientazioneTrigger: number;
   forumTrigger: number;
   gestioneTrigger: number;
+  sviluppoTrigger: number;
   messages: Array<{ id: string; zone: string; characterId: string; name: string; surname?: string | null; content: string; createdAt: string }>;
   sendMessage: (text: string, locationTag?: string | null) => void;
   chatConnected: boolean;
@@ -55,6 +56,7 @@ export function DashboardMobileLayout({
   ambientazioneTrigger,
   forumTrigger,
   gestioneTrigger,
+  sviluppoTrigger,
   messages,
   sendMessage,
   chatConnected,
@@ -190,6 +192,7 @@ export function DashboardMobileLayout({
               ambientazioneTrigger={ambientazioneTrigger}
               forumTrigger={forumTrigger}
               gestioneTrigger={gestioneTrigger}
+              sviluppoTrigger={sviluppoTrigger}
               onRoomChange={onRoomChange}
               messages={messages}
               sendMessage={sendMessage}
@@ -198,6 +201,7 @@ export function DashboardMobileLayout({
               usersInRoom={usersInRoom}
               canAccessShinigami={char?.canAccessShinigami}
               canAccessGestione={char?.canAccessGestione}
+              canAccessSviluppo={char?.canAccessSviluppo}
               char={char}
             />
           </div>

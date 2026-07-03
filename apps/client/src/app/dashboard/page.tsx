@@ -38,6 +38,7 @@ export default function DashboardPage() {
   const [ambientazioneTrigger, setAmbientazioneTrigger] = useState(0);
   const [forumTrigger, setForumTrigger] = useState(0);
   const [gestioneTrigger, setGestioneTrigger] = useState(0);
+  const [sviluppoTrigger, setSviluppoTrigger] = useState(0);
   const [smsUnread, setSmsUnread] = useState(0);
   const [smsNotificationVisible, setSmsNotificationVisible] = useState(false);
   const [notificheUnread, setNotificheUnread] = useState(0);
@@ -492,6 +493,7 @@ export default function DashboardPage() {
         ambientazioneTrigger={ambientazioneTrigger}
         forumTrigger={forumTrigger}
         gestioneTrigger={gestioneTrigger}
+        sviluppoTrigger={sviluppoTrigger}
         messages={messages}
         sendMessage={sendMessage}
         chatConnected={chatConnected}
@@ -531,7 +533,9 @@ export default function DashboardPage() {
           onOpenAmbientazione={() => setAmbientazioneTrigger((t) => t + 1)}
           onOpenForum={() => setForumTrigger((t) => t + 1)}
           onOpenGestione={() => setGestioneTrigger((t) => t + 1)}
+          onOpenSviluppo={() => setSviluppoTrigger((t) => t + 1)}
           canAccessGestione={char?.canAccessGestione}
+          canAccessSviluppo={char?.canAccessSviluppo}
           canAccessShinigami={char?.canAccessShinigami}
           smsNotification={smsNotificationVisible}
         />
@@ -554,6 +558,7 @@ export default function DashboardPage() {
           ambientazioneTrigger={ambientazioneTrigger}
           forumTrigger={forumTrigger}
           gestioneTrigger={gestioneTrigger}
+          sviluppoTrigger={sviluppoTrigger}
           onRoomChange={setRoomId}
           messages={messages}
           sendMessage={sendMessage}
@@ -562,6 +567,7 @@ export default function DashboardPage() {
           usersInRoom={roomId ? usersInRoom : []}
           canAccessShinigami={char?.canAccessShinigami}
           canAccessGestione={char?.canAccessGestione}
+          canAccessSviluppo={char?.canAccessSviluppo}
           char={char}
         />
         <DashboardRightCol

@@ -36,10 +36,9 @@ export default function SviluppoPage() {
       .then((char) => {
         const access = Boolean((char as { canAccessSviluppo?: boolean })?.canAccessSviluppo);
         setCanAccess(access);
-        if (!access) router.push("/dashboard");
       })
       .catch(() => {
-        router.push("/dashboard");
+        setCanAccess(false);
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -52,10 +51,16 @@ export default function SviluppoPage() {
     );
   }
 
-  if (!canAccess) return null;
+  if (!canAccess) {
+    return (
+      <div className="min-h-full bg-[var(--panel-bg)] flex items-center justify-center p-6">
+        <p className="text-gray-400 text-sm">Accesso riservato allo staff Sviluppo.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[var(--panel-bg)] p-6">
+    <div className="min-h-full h-full bg-[var(--panel-bg)] p-4 md:p-6 overflow-auto">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-1 border-b border-[var(--border-color)] mb-6 flex-wrap">
           {[

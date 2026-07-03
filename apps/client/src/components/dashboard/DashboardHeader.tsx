@@ -11,7 +11,8 @@ const PUBLIC_LINKS = [
 ] as const;
 
 const RESTRICTED_LINKS = [
-  { href: "/gestione", label: "Pannello Gestionale", key: "gestione" as const },
+  { href: "/gestione", label: "Gestionale", key: "gestione" as const },
+  { href: "/sviluppo", label: "Sviluppo", key: "sviluppo" as const },
   { href: "/shinigami", label: "Shinigami", key: "shinigami" as const },
 ] as const;
 
@@ -22,7 +23,9 @@ type Props = {
   onOpenAmbientazione?: () => void;
   onOpenForum?: () => void;
   onOpenGestione?: () => void;
+  onOpenSviluppo?: () => void;
   canAccessGestione?: boolean;
+  canAccessSviluppo?: boolean;
   canAccessShinigami?: boolean;
   /** Notifica SMS: mostra "*drin drin!*" quando arriva un nuovo messaggio */
   smsNotification?: boolean;
@@ -35,7 +38,9 @@ export function DashboardHeader({
   onOpenAmbientazione,
   onOpenForum,
   onOpenGestione,
+  onOpenSviluppo,
   canAccessGestione,
+  canAccessSviluppo,
   canAccessShinigami,
   smsNotification = false,
 }: Props) {
@@ -46,9 +51,11 @@ export function DashboardHeader({
     router.push("/auth");
   };
 
-  const restricted = RESTRICTED_LINKS.filter(({ key }) =>
-    key === "gestione" ? canAccessGestione : canAccessShinigami
-  );
+  const restricted = RESTRICTED_LINKS.filter(({ key }) => {
+    if (key === "gestione") return canAccessGestione;
+    if (key === "sviluppo") return canAccessSviluppo;
+    return canAccessShinigami;
+  });
   const links = [...PUBLIC_LINKS, ...restricted];
 
   const handleLinkClick = (key: string | undefined, href: string) => {
@@ -59,6 +66,10 @@ export function DashboardHeader({
     }
     if (key === "gestione" && onOpenGestione) {
       onOpenGestione();
+      return;
+    }
+    if (key === "sviluppo" && onOpenSviluppo) {
+      onOpenSviluppo();
       return;
     }
     if (href === "/guida" && onOpenGuida) {
@@ -101,9 +112,8 @@ export function DashboardHeader({
             <button
               type="button"
               onClick={onGoToMap}
-              className="text-xs md:text-sm uppercase tracking-wider text-gray-400 hover:text-[var(--accent-gold)] transition-colors px-2 py-1 flex items-center gap-1.5"
+              className="text-xs md:text-sm uppercase tracking-wider text-gray-400 hover:text-[var(--accent-gold)] transition-colors px-2 py-1"
             >
-              <FontAwesomeIcon icon={icons.map} className="w-3.5 h-3.5" />
               Mappa
             </button>
           )}

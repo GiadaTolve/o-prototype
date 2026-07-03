@@ -67,6 +67,12 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           roleIcon === 'admin' ||
           roleIcon === 'capo-shinigami'
 
+        const canAccessSviluppo =
+          userRole === 'ADMIN' ||
+          roleIcon === 'moderatore' ||
+          roleIcon === 'admin' ||
+          roleIcon === 'fixer'
+
         const canEditStaffAlias = canAccessGestione
         const canEditMasterNotes = userRole === 'ADMIN' || userRole === 'MASTER'
 
@@ -92,6 +98,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           },
           canAccessShinigami,
           canAccessGestione,
+          canAccessSviluppo,
           canEditStaffAlias,
           canEditMasterNotes,
           pendingLevelUp: readPendingLevelUp(char.uiMetadata),

@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { authPlugin } from '../../plugins/auth.plugin'
+import { userHasSviluppoAccess } from '../../lib/gestione-access'
 import {
   getWazaCatalogEntriesSync,
   listAdminWaza,
@@ -12,6 +13,12 @@ function hasStaffRole(role: string | undefined): boolean {
   return r === 'ADMIN' || r === 'MASTER'
 }
 
+async function canAccessWazaAdmin(user: { id: string; role?: string } | null): Promise<boolean> {
+  if (!user) return false
+  if (hasStaffRole(user.role)) return true
+  return userHasSviluppoAccess(user.id, user.role)
+}
+
 export const wazaRoutes = new Elysia({ prefix: '/waza' })
   .use(authPlugin)
   .guard({ isAuthenticated: true }, (app) =>
@@ -21,18 +28,18 @@ export const wazaRoutes = new Elysia({ prefix: '/waza' })
         return { entries: getWazaCatalogEntriesSync() }
       })
       .get('/admin', async ({ user, set }) => {
-        if (!hasStaffRole(user?.role)) {
+        if (!(await canAccessWazaAdmin(user))) {
           set.status = 403
-          return { error: 'Accesso riservato ad admin/master' }
+          return { error: 'Accesso riservato allo staff Sviluppo' }
         }
         return listAdminWaza()
       })
       .put(
         '/admin/:poolId',
         async ({ user, params, body, set }) => {
-          if (!hasStaffRole(user?.role)) {
+          if (!(await canAccessWazaAdmin(user))) {
             set.status = 403
-            return { error: 'Accesso riservato ad admin/master' }
+            return { error: 'Accesso riservato allo staff Sviluppo' }
           }
           try {
             const saved = await upsertAdminWazaByPoolId(params.poolId, body)

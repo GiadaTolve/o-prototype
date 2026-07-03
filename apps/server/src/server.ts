@@ -32,6 +32,7 @@ import { adminRoutes } from './modules/admin/admin.routes'
 import { musicRoutes } from './modules/music/music.routes'
 import { forumRoutes } from './modules/forum/forum.routes'
 import { bestiarioRoutes } from './modules/bestiario/bestiario.routes'
+import { wazaRoutes } from './modules/waza/waza.routes'
 import { wikiRoutes } from './modules/wiki/wiki.routes'
 import { playerRequestsRoutes } from './modules/player-requests/player-requests.routes'
 import { startDailyTickScheduler } from './scheduler/daily-tick.scheduler'
@@ -76,6 +77,7 @@ const app = new Elysia()
   .use(musicRoutes)
   .use(forumRoutes)
   .use(bestiarioRoutes)
+  .use(wazaRoutes)
   .use(wikiRoutes)
   .use(playerRequestsRoutes)
   .use(realtimeRoutes)

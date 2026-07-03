@@ -61,7 +61,7 @@ function isDiceOnlyDraft(draft: string): boolean {
   return /^\s*\/?(?:d|dado)\s+\d+\s*$/i.test(draft.trim());
 }
 
-type View = "root" | "game-map" | "zone-list" | "chat" | "shinigami" | "guida" | "ambientazione" | "forum" | "gestione";
+type View = "root" | "game-map" | "zone-list" | "chat" | "shinigami" | "guida" | "ambientazione" | "forum" | "gestione" | "sviluppo";
 
 type Props = {
   mapTrigger?: number;
@@ -70,6 +70,7 @@ type Props = {
   ambientazioneTrigger?: number;
   forumTrigger?: number;
   gestioneTrigger?: number;
+  sviluppoTrigger?: number;
   onRoomChange: (room: RoomId | null) => void;
   messages: ChatMessage[];
   sendMessage: (text: string, locationTag?: string | null) => void;
@@ -81,6 +82,8 @@ type Props = {
   canAccessShinigami?: boolean;
   /** Solo Admin/Mod/Capo vedono "Global Message" in chat. */
   canAccessGestione?: boolean;
+  /** Solo Admin/Mod/Fixer: pannello Sviluppo. */
+  canAccessSviluppo?: boolean;
   /** Personaggio corrente (per ShinigamiContent). */
   char?: CharacterSummary;
 };
@@ -92,6 +95,7 @@ export function DashboardCenter({
   ambientazioneTrigger = 0,
   forumTrigger = 0,
   gestioneTrigger = 0,
+  sviluppoTrigger = 0,
   onRoomChange,
   messages,
   sendMessage,
@@ -100,6 +104,7 @@ export function DashboardCenter({
   usersInRoom,
   canAccessShinigami,
   canAccessGestione,
+  canAccessSviluppo,
   char,
 }: Props) {
   const [view, setView] = useState<View>("root");
@@ -156,6 +161,12 @@ export function DashboardCenter({
       setView("gestione");
     }
   }, [gestioneTrigger, canAccessGestione]);
+
+  useEffect(() => {
+    if (sviluppoTrigger > 0 && canAccessSviluppo) {
+      setView("sviluppo");
+    }
+  }, [sviluppoTrigger, canAccessSviluppo]);
 
   const goRoot = () => {
     setView("root");
@@ -466,6 +477,42 @@ export function DashboardCenter({
               src="/gestione"
               className="w-full h-full min-h-[600px] border-0"
               title="Gestione"
+            />
+          </div>
+        </div>
+      )}
+
+      {view === "sviluppo" && (
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <h2 className="font-display text-lg text-[var(--accent-gold)]">Sviluppo</h2>
+            <button
+              type="button"
+              onClick={goRoot}
+              className="text-sm text-gray-400 hover:text-[var(--accent-gold)]"
+            >
+              ← Mappa
+            </button>
+          </div>
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src="/sviluppo"
+              className="w-full h-full min-h-[600px] border-0"
+              title="Sviluppo"
             />
           </div>
         </div>

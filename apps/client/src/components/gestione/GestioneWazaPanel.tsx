@@ -264,7 +264,7 @@ export function GestioneWazaPanel({
         <p className="text-gray-500 text-sm">Caricamento catalogo…</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-4 min-h-[480px]">
-          <div className="rounded border border-[var(--border-color)] bg-[var(--background)]/40 overflow-hidden flex flex-col max-h-[70vh]">
+          <div className="rounded border border-[var(--border-color)] bg-[var(--background)]/40 overflow-hidden flex flex-col max-h-[min(70vh,560px)]">
             <div className="px-3 py-2 border-b border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-500">
               {filtered.length} waza
             </div>
