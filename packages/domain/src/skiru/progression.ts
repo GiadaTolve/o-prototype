@@ -1,4 +1,10 @@
 import { getSkiruDef, SKIRU_CATALOG } from './catalog'
+import {
+  getActiveExclusiveSkiruPath,
+  getExclusiveSkiruPath,
+  isJigaExclusiveSkiruId,
+  JIGA_EXCLUSIVE_SKIRU_IDS,
+} from './exclusive-skiru'
 import { SOKAIJU_GATE_SKIRU_ID } from './sokaiju-index'
 import type { SkiruSheet, SkiruValidationResult } from './types'
 
@@ -134,6 +140,7 @@ export function validateSkiruSheet(sheet: SkiruSheet): SkiruValidationResult {
       continue
     }
     if (points > 0 && def.parentSkiruId) {
+      if (isJigaExclusiveSkiruId(id)) continue
       const min = def.minParentPoints ?? 1
       const parentPts = getSkiruPoints(sheet, def.parentSkiruId)
       if (parentPts < min) {
@@ -152,6 +159,18 @@ export function validateSkiruSheet(sheet: SkiruSheet): SkiruValidationResult {
   const activeSocialClasses = SHAKAI_KAIKYU_CLASS_SKIRU_IDS.filter((id) => getSkiruPoints(sheet, id) > 0)
   if (activeSocialClasses.length > 1) {
     errors.push('Shakai Kaikyū: una sola classe sociale può essere attiva.')
+  }
+
+  const activeJigaPath = getActiveExclusiveSkiruPath(sheet)
+  if (activeJigaPath) {
+    for (const id of JIGA_EXCLUSIVE_SKIRU_IDS) {
+      if (getSkiruPoints(sheet, id) <= 0) continue
+      const path = getExclusiveSkiruPath(id)
+      if (path && path !== activeJigaPath) {
+        errors.push('Jiga no Shihaisha: un solo percorso esclusivo può essere attivo.')
+        break
+      }
+    }
   }
 
   return { ok: errors.length === 0, errors }

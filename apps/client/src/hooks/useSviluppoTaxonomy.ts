@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MADOSHO_CATALOG } from "@domain/progression/madosho";
-import { ORDER_REQUEST_VALUES, PREMIO_REQUEST_OPTIONS } from "@domain/progression/player-requests";
+import { ORDER_REQUEST_VALUES } from "@domain/progression/player-requests";
 
 export type TaxonomyKind = "madosho" | "ordine" | "premio";
 
@@ -19,7 +19,7 @@ const STORAGE_KEY = "oyasumi.sviluppo.taxonomy.v1";
 const DEFAULT_STATE: SviluppoTaxonomyState = {
   madosho: MADOSHO_CATALOG.map((m) => ({ id: m.id, name: m.name, statute: m.statute })),
   ordine: ORDER_REQUEST_VALUES.map((id) => ({ id: id.toLowerCase(), name: id, statute: "" })),
-  premio: PREMIO_REQUEST_OPTIONS.map((p) => ({ id: p.id, name: p.label, statute: "" })),
+  premio: [],
 };
 
 export function useSviluppoTaxonomy() {

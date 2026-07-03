@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  EXCLUSIVE_SKIRU_REQUEST_OPTIONS,
   MADOSHO_CATALOG,
   ORDER_REQUEST_VALUES,
-  PREMIO_REQUEST_OPTIONS,
   TENKAN_REQUEST_VALUE,
+  labelForExclusiveSkiruRequest,
   labelForOrderRequest,
-  labelForPremioRequest,
   type PlayerRequestKind,
 } from "@domain/progression/player-requests";
 import { getMadoshoDef } from "@domain/progression/madosho";
@@ -29,8 +29,17 @@ type Assigned = {
   madoshoId: string | null;
   order: string;
   premioSpeciale: string | null;
+  exclusiveSkiruId?: string | null;
+  exclusiveSkiruLabel?: string | null;
   tenkanOpen?: boolean;
 };
+
+const REQUEST_SECTIONS: PlayerRequestKind[] = [
+  "MADOSHO",
+  "ORDER",
+  "SKIRU_ESCLUSIVA",
+  "TENKAN",
+];
 
 const KIND_META: Record<
   PlayerRequestKind,
@@ -46,10 +55,15 @@ const KIND_META: Record<
     hint: "Mugen-Tai o Chisen-Tai — assegnazione al grado Hakyō (staff).",
     emptyOption: "— Scegli ordine —",
   },
+  SKIRU_ESCLUSIVA: {
+    title: "Skiru esclusive",
+    hint: "Milestone Jiga no Shihaisha — approvazione staff. All'approvazione si spende EXP (un solo percorso attivo).",
+    emptyOption: "— Scegli Skiru esclusiva —",
+  },
   PREMIO: {
     title: "Premi",
-    hint: "Premio speciale / milestone Jiga no Shihaisha.",
-    emptyOption: "— Scegli premio —",
+    hint: "Premi narrativi — contenuto in definizione.",
+    emptyOption: "— In arrivo —",
   },
   TENKAN: {
     title: "Tenkan — Terzo Occhio",
@@ -90,12 +104,17 @@ function assignedLabel(kind: PlayerRequestKind, assigned: Assigned): string {
     if (assigned.order === "CHISEN-TAI") return "Chisen-Tai";
     return "Nessuno";
   }
+  if (kind === "SKIRU_ESCLUSIVA") {
+    if (assigned.exclusiveSkiruLabel) return assigned.exclusiveSkiruLabel;
+    if (assigned.exclusiveSkiruId) {
+      return labelForExclusiveSkiruRequest(assigned.exclusiveSkiruId);
+    }
+    return "Nessuna";
+  }
   if (kind === "TENKAN") {
     return assigned.tenkanOpen ? "Terzo Occhio aperto" : "Non ancora aperto";
   }
-  return assigned.premioSpeciale
-    ? labelForPremioRequest(assigned.premioSpeciale)
-    : "Nessuno";
+  return "In arrivo";
 }
 
 export function SchedaRichiestePage() {
@@ -111,6 +130,7 @@ export function SchedaRichiestePage() {
   const [draft, setDraft] = useState<Record<PlayerRequestKind, string>>({
     MADOSHO: "",
     ORDER: "",
+    SKIRU_ESCLUSIVA: "",
     PREMIO: "",
     TENKAN: TENKAN_REQUEST_VALUE,
   });
@@ -174,8 +194,8 @@ export function SchedaRichiestePage() {
           Richieste
         </h2>
         <p className="text-[11px] text-[var(--accent-violet-light)]/70 mt-1 max-w-lg">
-          Indica le tue preferenze per Madoshō, Ordine, Premi e Tenkan. Lo staff le valuta dal pannello Gestione →
-          Richieste.
+          Indica le tue preferenze per Madoshō, Ordine, Skiru esclusive e Tenkan. Lo staff le valuta
+          dal pannello Gestione → Richieste. I Premi narrativi saranno disponibili in seguito.
         </p>
       </div>
 
@@ -184,7 +204,7 @@ export function SchedaRichiestePage() {
       )}
 
       <div className="space-y-4">
-        {(["MADOSHO", "ORDER", "PREMIO", "TENKAN"] as const).map((kind) => {
+        {REQUEST_SECTIONS.map((kind) => {
           const meta = KIND_META[kind];
           const current = requestForKind(kind);
           return (
@@ -235,8 +255,8 @@ export function SchedaRichiestePage() {
                           {labelForOrderRequest(o)}
                         </option>
                       ))}
-                    {kind === "PREMIO" &&
-                      (PREMIO_REQUEST_OPTIONS ?? []).map((p) => (
+                    {kind === "SKIRU_ESCLUSIVA" &&
+                      (EXCLUSIVE_SKIRU_REQUEST_OPTIONS ?? []).map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.label}
                         </option>

@@ -4,6 +4,7 @@ import { userHasGestioneAccess } from '../../lib/gestione-access'
 import { characterService } from '../characters/characters.service'
 import { playerRequestsService } from './player-requests.service'
 import { isSokaijuGateOpen } from '@domain/skiru/progression'
+import { getActiveJigaMilestone, getJigaMilestoneLabel } from '@domain/skiru/exclusive-skiru'
 
 export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
   .use(authPlugin)
@@ -22,6 +23,7 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
           }
           const skiruSheet = (char.skiruSheet ?? {}) as Record<string, number>
           const requests = await playerRequestsService.listForCharacter(char.id)
+          const activeExclusive = getActiveJigaMilestone(skiruSheet)
           return {
             requests,
             assigned: {
@@ -31,6 +33,10 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
                 ((char.uiMetadata as { premioSpeciale?: string } | null)?.premioSpeciale as
                   | string
                   | undefined) ?? null,
+              exclusiveSkiruId: activeExclusive,
+              exclusiveSkiruLabel: activeExclusive
+                ? getJigaMilestoneLabel(activeExclusive)
+                : null,
               tenkanOpen: isSokaijuGateOpen(skiruSheet),
             },
           }
@@ -71,6 +77,7 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
               kind: t.Union([
                 t.Literal('MADOSHO'),
                 t.Literal('ORDER'),
+                t.Literal('SKIRU_ESCLUSIVA'),
                 t.Literal('PREMIO'),
                 t.Literal('TENKAN'),
               ]),

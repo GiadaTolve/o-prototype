@@ -462,6 +462,8 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     description: 'Possesso del 55% delle tecniche della propria Madoshō.',
     derivedFormula: '+5% Danno su waza Madoshō. +10% IR su waza Madoshō.',
     kind: 'milestone',
+    maxPoints: 1,
+    expPurchasable: false,
   },
   {
     id: 'kanpeki-keishosha',
@@ -474,6 +476,10 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
       'Possesso dell\'85% o più delle tecniche della propria Madoshō. Richiede Erede.',
     derivedFormula: '+10% Danno su waza Madoshō. +15% IR su waza Madoshō.',
     kind: 'milestone',
+    parentSkiruId: 'keishosha',
+    minParentPoints: 1,
+    maxPoints: 1,
+    expPurchasable: false,
   },
   {
     id: 'renkinjutsushi',
@@ -486,6 +492,8 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     derivedFormula:
       '+5% Danno su waza della consistenza dichiarata. +10% IR su waza della consistenza dichiarata.',
     kind: 'milestone',
+    maxPoints: 1,
+    expPurchasable: false,
   },
   {
     id: 'daisei-no-renkin',
@@ -499,6 +507,10 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     derivedFormula:
       '+10% Danno su waza della consistenza dichiarata. +15% IR su waza della consistenza dichiarata.',
     kind: 'milestone',
+    parentSkiruId: 'renkinjutsushi',
+    minParentPoints: 1,
+    maxPoints: 1,
+    expPurchasable: false,
   },
   {
     id: 'inkyo',
@@ -511,6 +523,8 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     derivedFormula:
       '+10% Danno su waza del premio dichiarato. +15% IR su waza del premio dichiarato.',
     kind: 'milestone',
+    maxPoints: 1,
+    expPurchasable: false,
   },
   {
     id: 'sento-senshi',
@@ -523,6 +537,8 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     derivedFormula:
       "+10% Danno su waza d'ordine dichiarata. +15% IR su waza d'ordine dichiarata.",
     kind: 'milestone',
+    maxPoints: 1,
+    expPurchasable: false,
   },
 ] as const
 

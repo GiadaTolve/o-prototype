@@ -1,5 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import {
+  isValidExclusiveSkiruRequest,
   isValidMadoshoRequest,
   isValidOrderRequest,
   isValidPremioRequest,
@@ -7,7 +8,14 @@ import {
   labelForPlayerRequest,
   type PlayerRequestKind,
 } from '@domain/progression/player-requests'
-import { applyJigaMilestone, resolvePremioToMilestoneId } from '@domain/skiru/milestones'
+import {
+  applyExclusiveSkiru,
+  canGrantExclusiveSkiru,
+  exclusiveSkiruApprovalExpCost,
+  getJigaMilestoneLabel,
+  isJigaExclusiveSkiruId,
+  resolvePremioToMilestoneId,
+} from '@domain/skiru/exclusive-skiru'
 import { grantSokaijuTenkan, isSokaijuGateOpen, validateSkiruSheet } from '@domain/skiru/progression'
 import { db } from '../../plugins/db'
 import { characterPlayerRequests, characters } from '../../db/schema'
@@ -46,12 +54,31 @@ function validateRequestValue(kind: PlayerRequestKind, value: string) {
     case 'ORDER':
       if (!isValidOrderRequest(value)) throw new Error('Ordine non valido.')
       break
+    case 'SKIRU_ESCLUSIVA':
+      if (!isValidExclusiveSkiruRequest(value)) throw new Error('Skiru esclusiva non valida.')
+      break
     case 'PREMIO':
-      if (!isValidPremioRequest(value)) throw new Error('Premio non valido.')
+      if (!isValidPremioRequest(value)) throw new Error('Premio non ancora disponibile.')
       break
     case 'TENKAN':
       if (!isValidTenkanRequest(value)) throw new Error('Richiesta Tenkan non valida.')
       break
+  }
+}
+
+function baseStatsFromChar(char: {
+  strength: number
+  constitution: number
+  dexterity: number
+  mind: number
+  empathy: number
+}): BaseStats {
+  return {
+    strength: char.strength,
+    constitution: char.constitution,
+    dexterity: char.dexterity,
+    mind: char.mind,
+    empathy: char.empathy,
   }
 }
 
@@ -135,6 +162,54 @@ export class PlayerRequestsService {
     }))
   }
 
+  private async applyExclusiveSkiruApproval(characterId: string, skiruId: string) {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: {
+        skiruSheet: true,
+        strength: true,
+        constitution: true,
+        dexterity: true,
+        mind: true,
+        empathy: true,
+        experienceSpendable: true,
+      },
+    })
+    if (!char) throw new Error('Personaggio non trovato.')
+
+    if (!isJigaExclusiveSkiruId(skiruId)) {
+      throw new Error(`«${skiruId}» non è una Skiru esclusiva valida.`)
+    }
+
+    const skiruSheet = resolveCharacterSkiruSheet(
+      char.skiruSheet as Record<string, number> | undefined,
+      baseStatsFromChar(char),
+    )
+
+    const grantCheck = canGrantExclusiveSkiru(skiruSheet, skiruId)
+    if (!grantCheck.ok) {
+      throw new Error(grantCheck.reason ?? 'Skiru esclusiva non concedibile.')
+    }
+
+    const expCost = exclusiveSkiruApprovalExpCost(skiruId, skiruSheet)
+    const spendable = char.experienceSpendable ?? 0
+    if (spendable < expCost) {
+      throw new Error(
+        `EXP spendibile insufficiente (${spendable}/${expCost}) per «${getJigaMilestoneLabel(skiruId)}».`,
+      )
+    }
+
+    const newSheet = applyExclusiveSkiru(skiruSheet, skiruId)
+
+    await db
+      .update(characters)
+      .set({
+        skiruSheet: newSheet as Record<string, number>,
+        experienceSpendable: spendable - expCost,
+      })
+      .where(eq(characters.id, characterId))
+  }
+
   private async applyApprovedRequest(
     characterId: string,
     kind: PlayerRequestKind,
@@ -182,13 +257,7 @@ export class PlayerRequestsService {
 
       const skiruSheet = resolveCharacterSkiruSheet(
         char.skiruSheet as Record<string, number> | undefined,
-        {
-          strength: char.strength,
-          constitution: char.constitution,
-          dexterity: char.dexterity,
-          mind: char.mind,
-          empathy: char.empathy,
-        },
+        baseStatsFromChar(char),
       )
       if (isSokaijuGateOpen(skiruSheet)) return
 
@@ -203,49 +272,18 @@ export class PlayerRequestsService {
       return
     }
 
-    const char = await db.query.characters.findFirst({
-      where: eq(characters.id, characterId),
-      columns: {
-        uiMetadata: true,
-        skiruSheet: true,
-        strength: true,
-        constitution: true,
-        dexterity: true,
-        mind: true,
-        empathy: true,
-      },
-    })
-    if (!char) throw new Error('Personaggio non trovato.')
-
-    const milestoneId = resolvePremioToMilestoneId(requestedValue)
-    if (!milestoneId) {
-      throw new Error(`Premio «${requestedValue}» non mappato a milestone Skiru.`)
+    if (kind === 'SKIRU_ESCLUSIVA') {
+      await this.applyExclusiveSkiruApproval(characterId, requestedValue.trim())
+      return
     }
 
-    const baseStats: BaseStats = {
-      strength: char.strength,
-      constitution: char.constitution,
-      dexterity: char.dexterity,
-      mind: char.mind,
-      empathy: char.empathy,
+    if (kind === 'PREMIO') {
+      const skiruId = resolvePremioToMilestoneId(requestedValue)
+      if (!skiruId) {
+        throw new Error(`Premio «${requestedValue}» non ancora implementato.`)
+      }
+      await this.applyExclusiveSkiruApproval(characterId, skiruId)
     }
-    const skiruSheet = resolveCharacterSkiruSheet(
-      char.skiruSheet as Record<string, number> | undefined,
-      baseStats,
-    )
-    const newSheet = applyJigaMilestone(skiruSheet, milestoneId)
-
-    const meta = (char.uiMetadata as Record<string, unknown> | null) ?? {}
-    await db
-      .update(characters)
-      .set({
-        skiruSheet: newSheet as Record<string, number>,
-        uiMetadata: {
-          ...meta,
-          premioSpeciale: requestedValue,
-        },
-      })
-      .where(eq(characters.id, characterId))
   }
 
   async countPending(): Promise<number> {
