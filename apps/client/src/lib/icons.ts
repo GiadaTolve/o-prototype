@@ -88,6 +88,7 @@ export const icons = {
   bullhorn: faBullhorn,
   trophy: faTrophy,
   cercapersone: faPager,
+  beeper: faPager,
   pager: faPager,
   gamepad: faGamepad,
   home: faHome,

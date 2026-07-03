@@ -27,7 +27,7 @@ const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   scheda: icons.user,
   presenti: icons.presenti,
   sms: icons.message,
-  fetch: icons.cercapersone,
+  fetch: icons.beeper,
   banca: icons.banca,
   mercato: icons.mercato,
   housing: icons.home,

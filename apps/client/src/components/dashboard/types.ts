@@ -59,7 +59,7 @@ export const WINDOW_LABELS: Record<WindowId, string> = {
   scheda: "Scheda",
   presenti: "Presenti Estesi",
   sms: "SMS",
-  fetch: "Cercapersone",
+  fetch: "Beeper",
   banca: "Banca",
   mercato: "Mercato",
   housing: "Housing",

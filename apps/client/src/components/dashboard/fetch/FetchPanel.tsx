@@ -152,7 +152,7 @@ export function FetchPanel({ variant = "default" }: Props) {
     <div className={`fetch-pager ${isMobile ? "fetch-pager--mobile" : ""}`}>
       <div className="fetch-pager__device">
         <div className="fetch-pager__top">
-          <span className="fetch-pager__brand">OYASUMI · CERCA-PERSONE</span>
+          <span className="fetch-pager__brand">OYASUMI · BEEPER</span>
           <div className="fetch-pager__status">
             <span className={`fetch-pager__led ${incomingCount > 0 ? "fetch-pager__led--live" : ""}`} aria-hidden />
             <span>{incomingCount > 0 ? `${incomingCount} NUOVI` : "IN ASCOLTO"}</span>
@@ -162,7 +162,7 @@ export function FetchPanel({ variant = "default" }: Props) {
         <div className="fetch-pager__lcd">
           <div className="fetch-pager__lcd-scroll">
             <p className="fetch-pager__hint">
-              Trasmissioni da Ordine e Paradise. Accetta per rispondere al cercapersone — altrimenti resta in coda per altri.
+              Trasmissioni sul tuo Beeper da Ordine e Paradise. Accetta per rispondere — altrimenti resta in coda per altri.
             </p>
 
             {!myFetch && availableList.length === 0 ? (
