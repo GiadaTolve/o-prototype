@@ -32,8 +32,12 @@ export const EXCLUSIVE_SKIRU_REQUEST_OPTIONS: Array<{ id: string; label: string 
   { id: 'sento-senshi', label: "Soldato Scelto — 55% arsenale d'ordine" },
 ]
 
-/** Premi narrativi — non ancora definiti. */
+/** Premi narrativi (patti) — estendibile; id usato come premioSpeciale in scheda. */
 export const PREMIO_REQUEST_OPTIONS: Array<{ id: string; label: string }> = []
+
+/** Testo libero se il catalogo è vuoto o per richieste personalizzate. */
+export const PREMIO_FREE_TEXT_MIN = 10
+export const PREMIO_FREE_TEXT_MAX = 500
 
 /** Apertura accademica Terzo Occhio — unica voce, approvazione staff. */
 export const TENKAN_REQUEST_VALUE = 'terzo-occhio' as const
@@ -110,7 +114,11 @@ export function isValidExclusiveSkiruRequest(value: string): boolean {
 }
 
 export function isValidPremioRequest(value: string): boolean {
-  return PREMIO_REQUEST_OPTIONS.some((p) => p.id === value)
+  const v = value.trim()
+  if (!v) return false
+  if (PREMIO_REQUEST_OPTIONS.some((p) => p.id === v)) return true
+  if (/^[a-z0-9][a-z0-9-]{0,62}$/.test(v)) return true
+  return v.length >= PREMIO_FREE_TEXT_MIN && v.length <= PREMIO_FREE_TEXT_MAX
 }
 
 export function isValidTenkanRequest(value: string): boolean {

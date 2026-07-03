@@ -1,17 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   EXCLUSIVE_SKIRU_REQUEST_OPTIONS,
   MADOSHO_CATALOG,
   ORDER_REQUEST_VALUES,
+  PREMIO_FREE_TEXT_MAX,
+  PREMIO_FREE_TEXT_MIN,
+  PREMIO_REQUEST_OPTIONS,
   TENKAN_REQUEST_VALUE,
   labelForExclusiveSkiruRequest,
   labelForOrderRequest,
+  labelForPremioRequest,
   type PlayerRequestKind,
 } from "@domain/progression/player-requests";
 import { getMadoshoDef } from "@domain/progression/madosho";
+import { useSviluppoTaxonomy } from "@/hooks/useSviluppoTaxonomy";
 import { api } from "@/lib/api";
 import { icons } from "@/lib/icons";
 
@@ -21,6 +26,7 @@ type RequestRow = {
   requestedValue: string;
   requestedLabel: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
+  locked: boolean;
   staffNote: string | null;
   updatedAt: string;
 };
@@ -38,8 +44,12 @@ const REQUEST_SECTIONS: PlayerRequestKind[] = [
   "MADOSHO",
   "ORDER",
   "SKIRU_ESCLUSIVA",
+  "PREMIO",
   "TENKAN",
 ];
+
+const LOCK_AFTER_APPROVAL_HINT =
+  " Dopo l'approvazione staff la sezione si blocca; Admin o Moderatore possono sbloccarla.";
 
 const KIND_META: Record<
   PlayerRequestKind,
@@ -47,27 +57,27 @@ const KIND_META: Record<
 > = {
   MADOSHO: {
     title: "Madoshō",
-    hint: "Eredità di sangue — approvazione staff.",
+    hint: `Eredità di sangue — approvazione staff.${LOCK_AFTER_APPROVAL_HINT}`,
     emptyOption: "— Scegli Madoshō —",
   },
   ORDER: {
     title: "Ordine",
-    hint: "Mugen-Tai o Chisen-Tai — assegnazione al grado Hakyō (staff).",
+    hint: `Mugen-Tai o Chisen-Tai — assegnazione al grado Hakyō (staff).${LOCK_AFTER_APPROVAL_HINT}`,
     emptyOption: "— Scegli ordine —",
   },
   SKIRU_ESCLUSIVA: {
     title: "Skiru esclusive",
-    hint: "Milestone Jiga no Shihaisha — approvazione staff. All'approvazione si spende EXP (un solo percorso attivo).",
+    hint: `Milestone Jiga no Shihaisha — approvazione staff, EXP all'approvazione (un solo percorso attivo).${LOCK_AFTER_APPROVAL_HINT}`,
     emptyOption: "— Scegli Skiru esclusiva —",
   },
   PREMIO: {
-    title: "Premi",
-    hint: "Premi narrativi — contenuto in definizione.",
-    emptyOption: "— In arrivo —",
+    title: "Premi narrativi",
+    hint: `Patti e premi speciali — approvazione staff.${LOCK_AFTER_APPROVAL_HINT}`,
+    emptyOption: "— Scegli premio —",
   },
   TENKAN: {
     title: "Tenkan — Terzo Occhio",
-    hint: "Apertura accademica Sōkaiju. Non si compra con EXP: approvazione staff dopo evento narrativo.",
+    hint: `Apertura accademica Sōkaiju — approvazione staff dopo evento narrativo (non si compra con EXP).${LOCK_AFTER_APPROVAL_HINT}`,
     emptyOption: "",
   },
 };
@@ -111,17 +121,24 @@ function assignedLabel(kind: PlayerRequestKind, assigned: Assigned): string {
     }
     return "Nessuna";
   }
+  if (kind === "PREMIO") {
+    return assigned.premioSpeciale
+      ? labelForPremioRequest(assigned.premioSpeciale)
+      : "Nessuno";
+  }
   if (kind === "TENKAN") {
     return assigned.tenkanOpen ? "Terzo Occhio aperto" : "Non ancora aperto";
   }
-  return "In arrivo";
+  return "—";
 }
 
 export function SchedaRichiestePage() {
+  const { state: taxonomy } = useSviluppoTaxonomy();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<PlayerRequestKind | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [serverPremioOptions, setServerPremioOptions] = useState(PREMIO_REQUEST_OPTIONS);
   const [assigned, setAssigned] = useState<Assigned>({
     madoshoId: null,
     order: "NONE",
@@ -135,15 +152,27 @@ export function SchedaRichiestePage() {
     TENKAN: TENKAN_REQUEST_VALUE,
   });
 
+  const premioOptions = useMemo(() => {
+    const map = new Map<string, { id: string; label: string }>();
+    for (const p of serverPremioOptions) map.set(p.id, p);
+    for (const p of PREMIO_REQUEST_OPTIONS) map.set(p.id, p);
+    for (const p of taxonomy.premio) {
+      map.set(p.id, { id: p.id, label: p.name });
+    }
+    return [...map.values()];
+  }, [serverPremioOptions, taxonomy.premio]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = (await api.get("/player-requests/me")) as {
         requests?: RequestRow[];
+        premioOptions?: Array<{ id: string; label: string }>;
         assigned?: Assigned;
       };
       setRequests(Array.isArray(data.requests) ? data.requests : []);
+      if (Array.isArray(data.premioOptions)) setServerPremioOptions(data.premioOptions);
       if (data.assigned) setAssigned(data.assigned);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Errore caricamento richieste");
@@ -156,21 +185,34 @@ export function SchedaRichiestePage() {
     load();
   }, [load]);
 
-  const requestForKind = (kind: PlayerRequestKind) => {
-    const direct = requests.find((r) => r.kind === kind);
-    if (direct) return direct;
-    if (kind === "SKIRU_ESCLUSIVA") {
-      return requests.find((r) => r.kind === "PREMIO") ?? null;
-    }
-    return null;
+  const requestForKind = (kind: PlayerRequestKind) =>
+    requests.find((r) => r.kind === kind) ?? null;
+
+  const isFormLocked = (kind: PlayerRequestKind) => {
+    const current = requestForKind(kind);
+    return current?.status === "APPROVED" && current.locked === true;
   };
 
   const submitKind = async (kind: PlayerRequestKind) => {
-    const value = kind === "TENKAN" ? TENKAN_REQUEST_VALUE : draft[kind].trim();
-    if (!value) {
-      setError(`Seleziona un valore per ${KIND_META[kind].title}.`);
+    if (isFormLocked(kind)) {
+      setError("Richiesta bloccata dopo l'approvazione. Contatta Admin o Moderatore.");
       return;
     }
+
+    const value = kind === "TENKAN" ? TENKAN_REQUEST_VALUE : draft[kind].trim();
+    if (!value) {
+      setError(`Seleziona o compila un valore per ${KIND_META[kind].title}.`);
+      return;
+    }
+    if (kind === "PREMIO" && premioOptions.length === 0) {
+      if (value.length < PREMIO_FREE_TEXT_MIN || value.length > PREMIO_FREE_TEXT_MAX) {
+        setError(
+          `Descrivi il premio narrativo (${PREMIO_FREE_TEXT_MIN}–${PREMIO_FREE_TEXT_MAX} caratteri).`,
+        );
+        return;
+      }
+    }
+
     setSaving(kind);
     setError(null);
     try {
@@ -200,8 +242,9 @@ export function SchedaRichiestePage() {
           Richieste
         </h2>
         <p className="text-[11px] text-[var(--accent-violet-light)]/70 mt-1 max-w-lg">
-          Indica le tue preferenze per Madoshō, Ordine, Skiru esclusive e Tenkan. Lo staff le valuta
-          dal pannello Gestione → Richieste. I Premi narrativi saranno disponibili in seguito.
+          Indica le tue preferenze per Madoshō, Ordine, Skiru esclusive, Premi e Tenkan. Dopo
+          l&apos;approvazione staff la richiesta si blocca; solo Admin e Moderatore possono
+          sbloccarla in Gestione → Richieste.
         </p>
       </div>
 
@@ -213,6 +256,8 @@ export function SchedaRichiestePage() {
         {REQUEST_SECTIONS.map((kind) => {
           const meta = KIND_META[kind];
           const current = requestForKind(kind);
+          const locked = isFormLocked(kind);
+          const tenkanDone = kind === "TENKAN" && assigned.tenkanOpen;
           return (
             <section
               key={kind}
@@ -223,7 +268,17 @@ export function SchedaRichiestePage() {
                   <h3 className="font-display text-sm text-[var(--accent-gold)]">{meta.title}</h3>
                   <p className="text-[10px] text-gray-500 mt-0.5">{meta.hint}</p>
                 </div>
-                {current && statusBadge(current.status)}
+                <div className="flex items-center gap-2">
+                  {locked && (
+                    <span
+                      className="text-[var(--accent-gold)]/80"
+                      title="Richiesta bloccata — contatta staff per sbloccare"
+                    >
+                      <FontAwesomeIcon icon={icons.lock} className="w-3 h-3" />
+                    </span>
+                  )}
+                  {current && statusBadge(current.status)}
+                </div>
               </div>
 
               <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Assegnato ora</p>
@@ -238,66 +293,86 @@ export function SchedaRichiestePage() {
                       Nota staff: {current.staffNote}
                     </p>
                   )}
+                  {locked && (
+                    <p className="mt-1 text-[var(--accent-gold)]/80">
+                      Bloccata dopo approvazione. Per ripensamenti chiedi sblocco ad Admin o Moderatore.
+                    </p>
+                  )}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                {kind !== "TENKAN" ? (
-                  <select
-                    value={draft[kind]}
-                    onChange={(e) => setDraft((d) => ({ ...d, [kind]: e.target.value }))}
-                    className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none"
+              {locked ? (
+                <p className="text-[11px] text-gray-500 italic">
+                  Non puoi inviare una nuova richiesta finché lo staff non sblocca questa sezione.
+                </p>
+              ) : tenkanDone ? (
+                <p className="text-[11px] text-[var(--accent-gold)]/80 italic">
+                  Terzo Occhio già aperto in scheda — nessuna ulteriore richiesta necessaria.
+                </p>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {kind === "TENKAN" ? (
+                    <p className="flex-1 text-[11px] text-[var(--accent-violet-light)]/80 px-1 py-2">
+                      Richiedi l&apos;inserimento di{" "}
+                      <strong className="text-[var(--accent-gold)]">tenkan: 1</strong> in scheda dopo
+                      l&apos;evento narrativo di apertura del Terzo Occhio.
+                    </p>
+                  ) : kind === "PREMIO" && premioOptions.length === 0 ? (
+                    <textarea
+                      value={draft[kind]}
+                      onChange={(e) => setDraft((d) => ({ ...d, [kind]: e.target.value }))}
+                      placeholder={`Descrivi il premio narrativo che richiedi (${PREMIO_FREE_TEXT_MIN}–${PREMIO_FREE_TEXT_MAX} caratteri)…`}
+                      maxLength={PREMIO_FREE_TEXT_MAX}
+                      rows={3}
+                      className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none resize-y min-h-[72px]"
+                    />
+                  ) : (
+                    <select
+                      value={draft[kind]}
+                      onChange={(e) => setDraft((d) => ({ ...d, [kind]: e.target.value }))}
+                      className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--panel-bg)] text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none"
+                    >
+                      <option value="">{meta.emptyOption}</option>
+                      {kind === "MADOSHO" &&
+                        (MADOSHO_CATALOG ?? []).map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      {kind === "ORDER" &&
+                        (ORDER_REQUEST_VALUES ?? []).map((o) => (
+                          <option key={o} value={o}>
+                            {labelForOrderRequest(o)}
+                          </option>
+                        ))}
+                      {kind === "SKIRU_ESCLUSIVA" &&
+                        (EXCLUSIVE_SKIRU_REQUEST_OPTIONS ?? []).map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                      {kind === "PREMIO" &&
+                        premioOptions.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                    </select>
+                  )}
+                  <button
+                    type="button"
+                    disabled={saving === kind || tenkanDone || (kind !== "TENKAN" && !draft[kind])}
+                    onClick={() => submitKind(kind)}
+                    className="shrink-0 px-4 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs font-display uppercase tracking-wider hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
                   >
-                    <option value="">{meta.emptyOption}</option>
-                    {kind === "MADOSHO" &&
-                      (MADOSHO_CATALOG ?? []).map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name}
-                        </option>
-                      ))}
-                    {kind === "ORDER" &&
-                      (ORDER_REQUEST_VALUES ?? []).map((o) => (
-                        <option key={o} value={o}>
-                          {labelForOrderRequest(o)}
-                        </option>
-                      ))}
-                    {kind === "SKIRU_ESCLUSIVA" &&
-                      (EXCLUSIVE_SKIRU_REQUEST_OPTIONS ?? []).map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.label}
-                        </option>
-                      ))}
-                  </select>
-                ) : (
-                  <p className="flex-1 text-[11px] text-[var(--accent-violet-light)]/80 px-1 py-2">
-                    Richiedi l&apos;inserimento di <strong className="text-[var(--accent-gold)]">tenkan: 1</strong> in
-                    scheda dopo l&apos;evento narrativo di apertura del Terzo Occhio.
-                  </p>
-                )}
-                <button
-                  type="button"
-                  disabled={
-                    saving === kind ||
-                    (kind === "TENKAN" ? assigned.tenkanOpen : !draft[kind])
-                  }
-                  onClick={() => submitKind(kind)}
-                  className="shrink-0 px-4 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs font-display uppercase tracking-wider hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
-                >
-                  {saving === kind ? "…" : kind === "TENKAN" ? "Richiedi Tenkan" : "Invia richiesta"}
-                </button>
-              </div>
+                    {saving === kind ? "…" : kind === "TENKAN" ? "Richiedi Tenkan" : "Invia richiesta"}
+                  </button>
+                </div>
+              )}
             </section>
           );
         })}
       </div>
-
-      <section className="rounded-lg border border-dashed border-[var(--border-color)]/80 bg-black/20 p-4 opacity-80">
-        <h3 className="font-display text-sm text-gray-500">Premi narrativi</h3>
-        <p className="text-[10px] text-gray-500 mt-1 leading-relaxed max-w-lg">
-          I Premi (patti narrativi, contenuti speciali) non sono ancora in gioco. Quando saranno
-          disponibili apparirà qui una richiesta dedicata, separata dalle Skiru esclusive Jiga.
-        </p>
-      </section>
     </div>
   );
 }

@@ -161,6 +161,8 @@ export const characterPlayerRequests = pgTable(
       .$type<'PENDING' | 'APPROVED' | 'REJECTED'>()
       .default('PENDING')
       .notNull(),
+    /** true dopo approvazione: il giocatore non può reinviare finché lo staff non sblocca. */
+    locked: boolean('locked').default(false).notNull(),
     staffNote: text('staff_note'),
     reviewedByUserId: uuid('reviewed_by_user_id').references(() => users.id, {
       onDelete: 'set null',

@@ -3141,7 +3141,7 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
                 ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
                 : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
             }`}
-            title="Richieste — Madoshō, Ordine, Skiru esclusive, Tenkan"
+            title="Richieste — Madoshō, Ordine, Skiru, Premi, Tenkan"
           >
             <FontAwesomeIcon icon={icons.fire} className="w-4 h-4" />
           </button>

@@ -12,6 +12,7 @@ type StaffRequest = {
   requestedValue: string;
   requestedLabel: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
+  locked: boolean;
   staffNote: string | null;
   updatedAt: string;
   character: {
@@ -63,6 +64,18 @@ export function GestioneRichiestePanel({
       onQueueChange?.();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Errore");
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const toggleLock = async (id: string, locked: boolean) => {
+    setActingId(id);
+    try {
+      await api.post(`/player-requests/admin/${id}/lock`, { locked });
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Errore sblocco");
     } finally {
       setActingId(null);
     }
@@ -136,7 +149,15 @@ export function GestioneRichiestePanel({
                     {kindLabelForPlayerRequest(row.kind)}
                   </td>
                   <td className="px-3 py-2 text-gray-300">{row.requestedLabel}</td>
-                  <td className="px-3 py-2 text-xs text-gray-400">{row.status}</td>
+                  <td className="px-3 py-2 text-xs text-gray-400">
+                    <span className="block">{row.status}</span>
+                    {row.status === "APPROVED" && (
+                      <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] text-[var(--accent-gold)]/80">
+                        <FontAwesomeIcon icon={row.locked ? icons.lock : icons.unlock} className="w-3 h-3" />
+                        {row.locked ? "Bloccata" : "Sbloccata"}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     {row.status === "PENDING" ? (
                       <div className="flex flex-col gap-2 min-w-[200px]">
@@ -165,6 +186,24 @@ export function GestioneRichiestePanel({
                             Rifiuta
                           </button>
                         </div>
+                      </div>
+                    ) : row.status === "APPROVED" ? (
+                      <div className="flex flex-col gap-2 min-w-[160px]">
+                        <span className="text-[10px] text-gray-500">{row.staffNote ?? "—"}</span>
+                        <button
+                          type="button"
+                          disabled={actingId === row.id}
+                          onClick={() => toggleLock(row.id, !row.locked)}
+                          title={
+                            row.locked
+                              ? "Sblocca: il giocatore potrà inviare una nuova richiesta"
+                              : "Blocca di nuovo la richiesta"
+                          }
+                          className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-[10px] uppercase hover:bg-[var(--accent-violet)]/10 disabled:opacity-50 w-fit"
+                        >
+                          <FontAwesomeIcon icon={row.locked ? icons.unlock : icons.lock} className="w-3 h-3" />
+                          {row.locked ? "Sblocca" : "Blocca"}
+                        </button>
                       </div>
                     ) : (
                       <span className="text-[10px] text-gray-500">{row.staffNote ?? "—"}</span>

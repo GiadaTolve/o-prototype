@@ -6,6 +6,7 @@ import {
   isValidPremioRequest,
   isValidTenkanRequest,
   labelForPlayerRequest,
+  PREMIO_REQUEST_OPTIONS,
   type PlayerRequestKind,
 } from '@domain/progression/player-requests'
 import {
@@ -14,7 +15,6 @@ import {
   exclusiveSkiruApprovalExpCost,
   getJigaMilestoneLabel,
   isJigaExclusiveSkiruId,
-  resolvePremioToMilestoneId,
 } from '@domain/skiru/exclusive-skiru'
 import { grantSokaijuTenkan, isSokaijuGateOpen, validateSkiruSheet } from '@domain/skiru/progression'
 import { db } from '../../plugins/db'
@@ -28,9 +28,21 @@ export type PlayerRequestRow = {
   requestedValue: string
   requestedLabel: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  locked: boolean
   staffNote: string | null
   reviewedAt: string | null
   updatedAt: string
+}
+
+function slugifyPremioId(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64)
 }
 
 function mapRow(row: typeof characterPlayerRequests.$inferSelect): PlayerRequestRow {
@@ -40,6 +52,7 @@ function mapRow(row: typeof characterPlayerRequests.$inferSelect): PlayerRequest
     requestedValue: row.requestedValue,
     requestedLabel: labelForPlayerRequest(row.kind, row.requestedValue),
     status: row.status,
+    locked: row.locked ?? false,
     staffNote: row.staffNote,
     reviewedAt: row.reviewedAt?.toISOString() ?? null,
     updatedAt: row.updatedAt.toISOString(),
@@ -58,7 +71,12 @@ function validateRequestValue(kind: PlayerRequestKind, value: string) {
       if (!isValidExclusiveSkiruRequest(value)) throw new Error('Skiru esclusiva non valida.')
       break
     case 'PREMIO':
-      throw new Error('I Premi narrativi non sono ancora disponibili. Usa Skiru esclusive per le milestone Jiga.')
+      if (!isValidPremioRequest(value)) {
+        throw new Error(
+          'Descrivi il premio narrativo (min. 10 caratteri) o scegli una voce dal catalogo.',
+        )
+      }
+      break
     case 'TENKAN':
       if (!isValidTenkanRequest(value)) throw new Error('Richiesta Tenkan non valida.')
       break
@@ -87,19 +105,6 @@ export class PlayerRequestsService {
       where: eq(characterPlayerRequests.characterId, characterId),
       orderBy: [desc(characterPlayerRequests.updatedAt)],
     })
-
-    const legacyPremio = rows.filter((r) => r.kind === 'PREMIO')
-    if (legacyPremio.length > 0) {
-      const now = new Date()
-      for (const row of legacyPremio) {
-        await db
-          .update(characterPlayerRequests)
-          .set({ kind: 'SKIRU_ESCLUSIVA', updatedAt: now })
-          .where(eq(characterPlayerRequests.id, row.id))
-        row.kind = 'SKIRU_ESCLUSIVA'
-      }
-    }
-
     return rows.map(mapRow)
   }
 
@@ -113,6 +118,12 @@ export class PlayerRequestsService {
       ),
     })
 
+    if (existing?.locked) {
+      throw new Error(
+        'Richiesta approvata e bloccata. Contatta Admin o Moderatore per sbloccarla e inviarne una nuova.',
+      )
+    }
+
     const now = new Date()
     if (existing) {
       const [row] = await db
@@ -120,6 +131,7 @@ export class PlayerRequestsService {
         .set({
           requestedValue: requestedValue.trim(),
           status: 'PENDING',
+          locked: false,
           staffNote: null,
           reviewedByUserId: null,
           reviewedAt: null,
@@ -137,6 +149,7 @@ export class PlayerRequestsService {
         kind,
         requestedValue: requestedValue.trim(),
         status: 'PENDING',
+        locked: false,
         updatedAt: now,
       })
       .returning()
@@ -172,6 +185,23 @@ export class PlayerRequestsService {
           }
         : null,
     }))
+  }
+
+  async setRequestLocked(requestId: string, locked: boolean) {
+    const row = await db.query.characterPlayerRequests.findFirst({
+      where: eq(characterPlayerRequests.id, requestId),
+    })
+    if (!row) throw new Error('Richiesta non trovata.')
+    if (row.status !== 'APPROVED' && locked) {
+      throw new Error('Solo le richieste approvate possono essere bloccate.')
+    }
+
+    const [updated] = await db
+      .update(characterPlayerRequests)
+      .set({ locked, updatedAt: new Date() })
+      .where(eq(characterPlayerRequests.id, requestId))
+      .returning()
+    return mapRow(updated)
   }
 
   private async applyExclusiveSkiruApproval(characterId: string, skiruId: string) {
@@ -218,6 +248,28 @@ export class PlayerRequestsService {
       .set({
         skiruSheet: newSheet as Record<string, number>,
         experienceSpendable: spendable - expCost,
+      })
+      .where(eq(characters.id, characterId))
+  }
+
+  private async applyPremioApproval(characterId: string, requestedValue: string) {
+    const catalogId = PREMIO_REQUEST_OPTIONS.find((p) => p.id === requestedValue.trim())?.id
+    const premioSpeciale = catalogId ?? slugifyPremioId(requestedValue) || requestedValue.trim().slice(0, 64)
+
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { uiMetadata: true },
+    })
+    if (!char) throw new Error('Personaggio non trovato.')
+
+    const meta = (char.uiMetadata as Record<string, unknown> | null) ?? {}
+    await db
+      .update(characters)
+      .set({
+        uiMetadata: {
+          ...meta,
+          premioSpeciale,
+        },
       })
       .where(eq(characters.id, characterId))
   }
@@ -290,11 +342,7 @@ export class PlayerRequestsService {
     }
 
     if (kind === 'PREMIO') {
-      const skiruId = resolvePremioToMilestoneId(requestedValue)
-      if (!skiruId) {
-        throw new Error(`Premio «${requestedValue}» non ancora implementato.`)
-      }
-      await this.applyExclusiveSkiruApproval(characterId, skiruId)
+      await this.applyPremioApproval(characterId, requestedValue)
     }
   }
 
@@ -323,6 +371,7 @@ export class PlayerRequestsService {
       .update(characterPlayerRequests)
       .set({
         status: decision,
+        locked: decision === 'APPROVED',
         staffNote: staffNote?.trim() || null,
         reviewedByUserId: reviewerUserId,
         reviewedAt: now,

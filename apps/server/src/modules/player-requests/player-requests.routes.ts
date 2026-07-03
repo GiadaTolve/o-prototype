@@ -5,6 +5,7 @@ import { characterService } from '../characters/characters.service'
 import { playerRequestsService } from './player-requests.service'
 import { isSokaijuGateOpen } from '@domain/skiru/progression'
 import { getActiveJigaMilestone, getJigaMilestoneLabel } from '@domain/skiru/exclusive-skiru'
+import { PREMIO_REQUEST_OPTIONS } from '@domain/progression/player-requests'
 
 export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
   .use(authPlugin)
@@ -26,6 +27,7 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
           const activeExclusive = getActiveJigaMilestone(skiruSheet)
           return {
             requests,
+            premioOptions: PREMIO_REQUEST_OPTIONS,
             assigned: {
               madoshoId: char.madoshoId ?? null,
               order: char.order ?? 'NONE',
@@ -174,5 +176,26 @@ export const playerRequestsRoutes = new Elysia({ prefix: '/player-requests' })
       }, {
         params: t.Object({ id: t.String() }),
         body: t.Object({ staffNote: t.Optional(t.String()) }),
+      })
+      .post('/admin/:id/lock', async ({ user, params, body, set }) => {
+        if (!user) {
+          set.status = 401
+          return { error: 'Unauthorized' }
+        }
+        const allowed = await userHasGestioneAccess(user.id, user.role)
+        if (!allowed) {
+          set.status = 403
+          return { error: 'Accesso riservato ad Admin e Moderatore' }
+        }
+        try {
+          const row = await playerRequestsService.setRequestLocked(params.id, body.locked)
+          return row
+        } catch (e: unknown) {
+          set.status = 400
+          return { error: e instanceof Error ? e.message : 'Errore aggiornamento lucchetto' }
+        }
+      }, {
+        params: t.Object({ id: t.String() }),
+        body: t.Object({ locked: t.Boolean() }),
       }),
   )
