@@ -56,8 +56,9 @@ import { ChatCombatPanel } from "./chat-combat/ChatCombatPanel";
 import { ChatInfoPanel } from "./ChatInfoPanel";
 import { WazaLaunchStrip } from "./WazaLaunchStrip";
 
-/** Bozza che invierà solo un tiro dado (nessun EXP). */
-function isDiceOnlyDraft(draft: string): boolean {
+/** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
+const MOBILE_CHAT_MAX_LENGTH = 500;
+
   return /^\s*\/?(?:d|dado)\s+\d+\s*$/i.test(draft.trim());
 }
 
@@ -2568,6 +2569,7 @@ function ChatView({
                         : "Connessione in corso…"
                     }
                     disabled={!chatConnected}
+                    maxLength={MOBILE_CHAT_MAX_LENGTH}
                     onChange={(e) => {
                       setMessageLength(e.target.value.length);
                       setMessageDraft(e.target.value);
@@ -2651,8 +2653,8 @@ function ChatView({
               )}
               <div className={`flex items-center gap-4 flex-wrap ${compact ? "w-full justify-end" : "justify-end"}`}>
                 {!compact && <QuarterTurnHud draft={messageDraft} />}
-                <span className="text-[10px] text-gray-500 font-mono">
-                  {messageLength} caratteri
+                <span className={`text-[10px] font-mono ${compact && messageLength >= MOBILE_CHAT_MAX_LENGTH ? "text-[var(--accent-gold)]" : "text-gray-500"}`}>
+                  {compact ? `${messageLength}/${MOBILE_CHAT_MAX_LENGTH}` : `${messageLength} caratteri`}
                   {!isDiceOnlyDraft(messageDraft) && messageLength >= 500 && (
                     <span className="text-[var(--accent-gold)]/80 ml-2">
                       +{Math.floor(messageLength / 500)} EXP

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { SmsPanel } from "./sms/SmsPanel";
 import { FetchPanel } from "./fetch/FetchPanel";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import { DashboardWindowPanel } from "./DashboardWindowPanel";
 import { PixelIcons } from "./PixelIcons";
 import { MiniSkiruStatsHud } from "./MiniSkiruStatsHud";
 import { resolveCharacterComputed } from "./character-computed";
+import { api } from "@/lib/api";
 import type { WindowId, CharacterSummary, Presente } from "./types";
 
 export type MobileTab = "scheda" | "sms" | "mappa" | "fetch" | "altro";
@@ -78,6 +79,41 @@ export function DashboardMobileLayout({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MobileTab>("mappa");
   const [mapImmersive, setMapImmersive] = useState(false);
+  const [housingChatRoomId, setHousingChatRoomId] = useState<string | null>(null);
+  const [fetchIncoming, setFetchIncoming] = useState(0);
+
+  const loadFetchIncoming = useCallback(async () => {
+    try {
+      const [list, my] = await Promise.all([
+        api.get("/fetches").then((d) => (Array.isArray(d) ? d : []) as Array<{ id: string; assignedTo: string | null }>),
+        api.get("/fetches/my").then((d) => d as { id?: string; assigned?: boolean }),
+      ]);
+      const myId = my && "id" in my && my.id ? my.id : null;
+      const count = list.filter((f) => !f.assignedTo && f.id !== myId).length;
+      setFetchIncoming(count);
+    } catch {
+      setFetchIncoming(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    api
+      .get("/housing/me")
+      .then((d) => setHousingChatRoomId((d as { chatRoomId?: string | null })?.chatRoomId ?? null))
+      .catch(() => setHousingChatRoomId(null));
+  }, [char?.id]);
+
+  useEffect(() => {
+    loadFetchIncoming();
+    const interval = setInterval(loadFetchIncoming, 30_000);
+    return () => clearInterval(interval);
+  }, [loadFetchIncoming]);
+
+  useEffect(() => {
+    const onHousingChat = () => setActiveTab("mappa");
+    window.addEventListener("openHousingChat", onHousingChat);
+    return () => window.removeEventListener("openHousingChat", onHousingChat);
+  }, []);
 
   // SMS inline nel tab: se qualcosa apre la finestra SMS, vai al tab invece del modal
   useEffect(() => {
@@ -116,13 +152,19 @@ export function DashboardMobileLayout({
     { id: "altro", label: "Altro", icon: icons.news },
   ];
 
+  const handleEntraInCasa = () => {
+    if (!housingChatRoomId) return;
+    setActiveTab("mappa");
+    window.dispatchEvent(new CustomEvent("openHousingChat", { detail: { roomId: housingChatRoomId } }));
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     router.push("/auth");
   };
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden ${mapImmersive ? "pb-0" : "pb-16"} md:pb-0`}>
+    <div className={`h-screen flex flex-col overflow-hidden ${mapImmersive ? "pb-0" : "mobile-nav-pad"} md:pb-0`}>
       {/* Header compatto mobile */}
       <header className="shrink-0 border-b border-[var(--border-color)] bg-[var(--panel-bg)] px-3 py-2 flex items-center justify-between">
         <h1 className="font-display text-sm text-[var(--accent-gold)] truncate">
@@ -176,13 +218,24 @@ export function DashboardMobileLayout({
                 >
                   Scheda completa
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onOpen("housing")}
-                  className="py-2 px-3 rounded border border-[var(--border-color)] text-xs text-gray-300 hover:bg-white/5"
-                >
-                  Casa
-                </button>
+                {housingChatRoomId ? (
+                  <button
+                    type="button"
+                    onClick={handleEntraInCasa}
+                    className="py-2 px-3 rounded border border-[var(--accent-gold)]/60 text-xs text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 flex items-center justify-center gap-1.5"
+                  >
+                    <FontAwesomeIcon icon={icons.home} className="w-3.5 h-3.5" />
+                    Entra in Casa
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onOpen("housing")}
+                    className="py-2 px-3 rounded border border-[var(--border-color)] text-xs text-gray-300 hover:bg-white/5"
+                  >
+                    Housing
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -226,12 +279,13 @@ export function DashboardMobileLayout({
 
         {activeTab === "fetch" && (
           <div className="flex-1 min-h-0 flex flex-col">
-            <FetchPanel variant="mobile" />
+            <FetchPanel variant="mobile" onListChange={loadFetchIncoming} />
           </div>
         )}
 
         {activeTab === "altro" && (
-          <div className="p-4 grid grid-cols-2 gap-3">
+          <div className="p-4 flex flex-col min-h-0 flex-1">
+          <div className="grid grid-cols-2 gap-3 flex-1 content-start">
             {[
               { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },
               { id: "banca" as WindowId, label: "Banca", icon: icons.banca },
@@ -258,12 +312,21 @@ export function DashboardMobileLayout({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-4 w-full py-3 rounded-lg border border-[var(--border-color)] text-sm text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/50 flex items-center justify-center gap-2 mobile-safe-bottom"
+          >
+            <FontAwesomeIcon icon={icons.logout} className="w-4 h-4" />
+            Esci
+          </button>
+          </div>
         )}
       </main>
 
       {/* Bottom navigation - solo su mobile (< 768px) */}
       {!mapImmersive && (
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 border-t border-[var(--border-color)] bg-[var(--panel-bg)] flex items-center justify-around z-30">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[var(--border-color)] bg-[var(--panel-bg)] flex items-center justify-around z-30 mobile-safe-bottom h-14 min-h-14 box-content">
         {tabButtons.map(({ id, label, icon }) => (
           <button
             key={id}
@@ -276,6 +339,11 @@ export function DashboardMobileLayout({
             {id === "sms" && smsUnread > 0 && (
               <span className="absolute top-0 right-1/4 w-4 h-4 rounded-full bg-[var(--accent-violet)] text-[9px] flex items-center justify-center text-white">
                 {smsUnread > 9 ? "9+" : smsUnread}
+              </span>
+            )}
+            {id === "fetch" && fetchIncoming > 0 && (
+              <span className="absolute top-0 right-1/4 w-4 h-4 rounded-full bg-[var(--accent-gold)] text-[9px] flex items-center justify-center text-[var(--background)] font-bold">
+                {fetchIncoming > 9 ? "9+" : fetchIncoming}
               </span>
             )}
             <FontAwesomeIcon icon={icon} className="w-5 h-5" />

@@ -1626,3 +1626,12 @@ html:has(.wiki-page-root) body {
     animation: none;
   }
 }
+
+/* Oyasumi Lite — safe area iPhone (richiede viewport-fit=cover) */
+.mobile-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-nav-pad {
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+}

@@ -75,9 +75,11 @@ function truncatePager(text: string | null | undefined, max = 120): string {
 type Props = {
   /** mobile = stesso device, padding ridotto */
   variant?: "default" | "mobile";
+  /** Chiamato dopo ogni refresh lista (es. badge tab Beeper). */
+  onListChange?: () => void;
 };
 
-export function FetchPanel({ variant = "default" }: Props) {
+export function FetchPanel({ variant = "default", onListChange }: Props) {
   const isMobile = variant === "mobile";
 
   const [list, setList] = useState<FetchItem[]>([]);
@@ -102,8 +104,11 @@ export function FetchPanel({ variant = "default" }: Props) {
         setConcluded(Array.isArray(concl) ? concl : []);
       })
       .catch(() => setList([]))
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        setLoading(false);
+        onListChange?.();
+      });
+  }, [onListChange]);
 
   useEffect(() => {
     load();

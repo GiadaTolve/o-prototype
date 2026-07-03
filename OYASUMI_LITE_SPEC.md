@@ -20,7 +20,7 @@
 | **Scheda** | User | Mini-scheda (nome, avatar, REM, Body/Jigoka) + link "Apri scheda completa" |
 | **SMS** | Message | Lista conversazioni + apertura thread (come desktop ma full-screen) |
 | **Mappa** | Map | Mappa root → zone → lista chat → Chat full-screen |
-| **Fetch** | Trophy | Bacheca fetch disponibili + "Le tue fetch concluse" |
+| **Fetch** | Beeper | Bacheca fetch disponibili + "Le tue fetch concluse" |
 | **Altro** | Ellipsis/Grid | Menu: Shop, Banca, Waza, Presenti, Notifiche, Logout |
 
 ---
@@ -29,48 +29,78 @@
 
 ### Scheda tab
 - Mostra mini-profilo compatto
-- Pulsante "Entra in Casa" se si ha un'abitazione
-- Tap → apre finestra Scheda (modal full-screen su mobile)
+- Pulsante **"Entra in Casa"** se si ha un'abitazione (`/housing/me` → `chatRoomId`)
+- Altrimenti pulsante **Housing** (affitto/gestione)
+- Tap profilo → apre finestra Scheda (modal full-screen su mobile)
 
 ### SMS tab
 - Lista conversazioni (come colonna sinistra desktop)
 - Tap conversazione → thread full-screen
-- Input 500 caratteri (limite mobile già attivo)
+- Input **500 caratteri** con contatore
 
 ### Mappa tab
-- Vista iniziale: mappa root con pin (compatta)
+- Vista iniziale: mappa root con pin ed etichette visibili
 - Tap zona → lista chat della zona
-- Tap chat → Chat full-screen (layout split semplificato)
-- Pulsante "←" per tornare indietro
+- Tap chat → Chat full-screen (layout compatto)
+- Pulsante **Luogo/Chat** in header; bottom nav nascosta in chat immersiva
+- **Combattimento nascosto** su mobile (no `ChatCombatPanel`)
+- Input chat: Luogo + azione in colonna, max **500 caratteri**, no HUD turni/quarti
 
 ### Fetch tab
-- Lista fetch disponibili (come widget destro desktop)
+- UI Beeper (pager anni 80)
 - Sezione "Le tue fetch concluse"
-- Tap "Assegna a me" → azione come desktop
+- Tap "Accetta" → azione come desktop
+- Badge tab se fetch in arrivo non assegnate
 
 ### Altro tab
-- Griglia di pulsanti: Shop, Banca, Waza, Ordine, Bestiario, Presenti, Notifiche
-- Logout in basso
+- Griglia di pulsanti: Mercato, Banca, Waza, Ordine, Bestiario, Presenti, Spazio Eventi, Notifiche
+- **Logout** in fondo alla griglia (+ icona in header)
 
 ---
 
 ## 4. Rilevamento Mobile
 
-- `useIsMobile()`: `max-width: 768px` + touch/UA
+- `useIsMobile()`: viewport ≤768px **oppure** UA mobile con larghezza ≤1024px
 - Se `isMobile` → render `DashboardMobileLayout`
 - Se desktop → layout attuale (tre colonne + dock)
 
 ---
 
-## 5. Limiti già attivi
+## 5. Limiti e vincoli
 
-- **500 caratteri** per messaggi da mobile (rate limiting)
-- Nessun cambiamento alla logica backend
+- **500 caratteri** per messaggi chat e SMS da mobile (client-side `maxLength`)
+- Nessun pannello combattimento su mobile
+- `viewport-fit: cover` + `safe-area-inset` per bottom nav su iPhone
 
 ---
 
-## 6. Riferimenti
+## 6. Stato implementazione (v1)
+
+| Voce | Stato |
+|------|--------|
+| Bottom nav 5 tab | ✅ |
+| SMS inline stack | ✅ |
+| Beeper / Fetch pager | ✅ |
+| Mappa stack + chat immersiva | ✅ |
+| Chat mobile (layout, no combat) | ✅ |
+| Scheda + Entra in Casa | ✅ |
+| Altro + Logout | ✅ |
+| Badge SMS / Beeper | ✅ |
+| Safe area iPhone | ✅ |
+| Limite 500 char chat mobile | ✅ |
+| Deploy marker build in header | ✅ |
+
+### Prossimi step (fuori scope v1 minimo)
+
+- Validazione server 500 char per UA mobile (oggi solo client)
+- `docs/DEPLOY.md` + pipeline deploy client automatico
+- Polish accessibilità e `prefers-reduced-motion` su animazioni tab
+
+---
+
+## 7. Riferimenti
 
 - `useIsMobile` in `hooks/useIsMobile.ts`
+- `DashboardMobileLayout.tsx` — layout Lite
+- `DashboardCenter.tsx` — mappa e chat (`variant="mobile"`)
 - `GAME_LAYOUT_SPEC.md` per palette e stili
-- `DashboardCenter`, `DashboardLeftCol`, `DashboardRightCol` come fonti componenti riutilizzabili
