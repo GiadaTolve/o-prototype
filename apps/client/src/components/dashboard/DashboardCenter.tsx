@@ -831,7 +831,15 @@ type GameSession = {
   }>;
 };
 
-function RegistraGiocataButton({ roomId, activeQuest }: { roomId: RoomId | null; activeQuest?: { id: string; title?: string } | null }) {
+function RegistraGiocataButton({
+  roomId,
+  activeQuest,
+  iconOnly = false,
+}: {
+  roomId: RoomId | null;
+  activeQuest?: { id: string; title?: string } | null;
+  iconOnly?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState<GameSession | null>(null);
   const [myFetchId, setMyFetchId] = useState<string | null>(null);
@@ -1173,10 +1181,16 @@ function RegistraGiocataButton({ roomId, activeQuest }: { roomId: RoomId | null;
         ref={btnRef}
         type="button"
         onClick={toggle}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+        className={
+          iconOnly
+            ? "inline-flex items-center justify-center p-2 rounded border border-[var(--border-color)] text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+            : "inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+        }
+        title="Registra giocata"
+        aria-label="Registra giocata"
       >
-        <FontAwesomeIcon icon={icons.gamepad} className="w-3 h-3" />
-        Registra Giocata
+        <FontAwesomeIcon icon={icons.gamepad} className="w-3.5 h-3.5" />
+        {!iconOnly && "Registra Giocata"}
       </button>
       {dropdown}
       <ConfirmDialog
@@ -1427,12 +1441,14 @@ function RegistraQuestButton({
   usersInRoom, 
   canAccessGestione,
   onQuestCreated,
+  iconOnly = false,
 }: { 
   roomId: RoomId; 
   activeQuest: { id: string; title?: string; creatorId?: string; createdAt?: string } | null;
   usersInRoom: Presente[];
   canAccessGestione?: boolean;
   onQuestCreated?: () => void;
+  iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -1920,10 +1936,16 @@ function RegistraQuestButton({
       <button
         type="button"
         onClick={() => { setOpen(true); setError(""); }}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+        className={
+          iconOnly
+            ? "inline-flex items-center justify-center p-2 rounded border border-[var(--border-color)] text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+            : "inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+        }
+        title="Registra Quest"
+        aria-label="Registra Quest"
       >
-        <FontAwesomeIcon icon={icons.ordine} className="w-3 h-3" />
-        Registra Quest
+        <FontAwesomeIcon icon={icons.ordine} className="w-3.5 h-3.5" />
+        {!iconOnly && "Registra Quest"}
       </button>
       {modal}
     </>
@@ -2251,8 +2273,15 @@ function ChatView({
       <div className={`flex flex-1 min-h-0 overflow-hidden ${compact ? "flex-col gap-0" : "gap-4"}`}>
         {/* Sinistra: immagine luogo, descrizione, note Master, presenti */}
         {(!compact || showMobileTools) && (
-        <aside className={`${compact ? "max-h-[38vh] border-b" : "w-[280px] border-r"} flex-shrink-0 flex flex-col gap-3 min-h-0 overflow-y-auto bg-black/30 ${compact ? "p-3" : "pr-3 p-5"}`}>
-          <div className="relative w-full h-[140px] rounded border border-[var(--accent-violet)]/30 overflow-hidden shrink-0">
+        <aside
+          className={`${
+            compact
+              ? "flex-1 min-h-0 border-b overflow-y-auto"
+              : "w-[280px] border-r flex-shrink-0"
+          } flex flex-col gap-3 min-h-0 bg-black/30 ${compact ? "p-3" : "pr-3 p-5"}`}
+          style={compact && showMobileTools ? { minHeight: "calc(95dvh - 7rem)" } : undefined}
+        >
+          <div className={`relative w-full ${compact ? "h-[min(28vh,220px)]" : "h-[140px]"} rounded border border-[var(--accent-violet)]/30 overflow-hidden shrink-0`}>
             {displayImage ? (
               <Image 
                 src={displayImage} 
@@ -2426,6 +2455,7 @@ function ChatView({
             </div>
           )}
           <ArmadioCasa roomId={roomId} characterId={char?.id} />
+          {!compact && (
           <ChatCombatPanel
             onInsertText={insertChatText}
             onSendMessage={sendLaunchFromPanel}
@@ -2436,6 +2466,7 @@ function ChatView({
             usersInRoom={usersInRoom}
             isMaster={Boolean(canAccessShinigami)}
           />
+          )}
           <MasterNotesBox roomId={roomId} canAccessShinigami={canAccessShinigami} />
         </aside>
         )}
@@ -2499,8 +2530,72 @@ function ChatView({
               backgroundColor: "rgba(0,0,0,0.75)",
             }}
           >
-            <div className={`flex gap-2 items-end ${compact ? "flex-col" : "flex-row gap-2.5"}`}>
-              <div className={`flex flex-col items-start gap-1 shrink-0 ${compact ? "w-full" : "w-[150px]"}`}>
+            <div className={compact ? "flex flex-col gap-2 w-full" : "flex gap-2 items-end flex-row gap-2.5"}>
+              {compact ? (
+                <>
+                  <div className="flex items-center gap-1.5 w-full flex-wrap">
+                    <ChatInfoPanel compact />
+                    {!isPartychatRoom && canAccessShinigami && (
+                      <RegistraQuestButton
+                        roomId={roomId}
+                        activeQuest={activeQuest}
+                        usersInRoom={usersInRoom}
+                        canAccessGestione={canAccessGestione}
+                        onQuestCreated={() => refreshQuest(true)}
+                        iconOnly
+                      />
+                    )}
+                    {!isPartychatRoom && (
+                      <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} iconOnly />
+                    )}
+                    {canAccessGestione && <GlobalMessageButton iconOnly />}
+                  </div>
+                  <input
+                    ref={tagLuogoRef}
+                    type="text"
+                    placeholder={isPartychatRoom ? "Posizione..." : "Luogo..."}
+                    disabled={!chatConnected}
+                    maxLength={120}
+                    className="bg-white/5 border border-white/10 text-[#c9a84a] px-2.5 py-2.5 rounded text-xs font-display w-full h-10 box-border text-center"
+                  />
+                  <textarea
+                    ref={inputRef}
+                    placeholder={
+                      chatConnected
+                        ? "Azione..."
+                        : chatConnectionFailed
+                        ? "Connessione fallita. Ricarica la pagina."
+                        : "Connessione in corso…"
+                    }
+                    disabled={!chatConnected}
+                    onChange={(e) => {
+                      setMessageLength(e.target.value.length);
+                      setMessageDraft(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        onSubmit(e);
+                      }
+                    }}
+                    rows={3}
+                    className="w-full bg-white/5 border border-white/10 text-[#e6e0ff] px-2.5 py-2.5 rounded resize-none font-sans text-sm box-border leading-relaxed min-h-[4.5rem]"
+                  />
+                  <div className="flex items-center gap-2 w-full">
+                    <button
+                      type="submit"
+                      disabled={!chatConnected}
+                      className="flex-1 py-2.5 border-none rounded cursor-pointer bg-gradient-to-r from-[#60519b] to-[#a270ff] text-white font-display font-bold text-xs box-border transition-all uppercase tracking-wide shadow-[0_0_10px_rgba(162,112,255,0.3)] disabled:opacity-50"
+                      title="Invia"
+                      aria-label="Invia messaggio"
+                    >
+                      INVIA
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+              <div className="flex flex-col items-start gap-1 shrink-0 w-[150px]">
                 <ChatInfoPanel />
                 <input
                   ref={tagLuogoRef}
@@ -2543,15 +2638,19 @@ function ChatView({
               >
                 INVIA
               </button>
+                </>
+              )}
             </div>
-            <div className="flex justify-between items-center mt-2.5 pl-[160px] gap-3 flex-wrap">
+            <div className={`flex justify-between items-center gap-3 flex-wrap ${compact ? "mt-1" : "mt-2.5 pl-[160px]"}`}>
+              {!compact && (
               <div className="flex gap-2 flex-wrap items-center">
                 {!isPartychatRoom && canAccessShinigami && <RegistraQuestButton roomId={roomId} activeQuest={activeQuest} usersInRoom={usersInRoom} canAccessGestione={canAccessGestione} onQuestCreated={() => refreshQuest(true)} />}
                 {!isPartychatRoom && <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} />}
                 {canAccessGestione && <GlobalMessageButton />}
               </div>
-              <div className="flex items-center gap-4 flex-wrap justify-end">
-                <QuarterTurnHud draft={messageDraft} />
+              )}
+              <div className={`flex items-center gap-4 flex-wrap ${compact ? "w-full justify-end" : "justify-end"}`}>
+                {!compact && <QuarterTurnHud draft={messageDraft} />}
                 <span className="text-[10px] text-gray-500 font-mono">
                   {messageLength} caratteri
                   {!isDiceOnlyDraft(messageDraft) && messageLength >= 500 && (
@@ -2602,7 +2701,7 @@ function PulisciChatButton({ roomId }: { roomId: string }) {
 }
 
 // ─── Global Message Button (Admin) ───
-function GlobalMessageButton() {
+function GlobalMessageButton({ iconOnly = false }: { iconOnly?: boolean }) {
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -2682,11 +2781,16 @@ function GlobalMessageButton() {
       <button
         type="button"
         onClick={() => setShowModal(true)}
-        className="px-3 py-1.5 rounded border border-[var(--accent-violet)] text-[var(--accent-violet)] text-xs hover:bg-[var(--accent-violet)]/10 transition-colors"
+        className={
+          iconOnly
+            ? "inline-flex items-center justify-center p-2 rounded border border-[var(--accent-violet)] text-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/10 transition-colors"
+            : "px-3 py-1.5 rounded border border-[var(--accent-violet)] text-[var(--accent-violet)] text-xs hover:bg-[var(--accent-violet)]/10 transition-colors"
+        }
         title="Invia messaggio globale (Admin)"
+        aria-label="Messaggio globale"
       >
-        <FontAwesomeIcon icon={icons.bullhorn} className="w-3 h-3 mr-1" />
-        Global Message
+        <FontAwesomeIcon icon={icons.bullhorn} className={iconOnly ? "w-3.5 h-3.5" : "w-3 h-3 mr-1"} />
+        {!iconOnly && "Global Message"}
       </button>
       {modal}
     </>

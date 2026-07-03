@@ -10,11 +10,11 @@ const INFO_PANEL_H = 280;
  * Guida rapida chat — testo, parlato, dadi, tag combattimento.
  * Bottone sopra il campo Luogo (allineato a sinistra).
  */
-export function ChatInfoPanel() {
+export function ChatInfoPanel({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="relative w-full">
+    <div className={`relative shrink-0 ${compact ? "" : "w-full"}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -29,7 +29,10 @@ export function ChatInfoPanel() {
         <div
           id="chat-info-panel"
           className="absolute bottom-full left-0 mb-1.5 z-50 flex flex-col rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)]/95 shadow-[var(--shadow-violet)] animate__animated animate__fadeIn motion-reduce:animate-none overflow-hidden"
-          style={{ width: INFO_PANEL_W, height: INFO_PANEL_H }}
+          style={{
+            width: compact ? "min(92vw, 360px)" : INFO_PANEL_W,
+            height: compact ? "min(70vh, 320px)" : INFO_PANEL_H,
+          }}
         >
           <h4 className="shrink-0 font-display text-[10px] uppercase tracking-[0.2em] text-[var(--accent-gold)] px-3 pt-2.5 pb-1.5 border-b border-[var(--border-color)]/60">
             Guida chat
