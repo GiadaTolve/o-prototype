@@ -2556,7 +2556,7 @@ function ChatView({
                     placeholder={isPartychatRoom ? "Posizione..." : "Luogo..."}
                     disabled={!chatConnected}
                     maxLength={120}
-                    className="bg-white/5 border border-white/10 text-[#c9a84a] px-2 py-1.5 rounded text-xs font-display w-full h-9 box-border text-center"
+                    className="bg-white/5 border border-white/10 text-[#c9a84a] px-2 py-1.5 rounded text-base font-display w-full h-9 box-border text-center"
                   />
                   <textarea
                     ref={inputRef}
@@ -2580,7 +2580,7 @@ function ChatView({
                       }
                     }}
                     rows={2}
-                    className="w-full bg-white/5 border border-white/10 text-[#e6e0ff] px-2 py-1.5 rounded resize-none font-sans text-sm box-border leading-snug min-h-[2.5rem] max-h-[5rem]"
+                    className="w-full bg-white/5 border border-white/10 text-[#e6e0ff] px-2 py-1.5 rounded resize-none font-sans text-base box-border leading-snug min-h-[2.5rem] max-h-[5rem]"
                   />
                   <div className="flex items-center gap-2 w-full">
                     <button

@@ -294,7 +294,7 @@ export function SmsPanel({
             placeholder={newMode ? "Cerca personaggio…" : "Filtra conversazioni…"}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm bg-black/40 border border-[var(--border-color)] rounded text-white placeholder-gray-500 focus:outline-none focus:border-[var(--accent-gold)]/50"
+            className="w-full pl-9 pr-3 py-2 text-base bg-black/40 border border-[var(--border-color)] rounded text-white placeholder-gray-500 focus:outline-none focus:border-[var(--accent-gold)]/50"
             aria-label={newMode ? "Cerca personaggio" : "Filtra conversazioni"}
           />
         </div>
@@ -465,7 +465,7 @@ export function SmsPanel({
                 onChange={(e) => setInput(e.target.value.slice(0, maxMessageLength))}
                 placeholder="Scrivi un messaggio…"
                 maxLength={maxMessageLength}
-                className="flex-1 min-w-0 bg-black/50 border border-[var(--border-color)] rounded px-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:border-[var(--accent-gold)] focus:outline-none"
+                className="flex-1 min-w-0 bg-black/50 border border-[var(--border-color)] rounded px-3 py-2.5 text-base text-gray-200 placeholder-gray-500 focus:border-[var(--accent-gold)] focus:outline-none"
               />
               <button
                 type="submit"

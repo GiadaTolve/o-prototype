@@ -1721,3 +1721,16 @@ html:has(.mobile-app-shell) body {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+/* iOS Safari: font-size < 16px su input/textarea → zoom automatico al focus.
+   1rem lascia libero lo zoom manuale con le dita. */
+.mobile-app-shell input[type="text"],
+.mobile-app-shell input[type="search"],
+.mobile-app-shell input[type="email"],
+.mobile-app-shell input[type="password"],
+.mobile-app-shell input:not([type]),
+.mobile-app-shell textarea,
+.mobile-app-shell select {
+  font-size: 1rem;
+  line-height: 1.35;
+}
