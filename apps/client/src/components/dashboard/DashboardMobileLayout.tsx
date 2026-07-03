@@ -2,17 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { SmsPanel } from "./sms/SmsPanel";
+import { FetchPanel } from "./fetch/FetchPanel";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { DashboardCenter } from "./DashboardCenter";
-import { DashboardRightCol } from "./DashboardRightCol";
 import { DashboardWindowPanel } from "./DashboardWindowPanel";
 import { PixelIcons } from "./PixelIcons";
 import { MiniSkiruStatsHud } from "./MiniSkiruStatsHud";
 import { resolveCharacterComputed } from "./character-computed";
 import type { WindowId, CharacterSummary, Presente } from "./types";
-import { roomToPrefettura } from "@/config/map-config";
 
 export type MobileTab = "scheda" | "sms" | "mappa" | "fetch" | "altro";
 
@@ -85,6 +84,10 @@ export function DashboardMobileLayout({
       setActiveTab("sms");
       onClose("sms");
     }
+    if (openWindow === "fetch") {
+      setActiveTab("fetch");
+      onClose("fetch");
+    }
   }, [openWindow, onClose]);
 
   useEffect(() => {
@@ -93,7 +96,6 @@ export function DashboardMobileLayout({
     }
   }, [smsTargetCharacterId?.id]);
 
-  const prefettura = roomToPrefettura(roomId ?? "");
   const avatarSrc = (char?.avatarUrl ?? char?.avatar ?? char?.miniAvatar) as string | undefined;
   const nome = (char?.name ?? "Nome PG") as string;
   const cognome = (char?.surname ?? "") as string;
@@ -103,7 +105,7 @@ export function DashboardMobileLayout({
     { id: "scheda", label: "Scheda", icon: icons.user },
     { id: "sms", label: "SMS", icon: icons.message },
     { id: "mappa", label: "Mappa", icon: icons.map },
-    { id: "fetch", label: "Assegnazioni", icon: icons.trophy },
+    { id: "fetch", label: "Cercapersone", icon: icons.cercapersone },
     { id: "altro", label: "Altro", icon: icons.news },
   ];
 
@@ -128,7 +130,7 @@ export function DashboardMobileLayout({
       </header>
 
       {/* Contenuto in base al tab */}
-      <main className={`flex-1 min-h-0 ${activeTab === "sms" ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
+      <main className={`flex-1 min-h-0 ${activeTab === "sms" || activeTab === "fetch" ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
         {activeTab === "scheda" && (
           <div className="p-4">
             <div className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
@@ -209,23 +211,8 @@ export function DashboardMobileLayout({
         )}
 
         {activeTab === "fetch" && (
-          <div className="h-full">
-            <DashboardRightCol
-              presenti={presenti}
-              prefettura={prefettura}
-              onOpenPresenti={() => onOpen("presenti")}
-              onOpenFetch={() => onOpen("fetch")}
-              onOpenSpazioEventi={() => onOpen("spazioEventi")}
-            />
-            <div className="p-4">
-              <button
-                type="button"
-                onClick={() => onOpen("fetch")}
-                className="w-full py-3 rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] text-sm font-display"
-              >
-                Apri Assegnazioni
-              </button>
-            </div>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <FetchPanel variant="mobile" />
           </div>
         )}
 
@@ -283,7 +270,7 @@ export function DashboardMobileLayout({
       </nav>
 
       {/* Finestre modali full-screen su mobile */}
-      {openWindow && openWindow !== "sms" && (
+      {openWindow && openWindow !== "sms" && openWindow !== "fetch" && (
         <div className="fixed inset-0 z-40 bg-[var(--background)]">
           <DashboardWindowPanel
             windowId={openWindow}

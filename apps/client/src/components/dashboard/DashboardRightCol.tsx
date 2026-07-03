@@ -148,13 +148,13 @@ export function DashboardRightCol({
         )}
       </section>
 
-      {/* Assegnazioni — sotto al calendario; a scorrimento; click apre finestra */}
+      {/* Cercapersone — sotto al calendario; click apre finestra */}
       {onOpenFetch && (
         <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
           <div className="flex items-center justify-between gap-2 mb-3">
             <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display flex items-center gap-2">
-              <FontAwesomeIcon icon={icons.trophy} className="w-3 h-3" />
-              Assegnazioni
+              <FontAwesomeIcon icon={icons.cercapersone} className="w-3 h-3" />
+              Cercapersone
             </h3>
             <button
               type="button"

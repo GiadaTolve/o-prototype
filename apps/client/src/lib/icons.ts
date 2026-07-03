@@ -54,6 +54,7 @@ import {
   faPencil,
   faFire,
   faCodeBranch,
+  faPager,
 } from "@fortawesome/free-solid-svg-icons";
 
 export const icons = {
@@ -86,6 +87,8 @@ export const icons = {
   trash: faTrash,
   bullhorn: faBullhorn,
   trophy: faTrophy,
+  cercapersone: faPager,
+  pager: faPager,
   gamepad: faGamepad,
   home: faHome,
   refresh: faArrowsRotate,
