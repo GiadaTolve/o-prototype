@@ -58,8 +58,7 @@ function validateRequestValue(kind: PlayerRequestKind, value: string) {
       if (!isValidExclusiveSkiruRequest(value)) throw new Error('Skiru esclusiva non valida.')
       break
     case 'PREMIO':
-      if (!isValidPremioRequest(value)) throw new Error('Premio non ancora disponibile.')
-      break
+      throw new Error('I Premi narrativi non sono ancora disponibili. Usa Skiru esclusive per le milestone Jiga.')
     case 'TENKAN':
       if (!isValidTenkanRequest(value)) throw new Error('Richiesta Tenkan non valida.')
       break
@@ -88,6 +87,19 @@ export class PlayerRequestsService {
       where: eq(characterPlayerRequests.characterId, characterId),
       orderBy: [desc(characterPlayerRequests.updatedAt)],
     })
+
+    const legacyPremio = rows.filter((r) => r.kind === 'PREMIO')
+    if (legacyPremio.length > 0) {
+      const now = new Date()
+      for (const row of legacyPremio) {
+        await db
+          .update(characterPlayerRequests)
+          .set({ kind: 'SKIRU_ESCLUSIVA', updatedAt: now })
+          .where(eq(characterPlayerRequests.id, row.id))
+        row.kind = 'SKIRU_ESCLUSIVA'
+      }
+    }
+
     return rows.map(mapRow)
   }
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { type PlayerRequestKind } from "@domain/progression/player-requests";
+import { type PlayerRequestKind, kindLabelForPlayerRequest } from "@domain/progression/player-requests";
 import { api } from "@/lib/api";
 import { icons } from "@/lib/icons";
 
@@ -132,7 +132,9 @@ export function GestioneRichiestePanel({
                     {row.character?.name}
                     {row.character?.surname ? ` ${row.character.surname}` : ""}
                   </td>
-                  <td className="px-3 py-2 text-[var(--accent-violet-light)] text-xs uppercase">{row.kind}</td>
+                  <td className="px-3 py-2 text-[var(--accent-violet-light)] text-xs uppercase">
+                    {kindLabelForPlayerRequest(row.kind)}
+                  </td>
                   <td className="px-3 py-2 text-gray-300">{row.requestedLabel}</td>
                   <td className="px-3 py-2 text-xs text-gray-400">{row.status}</td>
                   <td className="px-3 py-2">

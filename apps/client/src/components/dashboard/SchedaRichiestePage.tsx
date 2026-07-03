@@ -156,8 +156,14 @@ export function SchedaRichiestePage() {
     load();
   }, [load]);
 
-  const requestForKind = (kind: PlayerRequestKind) =>
-    requests.find((r) => r.kind === kind) ?? null;
+  const requestForKind = (kind: PlayerRequestKind) => {
+    const direct = requests.find((r) => r.kind === kind);
+    if (direct) return direct;
+    if (kind === "SKIRU_ESCLUSIVA") {
+      return requests.find((r) => r.kind === "PREMIO") ?? null;
+    }
+    return null;
+  };
 
   const submitKind = async (kind: PlayerRequestKind) => {
     const value = kind === "TENKAN" ? TENKAN_REQUEST_VALUE : draft[kind].trim();
@@ -284,6 +290,14 @@ export function SchedaRichiestePage() {
           );
         })}
       </div>
+
+      <section className="rounded-lg border border-dashed border-[var(--border-color)]/80 bg-black/20 p-4 opacity-80">
+        <h3 className="font-display text-sm text-gray-500">Premi narrativi</h3>
+        <p className="text-[10px] text-gray-500 mt-1 leading-relaxed max-w-lg">
+          I Premi (patti narrativi, contenuti speciali) non sono ancora in gioco. Quando saranno
+          disponibili apparirà qui una richiesta dedicata, separata dalle Skiru esclusive Jiga.
+        </p>
+      </section>
     </div>
   );
 }

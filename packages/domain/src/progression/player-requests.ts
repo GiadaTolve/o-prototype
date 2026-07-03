@@ -28,7 +28,7 @@ export const EXCLUSIVE_SKIRU_REQUEST_OPTIONS: Array<{ id: string; label: string 
   { id: 'kanpeki-keishosha', label: 'Erede Perfetto — 85% waza Madoshō (richiede Erede)' },
   { id: 'renkinjutsushi', label: 'Alchimista — 4 waza stessa consistenza' },
   { id: 'daisei-no-renkin', label: 'Opus Magna — 8 waza stessa consistenza (richiede Alchimista)' },
-  { id: 'inkyo', label: 'Eremita (Inkyo) — percorso premio (contenuto in definizione)' },
+  { id: 'inkyo', label: 'Eremita (Inkyo) — via isolamento' },
   { id: 'sento-senshi', label: "Soldato Scelto — 55% arsenale d'ordine" },
 ]
 
@@ -61,6 +61,23 @@ export function labelForExclusiveSkiruRequest(value: string): string {
 
 export function labelForPremioRequest(value: string): string {
   return PREMIO_REQUEST_OPTIONS.find((p) => p.id === value)?.label ?? value
+}
+
+export function kindLabelForPlayerRequest(kind: PlayerRequestKind): string {
+  switch (kind) {
+    case 'MADOSHO':
+      return 'Madoshō'
+    case 'ORDER':
+      return 'Ordine'
+    case 'SKIRU_ESCLUSIVA':
+      return 'Skiru esclusive'
+    case 'PREMIO':
+      return 'Premi narrativi'
+    case 'TENKAN':
+      return 'Tenkan'
+    default:
+      return kind
+  }
 }
 
 export function labelForPlayerRequest(kind: PlayerRequestKind, value: string): string {
