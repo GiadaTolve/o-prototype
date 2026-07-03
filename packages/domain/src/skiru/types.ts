@@ -1,4 +1,4 @@
-/** Dominio cosmologico Skiru (UltimateManual §2.7). */
+/** Dominio cosmologico Skiru (UltimateManual). */
 export type SkiruDomain = 'ten' | 'chi' | 'jin'
 
 /** Skiru acquistabili con exp vs milestone narrative (Jiga no Shihaisha). */
@@ -13,7 +13,7 @@ export interface SokaijuFaceDef {
   description: string
 }
 
-/** Parametro derivato governato da una Skiru (§2.8 — step successivo). */
+/** Parametro derivato governato da una Skiru. */
 export type SkiruDerivedDriver =
   | 'hp'
   | 'movement'

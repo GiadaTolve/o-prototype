@@ -6,7 +6,7 @@ import { applyStatus, removeStatus } from '../../combat/status/engine'
 export const KOMEI_DURATION_TURNS = 3
 export const KOMEI_CS_COST = 6
 
-/** Status negativi invertibili da Kōmei (§ waza Naikan). */
+/** Status negativi invertibili da Kōmei. */
 export const KOMEI_INVERTIBLE_STATUS_IDS: readonly StatusId[] = [
   'incendiato',
   'emorragia',

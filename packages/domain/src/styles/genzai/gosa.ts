@@ -1,5 +1,5 @@
 /**
- * Meccanica Gosa (誤差) — Genzai-dō §3.2
+ * Meccanica Gosa (誤差) — Genzai-dō
  * Margine d'Errore: imprecisione narrativa nella materializzazione accumula penalità
  * su IR e resistenza costrutti finché non viene corretta.
  */
@@ -133,7 +133,7 @@ export function formatGosaTagsInText(text: string): string {
     (_full, _label: string, nStr: string) => {
       const n = clampGosaStacks(Number(nStr))
       const state = resolveGosaState(n)
-      return `<span class="gosa-tag" title="Gosa §3.2 — IR −${state.irPenalty}, resistenza −${state.resistancePenaltyPercent}%">Gosa ${n}</span>`
+      return `<span class="gosa-tag" title="Gosa — IR −${state.irPenalty}, resistenza −${state.resistancePenaltyPercent}%">Gosa ${n}</span>`
     },
   )
 }

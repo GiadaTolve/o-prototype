@@ -30,7 +30,10 @@
         "rename-cost-kotodama-to-jigoka": "bun run scripts/rename-cost-kotodama-to-jigoka.ts",
         "sync-waza-manual": "bun run scripts/sync-waza-manual.ts",
         "sync-madosho-manual": "bun run scripts/sync-madosho-manual.ts",
-        "generate-waza-tag-catalog": "bun run scripts/generate-waza-tag-catalog.ts"
+        "generate-waza-tag-catalog": "bun run scripts/generate-waza-tag-catalog.ts",
+        "add-wiki-tables": "bun run scripts/add-wiki-tables.ts",
+        "seed-wiki": "bun run scripts/seed-wiki.ts",
+        "sync-music-manifest": "bun run scripts/sync-music-manifest.ts"
     },
     "dependencies": {
         "@elysiajs/bearer": "^1.4.2",

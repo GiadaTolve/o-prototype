@@ -3,7 +3,7 @@
  *
  * Regole:
  * - Parlato: « ... » → formattato in UI
- * - Tag v3 combat + consistenza/categoria §2.5
+ * - Tag v3 combat + consistenza/categoria
  * - Tag narrativi residui: [ ... ] → formattato in UI
  * - EXP: 1 ogni 500 caratteri totali mandati (compreso parlato e tag)
  */
@@ -69,7 +69,7 @@ function removeParlati(text: string): string {
 
 /**
  * Formatta il testo per la visualizzazione:
- * - Tag v3 combat + consistenza/categoria §2.5
+ * - Tag v3 combat + consistenza/categoria
  * - Parlati «...» → <span class="parlato">...</span>
  * - Tag narrativi residui [ ... ] → <span class="tag-narrativo">[...]</span>
  */
@@ -82,7 +82,7 @@ function formatForDisplay(text: string): string {
       const n = Number(tierStr)
       if (!isWazaTier(n)) return _m
       const row = getTierRow(n)
-      return `<span class="tier-tag" title="Tier §2.10 — ${row.value} danno · ${row.csCost} CS">${tierStr}</span>`
+      return `<span class="tier-tag" title="Tier — ${row.value} danno · ${row.csCost} CS">${tierStr}</span>`
     },
   )
   formatted = formatted.replace(/\[waza:([^\]]+)\]/gi, (_m, rawName: string) =>

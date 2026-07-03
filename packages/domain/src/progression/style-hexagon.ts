@@ -1,4 +1,4 @@
-/** Esagono degli Stili — Ultimate Manual §2.13 (ordine: Tōka → Genzai → Itō → Naikan → Hensei → Hadō). */
+/** Esagono degli Stili — Ultimate Manual (ordine: Tōka → Genzai → Itō → Naikan → Hensei → Hadō). */
 
 export const STYLE_HEX_ORDER = [
   'toka',

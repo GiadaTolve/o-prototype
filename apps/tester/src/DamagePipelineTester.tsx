@@ -1,5 +1,5 @@
 /**
- * Calcolatore pipeline danno §2.9 — tier → Scudo → Itami → HP.
+ * Calcolatore pipeline danno — tier → Scudo → Itami → HP.
  */
 import { useMemo, useState } from 'react'
 import {
@@ -50,8 +50,8 @@ export default function DamagePipelineTester() {
   return (
     <div>
       <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>
-        Pipeline §2.9 — Danno base = tier (+ bonus) → Scudo/Costrutto → Itami → PV.
-        Costrutto §2.6: resistenza = (Genkai + tier) × taglia; niente Itami.
+        Pipeline — Danno base = tier (+ bonus) → Scudo/Costrutto → Itami → PV.
+        Costrutto: resistenza = (Genkai + tier) × taglia; niente Itami.
       </p>
 
       <label style={{ ...labelStyle, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
@@ -157,7 +157,7 @@ export default function DamagePipelineTester() {
       >
         <h3 style={{ margin: '0 0 1rem', color: '#c9a84a', fontSize: '1rem' }}>Breakdown</h3>
         <dl style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.8 }}>
-          <Row label="Valore tier (tabella §2.10)" value={breakdown.tierValue} />
+          <Row label="Valore tier" value={breakdown.tierValue} />
           <Row label="Danno base (dopo bonus)" value={breakdown.baseDamage} accent />
           <Row label="Assorbito da Scudo/Costrutto" value={breakdown.shieldAbsorbed} />
           <Row label="Dopo resistenza" value={breakdown.afterShield} />

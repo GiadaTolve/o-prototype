@@ -539,7 +539,6 @@ export default function DashboardPage() {
         <DashboardLeftCol
           char={char}
           onOpenScheda={() => char?.id && openCharacterSheet(char.id)}
-          onOpenShop={() => open("shop")}
           onOpenMercato={() => open("mercato")}
           onOpenSms={() => open("sms")}
           onOpenBanca={() => open("banca")}
@@ -582,7 +581,6 @@ export default function DashboardPage() {
           onClose={close}
           char={
             openWindow === "scheda" ||
-            openWindow === "shop" ||
             openWindow === "mercato" ||
             openWindow === "banca" ||
             openWindow === "waza"

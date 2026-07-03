@@ -1,5 +1,5 @@
 /**
- * Tester Status §2.4 — stack, decay, modificatori combattimento.
+ * Tester Status — stack, decay, modificatori combattimento.
  */
 import { useMemo, useState } from 'react'
 import {
@@ -100,7 +100,7 @@ export default function StatusEffectsTester() {
   return (
     <div>
       <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>
-        Motore status §2.4 — stack = durata turni (emotivi); decay a fine turno PG; modificatori
+        Motore status — stack = durata turni (emotivi); decay a fine turno PG; modificatori
         compilati per CS/danno/IR.
       </p>
 

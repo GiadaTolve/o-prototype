@@ -1,5 +1,5 @@
 /**
- * Costrutti persistenti sul campo — §2.6
+ * Costrutti persistenti sul campo —
  * Entità separate dal PG; resistenza da Genkai + tier × taglia.
  */
 
@@ -24,7 +24,7 @@ export type FieldConstruct = {
   genkai: number
   maxResistance: number
   remainingResistance: number
-  /** Stazionario: nessun IR proprio (§2.6). */
+  /** Stazionario: nessun IR proprio. */
   stationary: boolean
   createdAt?: string
 }

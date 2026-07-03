@@ -1,4 +1,4 @@
-/** Atsuryoku (圧力) — Hadō-dō §3.6: pressione da CS trattenuto / vicino a Overheat. */
+/** Atsuryoku (圧力) — Hadō-dō: pressione da CS trattenuto / vicino a Overheat. */
 
 export const ATSURYOKU_STYLE_ID = 'hado' as const
 export const ATSURYOKU_METAMORPHOSIS_CS = 12

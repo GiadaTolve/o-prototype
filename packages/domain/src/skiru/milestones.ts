@@ -28,7 +28,7 @@ export function isJigaMilestoneId(skiruId: string): boolean {
   return JIGA_MILESTONE_IDS.includes(skiruId)
 }
 
-/** Milestone attiva (solo una alla volta — §2.7). */
+/** Milestone attiva. */
 export function getActiveJigaMilestone(sheet: SkiruSheet): string | null {
   for (const id of JIGA_MILESTONE_IDS) {
     if (getSkiruPoints(sheet, id) > 0) return id

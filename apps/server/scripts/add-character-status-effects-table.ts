@@ -1,5 +1,5 @@
 /**
- * Crea tabella character_status_effects (§2.4).
+ * Crea tabella character_status_effects.
  * Esegui da apps/server: bun run scripts/add-character-status-effects-table.ts
  */
 import postgres from 'postgres'

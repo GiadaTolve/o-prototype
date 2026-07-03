@@ -1,7 +1,7 @@
 /**
  * Simulatore combattimento v3 — IR + Tier + CS.
  * Niente Reflexes, Jigoka, né stats legacy F/C/D/M/E.
- * Refs: COMBAT_SPEC.md v3, MECHANICS_ROADMAP §2.2 §2.3 §2.4 §2.9
+ * Refs: COMBAT_SPEC.md v3, MECHANICS_ROADMAP
  *
  * Iniziativa: coin flip (in v3 il Master la gestisce narrativamente;
  * nel simulatore usiamo randomizzazione per rappresentare parità di partenza).
@@ -56,7 +56,7 @@ export interface CombatBuild {
   defensePhysicalSkiruId?: string
   /** Skiru incanalamento per l'IR difensivo (dominio Jin). Default: shintai-kokan. */
   defenseChannelingSkiruId?: string
-  /** Status attivi all'inizio del combattimento (§2.4). */
+  /** Status attivi all'inizio del combattimento. */
   initialStatusIds?: StatusId[]
 }
 

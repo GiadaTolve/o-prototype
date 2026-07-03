@@ -1,5 +1,5 @@
 /**
- * Chronostack (CS) — UltimateManual §2.2
+ * Chronostack (CS) — UltimateManual
  * Il tempo (4/4) non è tracciato dal software: i giocatori lo gestiscono in autonomia.
  */
 
@@ -81,7 +81,7 @@ export interface TurnGainOptions {
   bonusCs?: number
 }
 
-/** Guadagno CS a inizio/fine turno (§ Guadagnare Chronostack). */
+/** Guadagno CS a inizio/fine turno. */
 export function applyTurnChronoGain(
   state: ChronoStackState,
   options: TurnGainOptions,

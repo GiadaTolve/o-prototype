@@ -109,7 +109,7 @@ function App() {
               fontSize: '0.9rem',
             }}
           >
-            Danno §2.9
+            Danno
           </button>
           <button
             type="button"
@@ -129,7 +129,7 @@ function App() {
               fontSize: '0.9rem',
             }}
           >
-            Status §2.4
+            Status
           </button>
           <button
             type="button"

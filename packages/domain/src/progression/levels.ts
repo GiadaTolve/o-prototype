@@ -24,7 +24,7 @@ export interface ManualLevelRow {
   grade: string
 }
 
-/** Premi livelli 1–15 — UltimateManual §2.11 (solo Key/grado; curva EXP da formula). */
+/** Premi livelli 1–15 — UltimateManual (solo Key/grado; curva EXP da formula). */
 export const MANUAL_LEVEL_REWARDS: readonly ManualLevelRow[] = [
   { level: 1, expTotal: 0, keysAwarded: 0, grade: 'Nemuribito' },
   { level: 2, expTotal: 50, keysAwarded: 1, grade: 'Nemuribito' },

@@ -1,5 +1,5 @@
 /**
- * Meccanica Tōrō — Tōka-dō §3.1
+ * Meccanica Tōrō — Tōka-dō
  * Passiva «Tōrō - Lanterna Incisa»: arma psichica, tag `toro`, protezione da manipolazione a contatto.
  */
 
@@ -69,6 +69,6 @@ function escapeHtml(s: string): string {
 /** Tag chat [Tōrō] / [toro] — stato lanterna Tōka-dō. */
 export function formatToroTagsInText(text: string): string {
   return text.replace(/\[(Tōrō|Toro|tōrō|toro)\]/gi, () => {
-    return `<span class="toro-tag" title="Tōrō §3.1 — lanterna incisa, canale Tōka-dō">${escapeHtml('Tōrō')}</span>`
+    return `<span class="toro-tag" title="Tōrō — lanterna incisa, canale Tōka-dō">${escapeHtml('Tōrō')}</span>`
   })
 }

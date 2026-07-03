@@ -6,7 +6,7 @@ export const GENKAI_SKIRU_ID = 'genkai'
 /** @deprecated Sostituito da Genkai — lettura legacy per schede migrate. */
 export const LEGACY_GUGENKA_SKIRU_ID = 'gugenka'
 
-/** Punti Genkai per resistenza costrutti (§2.6). Fallback su gugenka legacy. */
+/** Punti Genkai per resistenza costrutti. Fallback su gugenka legacy. */
 export function resolveGenkaiPointsFromSheet(sheet: SkiruSheet): number {
   const genkai = getSkiruPoints(sheet, GENKAI_SKIRU_ID)
   if (genkai > 0) return genkai

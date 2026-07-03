@@ -4,10 +4,10 @@
  * Formatta i messaggi per la visualizzazione:
  * - Parlati «...» e < ... > → evidenziati
  * - Tag v3: [waza:…], [cs:X], [tier:N], quarti [N/4], [Scudo], [IR:N]
- * - Tag consistenza/categoria §2.5: [Energetiche], [Propagazione Conica], …
- * - Tag status §2.4: [Ira], [Incendiato], [Emorragia], …
- * - Tag Tōrō §3.1: [toro], [Tōrō]
- * - Tag Gosa §3.2: [Gosa:N]
+ * - Tag consistenza/categoria: [Energetiche], [Propagazione Conica], …
+ * - Tag status: [Ira], [Incendiato], [Emorragia], …
+ * - Tag Tōrō: [toro], [Tōrō]
+ * - Tag Gosa: [Gosa:N]
  * - Dadi: `/d 20`, `/dado 100` → risolti server-side; legacy `[dado:…]` ancora supportato
  */
 
@@ -96,7 +96,7 @@ export function formatNarrativeText(
       const n = Number(tierStr)
       if (!isWazaTier(n)) return _m
       const row = getTierRow(n)
-      return `<span class="tier-tag" title="Tier §2.10 — ${row.value} danno base · ${row.csCost} CS">${tierStr} · ${row.value} dmg · ${row.csCost} CS</span>`
+      return `<span class="tier-tag" title="Tier — ${row.value} danno base · ${row.csCost} CS">${tierStr} · ${row.value} dmg · ${row.csCost} CS</span>`
     }
   )
   formatted = formatted.replace(

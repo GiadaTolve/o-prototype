@@ -1,5 +1,5 @@
 /**
- * Crea tabella field_constructs (§2.6).
+ * Crea tabella field_constructs.
  * Esegui da apps/server: bun run scripts/add-field-constructs-table.ts
  */
 import postgres from 'postgres'

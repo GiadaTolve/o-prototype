@@ -1,7 +1,7 @@
 import { buildSokaijuCatalogEntries, SOKAIJU_BRANCH_DESCRIPTION } from './sokaiju-index'
 import type { SkiruBranchDef, SkiruDef } from './types'
 
-/** Rami Skiru per dominio (UltimateManual §2.7). */
+/** Rami Skiru per dominio (UltimateManual). */
 export const SKIRU_BRANCHES: readonly SkiruBranchDef[] = [
   { id: 'shakai-kaikyu', label: 'Classe Sociale', labelRomaji: 'Shakai Kaikyū', labelJa: '社会階級', domain: 'ten', description:
       "Il ruolo occupato dall'individuo all'interno della società e il percorso professionale che ne ha plasmato competenze, conoscenze e relazioni." },
@@ -43,7 +43,7 @@ export const SKIRU_BRANCHES: readonly SkiruBranchDef[] = [
   },
 ] as const
 
-/** Catalogo completo Skiru (UltimateManual §2.7). */
+/** Catalogo completo Skiru (UltimateManual). */
 export const SKIRU_CATALOG: readonly SkiruDef[] = [
   // ─── Ten · Shakai Kaikyū ───
   {

@@ -16,7 +16,7 @@ export interface DropTableDef {
   readonly entries: readonly { readonly pool: DropPoolCategory; readonly weight: number }[]
 }
 
-/** Tabelle predefinite — vedi `ECONOMY_ITEMS_SPEC.md` §1. */
+/** Tabelle predefinite — vedi `ECONOMY_ITEMS_SPEC.md`. */
 export const DROP_TABLES: readonly DropTableDef[] = [
   {
     id: 'rovine_urbane',

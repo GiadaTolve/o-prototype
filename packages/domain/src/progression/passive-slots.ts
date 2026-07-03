@@ -1,4 +1,4 @@
-/** Slot passivi Waza — §2.12 MECHANICS_ROADMAP. */
+/** Slot passivi Waza — MECHANICS_ROADMAP. */
 
 export const PASSIVE_SLOT_BASE = 2
 export const PASSIVE_SLOT_MAX = 6

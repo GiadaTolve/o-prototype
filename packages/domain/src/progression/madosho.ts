@@ -1,6 +1,6 @@
 /**
  * Madoshō (clan) — eredità di sangue, scelta obbligatoria in creazione PG.
- * UltimateManual Parte IV · MECHANICS_ROADMAP §4.0
+ * UltimateManual Parte IV · MECHANICS_ROADMAP
  */
 
 export const MADOSHO_IDS = [

@@ -1,4 +1,4 @@
-/** Categoria scheda oggetto — vedi `ECONOMY_ITEMS_SPEC.md` §2. */
+/** Categoria scheda oggetto — vedi `ECONOMY_ITEMS_SPEC.md`. */
 export type ItemCategory =
   | 'junk'
   | 'materiale'

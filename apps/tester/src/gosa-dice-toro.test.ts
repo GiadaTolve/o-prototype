@@ -19,7 +19,7 @@ import {
   formatDiceRollLine,
 } from '../../../packages/domain/src/chat/dice-display.ts'
 
-describe('Gosa §3.2', () => {
+describe => {
   it('accumula stack su materializzazione', () => {
     const next = accumulateGosaOnConstruct(0, {
       descriptionChars: 20,
@@ -76,7 +76,7 @@ describe('slash dice /d N', () => {
   })
 })
 
-describe('dice display §chat', () => {
+describe => {
   it('rileva messaggio solo dado', () => {
     expect(isDiceRollMessage('[🎲 50/100]')).toBe(true)
     expect(isDiceRollMessage('Azione lunga [🎲 50/100]')).toBe(false)

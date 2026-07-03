@@ -251,7 +251,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       body: t.Object({ skillId: t.String() }),
     })
 
-    // 3d. Slot passivi Waza (§2.12)
+    // 3d. Slot passivi Waza
     .get('/me/passive-slots', async ({ user, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       try {
@@ -291,7 +291,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       detail: { summary: 'Equip owned passive Waza in slots' },
     })
 
-    // 3e. Esagono stili Dō (§2.13)
+    // 3e. Esagono stili Dō
     .get('/me/style-hexagon', async ({ user, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       try {
@@ -334,7 +334,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       detail: { summary: 'Unlock Dō style with Key' },
     })
 
-    // 3f. Status combattimento (§2.4)
+    // 3f. Status combattimento
     .get('/me/status-effects', async ({ user, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       try {
@@ -495,7 +495,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         set.status = 400
         return { error: e instanceof Error ? e.message : 'Errore Tōrō' }
       }
-    }, { detail: { summary: 'Get Tōrō lantern state §3.1' } })
+    }, { detail: { summary: 'Get Tōrō lantern state' } })
 
     .patch('/me/toro-state', async ({ user, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
@@ -522,7 +522,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         set.status = 400
         return { error: e instanceof Error ? e.message : 'Errore Gosa' }
       }
-    }, { detail: { summary: 'Get Gosa stacks §3.2' } })
+    }, { detail: { summary: 'Get Gosa stacks' } })
 
     .patch('/me/gosa-state', async ({ user, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
@@ -555,7 +555,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       }
     }, {
       query: t.Object({ currentCs: t.Optional(t.Numeric()) }),
-      detail: { summary: 'Stato Tensione / Junkan / Yuragi / Atsuryoku §3.3–3.6' },
+      detail: { summary: 'Stato Tensione / Junkan / Yuragi / Atsuryoku' },
     })
 
     .patch('/me/do-mechanics', async ({ user, body, set }) => {
@@ -991,7 +991,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       detail: { summary: 'Get another character EXP logs (Admin/Mod only)' }
     })
 
-    // ── Skiru API §2.7 ────────────────────────────────────────────────────
+    // ── Skiru API ────────────────────────────────────────────────────
 
     // 9. GET scheda Skiru (sheet + derivati + costo prossimo punto per nodo)
     .get('/me/skiru', async ({ user, set }) => {
@@ -1006,7 +1006,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       }
     }, {
       detail: {
-        summary: 'Get Skiru sheet + derived stats + exp cost per node (§2.7)',
+        summary: 'Get Skiru sheet + derived stats + exp cost per node',
       },
     })
 
@@ -1030,7 +1030,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         }),
       }),
       detail: {
-        summary: 'Raise a Skiru node — spende EXP spendibile (§2.7)',
+        summary: 'Raise a Skiru node — spende EXP spendibile',
       },
     })
   )

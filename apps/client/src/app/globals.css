@@ -308,6 +308,230 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Pannello lancio waza — layout compatto */
+.waza-launch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.waza-launch__cs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(201, 168, 74, 0.25);
+  background: rgba(201, 168, 74, 0.06);
+  font-size: 0.65rem;
+  color: var(--accent-gold);
+  font-family: var(--font-display, Cinzel, serif);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.waza-launch__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.waza-launch__label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-display, Cinzel, serif);
+}
+
+.waza-launch__input,
+.waza-launch__select,
+.waza-launch__textarea {
+  width: 100%;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 0.35rem 0.45rem;
+}
+
+.waza-launch__textarea {
+  resize: vertical;
+  min-height: 2.25rem;
+}
+
+.waza-launch__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.waza-launch__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.waza-launch__stat-k {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.waza-launch__stat-v {
+  font-size: 0.68rem;
+  color: var(--accent-violet-light);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waza-launch__stat-v--gold {
+  color: var(--accent-gold);
+}
+
+.waza-launch__alert {
+  font-size: 0.62rem;
+  color: rgba(248, 113, 113, 0.95);
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.waza-launch__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.waza-launch__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.62rem;
+  color: var(--accent-violet-light);
+  cursor: pointer;
+  user-select: none;
+}
+
+.waza-launch__toggle input {
+  accent-color: var(--accent-gold);
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.waza-launch__toggle--violet input {
+  accent-color: var(--accent-violet);
+}
+
+.waza-launch__details {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.waza-launch__details > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-display, Cinzel, serif);
+}
+
+.waza-launch__details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.waza-launch__details > summary::before {
+  content: "▸ ";
+  opacity: 0.5;
+}
+
+.waza-launch__details[open] > summary::before {
+  content: "▾ ";
+}
+
+.waza-launch__details-body {
+  padding: 0.35rem 0.45rem 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.waza-launch__tags {
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.45);
+  word-break: break-all;
+  line-height: 1.35;
+  font-family: ui-monospace, monospace;
+}
+
+.waza-launch__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.waza-launch__btn {
+  padding: 0.45rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-family: var(--font-display, Cinzel, serif);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.waza-launch__btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.waza-launch__btn--secondary {
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  color: var(--accent-violet-light);
+  background: transparent;
+}
+
+.waza-launch__btn--secondary:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.waza-launch__btn--primary {
+  border: 1px solid rgba(201, 168, 74, 0.55);
+  color: var(--accent-gold);
+  background: rgba(201, 168, 74, 0.08);
+  box-shadow: var(--shadow-gold);
+}
+
+.waza-launch__btn--primary:hover:not(:disabled) {
+  background: rgba(201, 168, 74, 0.15);
+}
+
+.waza-launch__hint {
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1.4;
+}
+
+.waza-launch__hint code {
+  color: rgba(196, 181, 253, 0.75);
+  font-size: 0.55rem;
+}
+
 .chat-combat-vitals {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1360,4 +1584,45 @@ body {
   box-sizing: border-box;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+/* Wiki — Guida & Ambientazione */
+html:has(.wiki-page-root),
+html:has(.wiki-page-root) body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.wiki-page-root {
+  height: 100%;
+  width: 100%;
+}
+
+.wiki-layout {
+  height: 100%;
+  width: 100%;
+}
+
+.wiki-prose {
+  text-align: justify;
+  hyphens: auto;
+}
+
+.wiki-content {
+  background-image: url("/backgrounds/darkstone.png");
+  background-repeat: repeat;
+  background-color: rgba(0, 0, 0, 0.45);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.wiki-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiki-layout .animate__animated {
+    animation: none;
+  }
 }

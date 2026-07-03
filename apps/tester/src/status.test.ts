@@ -14,7 +14,7 @@ import {
   STATUS_DEFINITIONS,
 } from '../../../packages/domain/src/combat/index.ts'
 
-describe('status engine §2.4', () => {
+describe => {
   it('applica status emotivo con stack default', () => {
     let c = createStatusContainer()
     c = applyStatus(c, 'ira')

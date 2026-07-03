@@ -22,7 +22,7 @@ describe('waza tier infer (authoring / sync)', () => {
     expect(s.note).toContain('passiva')
   })
 
-  it('attiva con riepilogo tabella §2.10', () => {
+  it => {
     const s = getWazaManualTierSummary(3, false)
     expect(s.rankLabel).toBe('T2')
     expect(s.csCost).toBe(2)

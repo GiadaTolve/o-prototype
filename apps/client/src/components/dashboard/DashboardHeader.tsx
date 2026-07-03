@@ -87,15 +87,12 @@ export function DashboardHeader({
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 max-w-[1800px] mx-auto">
-        <div className="flex items-baseline gap-4">
-          <h1
-            className="font-display text-2xl md:text-3xl font-bold uppercase tracking-wider text-[var(--accent-gold)]"
-            style={{ textShadow: "0 0 12px rgba(212,175,55,0.5)" }}
-          >
-            OYASUMI
-          </h1>
-          <span className="text-gray-500 text-sm hidden sm:inline">— Protocollo onirico</span>
-        </div>
+        <h1
+          className="font-display text-2xl md:text-3xl font-bold tracking-[0.12em] text-[var(--accent-gold)]"
+          style={{ textShadow: "0 0 12px rgba(212,175,55,0.5)" }}
+        >
+          Oyasumi
+        </h1>
         <nav className="flex flex-wrap items-center gap-2 md:gap-4">
           {smsNotification && (
             <span className="text-[var(--accent-gold)] text-sm italic animate-pulse">*drin drin!*</span>

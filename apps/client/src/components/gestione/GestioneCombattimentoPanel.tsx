@@ -131,7 +131,7 @@ export function GestioneCombattimentoPanel({
       <header>
         <h2 className="font-display text-lg text-[var(--accent-gold)]">Combattimento Master</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Status §2.4 · Costrutti sul campo §2.6 — validazione combattimento in chat.
+          Status · Costrutti sul campo — validazione combattimento in chat.
         </p>
       </header>
 

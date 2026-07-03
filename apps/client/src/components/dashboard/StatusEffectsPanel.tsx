@@ -127,7 +127,7 @@ export function StatusEffectsPanel({
         <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[var(--accent-gold)]">
           Status attivi
         </h3>
-        <span className="text-[9px] text-gray-500 ml-auto">§2.4</span>
+        <span className="text-[9px] text-gray-500 ml-auto"></span>
       </div>
 
       {effects.length === 0 ? (

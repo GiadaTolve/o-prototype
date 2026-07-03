@@ -20,7 +20,7 @@ export const SHAKAI_KAIKYU_CLASS_SKIRU_IDS = [
   'shisai',
 ] as const
 
-/** Tetto punti per singola Skiru (UltimateManual §2.7). */
+/** Tetto punti per singola Skiru (UltimateManual). */
 export const SKIRU_MAX_POINTS = 10
 
 /** Costo exp del primo punto acquistabile su un nodo. */

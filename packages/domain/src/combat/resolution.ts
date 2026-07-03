@@ -4,7 +4,7 @@ import { compareSokaijuInitiativeTieBreak, getSokaijuRank } from '../skiru/sokai
 import type { SkiruSheet } from '../skiru/types'
 
 /**
- * Dichiarazione di un'azione per il calcolo dell'Indice di Riuscita (UltimateManual §2.3).
+ * Dichiarazione di un'azione per il calcolo dell'Indice di Riuscita (UltimateManual).
  * Le Skiru sono scelte dalla descrizione narrata — non fissate per waza.
  */
 export interface ActionIndexInput {
@@ -159,7 +159,7 @@ export function buildSokaijuConfrontationFromSheets(
 }
 
 /**
- * Due effetti nello stesso istante: risolve prima chi ha IR più alto (§2.3).
+ * Due effetti nello stesso istante: risolve prima chi ha IR più alto.
  * A parità IR → Kashin → quarti narrati.
  * @returns negative se B prima, positive se A prima, 0 se pari (poi spareggio quarti)
  */

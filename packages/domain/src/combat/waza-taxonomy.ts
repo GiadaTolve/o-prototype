@@ -1,4 +1,4 @@
-/** Consistenze e categorie Waza — Ultimate Manual §2.5 / WAZA_CALCOLI.md */
+/** Consistenze e categorie Waza — Ultimate Manual / WAZA_CALCOLI.md */
 
 export const WAZA_CONSISTENCY_IDS = [
   'sonoro',

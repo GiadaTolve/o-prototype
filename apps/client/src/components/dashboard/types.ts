@@ -1,4 +1,4 @@
-export type WindowId = "scheda" | "presenti" | "shop" | "sms" | "fetch" | "banca" | "mercato" | "housing" | "profilo" | "waza" | "ordine" | "bestiario" | "notifiche" | "spazioEventi";
+export type WindowId = "scheda" | "presenti" | "sms" | "fetch" | "banca" | "mercato" | "housing" | "profilo" | "waza" | "ordine" | "bestiario" | "notifiche" | "spazioEventi";
 
 import type { PendingLevelUpBanner } from "@domain/progression/level-up";
 import type { CharacterComputed } from "./character-computed";
@@ -21,7 +21,7 @@ export type CharacterSummary = {
   avatar?: string | null;
   avatarUrl?: string;
   miniAvatar?: string | null;
-  /** Pixel-icon (20×20) per ruolo/ordine/premio — vedi GAME_LAYOUT_SPEC §4, pixel-icons.ts */
+  /** Pixel-icon (20×20) per ruolo/ordine/premio — vedi GAME_LAYOUT_SPEC, pixel-icons.ts */
   pixelIcons?: { ruolo?: string[]; ordine?: string[]; premioSpeciale?: string[] };
   stats?: { f: number; c: number; d: number; m: number; e: number };
   rem?: number;
@@ -55,7 +55,6 @@ export type CharacterSummary = {
 export const WINDOW_LABELS: Record<WindowId, string> = {
   scheda: "Scheda",
   presenti: "Presenti Estesi",
-  shop: "Shop",
   sms: "SMS",
   fetch: "Assegnazioni",
   banca: "Banca",
@@ -79,7 +78,7 @@ export type Presente = {
   isMe?: boolean;
   /** Shadowban: visibile ma con colore diverso + icona occhio chiuso */
   isShadow?: boolean;
-  /** Pixel-icon (20×20) accanto al nome — GAME_LAYOUT_SPEC §4 */
+  /** Pixel-icon (20×20) accanto al nome — GAME_LAYOUT_SPEC */
   pixelIcons?: { ruolo?: string[]; ordine?: string[]; premioSpeciale?: string[] };
   /** Circus (partychat): colore animale per badge presenti */
   anonymousColor?: string;

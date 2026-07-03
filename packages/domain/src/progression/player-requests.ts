@@ -1,6 +1,6 @@
 /**
  * Richieste giocatore — Madoshō, Ordine, Premi (approvazione staff).
- * MECHANICS_ROADMAP §4.0 · cross-cutting Richieste
+ * MECHANICS_ROADMAP · cross-cutting Richieste
  */
 
 import { MADOSHO_CATALOG, type MadoshoId } from './madosho'

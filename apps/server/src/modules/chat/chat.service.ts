@@ -133,7 +133,7 @@ export async function clearRoom(roomId: string, clearedByCharacterId: string): P
   await db.delete(sceneGroundLoot).where(eq(sceneGroundLoot.roomId, roomId));
 }
 
-/** Azioni durano 1h30 in chat (MAP_AND_CHAT_SPEC §4.6). Dopo scadono dalla vista (restano nel Log). */
+/** Azioni durano 1h30 in chat. Dopo scadono dalla vista (restano nel Log). */
 const ACTION_EXPIRY_MS = 90 * 60 * 1000;
 
 export async function getMessages(roomId: string, limit = 50, before?: string, excludeCleared = true) {
@@ -222,7 +222,7 @@ export async function getMessages(roomId: string, limit = 50, before?: string, e
   return allRows;
 }
 
-/** 1 azione = 1 messaggio con >500 caratteri totali (QUEST_AND_FETCH_SPEC §2). */
+/** 1 azione = 1 messaggio con >500 caratteri totali (QUEST_AND_FETCH_SPEC). */
 const ACTION_CHAR_THRESHOLD = 500;
 
 /**

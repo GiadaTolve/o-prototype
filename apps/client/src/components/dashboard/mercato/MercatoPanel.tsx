@@ -1,13 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { icons } from '@/lib/icons'
 import { api } from '@/lib/api'
 import { marketApi } from '@/lib/market-api'
 import { resolveBancoBuyPrice, PIAZZA_COMMISSION_RATE, PIAZZA_MAX_ACTIVE_LISTINGS } from '@domain/economy/market'
 import type { ItemCategory } from '@domain/economy/types'
 import type { CharacterSummary } from '../types'
+import { HousingMarketSection } from './HousingMarketSection'
 import type {
   BancoCatalogResponse,
   MarketListing,
@@ -25,7 +24,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   oggetto_trama: 'Trama',
 }
 
-type MercatoTab = 'banco' | 'piazza'
+type MercatoTab = 'banco' | 'piazza' | 'immobiliare'
 
 type Props = {
   char?: CharacterSummary
@@ -208,29 +207,11 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
   const tabs: { id: MercatoTab; label: string }[] = [
     { id: 'banco', label: 'Il Banco' },
     { id: 'piazza', label: 'La Piazza' },
+    { id: 'immobiliare', label: 'Immobiliare' },
   ]
 
   return (
     <div className="space-y-4 animate__animated animate__fadeIn motion-reduce:animate-none">
-      <div
-        className="rounded-lg border border-[var(--border-color)] px-4 py-3 flex flex-wrap items-center justify-between gap-3"
-        style={{ background: 'linear-gradient(135deg, rgba(0,0,0,0.45), rgba(0,0,0,0.25))' }}
-      >
-        <div>
-          <h3 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] font-display flex items-center gap-2">
-            <FontAwesomeIcon icon={icons.shop} className="w-3.5 h-3.5" />
-            Mercato
-          </h3>
-          <p className="text-[11px] text-[var(--accent-violet-light)]/80 mt-0.5">
-            Junk → Rem al Banco NPC · scambi tra giocatori sulla Piazza
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-[9px] uppercase tracking-widest text-gray-500 font-display">Saldo</p>
-          <p className="font-display text-xl text-[var(--accent-gold)] tabular-nums">{char?.rem ?? 0} Rem</p>
-        </div>
-      </div>
-
       {error && (
         <p className="text-sm text-red-400 border border-red-900/50 bg-red-950/30 rounded px-3 py-2">{error}</p>
       )}
@@ -254,24 +235,6 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
 
       {tab === 'banco' && catalog && (
         <div className="space-y-5">
-          <section className="rounded border border-[var(--border-color)] bg-black/20 p-3">
-            <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-violet-light)] mb-2 font-display">
-              Prezzi Il Banco (compra da te)
-            </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
-              <span className="text-gray-400">Junk</span>
-              <span className="text-white font-display col-span-1 sm:col-span-2">{catalog.rules.buysJunk} Rem</span>
-              <span className="text-gray-400">Materiale comune</span>
-              <span className="text-white font-display col-span-1 sm:col-span-2">{catalog.rules.buysCommonMaterial} Rem</span>
-              <span className="text-gray-400">Materiale raro</span>
-              <span className="text-white font-display col-span-1 sm:col-span-2">{catalog.rules.buysRareMaterial} Rem</span>
-              <span className="text-gray-400">Consumabile craftato</span>
-              <span className="text-white font-display col-span-1 sm:col-span-2">{catalog.rules.buysCraftedConsumable} Rem</span>
-              <span className="text-gray-400">Equip integro</span>
-              <span className="text-white font-display col-span-1 sm:col-span-2">{catalog.rules.buysIntactEquip} Rem</span>
-            </div>
-          </section>
-
           <section>
             <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
               Vendi al Banco
@@ -516,6 +479,10 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
             )}
           </section>
         </div>
+      )}
+
+      {tab === 'immobiliare' && (
+        <HousingMarketSection char={char} onCharUpdate={onCharUpdate} />
       )}
     </div>
   )

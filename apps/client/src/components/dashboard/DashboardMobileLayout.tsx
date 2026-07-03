@@ -227,7 +227,6 @@ export function DashboardMobileLayout({
         {activeTab === "altro" && (
           <div className="p-4 grid grid-cols-2 gap-3">
             {[
-              { id: "shop" as WindowId, label: "Shop", icon: icons.shop },
               { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },
               { id: "banca" as WindowId, label: "Banca", icon: icons.banca },
               { id: "waza" as WindowId, label: "Skiru & Waza", icon: icons.waza },
@@ -287,7 +286,6 @@ export function DashboardMobileLayout({
             onClose={(id) => onClose(id)}
             char={
               openWindow === "scheda" ||
-              openWindow === "shop" ||
               openWindow === "mercato" ||
               openWindow === "banca" ||
               openWindow === "waza"

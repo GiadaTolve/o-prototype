@@ -182,7 +182,7 @@ export default function WazaTaxonomyTool() {
         <p>
           I <strong>rami già presenti</strong> si modificano nelle righe sotto (etichetta e descrizione browser). Le{' '}
           <strong>sottocategorie già presenti</strong>: stesso elenco, campi editabili; poi <strong>Salva su disco</strong>.{' '}
-          Consistenze e categorie §2.5 del manuale sono in <code className="wit-inline-code">@domain/combat/waza-taxonomy</code> — inseriscile nel testo waza dal <strong>Tool inserimento Waza</strong>.
+          Consistenze e categorie del manuale sono in <code className="wit-inline-code">@domain/combat/waza-taxonomy</code> — inseriscile nel testo waza dal <strong>Tool inserimento Waza</strong>.
           {apiBase ? (
             <>
               Con <strong>API contributi</strong> attiva vengono inviati due snapshot (<code className="wit-inline-code">wazaBranches.ts</code>,{' '}
@@ -331,7 +331,7 @@ export default function WazaTaxonomyTool() {
       )}
 
       <div className="wit-panel">
-        <h3 className="wit-panel-title">Consistenze e categorie §2.5 (manuale · domain)</h3>
+        <h3 className="wit-panel-title">Consistenze e categorie (manuale · domain)</h3>
         <p className="wit-hint wit-hint--flush-top">
           Elenco di riferimento allineato a <code className="wit-inline-code">Oyasumi_Manuale_Completo.pdf</code>.
           Per inserirli nel testo waza usa i chip nel <strong>Tool inserimento Waza</strong>.

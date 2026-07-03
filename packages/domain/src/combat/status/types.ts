@@ -1,4 +1,4 @@
-/** Target dello status — personaggio o costrutto sul campo (§2.4). */
+/** Target dello status — personaggio o costrutto sul campo. */
 export type StatusTargetKind = 'character' | 'construct'
 
 export type StatusKind = 'emotional' | 'elemental' | 'atypical'
@@ -74,7 +74,7 @@ export interface StatusCombatModifiers {
   movementPenaltyMeters: number
   /** Narrativo / anti-morte — non calcolato in pipeline numerica. */
   tranceOnirica: boolean
-  /** Hadō Metamorfosi attiva — soglie CS collegate altrove (§4). */
+  /** Hadō Metamorfosi attiva — soglie CS collegate altrove. */
   metamorphosisActive: boolean
   /** Kōmei armatura — +% mitigazione Itami aggiuntiva. */
   mitigationBonusPercent: number

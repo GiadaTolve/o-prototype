@@ -551,7 +551,7 @@ export function ChatCombatPanel({
             Con − HP e tier selezionato, il bersaglio registra l&apos;ultimo colpo per Junnō/Hibiki.
           </p>
 
-          <p className="text-[9px] uppercase text-gray-500 font-display mb-1">Status §2.4</p>
+          <p className="text-[9px] uppercase text-gray-500 font-display mb-1">Status</p>
           {masterTargetStatus.length > 0 ? (
             <div className="flex flex-wrap gap-1 mb-2">
               {masterTargetStatus.map((e) => (
@@ -685,7 +685,7 @@ export function ChatCombatPanel({
             ))}
           </div>
 
-          <p className="text-[9px] uppercase text-gray-500 font-display mb-1">Costrutti §2.6</p>
+          <p className="text-[9px] uppercase text-gray-500 font-display mb-1">Costrutti</p>
           {constructs.length > 0 && (
             <ul className="space-y-1 mb-2 max-h-24 overflow-y-auto">
               {constructs.map((c) => (

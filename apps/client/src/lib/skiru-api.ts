@@ -1,6 +1,6 @@
 import type { SkiruDomainIndex } from "@/components/dashboard/types";
 
-/** Risposta GET /characters/me/skiru e PATCH /characters/me/skiru (§2.7). */
+/** Risposta GET /characters/me/skiru e PATCH /characters/me/skiru. */
 export type SkiruApiResponse = {
   skiruSheet: Record<string, number>;
   expSpendable: number;

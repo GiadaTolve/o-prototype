@@ -8,7 +8,6 @@ import { WINDOW_LABELS } from "./types";
 const DOCK_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   scheda: icons.user,
   presenti: icons.presenti,
-  shop: icons.shop,
   sms: icons.message,
   fetch: icons.trophy,
   banca: icons.banca,

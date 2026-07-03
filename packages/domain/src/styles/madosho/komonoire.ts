@@ -1,4 +1,4 @@
-/** Komonoire (小物入れ) — patto sbagliato · dado demoniaco · Madoshō §4.3 */
+/** Komonoire (小物入れ) — patto sbagliato · dado demoniaco · Madoshō */
 
 export type KomonoireWeaponState = {
   roll: number

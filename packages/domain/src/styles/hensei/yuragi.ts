@@ -1,4 +1,4 @@
-/** Yuragi (揺らぎ) — Hensei-dō §3.5: oscillazione consistenza → parità IR al cambio. */
+/** Yuragi (揺らぎ) — Hensei-dō: oscillazione consistenza → parità IR al cambio. */
 
 export const YURAGI_STYLE_ID = 'hensei' as const
 export const YURAGI_IR_PARITY_BONUS = 2

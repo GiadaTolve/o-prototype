@@ -1,5 +1,5 @@
 /**
- * Aggiunge skills.is_passive (Waza passiva §2.12) se mancante.
+ * Aggiunge skills.is_passive se mancante.
  * Esegui da apps/server: bun run scripts/add-skill-is-passive-column.ts
  */
 import postgres from 'postgres'

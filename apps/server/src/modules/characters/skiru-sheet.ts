@@ -40,7 +40,7 @@ export function buildSkiruCharacterComputed(
 }
 
 /**
- * Contratto API Skiru (§2.7) — usato da GET/PATCH /characters/me/skiru
+ * Contratto API Skiru — usato da GET/PATCH /characters/me/skiru
  *
  * PATCH body: { skiruId: string, targetPoints: number }  // 1–10, > punti attuali
  * Response:   { skiruSheet, expSpendable, expCostNextByNode, derived, skiruDomains }

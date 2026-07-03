@@ -1,5 +1,5 @@
 /**
- * Pixel-icon — specifica GAME_LAYOUT_SPEC §4.
+ * Pixel-icon — specifica GAME_LAYOUT_SPEC.
  *
  * Icone 20×20 px che decorano il nome del possessore (ruoli, ordine, premio speciale).
  * Visibili ovunque sia visibile il nome (Mini-Profilo, Lista Presenti, Scheda, chat).

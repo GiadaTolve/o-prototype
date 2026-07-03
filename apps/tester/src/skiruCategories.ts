@@ -1,5 +1,5 @@
 /**
- * Categorie Skiru — alias dei rami domain (UltimateManual §2.7).
+ * Categorie Skiru — alias dei rami domain (UltimateManual).
  * Fonte canonica: packages/domain/src/skiru/catalog.ts
  */
 

@@ -1,6 +1,6 @@
 /**
  * Tassonomia Waza — sottocategorie per ramo (authoring tester).
- * Consistenze e categorie §2.5: source of truth in @domain/combat/waza-taxonomy.
+ * Consistenze e categorie: source of truth in @domain/combat/waza-taxonomy.
  */
 
 import type { WazaBranch } from './wazaBranches'

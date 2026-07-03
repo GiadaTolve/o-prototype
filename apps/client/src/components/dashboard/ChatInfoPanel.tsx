@@ -92,7 +92,7 @@ export function ChatInfoPanel() {
                 </li>
                 <li><span className="text-[var(--accent-gold)]">[cs:N]</span> · <span className="text-[var(--accent-gold)]">[1/4]…[4/4]</span> · <span className="text-[var(--accent-gold)]">[Scudo]</span> · <span className="text-[var(--accent-gold)]">[IR:N]</span></li>
                 <li>HP: Master aggiorna barra da <strong className="text-[var(--accent-violet-light)] font-normal">Strumenti Master</strong> (non compare in chat; narrato nel masterscreen)</li>
-                <li><span className="text-[var(--accent-gold)]">[toro]</span> · consistenza/categoria · status §2.4</li>
+                <li><span className="text-[var(--accent-gold)]">[toro]</span> · consistenza/categoria · status</li>
                 <li>
                   <span className="text-[var(--accent-gold)]">[investimento:+N]</span> versa CS in Tōshi (Hadō);{" "}
                   <span className="text-[var(--accent-gold)]">[investimento:riscuoti]</span> riscatta il pool

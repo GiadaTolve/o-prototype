@@ -1,5 +1,5 @@
 /**
- * Aggiunge skills.style_id (Esagono §2.13) se mancante.
+ * Aggiunge skills.style_id se mancante.
  * Esegui da apps/server: bun run scripts/add-skill-style-id-column.ts
  */
 import postgres from 'postgres'

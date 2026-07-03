@@ -7,7 +7,7 @@ import {
   resolveDamageToHp,
 } from '../../../packages/domain/src/combat/index.ts'
 
-describe('constructs §2.6', () => {
+describe => {
   it('calcola resistenza (Genkai + valore tier) × taglia', () => {
     expect(calculateConstructResistance(5, 3, 'media')).toBe(17)
     expect(calculateConstructResistance(5, 3, 'grande')).toBe(25)

@@ -23,7 +23,7 @@ export type WazaManualTierSummary = {
   note: string | null
 }
 
-/** Riepilogo tier manuale §2.10 derivato dal costo CS del form authoring. */
+/** Riepilogo tier manuale derivato dal costo CS del form authoring. */
 export function getWazaManualTierSummary(
   costCs: number,
   isPassive: boolean,

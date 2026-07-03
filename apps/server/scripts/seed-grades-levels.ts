@@ -1,5 +1,5 @@
 /**
- * Seed tabelle Grades e Levels da QUEST_AND_FETCH_SPEC §7.
+ * Seed tabelle Grades e Levels da QUEST_AND_FETCH_SPEC.
  *
  * Esegui:  cd apps/server && bun run seed-grades-levels
  * (Dopo `bun run db:push`. Postgres avviato, DATABASE_URL in .env.)

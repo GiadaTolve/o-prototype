@@ -9,7 +9,7 @@ import {
   TORO_WEAPON_TAG,
 } from '../../../packages/domain/src/styles/toka/toro.ts'
 
-describe('field constructs §2.6 persistence', () => {
+describe => {
   it('crea costrutto con resistenza calcolata', () => {
     const c = createFieldConstruct({
       id: 'x',
@@ -39,7 +39,7 @@ describe('field constructs §2.6 persistence', () => {
   })
 })
 
-describe('Tōrō §3.1', () => {
+describe => {
   it('attivo solo con passiva e contatto', () => {
     expect(
       resolveToroState({ hasToroPassiveEquipped: true, weaponInContact: true }).active,

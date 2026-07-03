@@ -255,7 +255,7 @@ export default function CombatTester() {
   return (
     <div>
       <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>
-        Simulatore v3 — IR §2.3, tier/CS §2.10, Overheat −2 PV/stack (COMBAT_SPEC).
+        Simulatore v3 — IR, tier/CS, Overheat −2 PV/stack (COMBAT_SPEC).
       </p>
 
       <div

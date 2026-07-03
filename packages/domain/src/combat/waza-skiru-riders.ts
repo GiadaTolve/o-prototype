@@ -17,7 +17,7 @@ export type SkiruRider = {
   label: string
 }
 
-/** Skiru con rider tabellare (spec Sōkaiju §2). */
+/** Skiru con rider tabellare. */
 const SKIRU_RIDER_TABLE: Record<string, SkiruRider> = {
   bakuryoku: { kind: 'damage_plus', value: 2, label: '+2 danno' },
   goatsu: { kind: 'damage_plus', value: 2, label: '+2 danno' },
@@ -124,7 +124,7 @@ export function computeSkiruRiderDefenderIrPenalty(
   return 0
 }
 
-/** Bonus flat danno da rider Skiru dichiarata (spec §2). */
+/** Bonus flat danno da rider Skiru dichiarata. */
 export function computeSkiruRiderFlatBonus(
   declaredSkiruId: string | null | undefined,
   wazaEffectText?: string | null,

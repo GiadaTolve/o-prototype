@@ -1,7 +1,7 @@
 /**
  * Madōsho (clan) — rami e sottocategorie.
  * Modificabile dal tester: Idee → Tassonomia Madōsho → Salva su disco.
- * Allineato a @domain/progression/madosho (6 lignaggi §4.0).
+ * Allineato a @domain/progression/madosho.
  */
 
 export const MADOSHO_RAMI_IDS = [

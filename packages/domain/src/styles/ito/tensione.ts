@@ -1,7 +1,7 @@
-/** Tensione (緊張) — Itō-dō §3.3: fili attivi sul campo aumentano pressione e rischio di snap. */
+/** Tensione (緊張) — Itō-dō: fili attivi sul campo aumentano pressione e rischio di snap. */
 
 export const TENSIONE_STYLE_ID = 'ito' as const
-/** Massimo fili controllabili senza esubero (§3.3 Itō-dō). */
+/** Massimo fili controllabili senza esubero. */
 export const TENSIONE_MAX = 8
 /** A 8 fili: rischio snap (coincide con il cap). */
 export const TENSIONE_SNAP_THRESHOLD = 8

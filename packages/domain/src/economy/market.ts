@@ -6,7 +6,7 @@ export interface BancoPriceRow {
   readonly sellRem?: number
 }
 
-/** Prezzi Il Banco — vedi `ECONOMY_ITEMS_SPEC.md` §4. */
+/** Prezzi Il Banco — vedi `ECONOMY_ITEMS_SPEC.md`. */
 export const BANCO_BUY_JUNK_REM = 2
 export const BANCO_BUY_COMMON_MATERIAL_REM = 5
 export const BANCO_BUY_RARE_MATERIAL_REM = 20

@@ -761,7 +761,7 @@ export class CharacterService {
       }));
   }
 
-  /** Waza passive possedute (equipaggiabili negli slot §2.12). */
+  /** Waza passive possedute. */
   async getOwnedPassiveWaza(characterId: string) {
     const rows = await db.query.characterSkills.findMany({
       where: eq(characterSkills.characterId, characterId),
@@ -2486,15 +2486,15 @@ export class CharacterService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Skiru API — §2.7 Integrazione dati (MECHANICS_ROADMAP)
+  // Skiru API — Integrazione dati (MECHANICS_ROADMAP)
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
    * Restituisce la scheda Skiru completa del personaggio con:
    * - skiruSheet: nodi attuali
    * - expSpendable: EXP disponibili
-   * - expCostNextByNode: costo del prossimo punto per ogni nodo standard (stub mapping §2.7)
-   * - derived: HP max, mitigazione, movimento (§2.8)
+   * - expCostNextByNode: costo del prossimo punto per ogni nodo standard
+   * - derived: HP max, mitigazione, movimento
    * - skiruDomains: indici Ten/Chi/Jin per radar
    */
   async getSkiruSheet(userId: string) {
@@ -2529,7 +2529,7 @@ export class CharacterService {
 
     const expSpendable = character.experienceSpendable ?? 0;
 
-    // Mapping exp spendibile → costo prossimo punto per ogni nodo standard (§2.7 stub documentato).
+    // Mapping exp spendibile → costo prossimo punto per ogni nodo standard.
     // null = nodo già al massimo o milestone (non acquistabile con EXP).
     const expCostNextByNode: Record<string, number | null> = {};
     for (const def of SKIRU_CATALOG) {
@@ -2564,7 +2564,7 @@ export class CharacterService {
   }
 
   /**
-   * Alza un nodo Skiru a targetPoints, scalando l'EXP necessaria (§2.7).
+   * Alza un nodo Skiru a targetPoints, scalando l'EXP necessaria.
    * - Rifiuta milestone (non si comprano con EXP)
    * - Rifiuta se EXP insufficienti (canAffordSkiruRaise)
    * - Valida la scheda risultante con validateSkiruSheet

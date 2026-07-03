@@ -4,7 +4,7 @@ import {
   resolveJunkanPotenziamentoCapacity,
 } from './junkan'
 
-describe('junkan §3.4', () => {
+describe => {
   it('Capacità Potenziamento = 3 + Itami', () => {
     expect(resolveJunkanPotenziamentoCapacity({ itami: 5 })).toBe(
       JUNKAN_POTENZIAMENTO_BASE + 5,

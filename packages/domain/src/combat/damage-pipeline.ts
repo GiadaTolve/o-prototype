@@ -7,7 +7,7 @@ import type { SkiruSheet } from '../skiru/types'
 import { absorbDamageWithResistance } from './constructs'
 import { getTierValue, type WazaTier } from './tier'
 
-/** Bonus/malus al danno base (UltimateManual §2.9). */
+/** Bonus/malus al danno base (UltimateManual). */
 export interface DamageBonusInput {
   /** Somma al valore tier (status Ira +1 tier, oggetti, ecc. tradotti in flat dal chiamante). */
   flatBonus?: number
@@ -26,7 +26,7 @@ export interface DamagePipelineInput {
   /** Resistenza [Scudo] o Costrutto sul bersaglio (0 se assente). */
   shieldResistance?: number
   targetSheet: SkiruSheet
-  /** Costrutto sul campo: niente mitigazione Itami (§2.6). */
+  /** Costrutto sul campo: niente mitigazione Itami. */
   skipItamiMitigation?: boolean
   /** Kōmei armatura e simili — % aggiuntiva oltre Itami. */
   extraMitigationPercent?: number
@@ -49,7 +49,7 @@ export function milestoneDamageMultiplier(): number {
 }
 
 /**
- * Danno base = Tier + bonus, poi moltiplicatori (UltimateManual §2.9).
+ * Danno base = Tier + bonus, poi moltiplicatori (UltimateManual).
  * Es. tier 3 (12) + milestone 15% → round(12 × 1,15) = 14
  */
 export function calculateBaseDamage(tier: WazaTier, bonuses: DamageBonusInput = {}): number {

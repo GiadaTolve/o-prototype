@@ -35,8 +35,8 @@ const ropaSans = Ropa_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Oyasumi 2.0",
-  description: "Protocollo onirico — Dark Fantasy Play-by-Chat",
+  title: "𝑂𝑦𝑎𝑠𝑢𝑚𝑖",
+  description: "Dark Fantasy Play-by-Chat",
 };
 
 export default function RootLayout({

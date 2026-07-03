@@ -1,4 +1,4 @@
-/** Costrutti, Scudo, taglie — Ultimate Manual §2.6 */
+/** Costrutti, Scudo, taglie — Ultimate Manual */
 
 import { getTierValue, isWazaTier, type WazaTier } from './tier'
 
@@ -16,7 +16,7 @@ export type ConstructSizeDef = {
   damageTierBonus: number
 }
 
-/** Taglie costrutto/scudo — §2.6 tabella manuale. */
+/** Taglie costrutto/scudo — tabella manuale. */
 export const CONSTRUCT_SIZES: Record<ConstructSizeId, ConstructSizeDef> = {
   piccola: {
     id: 'piccola',

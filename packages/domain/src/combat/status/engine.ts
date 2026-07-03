@@ -118,7 +118,7 @@ export function onConfrontationStatusEvent(
 }
 
 /**
- * Beatitudine → transizioni per soglia CS (semplificato §2.4):
+ * Beatitudine → transizioni per soglia CS:
  * CS ≥ 15 → Disperazione; CS ≤ 5 → Euforia; altrimenti → Tristezza.
  */
 export function resolveBeatitudeTransitions(

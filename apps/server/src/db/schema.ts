@@ -64,17 +64,17 @@ export const characters = pgTable('characters', {
     themeMusicUrl?: string;
     /** Banner PG in fondo scheda (banner_pg). */
     bannerPg?: string;
-  /** Pixel-icon premio speciale (GAME_LAYOUT_SPEC §4). */
+  /** Pixel-icon premio speciale (GAME_LAYOUT_SPEC). */
   premioSpeciale?: string;
-  /** Slot passivi Waza sbloccati (2–6, default 2). §2.12 */
+  /** Slot passivi Waza sbloccati (2–6, default 2). */
   passiveSlotsUnlocked?: number;
   /** skillId equipaggiati negli slot passivi (ordine = slot). */
   equippedPassiveIds?: string[];
-  /** Stile principale Esagono §2.13 */
+  /** Stile principale Esagono */
   primaryStyleId?: string;
   /** Stili Dō sbloccati con Key */
   unlockedStyleIds?: string[];
-  /** Tōrō attivo: mano a contatto con l'arma (narrativo §3.1). */
+  /** Tōrō attivo: mano a contatto con l'arma. */
   toroWeaponInContact?: boolean;
   }>().default({}),
 
@@ -100,7 +100,7 @@ export const characters = pgTable('characters', {
   /** @deprecated v3 — non usare in UI/API; colonna mantenuta per compat DB */
   gems: integer('gems').default(0).notNull(),
 
-  /** Madoshō approvata dallo staff (non scelta in registrazione). UltimateManual §4.0 */
+  /** Madoshō approvata dallo staff (non scelta in registrazione). UltimateManual */
   madoshoId: text('madosho_id').$type<
     'ringai-janjae' | 'gokaon' | 'komonoire' | 'nakigara' | 'ikiryo' | 'hataori'
   >(),
@@ -113,7 +113,7 @@ export const characters = pgTable('characters', {
   mind: integer('mind').default(0).notNull(),             // Mente [M]
   empathy: integer('empathy').default(0).notNull(),       // Empatia [E]
 
-  /** Punti Skiru per id (UltimateManual §2.7). Vuoto → derivato da stats legacy. */
+  /** Punti Skiru per id (UltimateManual). Vuoto → derivato da stats legacy. */
   skiruSheet: jsonb('skiru_sheet').$type<Record<string, number>>().default({}).notNull(),
 
   /** HP correnti in combattimento; null = pieni (hpMax). */
@@ -170,7 +170,7 @@ export const characterPlayerRequests = pgTable(
   (t) => [unique().on(t.characterId, t.kind)],
 )
 
-/** Status combattimento attivi sul PG (§2.4). */
+/** Status combattimento attivi sul PG. */
 export const characterStatusEffects = pgTable(
   'character_status_effects',
   {
@@ -181,14 +181,14 @@ export const characterStatusEffects = pgTable(
     statusId: text('status_id').notNull(),
     stacks: integer('stacks').notNull().default(1),
     targetKind: text('target_kind').$type<'character' | 'construct'>().default('character').notNull(),
-    /** Riferimento costrutto sul campo (future §2.6). */
+    /** Riferimento costrutto sul campo. */
     constructRef: text('construct_ref'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (t) => [unique().on(t.characterId, t.statusId)],
 )
 
-/** Costrutti sul campo (§2.6) — creati da Jigo-Ka, persistenza fino a distruzione. */
+/** Costrutti sul campo — creati da Jigo-Ka, persistenza fino a distruzione. */
 export const fieldConstructs = pgTable('field_constructs', {
   id: uuid('id').defaultRandom().primaryKey(),
   creatorCharacterId: uuid('creator_character_id')
@@ -222,9 +222,9 @@ export const skills = pgTable('skills', {
   
   // Meccaniche di Gioco
   costJigoka: integer('cost_jigoka').default(0), // Costo in Mana (Jigoka)
-  /** Tier waza v3 (es. "T1" … "T5") — vedi §2.10 */
+  /** Tier waza v3 (es. "T1" … "T5"). */
   rank: text('rank'),
-  /** Waza sempre attiva (slot passivi §2.12). */
+  /** Waza sempre attiva. */
   isPassive: boolean('is_passive').default(false).notNull(),
   /** Slug stabile (wazaPool / catalogo Dō Ultimate Manual). */
   poolId: text('pool_id'),
@@ -357,7 +357,7 @@ export const dismantleDailyUsage = pgTable(
 )
 
 // ==========================================
-// 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC §7)
+// 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC)
 // ==========================================
 
 /** Gradi carriera (es. Analisti). Livelli Guida = range livello personaggio. */
@@ -464,7 +464,7 @@ export const zoneMessages = pgTable('zone_messages', {
   netChars: integer('net_chars'),
   /** EXP guadagnato da questo messaggio (calcolato da netChars). */
   expGained: integer('exp_gained'),
-  /** Caratteri totali (content.length). 1 azione = messaggio con >500 totali (QUEST_AND_FETCH_SPEC §2). */
+  /** Caratteri totali (content.length). 1 azione = messaggio con >500 totali (QUEST_AND_FETCH_SPEC). */
   totalChars: integer('total_chars'),
   /** Se true, è un messaggio globale (visibile in tutte le chat). */
   isGlobal: boolean('is_global').default(false).notNull(),
@@ -561,7 +561,7 @@ export const quests = pgTable('quests', {
   creatorId: uuid('creator_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
   title: text('title').notNull(),
   description: text('description'),
-  /** Tipo: Ambient, Trama, Battle, One-shot, Globale (QUEST_AND_FETCH_SPEC §1.1). */
+  /** Tipo: Ambient, Trama, Battle, One-shot, Globale (QUEST_AND_FETCH_SPEC). */
   type: text('type').$type<'AMBIENT' | 'TRAMA' | 'BATTLE' | 'ONE_SHOT' | 'GLOBALE'>().default('AMBIENT').notNull(),
   /** Stato: OPEN, IN_PROGRESS, PAUSED, CLOSED */
   status: text('status').$type<'OPEN' | 'IN_PROGRESS' | 'PAUSED' | 'CLOSED'>().default('OPEN').notNull(),
@@ -621,7 +621,7 @@ export const questParticipants = pgTable('quest_participants', {
   id: uuid('id').defaultRandom().primaryKey(),
   questId: uuid('quest_id').references(() => quests.id, { onDelete: 'cascade' }).notNull(),
   characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
-  /** Se la giocata è una Fetch assegnata al personaggio (QUEST_AND_FETCH_SPEC §4.2). */
+  /** Se la giocata è una Fetch assegnata al personaggio (QUEST_AND_FETCH_SPEC). */
   fetchId: uuid('fetch_id').references(() => fetches.id, { onDelete: 'set null' }),
   /** Quando ha partecipato (registrato giocata). */
   registeredAt: timestamp('registered_at').defaultNow().notNull(),

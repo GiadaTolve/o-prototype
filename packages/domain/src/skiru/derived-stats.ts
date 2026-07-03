@@ -1,7 +1,7 @@
 import { getSkiruPoints } from './progression'
 import type { SkiruSheet } from './types'
 
-/** Parametri derivati da Skiru (UltimateManual §2.8). */
+/** Parametri derivati da Skiru (UltimateManual). */
 export interface SkiruDerivedStats {
   /** HP massimi: 20 + 5 × (Dokusei + Konjou) */
   hpMax: number
