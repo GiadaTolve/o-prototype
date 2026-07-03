@@ -3,6 +3,7 @@ import { authPlugin } from '../../plugins/auth.plugin'
 import { eq } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import { characters, users } from '../../db/schema'
+import { resolveShinigamiAccess } from '../../lib/gestione-access'
 import {
   getMasterStats,
   getUserShineRanking,
@@ -35,13 +36,10 @@ export const masterStatsRoutes = new Elysia({ prefix: '/master-stats' })
               where: eq(users.id, user.id),
             })
 
-            if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'MASTER')) {
-              // Verifica anche se è moderatore tramite uiMetadata
-              const isMod = char.uiMetadata?.roleIcon === 'moderatore' || char.uiMetadata?.roleIcon === 'admin'
-              if (!isMod) {
-                set.status = 403
-                return { error: 'Accesso negato. Solo Admin/Mod possono vedere questa sezione.' }
-              }
+            const roleIcon = (char.uiMetadata as { roleIcon?: string } | null)?.roleIcon
+            if (!resolveShinigamiAccess(userData?.role, roleIcon)) {
+              set.status = 403
+              return { error: 'Accesso negato. Solo Shinigami possono vedere questa sezione.' }
             }
 
             const month = query.month ? Number(query.month) : undefined
@@ -84,12 +82,10 @@ export const masterStatsRoutes = new Elysia({ prefix: '/master-stats' })
               where: eq(users.id, user.id),
             })
 
-            if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'MASTER')) {
-              const isMod = char.uiMetadata?.roleIcon === 'moderatore' || char.uiMetadata?.roleIcon === 'admin'
-              if (!isMod) {
-                set.status = 403
-                return { error: 'Accesso negato. Solo Admin/Mod possono vedere questa sezione.' }
-              }
+            const roleIcon = (char.uiMetadata as { roleIcon?: string } | null)?.roleIcon
+            if (!resolveShinigamiAccess(userData?.role, roleIcon)) {
+              set.status = 403
+              return { error: 'Accesso negato. Solo Shinigami possono vedere questa sezione.' }
             }
 
             const month = query.month ? Number(query.month) : undefined
@@ -132,12 +128,10 @@ export const masterStatsRoutes = new Elysia({ prefix: '/master-stats' })
               where: eq(users.id, user.id),
             })
 
-            if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'MASTER')) {
-              const isMod = char.uiMetadata?.roleIcon === 'moderatore' || char.uiMetadata?.roleIcon === 'admin'
-              if (!isMod) {
-                set.status = 403
-                return { error: 'Accesso negato. Solo Admin/Mod possono vedere questa sezione.' }
-              }
+            const roleIcon = (char.uiMetadata as { roleIcon?: string } | null)?.roleIcon
+            if (!resolveShinigamiAccess(userData?.role, roleIcon)) {
+              set.status = 403
+              return { error: 'Accesso negato. Solo Shinigami possono vedere questa sezione.' }
             }
 
             const month = query.month ? Number(query.month) : undefined

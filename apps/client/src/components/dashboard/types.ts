@@ -43,6 +43,7 @@ export type CharacterSummary = {
   canEditStaffAlias?: boolean;
   canEditMasterNotes?: boolean;
   /** Solo Shinigami / Capo: vedere link Shinigami, Registra Quest in chat. */
+  /** Solo Shinigami (pixel-icon o account MASTER): pannello Shinigami e comandi master in chat. */
   canAccessShinigami?: boolean;
   /** Solo Admin/Mod/Capo: vedere link Gestione. */
   canAccessGestione?: boolean;

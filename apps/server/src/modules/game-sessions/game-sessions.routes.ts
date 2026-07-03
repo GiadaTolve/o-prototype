@@ -4,6 +4,7 @@ import { db } from '../../plugins/db'
 import { characters } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth.plugin'
 import { characterService } from '../characters/characters.service'
+import { canManageGameSession } from '../../lib/gestione-access'
 import { canAccessPrivateChatAsync } from '../housing/housing.service'
 import {
   createGameSession,
@@ -174,12 +175,14 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 404
               return { error: 'Sessione non trovata' }
             }
-            const userRole = (user!.role ?? '').toUpperCase()
             const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
             const roleIcon = (meta.roleIcon ?? '').toLowerCase()
-            const canManage = session.creatorId === char.id ||
-              userRole === 'ADMIN' || userRole === 'MASTER' ||
-              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            const canManage = canManageGameSession(
+              user!.role,
+              roleIcon,
+              session.creatorId,
+              char.id,
+            )
             if (!canManage) {
               set.status = 403
               return { error: 'Solo il creatore o cariche superiori possono aggiornare i partecipanti' }
@@ -212,12 +215,14 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 404
               return { error: 'Sessione non trovata' }
             }
-            const userRole = (user!.role ?? '').toUpperCase()
             const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
             const roleIcon = (meta.roleIcon ?? '').toLowerCase()
-            const canManage = session.creatorId === char.id ||
-              userRole === 'ADMIN' || userRole === 'MASTER' ||
-              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            const canManage = canManageGameSession(
+              user!.role,
+              roleIcon,
+              session.creatorId,
+              char.id,
+            )
             if (!canManage) {
               set.status = 403
               return { error: 'Solo il creatore o cariche superiori possono congelare la sessione' }
@@ -249,12 +254,14 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 404
               return { error: 'Sessione non trovata' }
             }
-            const userRole = (user!.role ?? '').toUpperCase()
             const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
             const roleIcon = (meta.roleIcon ?? '').toLowerCase()
-            const canManage = session.creatorId === char.id ||
-              userRole === 'ADMIN' || userRole === 'MASTER' ||
-              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            const canManage = canManageGameSession(
+              user!.role,
+              roleIcon,
+              session.creatorId,
+              char.id,
+            )
             if (!canManage) {
               set.status = 403
               return { error: 'Solo il creatore o cariche superiori possono riavviare la sessione' }
@@ -286,12 +293,14 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 404
               return { error: 'Sessione non trovata' }
             }
-            const userRole = (user!.role ?? '').toUpperCase()
             const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
             const roleIcon = (meta.roleIcon ?? '').toLowerCase()
-            const canManage = session.creatorId === char.id ||
-              userRole === 'ADMIN' || userRole === 'MASTER' ||
-              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            const canManage = canManageGameSession(
+              user!.role,
+              roleIcon,
+              session.creatorId,
+              char.id,
+            )
             if (!canManage) {
               set.status = 403
               return { error: 'Solo il creatore o cariche superiori possono chiudere la sessione' }
@@ -323,12 +332,14 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 404
               return { error: 'Sessione non trovata' }
             }
-            const userRole = (user!.role ?? '').toUpperCase()
             const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
             const roleIcon = (meta.roleIcon ?? '').toLowerCase()
-            const canManage = session.creatorId === char.id ||
-              userRole === 'ADMIN' || userRole === 'MASTER' ||
-              roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+            const canManage = canManageGameSession(
+              user!.role,
+              roleIcon,
+              session.creatorId,
+              char.id,
+            )
             if (!canManage) {
               set.status = 403
               return { error: 'Solo il creatore o cariche superiori possono annullare la sessione' }

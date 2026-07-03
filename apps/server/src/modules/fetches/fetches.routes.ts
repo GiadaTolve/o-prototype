@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { eq } from "drizzle-orm";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { characterService } from "../characters/characters.service";
+import { resolveShinigamiAccess } from "../../lib/gestione-access";
 import * as fetches from "./fetches.service";
 import * as gameSessions from "../game-sessions/game-sessions.service";
 import { broadcastFetchResponso } from "../realtime/ws.routes";
@@ -23,10 +24,10 @@ async function canApproveFetch(characterId: string): Promise<boolean> {
   const char = await characterService.getCharacterById(characterId);
   if (!char) return false;
   const user = await characterService.getUserByCharacterId(characterId);
-  if (user?.role === "ADMIN") return true;
   const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {};
   const r = (meta.roleIcon ?? "").toLowerCase();
-  return r === "moderatore" || r === "admin" || r === "capo-shinigami";
+  if ((user?.role ?? "").toUpperCase() === "ADMIN") return true;
+  return resolveShinigamiAccess(user?.role, r);
 }
 
 export const fetchesRoutes = new Elysia({ prefix: "/fetches" })

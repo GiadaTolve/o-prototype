@@ -8,6 +8,7 @@ import {
   updateUserRole,
   updateUserBanState,
   updateCharacterName,
+  updateCharacterRoleIcon,
   resetCharacterStats,
   getChatRooms,
   getChatLogs,
@@ -43,6 +44,7 @@ import {
 } from './admin.service'
 import { musicService } from '../music/music.service'
 import { forumService } from '../forum/forum.service'
+import { userHasGestioneAccess } from '../../lib/gestione-access'
 import { setRoomOpen, getRoomState } from '../anonymous-chat/anonymous-chat.service'
 import type { UserRole, BanState } from '@domain/security/jwt'
 
@@ -84,10 +86,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
           return { hasAdminAccess: false as boolean }
         }
 
-        const userRole = (user.role ?? '').toUpperCase()
-        const hasAdminAccess: boolean =
-          userRole === 'ADMIN' ||
-          userRole === 'MASTER'
+        const hasAdminAccess = await userHasGestioneAccess(user.id, user.role)
 
         return { hasAdminAccess }
       })
@@ -191,6 +190,42 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
               }),
               body: t.Object({
                 name: t.String({ minLength: 2, maxLength: 30 }),
+              }),
+            }
+          )
+
+          // Aggiorna pixel-icon ruolo staff (moderatore, fixer, …)
+          .put(
+            '/characters/:id/role-icon',
+            async ({ params, body, user, set }) => {
+              const actorRole = (user?.role ?? '').toUpperCase()
+              if (actorRole !== 'ADMIN') {
+                set.status = 403
+                return { error: 'Solo gli Admin possono modificare l\'icona ruolo staff' }
+              }
+              try {
+                const updated = await updateCharacterRoleIcon(params.id, body.roleIcon ?? null)
+                return updated
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore durante l\'aggiornamento icona ruolo' }
+              }
+            },
+            {
+              params: t.Object({
+                id: t.String(),
+              }),
+              body: t.Object({
+                roleIcon: t.Optional(
+                  t.Union([
+                    t.Literal('admin'),
+                    t.Literal('moderatore'),
+                    t.Literal('fixer'),
+                    t.Literal('capo-shinigami'),
+                    t.Literal('shinigami'),
+                    t.Literal(''),
+                  ]),
+                ),
               }),
             }
           )

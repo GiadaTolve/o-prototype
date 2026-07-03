@@ -160,10 +160,10 @@ export default function ShinigamiPage() {
       setPausedQuests(paused);
       setFetches(f);
       
-      const canAccessGest = charData?.canAccessGestione ?? false;
+      const canAccessShin = charData?.canAccessShinigami ?? false;
       
-      // Carica statistiche master solo se ha accesso
-      if (canAccessGest) {
+      // Carica statistiche master solo per Shinigami
+      if (canAccessShin) {
         try {
           const [stats, ranking] = await Promise.all([
             api.get("/master-stats/masters").then((d) => d as MasterStats | null).catch(() => null),
@@ -188,8 +188,8 @@ export default function ShinigamiPage() {
         console.error("Errore caricamento lore:", e);
       }
 
-      // Carica fetch pending e awaiting-reward se può approvare/completare
-      if (canAccessGest) {
+      // Carica fetch pending e awaiting-reward (Shinigami)
+      if (canAccessShin) {
         try {
           const [pending, awaiting] = await Promise.all([
             api.get("/fetches/pending").then((d) => (Array.isArray(d) ? d : []) as FetchItem[]).catch(() => []),
@@ -258,7 +258,7 @@ export default function ShinigamiPage() {
             { id: "paused" as const, label: "Quest in Pausa", badge: pausedQuests.length > 0 ? pausedQuests.length : undefined },
             { id: "lore" as const, label: "Sezione Lore" },
             { id: "fetches" as const, label: "Fetch Quest" },
-            ...(canAccessGestione ? [{ id: "master" as const, label: "Classifica Master" }] : []),
+            ...(canAccessShinigami ? [{ id: "master" as const, label: "Classifica Master" }] : []),
           ].map((tab) => (
             <button
               key={tab.id}
@@ -511,7 +511,7 @@ export default function ShinigamiPage() {
               )}
 
               {/* Proposte Pending (solo Admin/Mod/Capo) */}
-              {canAccessGestione && (
+              {(canAccessShinigami || canAccessGestione) && (
                 <div className="border border-[var(--border-color)] rounded-lg p-4">
                   <h3 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] mb-3">Proposte in Attesa</h3>
                   {proposals.filter((p) => p.status === "PENDING").length === 0 ? (
@@ -832,7 +832,7 @@ export default function ShinigamiPage() {
               )}
 
               {/* Lista fetch in attesa di responso (solo Admin/Mod/Capo) */}
-              {canAccessGestione && awaitingRewardFetches.length > 0 && (
+              {canAccessShinigami && awaitingRewardFetches.length > 0 && (
                 <div className="border border-amber-500/50 rounded-lg p-4">
                   <h3 className="text-sm font-display text-amber-400 mb-3">Fetch in attesa di responso</h3>
                   <p className="text-xs text-gray-500 mb-3">Giocata chiusa, premi assegnati. Leggi la giocata e completa con eventuale commento.</p>
@@ -907,7 +907,7 @@ export default function ShinigamiPage() {
               )}
 
               {/* Lista fetch in attesa di approvazione (solo Admin/Mod/Capo) */}
-              {canAccessGestione && pendingFetches.length > 0 && (
+              {canAccessShinigami && pendingFetches.length > 0 && (
                 <div className="border border-[var(--accent-violet)]/50 rounded-lg p-4">
                   <h3 className="text-sm font-display text-[var(--accent-violet)] mb-3">Fetch in attesa di approvazione</h3>
                   <div className="space-y-2">
@@ -977,7 +977,7 @@ export default function ShinigamiPage() {
           )}
 
           {/* Tab: Classifica Master (solo Admin/Mod) */}
-          {activeTab === "master" && canAccessGestione && (
+          {activeTab === "master" && canAccessShinigami && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-display text-white">Classifica Master</h2>

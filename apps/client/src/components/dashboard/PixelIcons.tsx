@@ -8,6 +8,7 @@ import {
   PIXEL_ICON_ORDINI,
   getPixelIconUrlRuolo,
   getPixelIconUrlOrdine,
+  labelForRuoloPixelIcon,
   labelForPremioPixelIcon,
   type PixelIconRuolo,
   type PixelIconOrdine,
@@ -38,7 +39,7 @@ export function PixelIcons({ pixelIcons, className = "" }: Props) {
   const items: { src: string; alt: string; premioFallback?: boolean }[] = [];
 
   for (const r of ruoli) {
-    items.push({ src: getPixelIconUrlRuolo(r), alt: r });
+    items.push({ src: getPixelIconUrlRuolo(r), alt: labelForRuoloPixelIcon(r) });
   }
   for (const o of ordini) {
     const url = getPixelIconUrlOrdine(o);
@@ -72,6 +73,7 @@ export function PixelIcons({ pixelIcons, className = "" }: Props) {
             key={`${alt}-${i}`}
             src={src}
             alt=""
+            title={alt}
             width={PIXEL_ICON_SIZE}
             height={PIXEL_ICON_SIZE}
             className="w-5 h-5 shrink-0"

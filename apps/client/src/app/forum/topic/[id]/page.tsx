@@ -175,7 +175,7 @@ export default function TopicPage() {
     const orderIcon = (meta.orderIcon ?? "").toLowerCase();
 
     const pixelIcons: { ruolo?: string[]; ordine?: string[] } = {};
-    if (roleIcon && ["admin", "moderatore", "capo-shinigami", "shinigami"].includes(roleIcon)) {
+    if (roleIcon && ["admin", "moderatore", "fixer", "capo-shinigami", "shinigami"].includes(roleIcon)) {
       pixelIcons.ruolo = [roleIcon];
     }
     if (orderIcon && ["mugen-tai", "chisen-tai"].includes(orderIcon)) {

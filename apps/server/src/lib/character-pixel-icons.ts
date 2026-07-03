@@ -5,7 +5,7 @@ export type CharacterPixelIcons = {
   premioSpeciale?: string[]
 }
 
-const VALID_RUOLI = new Set(['admin', 'moderatore', 'capo-shinigami', 'shinigami'])
+const VALID_RUOLI = new Set(['admin', 'moderatore', 'fixer', 'capo-shinigami', 'shinigami'])
 
 type UiMeta = {
   roleIcon?: string

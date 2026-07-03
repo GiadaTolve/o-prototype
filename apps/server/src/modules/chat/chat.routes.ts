@@ -130,10 +130,8 @@ export const chatRoutes = new Elysia({ prefix: "/chat" })
 
         const canAccessGestione =
           userRole === "ADMIN" ||
-          userRole === "MASTER" ||
           roleIcon === "moderatore" ||
-          roleIcon === "admin" ||
-          roleIcon === "capo-shinigami";
+          roleIcon === "admin";
 
         if (!canAccessGestione) {
           set.status = 403;

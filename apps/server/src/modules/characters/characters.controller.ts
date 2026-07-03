@@ -7,24 +7,18 @@ import {
   readPendingLevelUp,
 } from './level-up.service'
 import { buildCharacterPixelIcons } from '../../lib/character-pixel-icons'
+import { resolveGestioneAccess, resolveShinigamiAccess } from '../../lib/gestione-access'
 import { authPlugin } from '../../plugins/auth.plugin'
 import { broadcastCharacterHpUpdated, broadcastCharacterChronoUpdated, broadcastCharacterStatusUpdated } from '../realtime/ws.routes'
 
-function resolveGestioneAccess(user: { role?: string | null }, roleIcon?: string) {
-  const userRole = (user.role ?? '').toUpperCase()
-  const icon = (roleIcon ?? '').toLowerCase()
-  return (
-    userRole === 'ADMIN' ||
-    userRole === 'MASTER' ||
-    icon === 'moderatore' ||
-    icon === 'admin' ||
-    icon === 'capo-shinigami'
-  )
+function resolveMasterAccess(user: { role?: string | null }, roleIcon?: string) {
+  return resolveShinigamiAccess(user.role, roleIcon)
 }
 
-function resolveMasterAccess(user: { role?: string | null }) {
-  const userRole = (user.role ?? '').toUpperCase()
-  return userRole === 'ADMIN' || userRole === 'MASTER'
+async function resolveMasterAccessForUser(user: { id: string; role?: string | null }) {
+  const char = await characterService.getCharacterByUserId(user.id)
+  const icon = (char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon
+  return resolveShinigamiAccess(user.role, icon)
 }
 
 export const charactersController = new Elysia({ prefix: '/characters' })
@@ -55,18 +49,9 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         const roleIcon = (meta.roleIcon ?? '').toLowerCase()
         const userRole = (user.role ?? '').toUpperCase()
 
-        const canAccessShinigami =
-          userRole === 'ADMIN' ||
-          userRole === 'MASTER' ||
-          roleIcon === 'shinigami' ||
-          roleIcon === 'capo-shinigami'
+        const canAccessShinigami = resolveShinigamiAccess(userRole, roleIcon)
 
-        const canAccessGestione =
-          userRole === 'ADMIN' ||
-          userRole === 'MASTER' ||
-          roleIcon === 'moderatore' ||
-          roleIcon === 'admin' ||
-          roleIcon === 'capo-shinigami'
+        const canAccessGestione = resolveGestioneAccess(userRole, roleIcon)
 
         const canAccessSviluppo =
           userRole === 'ADMIN' ||
@@ -75,7 +60,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           roleIcon === 'fixer'
 
         const canEditStaffAlias = canAccessGestione
-        const canEditMasterNotes = userRole === 'ADMIN' || userRole === 'MASTER'
+        const canEditMasterNotes = resolveShinigamiAccess(userRole, roleIcon)
 
         const { gems: _gems, ...charSafe } = char
 
@@ -368,7 +353,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .post('/:id/status-effects/apply', async ({ user, params, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin possono applicare status' }
       }
@@ -401,7 +386,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .post('/:id/combat-hp', async ({ user, params, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin possono modificare HP' }
       }
@@ -432,7 +417,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .delete('/:id/status-effects/:statusId', async ({ user, params, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin possono rimuovere status' }
       }
@@ -448,7 +433,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .post('/:id/status-effects/tick-turn', async ({ user, params, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin' }
       }
@@ -475,7 +460,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .post('/:id/status-effects/hit-taken', async ({ user, params, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin' }
       }
@@ -645,7 +630,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .post('/:id/field-constructs', async ({ user, params, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin' }
       }
@@ -667,7 +652,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .post('/field-constructs/:constructId/damage', async ({ user, params, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin' }
       }
@@ -684,7 +669,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .delete('/field-constructs/:constructId', async ({ user, params, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!resolveMasterAccess(user)) {
+      if (!(await resolveMasterAccessForUser(user))) {
         set.status = 403
         return { error: 'Solo Master/Admin' }
       }
@@ -784,8 +769,8 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
         const viewerChar = await characterService.getCharacterByUserId(user.id)
         const viewerMeta = (viewerChar?.uiMetadata as { roleIcon?: string } | null) ?? {}
-        const canEditAlias = resolveGestioneAccess(user, viewerMeta.roleIcon)
-        const canEditNotes = resolveMasterAccess(user)
+        const canEditAlias = resolveGestioneAccess(user.role, viewerMeta.roleIcon)
+        const canEditNotes = resolveMasterAccess(user, viewerMeta.roleIcon)
 
         if (body.staffAlias !== undefined && !canEditAlias) {
           set.status = 403
@@ -864,8 +849,8 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         const isOwner = dbChar?.userId === user.id
         const viewerChar = await characterService.getCharacterByUserId(user.id)
         const viewerMeta = (viewerChar?.uiMetadata as { roleIcon?: string } | null) ?? {}
-        const canEditStaffAlias = resolveGestioneAccess(user, viewerMeta.roleIcon)
-        const canEditMasterNotes = resolveMasterAccess(user)
+        const canEditStaffAlias = resolveGestioneAccess(user.role, viewerMeta.roleIcon)
+        const canEditMasterNotes = resolveMasterAccess(user, viewerMeta.roleIcon)
         const showMasterNotes = isOwner || canEditMasterNotes
 
         return {
@@ -949,8 +934,8 @@ export const charactersController = new Elysia({ prefix: '/characters' })
             m: char.mind,
             e: char.empathy,
           },
-          canEditStaffAlias: resolveGestioneAccess(user, viewerMeta.roleIcon),
-          canEditMasterNotes: resolveMasterAccess(user),
+          canEditStaffAlias: resolveGestioneAccess(user.role, viewerMeta.roleIcon),
+          canEditMasterNotes: resolveMasterAccess(user, viewerMeta.roleIcon),
         }
       } catch (e) {
         set.status = 500

@@ -7,6 +7,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { formatNarrativeText } from "@/lib/narrative-parser";
 import { GestioneRichiestePanel } from "@/components/gestione/GestioneRichiestePanel";
+import {
+  PIXEL_ICON_RUOLI,
+  labelForRuoloPixelIcon,
+  type PixelIconRuolo,
+} from "@/components/dashboard/pixel-icons";
 
 type User = {
   id: string;
@@ -16,6 +21,7 @@ type User = {
   characters?: Array<{
     id: string;
     name: string;
+    uiMetadata?: { roleIcon?: string } | null;
   }>;
 };
 
@@ -162,6 +168,7 @@ export default function GestionePage() {
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Email</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Nome PG</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Ruolo</th>
+                        <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Staff</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Ban State</th>
                         <th className="px-4 py-2 text-left text-[10px] uppercase tracking-widest text-gray-500">Azioni</th>
                       </tr>
@@ -205,7 +212,17 @@ export default function GestionePage() {
                               );
                             })()}
                           </td>
-                          <td className="px-4 py-2 text-gray-400">{user.role}</td>
+                          <td className="px-4 py-2 text-gray-400 font-mono text-xs">{user.role}</td>
+                          <td className="px-4 py-2 text-[var(--accent-violet-light)] text-xs">
+                            {(() => {
+                              const character = user.characters?.[0];
+                              const icon = (character?.uiMetadata?.roleIcon ?? "").toLowerCase();
+                              if (!icon || !PIXEL_ICON_RUOLI.includes(icon as PixelIconRuolo)) {
+                                return <span className="text-gray-600">—</span>;
+                              }
+                              return labelForRuoloPixelIcon(icon as PixelIconRuolo);
+                            })()}
+                          </td>
                           <td className="px-4 py-2">
                             <span className={`text-xs ${
                               user.banState === "FULL" ? "text-red-400" :
@@ -299,9 +316,13 @@ function UserManagementModal({
   onUpdate: () => void;
 }) {
   const character = user.characters && user.characters.length > 0 ? user.characters[0] : null;
+  const initialRoleIcon = (character?.uiMetadata?.roleIcon ?? "").toLowerCase();
   const [newRole, setNewRole] = useState(user.role);
   const [newBanState, setNewBanState] = useState(user.banState);
   const [newName, setNewName] = useState(character?.name || "");
+  const [newRoleIcon, setNewRoleIcon] = useState(
+    PIXEL_ICON_RUOLI.includes(initialRoleIcon as PixelIconRuolo) ? initialRoleIcon : "",
+  );
   const [saving, setSaving] = useState(false);
 
   const handleUpdateRole = async () => {
@@ -342,6 +363,24 @@ function UserManagementModal({
       await api.put(`/admin/characters/${character.id}/name`, { name: newName });
       onUpdate();
       alert("Nome aggiornato!");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Errore durante l'aggiornamento");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateRoleIcon = async () => {
+    if (!character || !canChangeUserRole) return;
+    const current = (character.uiMetadata?.roleIcon ?? "").toLowerCase();
+    if (newRoleIcon === current) return;
+    setSaving(true);
+    try {
+      await api.put(`/admin/characters/${character.id}/role-icon`, {
+        roleIcon: newRoleIcon || "",
+      });
+      onUpdate();
+      alert("Icona staff aggiornata!");
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Errore durante l'aggiornamento");
     } finally {
@@ -440,6 +479,40 @@ function UserManagementModal({
               </div>
             )}
           </div>
+
+          {character && canChangeUserRole && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Icona staff (pixel)</p>
+              <p className="text-xs text-gray-500 mb-2">
+                Ruolo visibile accanto al nome. Fixer = Sviluppo; Moderatore/Admin = Gestionale; Shinigami/Capo = pannello Shinigami e comandi master.
+              </p>
+              <div className="flex gap-2">
+                <select
+                  value={newRoleIcon}
+                  onChange={(e) => setNewRoleIcon(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                >
+                  <option value="">Nessuna</option>
+                  {PIXEL_ICON_RUOLI.map((icon) => (
+                    <option key={icon} value={icon}>
+                      {labelForRuoloPixelIcon(icon)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleUpdateRoleIcon}
+                  disabled={
+                    saving ||
+                    newRoleIcon === (character.uiMetadata?.roleIcon ?? "").toLowerCase()
+                  }
+                  className="px-3 py-2 rounded border border-[var(--accent-violet)] text-[var(--accent-violet-light)] text-xs hover:bg-[var(--accent-violet)]/10 disabled:opacity-50"
+                >
+                  Aggiorna
+                </button>
+              </div>
+            </div>
+          )}
 
           <div>
             <p className="text-sm text-gray-400 mb-1">Ban State</p>
@@ -2644,7 +2717,25 @@ function MapManagement() {
   const tree = buildTree(locations);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-display text-[var(--accent-gold)]">Gestione Mappe</h2>
+          <p className="text-xs text-[var(--accent-violet-light)] mt-1">
+            Struttura mappe, sotto-zone e chat collegate.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void fetchLocations()}
+          disabled={loading}
+          className="px-3 py-1.5 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/40 transition-colors disabled:opacity-50"
+        >
+          <FontAwesomeIcon icon={icons.refresh} className="w-3 h-3 mr-1" />
+          Aggiorna
+        </button>
+      </div>
+
       {editingLocation && (
         <LocationEditorModal
           location={editingLocation}
@@ -2654,16 +2745,18 @@ function MapManagement() {
       )}
       <LocationCreator parentId={null} onCreate={handleCreate} />
       {loadError && (
-        <p className="text-sm text-red-400 border border-red-500/40 rounded px-3 py-2">{loadError}</p>
+        <p className="text-sm text-red-400/90 border border-red-500/30 bg-red-950/20 rounded px-3 py-2">
+          {loadError}
+        </p>
       )}
       {loading ? (
-        <p className="text-sm text-gray-500">Caricamento struttura mappe…</p>
+        <p className="text-sm text-[var(--accent-violet-light)] animate-pulse">Caricamento struttura mappe…</p>
       ) : tree.length === 0 ? (
-        <p className="text-sm text-gray-500 border border-[var(--border-color)] rounded px-4 py-6 text-center">
+        <p className="text-sm text-gray-500 border border-[var(--border-color)] bg-black/20 rounded-lg px-4 py-8 text-center">
           Nessuna mappa nel database. Crea una mappa sopra oppure chiedi allo staff di eseguire la migrazione da map-config.
         </p>
       ) : (
-        <div className="mt-5 space-y-2">
+        <div className="space-y-2 rounded-lg border border-[var(--border-color)] bg-black/20 p-3">
           {tree.map((node) => (
             <LocationNode
               key={node.id}
@@ -2700,13 +2793,30 @@ function LocationCreator({
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-4 mb-5 bg-black/20 rounded border border-[var(--border-color)]"
+      className={`rounded-lg border p-4 ${
+        parentId
+          ? "mt-3 border-[var(--accent-violet)]/25 bg-[var(--accent-violet)]/5"
+          : "border-[var(--border-color)] bg-black/30"
+      }`}
+      style={
+        parentId
+          ? undefined
+          : {
+              backgroundImage:
+                "linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.75)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+      }
     >
+      <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--accent-violet-light)] mb-3 font-display">
+        {parentId ? "Aggiungi sotto-elemento" : "Nuova location"}
+      </p>
       <div className="flex gap-2 items-center flex-wrap">
         <select
           value={type}
           onChange={(e) => setType(e.target.value as "MAP" | "CHAT")}
-          className="px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white w-[100px]"
+          className="px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)]/80 text-sm text-white w-[110px] focus:border-[var(--accent-gold)]/50 outline-none"
         >
           <option value="MAP">Mappa</option>
           <option value="CHAT">Chat</option>
@@ -2715,15 +2825,15 @@ function LocationCreator({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nome Nuova Zona"
-          className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+          placeholder="Nome nuova zona"
+          className="flex-1 min-w-[160px] px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)]/80 text-sm text-white placeholder:text-gray-600 focus:border-[var(--accent-gold)]/50 outline-none"
           required
         />
         <button
           type="submit"
-          className="px-4 py-2 rounded border border-[var(--accent-violet)] bg-[var(--accent-violet)]/20 text-[var(--accent-violet)] text-xs hover:bg-[var(--accent-violet)]/30"
+          className="px-4 py-2 rounded border border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] text-[10px] uppercase tracking-wider font-display hover:bg-[var(--accent-gold)]/20 transition-colors"
         >
-          CREA
+          Crea
         </button>
       </div>
     </form>
@@ -2745,51 +2855,86 @@ function LocationNode({
 
   return (
     <div
-      className={`p-4 border border-[var(--border-color)] mb-2 rounded ${
-        node.type === "MAP" ? "bg-[var(--accent-violet)]/10" : "bg-black/30"
+      className={`rounded-lg border mb-2 transition-colors ${
+        node.type === "MAP"
+          ? "border-[var(--accent-violet)]/35 bg-[var(--accent-violet)]/8"
+          : "border-[var(--border-color)] bg-[var(--panel-bg)]/60"
       }`}
     >
-      <div className="flex justify-between items-center flex-wrap gap-2">
-        <span className="font-display text-sm font-bold" style={{ color: node.type === "MAP" ? "#c9a84a" : "#e6e0ff" }}>
-          {node.name} <span className="text-xs text-gray-500 uppercase">{node.type}</span>
-        </span>
-        <div className="flex gap-2">
+      <div className="flex justify-between items-center flex-wrap gap-2 px-3 py-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className={`shrink-0 text-[9px] uppercase tracking-[0.12em] font-display px-1.5 py-0.5 rounded border ${
+              node.type === "MAP"
+                ? "text-[var(--accent-gold)] border-[var(--accent-gold)]/40 bg-[var(--accent-gold)]/10"
+                : "text-[var(--accent-violet-light)] border-[var(--accent-violet)]/30 bg-[var(--accent-violet)]/10"
+            }`}
+          >
+            {node.type === "MAP" ? "Mappa" : "Chat"}
+          </span>
+          <span
+            className={`font-display text-sm truncate ${
+              node.type === "MAP" ? "text-[var(--accent-gold)]" : "text-gray-200"
+            }`}
+          >
+            {node.name}
+          </span>
+        </div>
+        <div className="flex gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => onEdit(node)}
-            className="px-2 py-1 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:text-[var(--accent-gold)]"
+            title="Modifica"
+            aria-label="Modifica"
+            className="w-8 h-8 inline-flex items-center justify-center rounded border border-[var(--border-color)] text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/40 hover:bg-[var(--accent-gold)]/10 transition-colors"
           >
-            <FontAwesomeIcon icon={icons.pin} className="w-3 h-3" />
+            <FontAwesomeIcon icon={icons.edit} className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
             onClick={() => setShowCreator(!showCreator)}
-            className="px-2 py-1 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:text-[var(--accent-gold)]"
+            title={showCreator ? "Chiudi aggiunta" : "Aggiungi figlio"}
+            aria-label={showCreator ? "Chiudi aggiunta" : "Aggiungi figlio"}
+            className={`w-8 h-8 inline-flex items-center justify-center rounded border text-xs font-display transition-colors ${
+              showCreator
+                ? "border-[var(--accent-violet)] text-[var(--accent-violet-light)] bg-[var(--accent-violet)]/15"
+                : "border-[var(--border-color)] text-gray-400 hover:text-[var(--accent-violet-light)] hover:border-[var(--accent-violet)]/40"
+            }`}
           >
-            {showCreator ? "-" : "+"}
+            {showCreator ? "−" : "+"}
           </button>
           <button
             type="button"
             onClick={() => onDelete(node.id)}
-            className="px-2 py-1 rounded border border-red-500/60 text-xs text-red-400 hover:bg-red-500/10"
+            title="Elimina"
+            aria-label="Elimina"
+            className="w-8 h-8 inline-flex items-center justify-center rounded border border-red-500/40 text-red-400/90 hover:bg-red-500/10 hover:border-red-400/60 transition-colors"
           >
-            <FontAwesomeIcon icon={icons.trash} className="w-3 h-3" />
+            <FontAwesomeIcon icon={icons.trash} className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
       {showCreator && (
-        <LocationCreator
-          parentId={node.id}
-          onCreate={(data) => {
-            onCreate(data);
-            setShowCreator(false);
-          }}
-        />
+        <div className="px-3 pb-3">
+          <LocationCreator
+            parentId={node.id}
+            onCreate={(data) => {
+              onCreate(data);
+              setShowCreator(false);
+            }}
+          />
+        </div>
       )}
       {node.type === "MAP" && node.children && node.children.length > 0 && (
-        <div className="mt-2 pl-4 border-l-2 border-[var(--border-color)]">
+        <div className="mx-3 mb-3 pl-3 border-l border-[var(--accent-violet)]/30 space-y-2">
           {node.children.map((child) => (
-            <LocationNode key={child.id} node={{ ...child, children: (child as Location & { children?: Location[] }).children }} onCreate={onCreate} onDelete={onDelete} onEdit={onEdit} />
+            <LocationNode
+              key={child.id}
+              node={{ ...child, children: (child as Location & { children?: Location[] }).children }}
+              onCreate={onCreate}
+              onDelete={onDelete}
+              onEdit={onEdit}
+            />
           ))}
         </div>
       )}
@@ -2820,14 +2965,21 @@ function LocationEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onCancel}>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onCancel}>
       <div
-        className="bg-[var(--panel-bg)] border border-[var(--accent-gold)] rounded-lg p-6 w-full max-w-md"
+        className="bg-[var(--panel-bg)] border border-[var(--accent-gold)]/50 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[0_0_24px_var(--shadow-gold)]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,0,0,0.72), rgba(0,0,0,0.92)), url('/backgrounds/darkstone.png')",
+          backgroundRepeat: "repeat",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-display text-[var(--accent-gold)] mb-4">
-          {location.id ? "Modifica" : "Nuova"} Location
+        <h3 className="text-lg font-display text-[var(--accent-gold)] mb-1">
+          {location.id ? "Modifica location" : "Nuova location"}
         </h3>
+        <p className="text-[10px] uppercase tracking-wider text-[var(--accent-violet-light)] mb-4">
+          {formData.type === "MAP" ? "Mappa / sotto-zona" : "Chat collegata"}
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-gray-400 mb-1">Nome</label>

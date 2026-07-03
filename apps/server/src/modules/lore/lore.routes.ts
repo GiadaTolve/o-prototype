@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import { characters, users } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth.plugin'
+import { resolveGestioneAccess, resolveShinigamiAccess } from '../../lib/gestione-access'
 import {
   getAllPlots,
   getPlotById,
@@ -28,14 +29,11 @@ async function canManageProposals(userId: string): Promise<boolean> {
     where: eq(users.id, userId),
   })
 
-  // Admin o Master
-  if (userData && (userData.role === 'ADMIN' || userData.role === 'MASTER')) {
-    return true
-  }
-
-  // Moderatore o Capo Shinigami tramite uiMetadata
-  const roleIcon = char.uiMetadata?.roleIcon
-  return roleIcon === 'moderatore' || roleIcon === 'admin' || roleIcon === 'capo-shinigami'
+  const roleIcon = (char.uiMetadata as { roleIcon?: string } | null)?.roleIcon
+  return (
+    resolveGestioneAccess(userData?.role, roleIcon) ||
+    resolveShinigamiAccess(userData?.role, roleIcon)
+  )
 }
 
 export const loreRoutes = new Elysia({ prefix: '/lore' })

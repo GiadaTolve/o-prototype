@@ -585,7 +585,7 @@ export async function getGameSessionMessages(sessionId: string): Promise<GameSes
     const roleIcon = (meta.roleIcon ?? '').toLowerCase();
     const orderIcon = (meta.orderIcon ?? '').toLowerCase();
     const pixelIcons: { ruolo?: string[]; ordine?: string[] } = {};
-    if (!isCircusEvent && roleIcon && ['admin', 'moderatore', 'capo-shinigami', 'shinigami'].includes(roleIcon)) {
+    if (!isCircusEvent && roleIcon && ['admin', 'moderatore', 'fixer', 'capo-shinigami', 'shinigami'].includes(roleIcon)) {
       pixelIcons.ruolo = [roleIcon];
     }
     if (!isCircusEvent && orderIcon && ['mugen-tai', 'chisen-tai'].includes(orderIcon)) {

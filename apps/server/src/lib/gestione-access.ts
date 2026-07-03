@@ -2,8 +2,41 @@ import { eq } from 'drizzle-orm'
 import { db } from '../plugins/db'
 import { characters } from '../db/schema'
 
-/** Admin/Master o pixel-icon staff (moderatore, admin, capo-shinigami). */
+/** Pannello Gestionale: account Admin o pixel-icon moderatore/proprietario. */
+export function resolveGestioneAccess(userRole?: string | null, roleIcon?: string): boolean {
+  const role = (userRole ?? '').toUpperCase()
+  const icon = (roleIcon ?? '').toLowerCase()
+  return role === 'ADMIN' || icon === 'moderatore' || icon === 'admin'
+}
+
+/** Pannello Shinigami + comandi master in chat (MASTER account = Shinigami). */
+export function resolveShinigamiAccess(userRole?: string | null, roleIcon?: string): boolean {
+  const role = (userRole ?? '').toUpperCase()
+  const icon = (roleIcon ?? '').toLowerCase()
+  return (
+    role === 'ADMIN' ||
+    role === 'MASTER' ||
+    icon === 'shinigami' ||
+    icon === 'capo-shinigami'
+  )
+}
+
 export async function userHasGestioneAccess(
+  userId: string,
+  userRole?: string | null,
+): Promise<boolean> {
+  const role = (userRole ?? '').toUpperCase()
+  if (role === 'ADMIN') return true
+
+  const char = await db.query.characters.findFirst({
+    where: eq(characters.userId, userId),
+    columns: { uiMetadata: true },
+  })
+  const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
+  return icon === 'moderatore' || icon === 'admin'
+}
+
+export async function userHasShinigamiAccess(
   userId: string,
   userRole?: string | null,
 ): Promise<boolean> {
@@ -15,7 +48,7 @@ export async function userHasGestioneAccess(
     columns: { uiMetadata: true },
   })
   const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
-  return icon === 'moderatore' || icon === 'admin' || icon === 'capo-shinigami'
+  return icon === 'shinigami' || icon === 'capo-shinigami'
 }
 
 /** Admin o pixel-icon staff dev (moderatore, admin, fixer) — pannello Sviluppo. */
@@ -40,7 +73,18 @@ export async function userHasSviluppoAccess(
   return icon === 'moderatore' || icon === 'admin' || icon === 'fixer'
 }
 
-/** Master/Mod/Shinigami — permesso comandi `/drop`. */
+/** Gestione sessioni giocata / quest: creatore o staff Shinigami. */
+export function canManageGameSession(
+  userRole: string | null | undefined,
+  roleIcon: string | null | undefined,
+  creatorId: string,
+  characterId: string,
+): boolean {
+  if (creatorId === characterId) return true
+  return resolveShinigamiAccess(userRole, roleIcon ?? undefined)
+}
+
+/** Staff Shinigami o Gestionale — permesso comandi `/drop`. */
 export async function userCanExecuteDrop(
   userId: string,
   userRole?: string | null,
@@ -53,5 +97,5 @@ export async function userCanExecuteDrop(
     columns: { uiMetadata: true },
   })
   const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
-  return icon === 'shinigami' || icon === 'capo-shinigami'
+  return resolveShinigamiAccess(userRole, icon)
 }

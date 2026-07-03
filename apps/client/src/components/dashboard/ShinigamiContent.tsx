@@ -112,22 +112,25 @@ export function ShinigamiContent({ char }: Props) {
   const [submittingFetch, setSubmittingFetch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [canAccessShinigami, setCanAccessShinigami] = useState(false);
   const [canAccessGestione, setCanAccessGestione] = useState(false);
 
   const load = useCallback(() => {
     Promise.all([
       api.get("/quests").then((d) => (Array.isArray(d) ? d : [])).catch(() => []),
       api.get("/fetches").then((d) => (Array.isArray(d) ? d : [])).catch(() => []),
-      api.get("/characters/me").then((c: { canAccessGestione?: boolean }) => {
+      api.get("/characters/me").then((c: { canAccessShinigami?: boolean; canAccessGestione?: boolean }) => {
+        setCanAccessShinigami(c?.canAccessShinigami ?? false);
         setCanAccessGestione(c?.canAccessGestione ?? false);
-        return c?.canAccessGestione ?? false;
-      }).catch(() => false),
+        return c;
+      }).catch(() => null),
     ])
-      .then(async ([q, f, canAccess]) => {
+      .then(async ([q, f, charData]) => {
         setList(q);
         setFetches(f);
+        const canAccess = charData?.canAccessShinigami ?? false;
         
-        // Carica statistiche master solo se ha accesso
+        // Carica statistiche master (Shinigami)
         if (canAccess) {
           try {
             const [stats, ranking] = await Promise.all([
@@ -168,8 +171,8 @@ export function ShinigamiContent({ char }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Classifica Master (solo Admin/Mod) */}
-      {canAccessGestione && (
+      {/* Classifica Master (Shinigami) */}
+      {canAccessShinigami && (
         <section className="border border-[var(--border-color)] rounded-lg p-4">
           <h2 className="text-sm uppercase tracking-wider text-[var(--accent-gold)] mb-3">Classifica Master</h2>
           
@@ -319,8 +322,8 @@ export function ShinigamiContent({ char }: Props) {
           </form>
         )}
 
-        {/* Proposte Pending (solo Admin/Mod/Capo) */}
-        {canAccessGestione && (
+        {/* Proposte Pending (Shinigami / staff Gestionale) */}
+        {canAccessShinigami || canAccessGestione ? (
           <div className="mb-4">
             <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Proposte in Attesa</p>
             {proposals.filter((p) => p.status === "PENDING").length === 0 ? (
@@ -377,7 +380,7 @@ export function ShinigamiContent({ char }: Props) {
               </ul>
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Trame */}
         <div>

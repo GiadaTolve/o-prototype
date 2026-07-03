@@ -2360,7 +2360,7 @@ function ChatView({
             skiruSheet={char?.skiruSheet}
             char={char}
             usersInRoom={usersInRoom}
-            isMaster={Boolean(canAccessGestione || canAccessShinigami)}
+            isMaster={Boolean(canAccessShinigami)}
           />
           <MasterNotesBox roomId={roomId} canAccessShinigami={canAccessShinigami} />
         </aside>

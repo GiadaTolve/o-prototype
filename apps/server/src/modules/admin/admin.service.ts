@@ -65,6 +65,46 @@ export async function updateCharacterName(characterId: string, name: string) {
   return updated
 }
 
+const VALID_ROLE_ICONS = new Set(['admin', 'moderatore', 'fixer', 'capo-shinigami', 'shinigami'])
+
+/**
+ * Aggiorna la pixel-icon ruolo staff (uiMetadata.roleIcon) di un personaggio.
+ */
+export async function updateCharacterRoleIcon(characterId: string, roleIcon: string | null) {
+  const char = await db.query.characters.findFirst({
+    where: eq(characters.id, characterId),
+  })
+
+  if (!char) {
+    throw new Error('Personaggio non trovato')
+  }
+
+  const icon = (roleIcon ?? '').trim().toLowerCase()
+  if (icon && !VALID_ROLE_ICONS.has(icon)) {
+    throw new Error('Icona ruolo non valida')
+  }
+
+  const currentMeta = (char.uiMetadata as Record<string, unknown> | null) ?? {}
+  const newMeta = { ...currentMeta }
+  if (icon) {
+    newMeta.roleIcon = icon
+  } else {
+    delete newMeta.roleIcon
+  }
+
+  const [updated] = await db
+    .update(characters)
+    .set({ uiMetadata: newMeta })
+    .where(eq(characters.id, characterId))
+    .returning()
+
+  if (!updated) {
+    throw new Error('Personaggio non trovato')
+  }
+
+  return updated
+}
+
 /**
  * Resetta le statistiche base di un personaggio a 0
  */

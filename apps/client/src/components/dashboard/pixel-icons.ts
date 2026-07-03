@@ -11,8 +11,8 @@
 export const PIXEL_ICON_SIZE = 20;
 export const PIXEL_ICON_BASE = "/pixel-icons";
 
-/** Ruolo: admin, moderatore, capo shinigami, shinigami */
-export type PixelIconRuolo = "admin" | "moderatore" | "capo-shinigami" | "shinigami";
+/** Ruolo staff: admin, moderatore, fixer (dev), capo shinigami, shinigami */
+export type PixelIconRuolo = "admin" | "moderatore" | "fixer" | "capo-shinigami" | "shinigami";
 
 /** Ordine: mugen-tai, chisen-tai */
 export type PixelIconOrdine = "mugen-tai" | "chisen-tai";
@@ -29,6 +29,7 @@ export type PixelIconSet = {
 export const PIXEL_ICON_RUOLI: PixelIconRuolo[] = [
   "admin",
   "moderatore",
+  "fixer",
   "capo-shinigami",
   "shinigami",
 ];
@@ -39,9 +40,22 @@ export const PIXEL_ICON_ORDINI: PixelIconOrdine[] = ["mugen-tai", "chisen-tai"];
 const RUOLO_TO_FILE: Record<PixelIconRuolo, string> = {
   admin: "proprietario",
   moderatore: "moderatore",
+  fixer: "fixer",
   "capo-shinigami": "shinigami",
   shinigami: "shinigami",
 };
+
+/** Etichetta tooltip per pixel-icon ruolo. */
+export function labelForRuoloPixelIcon(ruolo: PixelIconRuolo): string {
+  const labels: Record<PixelIconRuolo, string> = {
+    admin: "Proprietario",
+    moderatore: "Moderatore",
+    fixer: "Fixer",
+    "capo-shinigami": "Capo Shinigami",
+    shinigami: "Shinigami",
+  };
+  return labels[ruolo];
+}
 
 /** Restituisce il path per un ruolo. */
 export function getPixelIconUrlRuolo(ruolo: PixelIconRuolo): string {
