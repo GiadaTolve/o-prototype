@@ -33,7 +33,7 @@ export default function GestionePage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "richieste" | "forum" | "mondo" | "logs" | "maps" | "banners" | "events" | "jobs" | "housing" | "bestiario" | "combattimento">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "richieste" | "forum" | "musica" | "logs" | "maps" | "banners" | "events" | "jobs" | "housing" | "bestiario" | "combattimento">("users");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [sanctions, setSanctions] = useState<Sanction[]>([]);
   const [pendingRequests, setPendingRequests] = useState(0);
@@ -105,7 +105,7 @@ export default function GestionePage() {
             { id: "housing" as const, label: "Immobiliare / Abitazioni" },
             { id: "banners" as const, label: "Banner" },
             { id: "events" as const, label: "Eventi" },
-            { id: "mondo" as const, label: "Gestione Mondo" },
+            { id: "musica" as const, label: "Musica" },
             { id: "combattimento" as const, label: "Combattimento" },
             { id: "bestiario" as const, label: "Bestiario" },
           ].map((tab) => (
@@ -269,7 +269,7 @@ export default function GestionePage() {
 
           {activeTab === "events" && <DailyEventsManagement />}
 
-          {activeTab === "mondo" && (
+          {activeTab === "musica" && (
             <PlaylistManagement />
           )}
 
