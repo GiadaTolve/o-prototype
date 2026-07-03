@@ -36,8 +36,8 @@ export const PIXEL_ICON_RUOLI: PixelIconRuolo[] = [
 
 /** Pannelli sbloccati dalla pixel-icon ruolo (icona staff === ruolo). */
 export const STAFF_ROLE_ACCESS_HINT: Record<PixelIconRuolo, string> = {
-  admin: "Gestionale + Sviluppo",
-  moderatore: "Gestionale",
+  admin: "Tutto",
+  moderatore: "Tutto (no modifica ruoli)",
   fixer: "Sviluppo",
   "capo-shinigami": "Shinigami + comandi master",
   shinigami: "Shinigami + comandi master",

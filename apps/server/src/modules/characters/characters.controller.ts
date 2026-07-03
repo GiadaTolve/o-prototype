@@ -7,7 +7,7 @@ import {
   readPendingLevelUp,
 } from './level-up.service'
 import { buildCharacterPixelIcons } from '../../lib/character-pixel-icons'
-import { resolveGestioneAccess, resolveShinigamiAccess } from '../../lib/gestione-access'
+import { resolveGestioneAccess, resolveShinigamiAccess, resolveCanEditUserRuolo } from '../../lib/gestione-access'
 import { authPlugin } from '../../plugins/auth.plugin'
 import { broadcastCharacterHpUpdated, broadcastCharacterChronoUpdated, broadcastCharacterStatusUpdated } from '../realtime/ws.routes'
 
@@ -61,6 +61,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
         const canEditStaffAlias = canAccessGestione
         const canEditMasterNotes = resolveShinigamiAccess(userRole, roleIcon)
+        const canEditUserRuolo = resolveCanEditUserRuolo(userRole, roleIcon)
 
         const { gems: _gems, ...charSafe } = char
 
@@ -87,6 +88,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           canAccessSviluppo,
           canEditStaffAlias,
           canEditMasterNotes,
+          canEditUserRuolo,
           userRole,
           pendingLevelUp: readPendingLevelUp(char.uiMetadata),
         }

@@ -2,6 +2,28 @@ import { eq } from 'drizzle-orm'
 import { db } from '../plugins/db'
 import { characters } from '../db/schema'
 
+/** Proprietario (admin) o account ADMIN — modifica Ruolo utente in Gestione. */
+export function resolveCanEditUserRuolo(userRole?: string | null, roleIcon?: string): boolean {
+  const role = (userRole ?? '').toUpperCase()
+  const icon = (roleIcon ?? '').toLowerCase()
+  return role === 'ADMIN' || icon === 'admin'
+}
+
+export async function userCanEditUserRuolo(
+  userId: string,
+  userRole?: string | null,
+): Promise<boolean> {
+  const role = (userRole ?? '').toUpperCase()
+  if (role === 'ADMIN') return true
+
+  const char = await db.query.characters.findFirst({
+    where: eq(characters.userId, userId),
+    columns: { uiMetadata: true },
+  })
+  const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
+  return icon === 'admin'
+}
+
 /** Pannello Gestionale: account Admin o pixel-icon moderatore/proprietario. */
 export function resolveGestioneAccess(userRole?: string | null, roleIcon?: string): boolean {
   const role = (userRole ?? '').toUpperCase()

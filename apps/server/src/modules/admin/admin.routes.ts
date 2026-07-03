@@ -44,7 +44,7 @@ import {
 } from './admin.service'
 import { musicService } from '../music/music.service'
 import { forumService } from '../forum/forum.service'
-import { userHasGestioneAccess } from '../../lib/gestione-access'
+import { userHasGestioneAccess, userCanEditUserRuolo } from '../../lib/gestione-access'
 import { setRoomOpen, getRoomState } from '../anonymous-chat/anonymous-chat.service'
 import type { UserRole, BanState } from '@domain/security/jwt'
 
@@ -198,10 +198,14 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
           .put(
             '/characters/:id/role-icon',
             async ({ params, body, user, set }) => {
-              const actorRole = (user?.role ?? '').toUpperCase()
-              if (actorRole !== 'ADMIN') {
+              if (!user) {
+                set.status = 401
+                return { error: 'Non autenticato' }
+              }
+              const allowed = await userCanEditUserRuolo(user.id, user.role)
+              if (!allowed) {
                 set.status = 403
-                return { error: 'Solo gli Admin possono modificare l\'icona ruolo staff' }
+                return { error: 'Solo il Proprietario può modificare i ruoli utente' }
               }
               try {
                 const updated = await updateCharacterRoleIcon(params.id, body.roleIcon ?? null)

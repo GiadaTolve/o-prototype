@@ -45,7 +45,8 @@ export default function GestionePage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [sanctions, setSanctions] = useState<Sanction[]>([]);
   const [pendingRequests, setPendingRequests] = useState(0);
-  const [viewerUserRole, setViewerUserRole] = useState<string | null>(null);
+
+  const [canEditUserRuolo, setCanEditUserRuolo] = useState(false);
 
   const fetchPendingRequests = useCallback(async () => {
     try {
@@ -70,10 +71,10 @@ export default function GestionePage() {
     api
       .get("/characters/me")
       .then((char) => {
-        const role = (char as { userRole?: string })?.userRole ?? "";
-        setViewerUserRole(role.toUpperCase());
+        const data = char as { canEditUserRuolo?: boolean };
+        setCanEditUserRuolo(data.canEditUserRuolo === true);
       })
-      .catch(() => setViewerUserRole(null));
+      .catch(() => setCanEditUserRuolo(false));
   }, [router, fetchPendingRequests]);
 
   const loadUsers = async () => {
@@ -250,7 +251,7 @@ export default function GestionePage() {
                 <UserManagementModal
                   user={selectedUser}
                   sanctions={sanctions}
-                  canChangeUserRole={viewerUserRole === "ADMIN"}
+                  canEditUserRuolo={canEditUserRuolo}
                   onClose={() => {
                     setSelectedUser(null);
                     setSanctions([]);
@@ -319,13 +320,13 @@ function RuoloDisplay({ roleIcon }: { roleIcon: string }) {
 function UserManagementModal({
   user,
   sanctions,
-  canChangeUserRole = false,
+  canEditUserRuolo = false,
   onClose,
   onUpdate,
 }: {
   user: User;
   sanctions: Sanction[];
-  canChangeUserRole?: boolean;
+  canEditUserRuolo?: boolean;
   onClose: () => void;
   onUpdate: () => void;
 }) {
@@ -369,7 +370,7 @@ function UserManagementModal({
   };
 
   const handleUpdateRuolo = async () => {
-    if (!character || !canChangeUserRole) return;
+    if (!character || !canEditUserRuolo) return;
     const current = (character.uiMetadata?.roleIcon ?? "").toLowerCase();
     if (newRuolo === current) return;
     setSaving(true);
@@ -451,7 +452,7 @@ function UserManagementModal({
           {character && (
             <div>
               <p className="text-sm text-gray-400 mb-1">Ruolo</p>
-              {!canChangeUserRole ? (
+              {!canEditUserRuolo ? (
                 <RuoloDisplay roleIcon={(character.uiMetadata?.roleIcon ?? "").toLowerCase()} />
               ) : (
                 <>
