@@ -59,6 +59,8 @@ import { WazaLaunchStrip } from "./WazaLaunchStrip";
 /** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
 const MOBILE_CHAT_MAX_LENGTH = 500;
 
+/** Bozza che invierà solo un tiro dado (nessun EXP). */
+function isDiceOnlyDraft(draft: string): boolean {
   return /^\s*\/?(?:d|dado)\s+\d+\s*$/i.test(draft.trim());
 }
 
