@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { SmsPanel } from "./sms/SmsPanel";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
@@ -78,6 +79,20 @@ export function DashboardMobileLayout({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MobileTab>("mappa");
 
+  // SMS inline nel tab: se qualcosa apre la finestra SMS, vai al tab invece del modal
+  useEffect(() => {
+    if (openWindow === "sms") {
+      setActiveTab("sms");
+      onClose("sms");
+    }
+  }, [openWindow, onClose]);
+
+  useEffect(() => {
+    if (smsTargetCharacterId) {
+      setActiveTab("sms");
+    }
+  }, [smsTargetCharacterId?.id]);
+
   const prefettura = roomToPrefettura(roomId ?? "");
   const avatarSrc = (char?.avatarUrl ?? char?.avatar ?? char?.miniAvatar) as string | undefined;
   const nome = (char?.name ?? "Nome PG") as string;
@@ -113,7 +128,7 @@ export function DashboardMobileLayout({
       </header>
 
       {/* Contenuto in base al tab */}
-      <main className="flex-1 min-h-0 overflow-auto">
+      <main className={`flex-1 min-h-0 ${activeTab === "sms" ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
         {activeTab === "scheda" && (
           <div className="p-4">
             <div className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
@@ -160,26 +175,12 @@ export function DashboardMobileLayout({
         )}
 
         {activeTab === "sms" && (
-          <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-[var(--border-color)]">
-              <h2 className="font-display text-sm text-[var(--accent-gold)]">SMS</h2>
-              <p className="text-xs text-gray-500 mt-1">Tap per aprire le conversazioni</p>
-            </div>
-            <div className="flex-1 p-4">
-              <button
-                type="button"
-                onClick={() => onOpen("sms")}
-                className="w-full py-4 rounded border border-[var(--border-color)] bg-black/30 flex items-center gap-3 hover:border-[var(--accent-gold)]/50"
-              >
-                <FontAwesomeIcon icon={icons.message} className="w-6 h-6 text-[var(--accent-violet)]" />
-                <span className="text-left">
-                  Apri SMS
-                  {smsUnread > 0 && (
-                    <span className="ml-2 text-[var(--accent-gold)] text-xs">({smsUnread})</span>
-                  )}
-                </span>
-              </button>
-            </div>
+          <div className="flex-1 min-h-0 flex flex-col bg-[var(--panel-bg)]">
+            <SmsPanel
+              variant="stack"
+              onUnreadChange={fetchSmsUnread}
+              initialTargetCharacterId={smsTargetCharacterId ?? undefined}
+            />
           </div>
         )}
 
@@ -282,7 +283,7 @@ export function DashboardMobileLayout({
       </nav>
 
       {/* Finestre modali full-screen su mobile */}
-      {openWindow && (
+      {openWindow && openWindow !== "sms" && (
         <div className="fixed inset-0 z-40 bg-[var(--background)]">
           <DashboardWindowPanel
             windowId={openWindow}
