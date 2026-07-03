@@ -48,7 +48,7 @@ export function descriptionForRuoloPixelIcon(ruolo: PixelIconRuolo): string {
 }
 
 export function optionLabelForRuoloPixelIcon(ruolo: PixelIconRuolo): string {
-  return `${labelForRuoloPixelIcon(ruolo)} — ${STAFF_ROLE_ACCESS_HINT[ruolo]}`;
+  return labelForRuoloPixelIcon(ruolo);
 }
 
 export const PIXEL_ICON_ORDINI: PixelIconOrdine[] = ["mugen-tai", "chisen-tai"];
