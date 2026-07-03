@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
+import "./fetch-pager.css";
 
 type FetchRequirements = {
   levelMin?: number;
@@ -45,36 +46,39 @@ type SelectedFetchDetail =
 function formatRequirements(req: FetchRequirements | undefined): string {
   if (!req || Object.keys(req).length === 0) return "";
   const parts: string[] = [];
-  if (req.levelMin != null) parts.push(`Liv. min ${req.levelMin}`);
-  if (req.levelMax != null) parts.push(`Liv. max ${req.levelMax}`);
-  if (req.order?.length) parts.push(req.order.join(", "));
-  if (req.gradeIds?.length) parts.push("Grado richiesto");
-  if (req.plotIds?.length) parts.push("Trama richiesta");
-  if (req.limitPerDay != null) parts.push(`${req.limitPerDay}/giorno`);
-  if (req.limitPerWeek != null) parts.push(`${req.limitPerWeek}/settimana`);
-  return parts.join(" · ");
+  if (req.levelMin != null) parts.push(`LV${req.levelMin}+`);
+  if (req.levelMax != null) parts.push(`MAX${req.levelMax}`);
+  if (req.order?.length) parts.push(req.order.join("/"));
+  if (req.gradeIds?.length) parts.push("GRADO");
+  if (req.plotIds?.length) parts.push("TRAMA");
+  if (req.limitPerDay != null) parts.push(`${req.limitPerDay}/D`);
+  if (req.limitPerWeek != null) parts.push(`${req.limitPerWeek}/S`);
+  return parts.join(" ");
 }
 
 function formatRewards(rc: FetchRewardConfig | null | undefined): string {
-  if (!rc) return "4 azioni min, 50 REM (default)";
+  if (!rc) return "4 AZ · 50 REM";
   const min = rc.minActions ?? 4;
   const rem = rc.remReward ?? 50;
   const exp = rc.expReward ?? 0;
-  const parts = [`≥${min} azioni`, `${rem} REM`];
+  const parts = [`${min} AZ`, `${rem} REM`];
   if (exp > 0) parts.push(`${exp} EXP`);
-  return parts.join(", ");
+  return parts.join(" · ");
+}
+
+function truncatePager(text: string | null | undefined, max = 120): string {
+  if (!text?.trim()) return "";
+  const t = text.trim().replace(/\s+/g, " ");
+  return t.length <= max ? t : `${t.slice(0, max - 1)}…`;
 }
 
 type Props = {
-  /** mobile = layout a colonna singola per tab smartphone */
+  /** mobile = stesso device, padding ridotto */
   variant?: "default" | "mobile";
 };
 
 export function FetchPanel({ variant = "default" }: Props) {
   const isMobile = variant === "mobile";
-  const gridClass = isMobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-2 sm:grid-cols-4 gap-4";
-  const cardHeightClass = isMobile ? "min-h-[168px]" : "h-[200px]";
-  const concludedGridClass = isMobile ? "grid grid-cols-1 gap-2 mt-3" : "grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto mt-3";
 
   const [list, setList] = useState<FetchItem[]>([]);
   const [concluded, setConcluded] = useState<ConcludedFetch[]>([]);
@@ -83,6 +87,7 @@ export function FetchPanel({ variant = "default" }: Props) {
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<SelectedFetchDetail | null>(null);
   const [showConcluded, setShowConcluded] = useState(false);
+  const [passedIds, setPassedIds] = useState<Set<string>>(() => new Set());
 
   const load = useCallback(() => {
     setLoading(true);
@@ -104,10 +109,25 @@ export function FetchPanel({ variant = "default" }: Props) {
     load();
   }, [load]);
 
+  const availableList = useMemo(
+    () => list.filter((f) => !myFetch || f.id !== myFetch.id),
+    [list, myFetch],
+  );
+
+  const incomingCount = useMemo(
+    () => availableList.filter((f) => !f.assignedTo && !passedIds.has(f.id)).length,
+    [availableList, passedIds],
+  );
+
   const assign = async (id: string) => {
     setAssigningId(id);
     try {
       await api.post(`/fetches/${id}/assign`, {});
+      setPassedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       load();
     } catch {
       /* ignore */
@@ -116,247 +136,233 @@ export function FetchPanel({ variant = "default" }: Props) {
     }
   };
 
+  const passMessage = (id: string) => {
+    setPassedIds((prev) => new Set(prev).add(id));
+  };
+
   if (loading) {
-    return <p className="text-sm text-gray-500 p-4">Caricamento…</p>;
+    return (
+      <div className={`fetch-pager ${isMobile ? "fetch-pager--mobile" : ""}`}>
+        <p className="fetch-pager-loading">SINCRONIZZAZIONE SEGNALE…</p>
+      </div>
+    );
   }
 
   return (
-    <div
-      className={`min-h-0 flex flex-col ${isMobile ? "flex-1 h-full" : ""}`}
-      style={{
-        backgroundImage:
-          "linear-gradient(rgba(20, 15, 30, 0.95), rgba(10, 8, 15, 0.98)), url('/backgrounds/darkstone.png')",
-        backgroundRepeat: "repeat",
-        backgroundBlendMode: "overlay",
-      }}
-    >
-      <div className="shrink-0 py-3 px-3 border-b border-[var(--accent-gold)]/30">
-        <h2 className="text-center font-display text-sm uppercase tracking-[0.25em] text-[var(--accent-gold)]">
-          Assegnazioni
-        </h2>
-        <p className="text-center text-[10px] text-gray-500 mt-0.5 tracking-wider px-2 max-w-md mx-auto">
-          Notifiche disponibili dal cerca-persone: Le assegnazioni possono arrivare direttamente dal proprio Ordine, o da aristocratici del Paradise.
-        </p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 min-h-0">
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-display">
-            {myFetch ? "Assegnata a te · Disponibili" : "Disponibili"}
-          </p>
-          {!myFetch && list.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4 text-center">Nessuna missione approvata disponibile.</p>
-          ) : (
-            <ul className={gridClass}>
-              {myFetch && (
-                <li key="my" className={`relative ${cardHeightClass}`}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDetail({ type: "assigned", item: myFetch })}
-                    className="absolute inset-0 flex flex-col rounded-lg border-2 border-[var(--accent-violet)]/60 bg-[var(--accent-violet)]/15 px-4 py-3 overflow-hidden text-left cursor-pointer hover:border-[var(--accent-violet)]/80 transition-colors"
-                    style={{ boxShadow: "0 4px 12px var(--shadow-violet), inset 0 1px 0 rgba(255,255,255,0.05)" }}
-                  >
-                    <span
-                      className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 border-[var(--accent-violet)] bg-[var(--accent-violet)]/80 shrink-0"
-                      aria-hidden
-                    />
-                    <p className="text-[9px] uppercase tracking-widest text-[var(--accent-violet-light)] text-center mt-1 flex-shrink-0">
-                      Assegnata a te
-                    </p>
-                    <p className="font-display text-sm text-white text-center line-clamp-2 mt-1 flex-shrink-0">{myFetch.title}</p>
-                    {myFetch.description && (
-                      <p className="text-[10px] text-gray-400 text-center line-clamp-2 mt-1 flex-1 min-h-0">{myFetch.description}</p>
-                    )}
-                    <div className="flex-1 min-h-4" />
-                    <span className="text-[9px] text-[var(--accent-violet-light)]/70 mt-auto">Clicca per leggere tutto</span>
-                  </button>
-                </li>
-              )}
-              {list
-                .filter((f) => !myFetch || f.id !== myFetch.id)
-                .map((f) => (
-                  <li key={f.id} className={`relative ${cardHeightClass} ${f.assignedTo ? "opacity-50" : ""}`}>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedDetail({ type: "available", item: f })}
-                      onKeyDown={(e) => e.key === "Enter" && setSelectedDetail({ type: "available", item: f })}
-                      className={`absolute inset-0 flex flex-col rounded-lg transition-colors px-4 py-3 overflow-hidden text-left cursor-pointer ${
-                        f.assignedTo
-                          ? "border border-[var(--border-color)]/50 bg-black/60"
-                          : "border border-[var(--border-color)] bg-black/40 hover:border-[var(--accent-gold)]/40"
-                      }`}
-                      style={{
-                        boxShadow: f.assignedTo ? "none" : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)",
-                      }}
-                    >
-                      <span
-                        className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border shrink-0 ${
-                          f.assignedTo ? "border-gray-600 bg-black/60" : "border-[var(--accent-gold)]/60 bg-[var(--panel-bg)]"
-                        }`}
-                        aria-hidden
-                      />
-                      <p
-                        className={`font-display text-sm text-center line-clamp-2 mt-1 flex-shrink-0 ${f.assignedTo ? "text-gray-500" : "text-[var(--accent-gold)]"}`}
-                      >
-                        {f.title}
-                      </p>
-                      {f.description && (
-                        <p className="text-[10px] text-center line-clamp-2 mt-0.5 flex-shrink-0 text-gray-600">{f.description}</p>
-                      )}
-                      <div className="mt-2 space-y-0.5 text-[9px] flex-shrink-0 min-h-0 overflow-hidden text-gray-500">
-                        {formatRequirements(f.requirements) && (
-                          <p className="truncate">
-                            <span className="text-gray-600">Req:</span> {formatRequirements(f.requirements)}
-                          </p>
-                        )}
-                        <p className={`truncate ${f.assignedTo ? "text-gray-500" : "text-[var(--accent-gold)]/90"}`}>
-                          <span className="text-gray-600">Premi:</span> {formatRewards(f.rewardConfig)}
-                        </p>
-                      </div>
-                      {!f.assignedTo ? (
-                        <div className="mt-auto pt-2 border-t border-[var(--border-color)]/50 flex justify-center flex-shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              assign(f.id);
-                            }}
-                            disabled={assigningId !== null}
-                            className="px-3 py-1.5 rounded border border-[var(--accent-gold)] text-[10px] uppercase tracking-wider text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50 transition-colors"
-                          >
-                            {assigningId === f.id ? "…" : "Assegna a me"}
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="mt-auto text-[10px] text-gray-500 text-center italic flex-shrink-0">Assegnata</p>
-                      )}
-                      <span className={`text-[9px] mt-1 flex-shrink-0 ${f.assignedTo ? "text-gray-600" : "text-gray-500/70"}`}>
-                        Clicca per leggere tutto
-                      </span>
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          )}
+    <div className={`fetch-pager ${isMobile ? "fetch-pager--mobile" : ""}`}>
+      <div className="fetch-pager__device">
+        <div className="fetch-pager__top">
+          <span className="fetch-pager__brand">OYASUMI · CERCA-PERSONE</span>
+          <div className="fetch-pager__status">
+            <span className={`fetch-pager__led ${incomingCount > 0 ? "fetch-pager__led--live" : ""}`} aria-hidden />
+            <span>{incomingCount > 0 ? `${incomingCount} NUOVI` : "IN ASCOLTO"}</span>
+          </div>
         </div>
 
-        {concluded.length > 0 && (
-          <div className="pt-4 border-t border-[var(--border-color)]">
-            <button
-              type="button"
-              onClick={() => setShowConcluded((v) => !v)}
-              className="w-full py-2.5 px-3 rounded border border-[var(--border-color)]/50 bg-black/20 text-left text-sm text-gray-400 hover:border-[var(--accent-gold)]/40 hover:text-[var(--accent-gold)] transition-colors flex items-center justify-between gap-2"
-            >
-              <span className="font-display text-[10px] uppercase tracking-widest">Le tue missioni concluse</span>
-              <span className="text-[10px]">{concluded.length} · {showConcluded ? "▲ Nascondi" : "▼ Mostra"}</span>
-            </button>
-            {showConcluded && (
-              <ul className={concludedGridClass}>
-                {concluded.map((c) => (
-                  <li key={c.id} className={`relative ${isMobile ? "min-h-[100px]" : "h-[100px]"}`}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDetail({ type: "concluded", item: c })}
-                      className="absolute inset-0 flex flex-col rounded border border-[var(--border-color)]/40 bg-black/20 px-3 py-2 overflow-hidden text-left cursor-pointer hover:border-[var(--border-color)]/60 transition-colors"
+        <div className="fetch-pager__lcd">
+          <div className="fetch-pager__lcd-scroll">
+            <p className="fetch-pager__hint">
+              Trasmissioni da Ordine e Paradise. Accetta per rispondere al cercapersone — altrimenti resta in coda per altri.
+            </p>
+
+            {!myFetch && availableList.length === 0 ? (
+              <p className="fetch-pager__empty">— NESSUN MESSAGGIO IN CODA —</p>
+            ) : (
+              <>
+                {myFetch && (
+                  <article className="fetch-pager__msg fetch-pager__msg--mine">
+                    <div className="fetch-pager__msg-head">
+                      <span className="fetch-pager__msg-tag fetch-pager__msg-tag--mine">CONFERMATO</span>
+                      <span>TX OK</span>
+                    </div>
+                    <h3 className="fetch-pager__msg-title">{myFetch.title}</h3>
+                    {myFetch.description && <p className="fetch-pager__msg-body">{truncatePager(myFetch.description, 200)}</p>}
+                    <p className="fetch-pager__msg-meta">
+                      <strong>STATO:</strong> ASSEGNATA A TE
+                    </p>
+                    <div className="fetch-pager__actions">
+                      <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "assigned", item: myFetch })}>
+                        LEGGI
+                      </button>
+                    </div>
+                  </article>
+                )}
+
+                {availableList.map((f) => {
+                  const taken = Boolean(f.assignedTo);
+                  const passed = passedIds.has(f.id);
+                  return (
+                    <article
+                      key={f.id}
+                      className={`fetch-pager__msg ${taken ? "fetch-pager__msg--taken" : passed ? "fetch-pager__msg--taken" : "fetch-pager__msg--incoming"}`}
                     >
-                      <span className="absolute -top-0.5 left-3 w-1.5 h-1.5 rounded-full bg-gray-600 shrink-0" aria-hidden />
-                      <p className="font-display text-xs text-gray-400 line-clamp-2 mt-1 flex-shrink-0">{c.title}</p>
-                      {c.responsoComment && (
-                        <p className="text-[9px] text-gray-500 line-clamp-1 mt-0.5 flex-shrink-0">{c.responsoComment}</p>
+                      <div className="fetch-pager__msg-head">
+                        <span className="fetch-pager__msg-tag">
+                          {taken ? "OCCUPATO" : passed ? "IN CODA" : "▼ IN ARRIVO"}
+                        </span>
+                        <span>{taken ? "ALTRO PG" : passed ? "PASSATO" : "NUOVO"}</span>
+                      </div>
+                      <h3 className="fetch-pager__msg-title">{f.title}</h3>
+                      {f.description && !passed && (
+                        <p className="fetch-pager__msg-body">{truncatePager(f.description)}</p>
                       )}
-                      <p className="text-[9px] text-gray-600 mt-auto line-clamp-1 flex-shrink-0">
+                      {!passed && (
+                        <p className="fetch-pager__msg-meta">
+                          {formatRequirements(f.requirements) && (
+                            <>
+                              <strong>RIC:</strong> {formatRequirements(f.requirements)}
+                              <br />
+                            </>
+                          )}
+                          <strong>PREMIO:</strong> {formatRewards(f.rewardConfig)}
+                        </p>
+                      )}
+                      {!taken && !passed && (
+                        <div className="fetch-pager__actions">
+                          <button
+                            type="button"
+                            className="fetch-pager__btn fetch-pager__btn--accept"
+                            disabled={assigningId !== null}
+                            onClick={() => assign(f.id)}
+                          >
+                            {assigningId === f.id ? "TX…" : "ACCETTA"}
+                          </button>
+                          <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => passMessage(f.id)}>
+                            PASSA
+                          </button>
+                          <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "available", item: f })}>
+                            LEGGI
+                          </button>
+                        </div>
+                      )}
+                      {passed && !taken && (
+                        <div className="fetch-pager__actions">
+                          <button
+                            type="button"
+                            className="fetch-pager__btn fetch-pager__btn--accept"
+                            disabled={assigningId !== null}
+                            onClick={() => assign(f.id)}
+                          >
+                            ACCETTA ORA
+                          </button>
+                          <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setPassedIds((p) => { const n = new Set(p); n.delete(f.id); return n; })}>
+                            RIPRISTINA
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </>
+            )}
+
+            {concluded.length > 0 && (
+              <>
+                <button type="button" className="fetch-pager__archive-toggle" onClick={() => setShowConcluded((v) => !v)}>
+                  ARCHIVIO TRASMISSIONI · {concluded.length} {showConcluded ? "▲" : "▼"}
+                </button>
+                {showConcluded &&
+                  concluded.map((c) => (
+                    <article key={c.id} className="fetch-pager__msg fetch-pager__archive-item">
+                      <div className="fetch-pager__msg-head">
+                        <span className="fetch-pager__msg-tag">ARCHIVIO</span>
+                        <span>OK</span>
+                      </div>
+                      <h3 className="fetch-pager__msg-title">{c.title}</h3>
+                      {c.responsoComment && <p className="fetch-pager__msg-body">{truncatePager(c.responsoComment, 80)}</p>}
+                      <p className="fetch-pager__msg-meta">
                         {c.participantNames.length > 0 ? c.participantNames.join(", ") : "—"}
                       </p>
-                      <span className="text-[8px] text-gray-600 mt-0.5">Clicca per dettagli</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "concluded", item: c })}>
+                        DETTAGLI
+                      </button>
+                    </article>
+                  ))}
+              </>
             )}
           </div>
-        )}
+        </div>
+
+        <div className="fetch-pager__keys" aria-hidden>
+          <span className="fetch-pager__key" />
+          <span className="fetch-pager__key" />
+          <span className="fetch-pager__key" />
+        </div>
       </div>
 
       {selectedDetail &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
             onClick={() => setSelectedDetail(null)}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="fetch-detail-title"
+            aria-labelledby="fetch-pager-detail-title"
           >
-            <div
-              className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg w-full max-w-lg max-h-[85vh] flex flex-col shadow-xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="shrink-0 relative flex items-center justify-between p-4 border-b border-[var(--border-color)]">
-                <h2 id="fetch-detail-title" className="font-display text-lg text-[var(--accent-gold)] pr-10">
-                  {selectedDetail.item.title}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDetail(null)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-[var(--accent-gold)] p-1"
-                  aria-label="Chiudi"
-                >
-                  ✕
+            <div className="fetch-pager-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="fetch-pager-modal__bar">
+                <span>MESSAGGIO COMPLETO</span>
+                <button type="button" className="fetch-pager-modal__close" onClick={() => setSelectedDetail(null)}>
+                  CHIUDI
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="fetch-pager-modal__lcd">
+                <h2 id="fetch-pager-detail-title" className="fetch-pager-modal__title">
+                  {selectedDetail.item.title}
+                </h2>
                 {selectedDetail.type === "assigned" && (
-                  <p className="text-[10px] uppercase tracking-widest text-[var(--accent-violet-light)]">Assegnata a te</p>
+                  <p className="fetch-pager__msg-meta">
+                    <strong>STATO:</strong> CONFERMATO · ASSEGNATA A TE
+                  </p>
                 )}
                 {selectedDetail.type === "concluded" ? (
                   <>
                     {selectedDetail.item.description && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Descrizione</p>
-                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedDetail.item.description}</p>
-                      </div>
+                      <>
+                        <p className="fetch-pager-modal__label">Testo</p>
+                        <p>{selectedDetail.item.description}</p>
+                      </>
                     )}
                     {selectedDetail.item.responsoComment && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Responso Master</p>
-                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedDetail.item.responsoComment}</p>
-                      </div>
+                      <>
+                        <p className="fetch-pager-modal__label">Responso Master</p>
+                        <p>{selectedDetail.item.responsoComment}</p>
+                      </>
                     )}
-                    <p className="text-[10px] text-gray-500">
-                      Conclusa da:{" "}
-                      {selectedDetail.item.participantNames.length > 0
-                        ? selectedDetail.item.participantNames.join(", ")
-                        : "—"}
-                    </p>
+                    <p className="fetch-pager-modal__label">Conclusa da</p>
+                    <p>{selectedDetail.item.participantNames.length > 0 ? selectedDetail.item.participantNames.join(", ") : "—"}</p>
                   </>
                 ) : (
                   <>
                     {selectedDetail.item.description && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Descrizione</p>
-                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{selectedDetail.item.description}</p>
-                      </div>
+                      <>
+                        <p className="fetch-pager-modal__label">Testo</p>
+                        <p>{selectedDetail.item.description}</p>
+                      </>
                     )}
                     {formatRequirements(selectedDetail.item.requirements) && (
-                      <p className="text-sm text-gray-400">
-                        <span className="text-gray-500">Requisiti:</span> {formatRequirements(selectedDetail.item.requirements)}
-                      </p>
+                      <>
+                        <p className="fetch-pager-modal__label">Requisiti</p>
+                        <p>{formatRequirements(selectedDetail.item.requirements)}</p>
+                      </>
                     )}
-                    <p className="text-sm text-[var(--accent-gold)]/90">
-                      <span className="text-gray-500">Premi:</span> {formatRewards(selectedDetail.item.rewardConfig)}
-                    </p>
+                    <p className="fetch-pager-modal__label">Premio</p>
+                    <p>{formatRewards(selectedDetail.item.rewardConfig)}</p>
                     {selectedDetail.type === "available" && !selectedDetail.item.assignedTo && (
-                      <div className="pt-2">
+                      <div className="fetch-pager__actions" style={{ marginTop: "1rem" }}>
                         <button
                           type="button"
+                          className="fetch-pager__btn fetch-pager__btn--accept"
+                          disabled={assigningId !== null}
                           onClick={() => {
                             assign(selectedDetail.item.id);
                             setSelectedDetail(null);
                           }}
-                          disabled={assigningId !== null}
-                          className="px-4 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-sm hover:bg-[var(--accent-gold)]/10 disabled:opacity-50 transition-colors"
                         >
-                          {assigningId === selectedDetail.item.id ? "…" : "Assegna a me"}
+                          {assigningId === selectedDetail.item.id ? "TX…" : "ACCETTA"}
+                        </button>
+                        <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail(null)}>
+                          PASSA
                         </button>
                       </div>
                     )}

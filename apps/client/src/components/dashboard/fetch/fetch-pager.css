@@ -1,0 +1,399 @@
+/* Cerca-persone anni 80 — Assegnazioni Oyasumi (palette Dark Arcane) */
+
+.fetch-pager {
+  --pager-lcd-bg: color-mix(in srgb, var(--background) 88%, var(--accent-gold) 12%);
+  --pager-lcd-text: var(--accent-gold);
+  --pager-lcd-dim: color-mix(in srgb, var(--accent-gold) 55%, var(--border-color));
+  --pager-chassis: var(--button-bg);
+  --pager-bezel: var(--panel-bg);
+  --pager-led: var(--accent-violet);
+
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0.75rem;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 55%),
+    var(--background);
+}
+
+.fetch-pager__device {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  max-width: 42rem;
+  margin: 0 auto;
+  width: 100%;
+  border-radius: 1.25rem;
+  padding: 0.65rem;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pager-chassis) 90%, white 4%), var(--pager-chassis));
+  border: 2px solid var(--border-color);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 6%, transparent),
+    0 8px 24px var(--shadow-dark),
+    0 0 0 1px color-mix(in srgb, var(--accent-gold) 12%, transparent);
+}
+
+.fetch-pager__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem 0.55rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 80%, black);
+}
+
+.fetch-pager__brand {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--pager-lcd-dim);
+}
+
+.fetch-pager__status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  color: var(--pager-lcd-dim);
+  text-transform: uppercase;
+}
+
+.fetch-pager__led {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pager-led) 40%, var(--border-color));
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.fetch-pager__led--live {
+  background: var(--pager-led);
+  box-shadow: 0 0 6px var(--glow-violet);
+  animation: fetch-pager-blink 1.2s step-end infinite;
+}
+
+@keyframes fetch-pager-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fetch-pager__led--live {
+    animation: none;
+  }
+}
+
+.fetch-pager__lcd {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0 0.15rem;
+  padding: 0.65rem 0.75rem 0.85rem;
+  border-radius: 0.35rem;
+  overflow: hidden;
+  background: var(--pager-lcd-bg);
+  border: 2px inset color-mix(in srgb, var(--border-color) 70%, black);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+.fetch-pager__lcd::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    color-mix(in srgb, black 12%, transparent) 2px,
+    color-mix(in srgb, black 12%, transparent) 3px
+  );
+  opacity: 0.35;
+  z-index: 1;
+}
+
+.fetch-pager__lcd-scroll {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  font-family: ui-monospace, "Courier New", monospace;
+  color: var(--pager-lcd-text);
+}
+
+.fetch-pager__hint {
+  font-size: 0.62rem;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  color: var(--pager-lcd-dim);
+  text-align: center;
+  padding: 0.25rem 0.5rem 0.5rem;
+  border-bottom: 1px dashed color-mix(in srgb, var(--pager-lcd-dim) 35%, transparent);
+  margin-bottom: 0.15rem;
+}
+
+.fetch-pager__empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--pager-lcd-dim);
+}
+
+.fetch-pager__msg {
+  border: 1px solid color-mix(in srgb, var(--pager-lcd-text) 22%, transparent);
+  border-radius: 0.2rem;
+  padding: 0.55rem 0.6rem 0.65rem;
+  background: color-mix(in srgb, black 28%, transparent);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fetch-pager__msg--incoming {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pager-lcd-text) 8%, transparent);
+}
+
+.fetch-pager__msg--incoming:hover {
+  border-color: color-mix(in srgb, var(--pager-lcd-text) 45%, transparent);
+}
+
+.fetch-pager__msg--mine {
+  border-color: color-mix(in srgb, var(--accent-violet) 55%, transparent);
+  background: color-mix(in srgb, var(--accent-violet) 10%, black);
+  box-shadow: 0 0 10px var(--shadow-violet);
+}
+
+.fetch-pager__msg--taken {
+  opacity: 0.45;
+  filter: saturate(0.35);
+}
+
+.fetch-pager__msg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pager-lcd-dim);
+  margin-bottom: 0.35rem;
+}
+
+.fetch-pager__msg-tag {
+  color: var(--pager-lcd-text);
+}
+
+.fetch-pager__msg-tag--mine {
+  color: var(--accent-violet-light);
+}
+
+.fetch-pager__msg-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+}
+
+.fetch-pager__msg-body {
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--pager-lcd-text) 82%, var(--foreground));
+  margin-bottom: 0.4rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fetch-pager__msg-meta {
+  font-size: 0.58rem;
+  line-height: 1.5;
+  color: var(--pager-lcd-dim);
+  margin-bottom: 0.55rem;
+}
+
+.fetch-pager__msg-meta strong {
+  color: color-mix(in srgb, var(--pager-lcd-text) 75%, var(--pager-lcd-dim));
+  font-weight: 600;
+}
+
+.fetch-pager__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.fetch-pager__btn {
+  font-family: ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.42rem 0.7rem;
+  border-radius: 0.15rem;
+  border: 1px solid color-mix(in srgb, var(--pager-lcd-text) 35%, var(--border-color));
+  background: color-mix(in srgb, black 45%, var(--button-bg));
+  color: var(--pager-lcd-text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.fetch-pager__btn:hover:not(:disabled) {
+  border-color: var(--pager-lcd-text);
+  box-shadow: 0 0 8px var(--shadow-gold);
+}
+
+.fetch-pager__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fetch-pager__btn--accept {
+  border-color: color-mix(in srgb, var(--accent-gold) 65%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-gold) 12%, black);
+}
+
+.fetch-pager__btn--ghost {
+  color: var(--pager-lcd-dim);
+  border-color: color-mix(in srgb, var(--pager-lcd-dim) 40%, var(--border-color));
+}
+
+.fetch-pager__btn--ghost:hover:not(:disabled) {
+  color: var(--pager-lcd-text);
+  box-shadow: none;
+}
+
+.fetch-pager__archive-toggle {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--pager-lcd-dim);
+  border: 1px dashed color-mix(in srgb, var(--pager-lcd-dim) 35%, transparent);
+  background: transparent;
+  cursor: pointer;
+}
+
+.fetch-pager__archive-toggle:hover {
+  color: var(--pager-lcd-text);
+  border-color: color-mix(in srgb, var(--pager-lcd-text) 30%, transparent);
+}
+
+.fetch-pager__archive-item {
+  opacity: 0.72;
+}
+
+.fetch-pager__keys {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.25rem 0.15rem;
+}
+
+.fetch-pager__key {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-color);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--button-bg-hover) 80%, white 5%), var(--button-bg));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+/* Modal dettaglio — stesso LCD */
+.fetch-pager-modal {
+  background: var(--pager-bezel);
+  border: 2px solid var(--border-color);
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 28rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 16px 48px var(--shadow-dark), 0 0 24px var(--shadow-violet);
+}
+
+.fetch-pager-modal__lcd {
+  flex: 1;
+  min-height: 0;
+  margin: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 0.35rem;
+  overflow-y: auto;
+  background: var(--pager-lcd-bg);
+  border: 2px inset color-mix(in srgb, var(--border-color) 70%, black);
+  font-family: ui-monospace, monospace;
+  color: var(--pager-lcd-text);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.fetch-pager-modal__title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.65rem;
+}
+
+.fetch-pager-modal__label {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pager-lcd-dim);
+  margin-top: 0.65rem;
+  margin-bottom: 0.2rem;
+}
+
+.fetch-pager-modal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  font-family: ui-monospace, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  color: var(--pager-lcd-dim);
+}
+
+.fetch-pager-modal__close {
+  background: transparent;
+  border: none;
+  color: var(--pager-lcd-dim);
+  cursor: pointer;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+}
+
+.fetch-pager-modal__close:hover {
+  color: var(--pager-lcd-text);
+}
+
+.fetch-pager-loading {
+  padding: 2rem;
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  color: var(--pager-lcd-dim);
+  animation: fetch-pager-blink 1s step-end infinite;
+}
