@@ -86,6 +86,10 @@ type Props = {
   canAccessSviluppo?: boolean;
   /** Personaggio corrente (per ShinigamiContent). */
   char?: CharacterSummary;
+  /** mobile = tab smartphone: layout compatto, chat full-width */
+  variant?: "default" | "mobile";
+  /** true quando la chat è a schermo intero (per nascondere bottom nav) */
+  onImmersiveChange?: (immersive: boolean) => void;
 };
 
 export function DashboardCenter({
@@ -106,7 +110,10 @@ export function DashboardCenter({
   canAccessGestione,
   canAccessSviluppo,
   char,
+  variant = "default",
+  onImmersiveChange,
 }: Props) {
+  const compact = variant === "mobile";
   const [view, setView] = useState<View>("root");
   const [gameMapId, setGameMapId] = useState<GameMapId | null>(null);
   const [zone, setZone] = useState<ZoneConfig | null>(null);
@@ -216,6 +223,10 @@ export function DashboardCenter({
     if (mapTrigger > 0) goRoot();
   }, [mapTrigger]);
 
+  useEffect(() => {
+    onImmersiveChange?.(view === "chat");
+  }, [view, onImmersiveChange]);
+
   // Carica banner mappe (modificabili in Gestione → Modifica mappa)
   useEffect(() => {
     let cancelled = false;
@@ -272,10 +283,16 @@ export function DashboardCenter({
   const gameMap = gameMapId ? GAME_MAPS[gameMapId] : null;
 
   return (
-    <main className="flex-[2.5] min-w-0 h-full bg-[var(--panel-bg)]/40 border border-[var(--border-color)] rounded-lg p-6 order-1 lg:order-2 flex flex-col overflow-hidden">
+    <main
+      className={
+        compact
+          ? "flex-1 min-w-0 h-full flex flex-col overflow-hidden"
+          : "flex-[2.5] min-w-0 h-full bg-[var(--panel-bg)]/40 border border-[var(--border-color)] rounded-lg p-6 order-1 lg:order-2 flex flex-col overflow-hidden"
+      }
+    >
       {view === "root" && (
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-lg border border-[var(--border-color)]">
-          <MapViewRoot onSelectGameMap={goGameMap} />
+          <MapViewRoot onSelectGameMap={goGameMap} alwaysShowLabels={compact} />
         </div>
       )}
 
@@ -287,6 +304,7 @@ export function DashboardCenter({
             bannerPosition={gameMapId ? mapBanners[gameMapId]?.position : undefined}
             onSelectZone={goZoneList}
             onBack={backFromGameMap}
+            compact={compact}
           />
         </div>
       )}
@@ -298,6 +316,7 @@ export function DashboardCenter({
           gameMapLabel={gameMap?.label ?? ""}
           onSelectRoom={goChat}
           onBack={backFromZoneList}
+          compact={compact}
         />
         </div>
       )}
@@ -536,6 +555,7 @@ export function DashboardCenter({
           canAccessShinigami={canAccessShinigami}
           canAccessGestione={canAccessGestione}
           char={char}
+          compact={compact}
         />
         </div>
       )}
@@ -544,7 +564,13 @@ export function DashboardCenter({
 }
 
 // ─── Root map (map.png + pins) ───
-function MapViewRoot({ onSelectGameMap }: { onSelectGameMap: (id: GameMapId) => void }) {
+function MapViewRoot({
+  onSelectGameMap,
+  alwaysShowLabels = false,
+}: {
+  onSelectGameMap: (id: GameMapId) => void;
+  alwaysShowLabels?: boolean;
+}) {
   return (
     <div className="absolute inset-0 bg-black/40">
       <Image
@@ -559,23 +585,32 @@ function MapViewRoot({ onSelectGameMap }: { onSelectGameMap: (id: GameMapId) => 
           key={pin.gameMapId}
           type="button"
           onClick={() => onSelectGameMap(pin.gameMapId)}
-          className="group absolute hover:scale-110 transition-transform z-10"
-          style={{ left: `${pin.x}%`, top: `${pin.y}%`, transform: "translate(-50%, -100%)" }}
+          className={`group absolute z-10 flex flex-col items-center ${alwaysShowLabels ? "" : "hover:scale-110 transition-transform"}`}
+          style={{
+            left: `${pin.x}%`,
+            top: `${pin.y}%`,
+            transform: alwaysShowLabels ? "translate(-50%, -100%)" : "translate(-50%, -100%)",
+          }}
         >
-          {/* Nuvoletta con nome mappa al hover */}
-          <span
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 px-2.5 py-1.5 rounded-lg bg-gray-900/95 text-gray-100 text-sm font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg border border-gray-700/80 z-20"
-            style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }}
-          >
-            {pin.label}
-            {/* Codino della nuvoletta verso il pin */}
-            <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-gray-900/95" />
-          </span>
+          {!alwaysShowLabels && (
+            <span
+              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 px-2.5 py-1.5 rounded-lg bg-gray-900/95 text-gray-100 text-sm font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg border border-gray-700/80 z-20"
+              style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }}
+            >
+              {pin.label}
+              <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-gray-900/95" />
+            </span>
+          )}
           <img
             src="/icone/map-pin.png"
             alt={pin.label}
-            className="w-10 h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] pointer-events-none"
+            className={`${alwaysShowLabels ? "w-8" : "w-10"} h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] pointer-events-none`}
           />
+          {alwaysShowLabels && (
+            <span className="mt-0.5 max-w-[4.5rem] truncate text-[9px] font-display uppercase tracking-wide text-[var(--accent-gold)] text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+              {pin.label}
+            </span>
+          )}
         </button>
       ))}
     </div>
@@ -589,6 +624,7 @@ function MapViewGameMap({
   bannerPosition,
   onSelectZone,
   onBack,
+  compact = false,
 }: {
   gameMap: { id: GameMapId; label: string; image?: string; zones: ZoneConfig[] };
   /** URL banner nell'header (da Gestione → Modifica mappa). */
@@ -597,34 +633,36 @@ function MapViewGameMap({
   bannerPosition?: string;
   onSelectZone: (z: ZoneConfig) => void;
   onBack: () => void;
+  compact?: boolean;
 }) {
   const hasZones = gameMap.zones.length > 0;
   const objectPosition = bannerPosition && bannerPosition.trim() ? bannerPosition.trim() : "center";
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
-      {/* Header: indietro + nome + banner */}
+    <div className="flex flex-col gap-0 flex-1 min-h-0">
       <div
-        className="flex items-stretch gap-3 shrink-0 w-full min-h-0 px-3 py-3 rounded-t border border-b-0 border-[var(--border-color)]"
+        className={`flex items-stretch gap-2 shrink-0 w-full min-h-0 px-2 py-2 border border-b-0 border-[var(--border-color)] ${compact ? "" : "gap-3 px-3 py-3 rounded-t"}`}
         style={{
           backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="w-1/3 min-w-0 flex items-center gap-3 shrink-0">
+        <div className={`${compact ? "flex-1" : "w-1/3"} min-w-0 flex items-center gap-2 shrink-0`}>
           <button
             type="button"
             onClick={onBack}
             className="p-2 rounded border border-[var(--border-color)] text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)] transition-colors shrink-0"
             title="Torna alla mappa root"
+            aria-label="Indietro"
           >
             <FontAwesomeIcon icon={icons.back} className="w-4 h-4" />
           </button>
-          <h2 className="font-display text-lg uppercase tracking-wider text-[var(--accent-gold)] truncate">
+          <h2 className={`font-display uppercase tracking-wider text-[var(--accent-gold)] truncate ${compact ? "text-sm" : "text-lg"}`}>
             {gameMap.label}
           </h2>
         </div>
+        {!compact && (
         <div className="flex-1 min-w-0 relative overflow-hidden rounded border border-[var(--border-color)]/50 bg-black/20 h-24 min-h-[96px]">
           {bannerUrl ? (
             <>
@@ -644,10 +682,11 @@ function MapViewGameMap({
             </span>
           )}
         </div>
+        )}
       </div>
       {hasZones ? (
         <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 flex-1 min-h-0 overflow-auto rounded-b border border-[var(--border-color)]"
+          className={`grid ${compact ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"} gap-2 ${compact ? "p-2" : "gap-3 p-4"} flex-1 min-h-0 overflow-auto rounded-b border border-[var(--border-color)]`}
           style={{
             backgroundImage: "url('/backgrounds/darkstone.png')",
             backgroundRepeat: "repeat",
@@ -680,18 +719,20 @@ function MapViewZoneList({
   gameMapLabel,
   onSelectRoom,
   onBack,
+  compact = false,
 }: {
   zone: ZoneConfig;
   gameMapLabel: string;
   onSelectRoom: (r: RoomId) => void;
   onBack: () => void;
+  compact?: boolean;
 }) {
   const chats = getChatListForZone(zone);
 
   return (
     <div className="flex flex-col gap-0 flex-1 min-h-0">
       <div
-        className="flex items-center gap-3 shrink-0 px-4 py-3 rounded-t border border-b-0 border-[var(--border-color)]"
+        className={`flex items-center gap-2 shrink-0 px-3 py-2.5 border border-b-0 border-[var(--border-color)] ${compact ? "" : "gap-3 px-4 py-3 rounded-t"}`}
         style={{
           backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
           backgroundSize: "cover",
@@ -703,12 +744,13 @@ function MapViewZoneList({
           onClick={onBack}
           className="p-2 rounded border border-[var(--border-color)] text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)] transition-colors"
           title="Torna alla mappa"
+          aria-label="Indietro"
         >
           <FontAwesomeIcon icon={icons.back} className="w-4 h-4" />
         </button>
         <div>
           <p className="text-[10px] uppercase text-gray-500">{gameMapLabel}</p>
-          <h2 className="font-display text-lg uppercase tracking-wider text-[var(--accent-gold)]">
+          <h2 className={`font-display uppercase tracking-wider text-[var(--accent-gold)] ${compact ? "text-base" : "text-lg"}`}>
             {zone.label}
           </h2>
         </div>
@@ -1887,6 +1929,7 @@ function ChatView({
   canAccessShinigami,
   canAccessGestione,
   char,
+  compact = false,
 }: {
   roomId: RoomId;
   placeLabel: string;
@@ -1903,7 +1946,9 @@ function ChatView({
   canAccessShinigami?: boolean;
   canAccessGestione?: boolean;
   char?: CharacterSummary;
+  compact?: boolean;
 }) {
+  const [showMobileTools, setShowMobileTools] = useState(false);
   const place = getChatLocationByRoomId(roomId);
   const isPartychatRoom = isPartychat(roomId);
   const isHousingRoom = roomId.startsWith("housing_");
@@ -2132,9 +2177,9 @@ function ChatView({
   };
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
+    <div className={`flex flex-col flex-1 min-h-0 ${compact ? "gap-0" : "gap-4"}`}>
       <div 
-        className="h-[50px] flex-shrink-0 px-5 flex justify-between items-center border-b border-[var(--accent-violet)]/30"
+        className={`${compact ? "h-11 px-2" : "h-[50px] px-5"} flex-shrink-0 flex justify-between items-center border-b border-[var(--accent-violet)]/30`}
         style={{
           backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')",
           backgroundSize: 'cover',
@@ -2150,14 +2195,24 @@ function ChatView({
           >
             <FontAwesomeIcon icon={icons.back} className="w-4 h-4" />
           </button>
-          <h2 className="font-display font-bold text-[#c9a84a] tracking-[2px] text-base uppercase flex items-center gap-2.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            <span className="text-[#60519b]">💬</span> {displayLabel}
+          <h2 className={`font-display font-bold text-[var(--accent-gold)] tracking-[2px] uppercase flex items-center gap-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] truncate min-w-0 ${compact ? "text-xs" : "text-base"}`}>
+            <span className="text-[var(--accent-violet)] shrink-0">💬</span>
+            <span className="truncate">{displayLabel}</span>
             {!isPartychatRoom && activeQuest && (
               <span className="text-[#ff4d4d] text-[10px] border border-[#ff4d4d] px-1.5 py-0.5 rounded">
                 QUEST
               </span>
             )}
           </h2>
+          {compact && (
+            <button
+              type="button"
+              onClick={() => setShowMobileTools((v) => !v)}
+              className="ml-1 px-2 py-1 rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-400 hover:text-[var(--accent-gold)] shrink-0"
+            >
+              {showMobileTools ? "Chat" : "Luogo"}
+            </button>
+          )}
           {(canAccessShinigami || canAccessGestione) && <PulisciChatButton roomId={roomId} />}
         </div>
         {!chatConnected && !housingAccessDenied && (
@@ -2175,9 +2230,10 @@ function ChatView({
           </p>
         </div>
       ) : (
-      <div className="flex flex-1 min-h-0 overflow-hidden gap-4">
+      <div className={`flex flex-1 min-h-0 overflow-hidden ${compact ? "flex-col gap-0" : "gap-4"}`}>
         {/* Sinistra: immagine luogo, descrizione, note Master, presenti */}
-        <aside className="w-[280px] flex-shrink-0 flex flex-col gap-3 min-h-0 overflow-y-auto pr-3 border-r border-white/5 bg-black/30 p-5">
+        {(!compact || showMobileTools) && (
+        <aside className={`${compact ? "max-h-[38vh] border-b" : "w-[280px] border-r"} flex-shrink-0 flex flex-col gap-3 min-h-0 overflow-y-auto bg-black/30 ${compact ? "p-3" : "pr-3 p-5"}`}>
           <div className="relative w-full h-[140px] rounded border border-[var(--accent-violet)]/30 overflow-hidden shrink-0">
             {displayImage ? (
               <Image 
@@ -2364,12 +2420,13 @@ function ChatView({
           />
           <MasterNotesBox roomId={roomId} canAccessShinigami={canAccessShinigami} />
         </aside>
+        )}
 
         {/* Destra: flusso messaggi + input */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className={`flex-1 flex flex-col min-h-0 overflow-hidden ${compact && showMobileTools ? "hidden" : ""}`}>
           <div
             ref={listRef}
-            className="flex-1 overflow-y-auto overflow-x-visible min-h-[120px] py-6 px-8"
+            className={`flex-1 overflow-y-auto overflow-x-visible min-h-[120px] ${compact ? "py-3 px-3" : "py-6 px-8"}`}
             style={{
               backgroundImage: "url('/backgrounds/darkstone.png')",
               backgroundRepeat: 'repeat',
@@ -2417,15 +2474,15 @@ function ChatView({
               setMessageDraft("");
               setMessageLength(0);
             }}
-            className="flex flex-col gap-2 shrink-0 border-t border-[var(--accent-violet)]/20 px-5 py-4"
+            className={`flex flex-col gap-2 shrink-0 border-t border-[var(--accent-violet)]/20 ${compact ? "px-2 py-2" : "px-5 py-4"}`}
             style={{
               backgroundImage: "url('/backgrounds/darkstone.png')",
               backgroundRepeat: "repeat",
               backgroundColor: "rgba(0,0,0,0.75)",
             }}
           >
-            <div className="flex gap-2.5 items-end">
-              <div className="flex flex-col items-start gap-1 w-[150px] shrink-0">
+            <div className={`flex gap-2 items-end ${compact ? "flex-col" : "flex-row gap-2.5"}`}>
+              <div className={`flex flex-col items-start gap-1 shrink-0 ${compact ? "w-full" : "w-[150px]"}`}>
                 <ChatInfoPanel />
                 <input
                   ref={tagLuogoRef}

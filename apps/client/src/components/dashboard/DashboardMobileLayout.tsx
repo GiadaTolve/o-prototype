@@ -77,6 +77,7 @@ export function DashboardMobileLayout({
 }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MobileTab>("mappa");
+  const [mapImmersive, setMapImmersive] = useState(false);
 
   // SMS inline nel tab: se qualcosa apre la finestra SMS, vai al tab invece del modal
   useEffect(() => {
@@ -95,6 +96,12 @@ export function DashboardMobileLayout({
       setActiveTab("sms");
     }
   }, [smsTargetCharacterId?.id]);
+
+  useEffect(() => {
+    if (activeTab !== "mappa") {
+      setMapImmersive(false);
+    }
+  }, [activeTab]);
 
   const avatarSrc = (char?.avatarUrl ?? char?.avatar ?? char?.miniAvatar) as string | undefined;
   const nome = (char?.name ?? "Nome PG") as string;
@@ -115,7 +122,7 @@ export function DashboardMobileLayout({
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden pb-16 md:pb-0">
+    <div className={`h-screen flex flex-col overflow-hidden ${mapImmersive ? "pb-0" : "pb-16"} md:pb-0`}>
       {/* Header compatto mobile */}
       <header className="shrink-0 border-b border-[var(--border-color)] bg-[var(--panel-bg)] px-3 py-2 flex items-center justify-between">
         <h1 className="font-display text-sm text-[var(--accent-gold)] truncate">Oyasumi</h1>
@@ -130,7 +137,7 @@ export function DashboardMobileLayout({
       </header>
 
       {/* Contenuto in base al tab */}
-      <main className={`flex-1 min-h-0 ${activeTab === "sms" || activeTab === "fetch" ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
+      <main className={`flex-1 min-h-0 ${activeTab === "sms" || activeTab === "fetch" || activeTab === "mappa" ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
         {activeTab === "scheda" && (
           <div className="p-4">
             <div className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
@@ -187,8 +194,10 @@ export function DashboardMobileLayout({
         )}
 
         {activeTab === "mappa" && (
-          <div className="h-full min-h-[60vh]">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <DashboardCenter
+              variant="mobile"
+              onImmersiveChange={setMapImmersive}
               mapTrigger={mapTrigger}
               shinigamiTrigger={shinigamiTrigger}
               guidaTrigger={guidaTrigger}
@@ -248,6 +257,7 @@ export function DashboardMobileLayout({
       </main>
 
       {/* Bottom navigation - solo su mobile (< 768px) */}
+      {!mapImmersive && (
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 border-t border-[var(--border-color)] bg-[var(--panel-bg)] flex items-center justify-around z-30">
         {tabButtons.map(({ id, label, icon }) => (
           <button
@@ -268,6 +278,7 @@ export function DashboardMobileLayout({
           </button>
         ))}
       </nav>
+      )}
 
       {/* Finestre modali full-screen su mobile */}
       {openWindow && openWindow !== "sms" && openWindow !== "fetch" && (
