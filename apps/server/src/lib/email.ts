@@ -1,7 +1,13 @@
 import { Resend } from 'resend'
-import { RESEND_API_KEY, APP_URL, EMAIL_FROM } from '../config'
+import { RESEND_API_KEY, APP_URL, EMAIL_FROM, REGISTRATION_NOTIFY_EMAIL } from '../config'
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
+
+const emailShell = (inner: string) => `
+  <div style="background-color:#050508;color:#bfc0d1;padding:24px;font-family:sans-serif;border:1px solid #2a2a32;max-width:520px;margin:0 auto;">
+    ${inner}
+  </div>
+`
 
 /**
  * Invia email di reset password.
@@ -32,6 +38,85 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
 
   if (error) {
     console.error('[Email] Errore invio:', error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+/** Email di benvenuto al nuovo giocatore (senza password in chiaro). */
+export async function sendWelcomeEmail(
+  to: string,
+  characterName: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('[Email] RESEND_API_KEY non configurato. Benvenuto (solo dev):', to, characterName)
+    return { ok: true }
+  }
+
+  const loginUrl = `${APP_URL}/`
+
+  const { error } = await resend.emails.send({
+    from: EMAIL_FROM,
+    to: [to],
+    subject: `Benvenuto in Oyasumi, ${characterName}`,
+    html: emailShell(`
+      <h1 style="color:#a78bfa;border-bottom:2px solid #d4af37;padding-bottom:10px;">Benvenuto, Sognatore.</h1>
+      <p>La tua registrazione su <strong style="color:#d4af37;">Oyasumi</strong> è stata completata con successo.</p>
+      <p>Il tuo personaggio, <strong>${characterName}</strong>, è pronto per esplorare la realtà che sanguina.</p>
+      <p><a href="${loginUrl}" style="color:#a78bfa;">Accedi al sistema</a> con il tuo <strong>Nome PG</strong> e la password che hai scelto.</p>
+      <p style="color:#888;font-size:12px;margin-top:24px;">A presto,<br/>Lo Staff di Oyasumi</p>
+    `),
+    text: `Benvenuto in Oyasumi, ${characterName}. Accedi su ${loginUrl} con Nome PG e password.`,
+  })
+
+  if (error) {
+    console.error('[Email] Errore benvenuto:', error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+/** Notifica staff per nuova registrazione. */
+export async function sendRegistrationNotifyEmail(params: {
+  characterName: string
+  email: string
+  userId: string
+  characterId: string
+  playerPreferences?: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const notifyTo = REGISTRATION_NOTIFY_EMAIL
+  if (!notifyTo) {
+    return { ok: true }
+  }
+
+  if (!resend) {
+    console.warn('[Email] RESEND_API_KEY non configurato. Notifica staff (solo dev):', params.characterName)
+    return { ok: true }
+  }
+
+  const prefs = params.playerPreferences?.trim() || 'Nessuna preferenza espressa.'
+
+  const { error } = await resend.emails.send({
+    from: EMAIL_FROM,
+    to: [notifyTo],
+    subject: `Nuova registrazione: ${params.characterName}`,
+    html: emailShell(`
+      <h2 style="color:#d4af37;">Un nuovo sognatore si è unito a noi</h2>
+      <ul style="line-height:1.7;">
+        <li><strong>ID utente:</strong> ${params.userId}</li>
+        <li><strong>ID personaggio:</strong> ${params.characterId}</li>
+        <li><strong>Nome PG:</strong> ${params.characterName}</li>
+        <li><strong>Email:</strong> ${params.email}</li>
+      </ul>
+      <hr style="border-color:#2a2a32;" />
+      <h3 style="color:#a78bfa;">Preferenze / note del giocatore</h3>
+      <p style="background:#141418;border-left:4px solid #7c3aed;padding:12px;font-style:italic;">${prefs}</p>
+    `),
+    text: `Nuova registrazione Oyasumi: ${params.characterName} (${params.email})`,
+  })
+
+  if (error) {
+    console.error('[Email] Errore notifica staff:', error)
     return { ok: false, error: error.message }
   }
   return { ok: true }

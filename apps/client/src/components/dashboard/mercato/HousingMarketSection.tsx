@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { icons } from '@/lib/icons'
+import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import type { CharacterSummary } from '../types'
+import { MercatoSection } from './mercato-ui'
 
 type HousingTypeRow = {
   id: string
@@ -68,9 +70,8 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
       await api.post('/housing/assign', { housingTypeId })
       await refreshHousing()
       onCharUpdate?.()
-      alert('Operazione completata!')
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Errore durante l'assegnazione/affitto")
+      toast.error(e instanceof Error ? e.message : "Errore durante l'assegnazione/affitto")
     } finally {
       setRentingId(null)
     }
@@ -88,9 +89,8 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
       await api.post('/housing/remove', {})
       setCurrentHousing(null)
       onCharUpdate?.()
-      alert('Hai lasciato l\'immobile.')
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Errore durante l'operazione")
+      toast.error(e instanceof Error ? e.message : "Errore durante l'operazione")
     } finally {
       setLeavingHousing(false)
     }
@@ -102,33 +102,35 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
 
   return (
     <div className="space-y-4">
-      <p className="text-[11px] text-[var(--accent-violet-light)]/80">
-        Affitta o assegna un&apos;abitazione per slot inventario extra e bonus PF.
-      </p>
-
       {currentHousing && !currentHousing.evicted && (
-        <div className="p-3 rounded border border-red-500/60 bg-red-500/10 flex items-center justify-between gap-3">
-          <p className="text-sm text-red-100">
-            <strong>Proprietà attiva:</strong> Risiedi in{' '}
-            <strong>{currentHousing.housingType.name}</strong>. Per cambiare abitazione, rescindi prima il contratto.
-          </p>
-          <button
-            type="button"
-            onClick={() => void handleLeaveHousing()}
-            disabled={leavingHousing}
-            className="px-3 py-2 rounded border border-red-400 text-red-200 text-xs font-display uppercase tracking-wider hover:bg-red-500/20 disabled:opacity-50 shrink-0"
-          >
-            {leavingHousing ? '…' : 'Lascia immobile'}
-          </button>
-        </div>
+        <MercatoSection title="Abitazione attuale">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-[var(--accent-violet-light)]">
+              Risiedi in <strong className="text-white">{currentHousing.housingType.name}</strong>. Per cambiare,
+              rescindi prima il contratto.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleLeaveHousing()}
+              disabled={leavingHousing}
+              className="px-3 py-2 rounded border border-red-900/50 text-red-400 text-xs font-display uppercase tracking-wider hover:bg-red-950/30 disabled:opacity-50 shrink-0"
+            >
+              {leavingHousing ? '…' : 'Lascia immobile'}
+            </button>
+          </div>
+        </MercatoSection>
       )}
 
+      <MercatoSection
+        title="Tipologie disponibili"
+        hint="Affitta o assegna un'abitazione per slot inventario extra e bonus PF."
+      >
       {housingLoading ? (
         <p className="text-sm text-gray-500">Caricamento listino…</p>
       ) : housingTypes.length === 0 ? (
         <p className="text-sm text-gray-500">Nessuna tipologia di abitazione disponibile.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {housingTypes.map((type) => {
             const isSalary = type.dailyRent != null && type.dailyRent > 0
             const costRem = type.monthlyRent ?? type.dailyRent ?? 0
@@ -157,7 +159,7 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
                 key={type.id}
                 className={`p-4 rounded border flex flex-col gap-3 ${
                   isMyHouse
-                    ? 'border-green-500/60 bg-green-500/10'
+                    ? 'border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/5'
                     : 'border-[var(--border-color)] bg-black/20'
                 }`}
               >
@@ -182,7 +184,7 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
                   <span className="text-red-400/90">+{type.hpBonus} PF</span>
                 </div>
                 {isOwned ? (
-                  <div className="py-2 px-3 rounded border border-green-500/50 text-green-400 text-xs font-display text-center flex items-center justify-center gap-2">
+                  <div className="py-2 px-3 rounded border border-[var(--accent-gold)]/40 text-[var(--accent-gold)] text-xs font-display text-center flex items-center justify-center gap-2">
                     <FontAwesomeIcon icon={icons.check} />
                     {btnLabel}
                   </div>
@@ -201,6 +203,7 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
           })}
         </div>
       )}
+      </MercatoSection>
     </div>
   )
 }

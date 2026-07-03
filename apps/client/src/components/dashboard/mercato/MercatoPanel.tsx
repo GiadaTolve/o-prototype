@@ -1,12 +1,22 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import { marketApi } from '@/lib/market-api'
 import { resolveBancoBuyPrice, PIAZZA_COMMISSION_RATE, PIAZZA_MAX_ACTIVE_LISTINGS } from '@domain/economy/market'
 import type { ItemCategory } from '@domain/economy/types'
 import type { CharacterSummary } from '../types'
 import { HousingMarketSection } from './HousingMarketSection'
+import {
+  MercatoActionButton,
+  MercatoEmpty,
+  MercatoNumInput,
+  MercatoRow,
+  MercatoSection,
+  MercatoTabBar,
+  type MercatoTabId,
+} from './mercato-ui'
 import type {
   BancoCatalogResponse,
   MarketListing,
@@ -23,8 +33,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   costrutto_materiale: 'Costrutto',
   oggetto_trama: 'Trama',
 }
-
-type MercatoTab = 'banco' | 'piazza' | 'immobiliare'
 
 type Props = {
   char?: CharacterSummary
@@ -44,13 +52,24 @@ function bancoSellPrice(row: MercatoInventoryRow): number | null {
   })
 }
 
+function itemSubtitle(row: MercatoInventoryRow): string {
+  const parts = [formatCategory(row.economy.category)]
+  if (row.economy.craftedByName) parts.push(`firma ${row.economy.craftedByName}`)
+  return parts.join(' · ')
+}
+
+function listingSubtitle(listing: MarketListing): string {
+  const parts = [formatCategory(listing.itemCategory)]
+  if (listing.craftedByName) parts.push(listing.craftedByName)
+  return parts.join(' · ')
+}
+
 export function MercatoPanel({ char, onCharUpdate }: Props) {
-  const [tab, setTab] = useState<MercatoTab>('banco')
+  const [tab, setTab] = useState<MercatoTabId>('banco')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [catalog, setCatalog] = useState<BancoCatalogResponse | null>(null)
   const [inventory, setInventory] = useState<MercatoInventoryRow[]>([])
-  const [marketListed, setMarketListed] = useState(0)
   const [listings, setListings] = useState<MarketListing[]>([])
   const [myListings, setMyListings] = useState<MarketListing[]>([])
   const [feed, setFeed] = useState<TradeFeedEntry[]>([])
@@ -70,7 +89,6 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
       ])
       setCatalog(cat)
       setInventory(Array.isArray(invData?.items) ? invData.items : [])
-      setMarketListed(invData?.slots?.marketListed ?? 0)
       setListings(piazzaList.listings.filter((l) => l.status === 'active'))
       setMyListings(mine.listings.filter((l) => l.status === 'active'))
       setFeed(feedData.feed)
@@ -96,6 +114,11 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
     [inventory],
   )
 
+  const myListedInventoryIds = useMemo(
+    () => new Set(myListings.map((l) => l.inventoryId)),
+    [myListings],
+  )
+
   const listableItems = useMemo(
     () =>
       inventory.filter(
@@ -103,42 +126,47 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
           row.location === 'CARRY' &&
           !row.isEquipped &&
           row.economy.isMarketable &&
-          !row.economy.isBroken,
+          !row.economy.isBroken &&
+          !myListedInventoryIds.has(row.id),
       ),
-    [inventory],
+    [inventory, myListedInventoryIds],
+  )
+
+  const othersListings = useMemo(
+    () => listings.filter((l) => l.sellerCharacterId !== char?.id),
+    [listings, char?.id],
   )
 
   const activeMyCount = myListings.length
   const canCreateListing = activeMyCount < PIAZZA_MAX_ACTIVE_LISTINGS
+  const commissionPct = Math.round(PIAZZA_COMMISSION_RATE * 100)
 
   const handleBancoSell = async (inventoryId: string) => {
     setBusyId(inventoryId)
     try {
-      const result = await marketApi.sellToBanco(inventoryId)
+      await marketApi.sellToBanco(inventoryId)
       onCharUpdate?.()
       await loadAll()
-      alert(`Venduto: ${result.itemName} ×${result.quantity} per ${result.totalRem} Rem`)
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Vendita fallita')
+      toast.error(e instanceof Error ? e.message : 'Vendita fallita')
     } finally {
       setBusyId(null)
     }
   }
 
-  const handleBancoBuy = async (catalogKey: string, name: string) => {
+  const handleBancoBuy = async (catalogKey: string) => {
     const qty = buyQty[catalogKey] ?? 1
     if (!Number.isFinite(qty) || qty < 1) {
-      alert('Quantità non valida')
+      toast.error('Quantità non valida')
       return
     }
     setBusyId(catalogKey)
     try {
-      const result = await marketApi.buyFromBanco(catalogKey, qty)
+      await marketApi.buyFromBanco(catalogKey, qty)
       onCharUpdate?.()
       await loadAll()
-      alert(`Acquistato: ${result.itemName} ×${result.quantity} (−${result.totalRem} Rem)`)
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Acquisto fallito')
+      toast.error(e instanceof Error ? e.message : 'Acquisto fallito')
     } finally {
       setBusyId(null)
     }
@@ -147,11 +175,11 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
   const handleCreateListing = async (inventoryId: string) => {
     const price = listingPrice[inventoryId]
     if (!price || price < 1) {
-      alert('Inserisci un prezzo valido (min 1 Rem)')
+      toast.error('Inserisci un prezzo valido (min 1 Rem)')
       return
     }
     if (!canCreateListing) {
-      alert(`Massimo ${PIAZZA_MAX_ACTIVE_LISTINGS} inserzioni attive`)
+      toast.error(`Massimo ${PIAZZA_MAX_ACTIVE_LISTINGS} inserzioni attive`)
       return
     }
     setBusyId(inventoryId)
@@ -164,9 +192,8 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
         delete next[inventoryId]
         return next
       })
-      alert('Inserzione pubblicata sulla Piazza')
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Inserzione fallita')
+      toast.error(e instanceof Error ? e.message : 'Inserzione fallita')
     } finally {
       setBusyId(null)
     }
@@ -179,7 +206,7 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
       await marketApi.cancelListing(listingId)
       await loadAll()
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Annullamento fallito')
+      toast.error(e instanceof Error ? e.message : 'Annullamento fallito')
     } finally {
       setBusyId(null)
     }
@@ -189,301 +216,219 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
     if (!confirm(`Acquistare ${itemName} per ${priceRem} Rem?`)) return
     setBusyId(listingId)
     try {
-      const result = await marketApi.buyListing(listingId)
+      await marketApi.buyListing(listingId)
       onCharUpdate?.()
       await loadAll()
-      alert(result.message)
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Acquisto fallito')
+      toast.error(e instanceof Error ? e.message : 'Acquisto fallito')
     } finally {
       setBusyId(null)
     }
   }
 
   if (loading) {
-    return <p className="text-sm text-gray-500 animate__animated animate__fadeIn motion-reduce:animate-none">Caricamento…</p>
+    return (
+      <p className="text-sm text-gray-500 animate__animated animate__fadeIn motion-reduce:animate-none">
+        Caricamento…
+      </p>
+    )
   }
 
-  const tabs: { id: MercatoTab; label: string }[] = [
-    { id: 'banco', label: 'Il Banco' },
-    { id: 'piazza', label: 'La Piazza' },
-    { id: 'immobiliare', label: 'Immobiliare' },
-  ]
-
   return (
-    <div className="space-y-4 animate__animated animate__fadeIn motion-reduce:animate-none">
+    <div className="mercato-panel flex flex-col gap-4 animate__animated animate__fadeIn motion-reduce:animate-none">
       {error && (
         <p className="text-sm text-red-400 border border-red-900/50 bg-red-950/30 rounded px-3 py-2">{error}</p>
       )}
 
-      <div className="flex gap-1 border-b border-[var(--border-color)]">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`px-3 py-2 text-[10px] uppercase tracking-wider font-display border-b-2 transition-colors ${
-              tab === t.id
-                ? 'text-[var(--accent-gold)] border-[var(--accent-gold)]'
-                : 'text-gray-500 border-transparent hover:text-gray-400'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <MercatoTabBar tab={tab} onTab={setTab} rem={char?.rem} />
 
       {tab === 'banco' && catalog && (
-        <div className="space-y-5">
-          <section>
-            <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-              Vendi al Banco
-            </h4>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <MercatoSection title="Vendi al Banco" hint="Riscatta oggetti dallo zaino a prezzo fisso.">
             {sellableToBanco.length === 0 ? (
-              <p className="text-sm text-gray-500">Nessun oggetto vendibile nello zaino.</p>
+              <MercatoEmpty>Nessun oggetto vendibile nello zaino.</MercatoEmpty>
             ) : (
               <div className="space-y-2">
                 {sellableToBanco.map((row) => {
                   const unit = bancoSellPrice(row)!
                   const total = unit * row.quantity
                   return (
-                    <div
+                    <MercatoRow
                       key={row.id}
-                      className="flex flex-wrap items-center gap-2 justify-between py-2 px-3 rounded border border-[var(--border-color)] bg-black/20"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-white truncate">
-                          {row.item.name}
-                          {row.quantity > 1 ? ` ×${row.quantity}` : ''}
-                        </p>
-                        <p className="text-[10px] text-[var(--accent-violet-light)]">
-                          {formatCategory(row.economy.category)}
-                          {row.economy.craftedByName ? ` · firma ${row.economy.craftedByName}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      title={`${row.item.name}${row.quantity > 1 ? ` ×${row.quantity}` : ''}`}
+                      subtitle={itemSubtitle(row)}
+                      trailing={
                         <span className="text-xs text-[var(--accent-gold)] font-display tabular-nums">
                           +{total} Rem
                         </span>
-                        <button
-                          type="button"
+                      }
+                      actions={
+                        <MercatoActionButton
+                          label="Vendi"
                           disabled={busyId === row.id}
                           onClick={() => handleBancoSell(row.id)}
-                          className="px-2 py-1 text-[10px] uppercase tracking-wider rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
-                        >
-                          Vendi
-                        </button>
-                      </div>
-                    </div>
+                        />
+                      }
+                    />
                   )
                 })}
               </div>
             )}
-          </section>
+          </MercatoSection>
 
-          <section>
-            <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-              Compra materiali comuni
-            </h4>
-            <div className="grid gap-2 sm:grid-cols-2">
+          <MercatoSection title="Compra materiali" hint="Materiali comuni disponibili al Banco.">
+            <div className="space-y-2">
               {catalog.buyPrices.map((mat) => (
-                <div
+                <MercatoRow
                   key={mat.catalogKey}
-                  className="flex flex-wrap items-center gap-2 justify-between p-3 rounded border border-[var(--border-color)] bg-black/20"
-                >
-                  <div>
-                    <p className="text-sm text-white">{mat.name}</p>
-                    <p className="text-[10px] text-gray-500">{mat.priceRem} Rem / unità</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={buyQty[mat.catalogKey] ?? 1}
-                      onChange={(e) =>
-                        setBuyQty((p) => ({ ...p, [mat.catalogKey]: parseInt(e.target.value, 10) || 1 }))
-                      }
-                      className="w-12 px-1 py-1 text-center text-xs rounded border border-[var(--border-color)] bg-black/50 text-white"
-                    />
-                    <button
-                      type="button"
-                      disabled={busyId === mat.catalogKey}
-                      onClick={() => handleBancoBuy(mat.catalogKey, mat.name)}
-                      className="px-2 py-1 text-[10px] uppercase tracking-wider rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 disabled:opacity-50"
-                    >
-                      Compra
-                    </button>
-                  </div>
-                </div>
+                  title={mat.name}
+                  subtitle={`${mat.priceRem} Rem / unità`}
+                  actions={
+                    <>
+                      <MercatoNumInput
+                        value={buyQty[mat.catalogKey] ?? 1}
+                        onChange={(n) => setBuyQty((p) => ({ ...p, [mat.catalogKey]: n || 1 }))}
+                      />
+                      <MercatoActionButton
+                        label="Compra"
+                        variant="violet"
+                        disabled={busyId === mat.catalogKey}
+                        onClick={() => handleBancoBuy(mat.catalogKey)}
+                      />
+                    </>
+                  }
+                />
               ))}
             </div>
-          </section>
+          </MercatoSection>
         </div>
       )}
 
       {tab === 'piazza' && (
-        <div className="space-y-5">
-          <section className="rounded border border-[var(--border-color)] bg-black/20 p-3">
-            <p className="text-[11px] text-[var(--accent-violet-light)]">
-              Commissione Piazza: {Math.round(PIAZZA_COMMISSION_RATE * 100)}% · Max {PIAZZA_MAX_ACTIVE_LISTINGS} inserzioni
-              {marketListed > 0 ? ` · ${marketListed} oggetto/i in vendita` : ''}
-            </p>
-          </section>
-
-          <section>
-            <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-              Feed scambi
-            </h4>
-            {feed.length === 0 ? (
-              <p className="text-sm text-gray-500">Nessuno scambio recente.</p>
-            ) : (
-              <div className="space-y-1 max-h-32 overflow-y-auto">
+        <div className="space-y-4">
+          {feed.length > 0 && (
+            <details className="rounded-lg border border-[var(--border-color)]/60 bg-black/20 group">
+              <summary className="cursor-pointer list-none px-3 py-2 text-[10px] uppercase tracking-widest text-[var(--accent-violet-light)] font-display flex items-center justify-between">
+                <span>Scambi recenti ({feed.length})</span>
+                <span className="text-gray-600 group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <div className="px-3 pb-3 space-y-1 max-h-28 overflow-y-auto border-t border-[var(--border-color)]/50">
                 {feed.map((entry) => (
-                  <p key={entry.id} className="text-[11px] text-gray-300 border-l-2 border-[var(--accent-violet)]/40 pl-2 py-0.5">
+                  <p
+                    key={entry.id}
+                    className="text-[11px] text-gray-300 border-l-2 border-[var(--accent-violet)]/40 pl-2 py-0.5"
+                  >
                     {entry.message}
                   </p>
                 ))}
               </div>
-            )}
-          </section>
+            </details>
+          )}
 
-          <section>
-            <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-              Inserzioni ({listings.length})
-            </h4>
-            {listings.length === 0 ? (
-              <p className="text-sm text-gray-500">Nessuna inserzione attiva.</p>
+          <MercatoSection
+            title={`Acquista (${othersListings.length})`}
+            hint="Inserzioni di altri giocatori sulla Piazza."
+          >
+            {othersListings.length === 0 ? (
+              <MercatoEmpty>Nessuna inserzione al momento.</MercatoEmpty>
             ) : (
               <div className="space-y-2">
-                {listings.map((listing) => {
-                  const isMine = listing.sellerCharacterId === char?.id
-                  return (
-                    <div
-                      key={listing.id}
-                      className="flex flex-wrap items-center gap-2 justify-between py-2 px-3 rounded border border-[var(--border-color)] bg-black/20"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-white truncate">
-                          {listing.itemName}
-                          {listing.quantity > 1 ? ` ×${listing.quantity}` : ''}
-                        </p>
-                        <p className="text-[10px] text-[var(--accent-violet-light)]">
-                          {formatCategory(listing.itemCategory)}
-                          {listing.craftedByName ? ` · ${listing.craftedByName}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm text-[var(--accent-gold)] font-display tabular-nums">
-                          {listing.priceRem} Rem
-                        </span>
-                        {!isMine && (
-                          <button
-                            type="button"
-                            disabled={busyId === listing.id}
-                            onClick={() => handleBuyListing(listing.id, listing.itemName, listing.priceRem)}
-                            className="px-2 py-1 text-[10px] uppercase tracking-wider rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
-                          >
-                            Compra
-                          </button>
-                        )}
-                        {isMine && (
-                          <button
-                            type="button"
-                            disabled={busyId === listing.id}
-                            onClick={() => handleCancelListing(listing.id)}
-                            className="px-2 py-1 text-[10px] uppercase tracking-wider rounded border border-red-900/50 text-red-400 hover:bg-red-950/30 disabled:opacity-50"
-                          >
-                            Rimuovi
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                {othersListings.map((listing) => (
+                  <MercatoRow
+                    key={listing.id}
+                    title={`${listing.itemName}${listing.quantity > 1 ? ` ×${listing.quantity}` : ''}`}
+                    subtitle={listingSubtitle(listing)}
+                    trailing={
+                      <span className="text-sm text-[var(--accent-gold)] font-display tabular-nums">
+                        {listing.priceRem} Rem
+                      </span>
+                    }
+                    actions={
+                      <MercatoActionButton
+                        label="Compra"
+                        disabled={busyId === listing.id}
+                        onClick={() => handleBuyListing(listing.id, listing.itemName, listing.priceRem)}
+                      />
+                    }
+                  />
+                ))}
               </div>
             )}
-          </section>
+          </MercatoSection>
 
-          <section>
-            <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-2 font-display">
-              Le tue inserzioni ({activeMyCount}/{PIAZZA_MAX_ACTIVE_LISTINGS})
-            </h4>
-            {myListings.length === 0 ? (
-              <p className="text-sm text-gray-500 mb-3">Nessuna inserzione attiva.</p>
-            ) : (
+          <MercatoSection
+            title={`Vendi (${activeMyCount}/${PIAZZA_MAX_ACTIVE_LISTINGS})`}
+            hint={`Commissione ${commissionPct}% sul prezzo di vendita.`}
+          >
+            {myListings.length > 0 && (
               <div className="space-y-2 mb-4">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-display">Le tue inserzioni</p>
                 {myListings.map((listing) => (
-                  <div
+                  <MercatoRow
                     key={listing.id}
-                    className="flex items-center justify-between py-2 px-3 rounded border border-[var(--accent-gold)]/30 bg-[var(--accent-gold)]/5"
-                  >
-                    <span className="text-sm text-white truncate">{listing.itemName}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[var(--accent-gold)] font-display">{listing.priceRem} Rem</span>
-                      <button
-                        type="button"
+                    title={`${listing.itemName}${listing.quantity > 1 ? ` ×${listing.quantity}` : ''}`}
+                    subtitle={listingSubtitle(listing)}
+                    trailing={
+                      <span className="text-xs text-[var(--accent-gold)] font-display tabular-nums">
+                        {listing.priceRem} Rem
+                      </span>
+                    }
+                    actions={
+                      <MercatoActionButton
+                        label="Annulla"
+                        variant="danger"
                         disabled={busyId === listing.id}
                         onClick={() => handleCancelListing(listing.id)}
-                        className="text-[10px] uppercase text-red-400 hover:text-red-300"
-                      >
-                        Annulla
-                      </button>
-                    </div>
-                  </div>
+                      />
+                    }
+                  />
                 ))}
               </div>
             )}
 
-            <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-violet-light)] mb-2 font-display">
-              Pubblica inserzione
-            </h4>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-display mb-2">
+              Pubblica dal tuo zaino
+            </p>
             {!canCreateListing ? (
-              <p className="text-sm text-gray-500">Hai raggiunto il limite di inserzioni attive.</p>
+              <MercatoEmpty>Hai raggiunto il limite di inserzioni attive.</MercatoEmpty>
             ) : listableItems.length === 0 ? (
-              <p className="text-sm text-gray-500">Nessun oggetto disponibile nello zaino.</p>
+              <MercatoEmpty>
+                {myListings.length > 0
+                  ? 'Tutti gli oggetti vendibili sono già in vendita.'
+                  : 'Nessun oggetto disponibile nello zaino.'}
+              </MercatoEmpty>
             ) : (
               <div className="space-y-2">
                 {listableItems.map((row) => (
-                  <div
+                  <MercatoRow
                     key={row.id}
-                    className="flex flex-wrap items-center gap-2 justify-between py-2 px-3 rounded border border-[var(--border-color)]/60 bg-black/15"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-white truncate">{row.item.name}</p>
-                      <p className="text-[10px] text-gray-500">{formatCategory(row.economy.category)}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min={1}
-                        placeholder="Rem"
-                        value={listingPrice[row.id] ?? ''}
-                        onChange={(e) =>
-                          setListingPrice((p) => ({ ...p, [row.id]: parseInt(e.target.value, 10) || 0 }))
-                        }
-                        className="w-16 px-1 py-1 text-center text-xs rounded border border-[var(--border-color)] bg-black/50 text-white"
-                      />
-                      <button
-                        type="button"
-                        disabled={busyId === row.id}
-                        onClick={() => handleCreateListing(row.id)}
-                        className="px-2 py-1 text-[10px] uppercase tracking-wider rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 disabled:opacity-50"
-                      >
-                        Pubblica
-                      </button>
-                    </div>
-                  </div>
+                    title={row.item.name}
+                    subtitle={itemSubtitle(row)}
+                    actions={
+                      <>
+                        <MercatoNumInput
+                          value={listingPrice[row.id] ?? ''}
+                          placeholder="Rem"
+                          className="w-16"
+                          onChange={(n) => setListingPrice((p) => ({ ...p, [row.id]: n }))}
+                        />
+                        <MercatoActionButton
+                          label="Pubblica"
+                          variant="violet"
+                          disabled={busyId === row.id}
+                          onClick={() => handleCreateListing(row.id)}
+                        />
+                      </>
+                    }
+                  />
                 ))}
               </div>
             )}
-          </section>
+          </MercatoSection>
         </div>
       )}
 
-      {tab === 'immobiliare' && (
-        <HousingMarketSection char={char} onCharUpdate={onCharUpdate} />
-      )}
+      {tab === 'immobiliare' && <HousingMarketSection char={char} onCharUpdate={onCharUpdate} />}
     </div>
   )
 }

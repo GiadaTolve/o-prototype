@@ -1141,3 +1141,35 @@ export const sanctionsRelations = relations(sanctions, ({ one }) => ({
   user: one(users, { fields: [sanctions.userId], references: [users.id] }),
   admin: one(users, { fields: [sanctions.adminId], references: [users.id], relationName: 'adminUser' }),
 }))
+
+// ==========================================
+// 21. WIKI (Guida & Ambientazione)
+// ==========================================
+
+export const wikiSections = pgTable('wiki_sections', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  kind: text('kind').$type<'guida' | 'ambientazione'>().notNull(),
+  parentId: uuid('parent_id'),
+  level: integer('level').$type<1 | 2>().notNull(),
+  title: text('title').notNull(),
+  content: text('content').default('').notNull(),
+  imageUrl: text('image_url'),
+  order: integer('order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  foreignKey({
+    columns: [table.parentId],
+    foreignColumns: [table.id],
+    name: 'wiki_sections_parent_id_fkey',
+  }).onDelete('cascade'),
+])
+
+export const wikiSectionsRelations = relations(wikiSections, ({ one, many }) => ({
+  parent: one(wikiSections, {
+    fields: [wikiSections.parentId],
+    references: [wikiSections.id],
+    relationName: 'wikiHierarchy',
+  }),
+  children: many(wikiSections, { relationName: 'wikiHierarchy' }),
+}))

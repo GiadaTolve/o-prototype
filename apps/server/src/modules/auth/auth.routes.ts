@@ -7,7 +7,7 @@ import { db } from '../../plugins/db'
 import { users, characters, passwordResetTokens } from '../../db/schema'
 import { JWT_SECRET } from '../../config'
 import { registerUser } from './auth.service'
-import { sendPasswordResetEmail } from '../../lib/email'
+import { sendPasswordResetEmail, sendWelcomeEmail, sendRegistrationNotifyEmail } from '../../lib/email'
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
   .use(jwt({ name: 'jwt', secret: JWT_SECRET }))
@@ -16,6 +16,19 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   .post('/register', async ({ body, set }) => {
     try {
       const result = await registerUser(body.email, body.password, body.characterName)
+      const prefs = body.playerPreferences?.trim()
+
+      void sendWelcomeEmail(body.email, body.characterName).catch((e) =>
+        console.error('[auth] welcome email:', e),
+      )
+      void sendRegistrationNotifyEmail({
+        characterName: body.characterName,
+        email: body.email,
+        userId: result.user.id,
+        characterId: result.character.id,
+        playerPreferences: prefs,
+      }).catch((e) => console.error('[auth] staff notify email:', e))
+
       set.status = 201
       return {
         success: true,
@@ -32,6 +45,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       email: t.String({ format: 'email' }),
       password: t.String({ minLength: 8 }),
       characterName: t.String({ minLength: 2, maxLength: 30 }),
+      playerPreferences: t.Optional(t.String({ maxLength: 4000 })),
     }),
   })
 
