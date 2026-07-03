@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import { characters } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth.plugin'
+import { userHasGestioneAccess } from '../../lib/gestione-access'
+import { broadcastInventoryUpdated } from '../realtime/ws.routes'
 import {
   getCharacterInventory,
   addItemToInventory,
@@ -93,6 +95,7 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
             }
 
             const inv = await addItemToInventory(char.id, body.itemId, body.quantity || 1)
+            broadcastInventoryUpdated(char.id)
             return inv
           } catch (e: unknown) {
             set.status = 400
@@ -113,6 +116,12 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
         async ({ params, user, set }) => {
           if (!user) { set.status = 401; return { error: 'Unauthorized' } }
           try {
+            const canStaff = await userHasGestioneAccess(user.id, user.role)
+            if (!canStaff) {
+              set.status = 403
+              return { error: 'Solo staff può rimuovere oggetti dall\'inventario.' }
+            }
+
             const char = await db.query.characters.findFirst({
               where: eq(characters.userId, user.id),
             })
@@ -122,6 +131,7 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
             }
 
             const result = await removeItemFromInventory(params.inventoryId, char.id)
+            broadcastInventoryUpdated(char.id)
             return result
           } catch (e: unknown) {
             set.status = 400
@@ -148,6 +158,7 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
             }
 
             const updated = await toggleEquipItem(params.inventoryId, char.id)
+            broadcastInventoryUpdated(char.id)
             return updated
           } catch (e: unknown) {
             set.status = 400
@@ -174,6 +185,7 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
             }
 
             const updated = await updateItemQuantity(params.inventoryId, char.id, body.quantity)
+            broadcastInventoryUpdated(char.id)
             return updated
           } catch (e: unknown) {
             set.status = 400
@@ -203,6 +215,7 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
             }
 
             const updated = await moveItemLocation(params.inventoryId, char.id, 'HOUSING')
+            broadcastInventoryUpdated(char.id)
             return updated
           } catch (e: unknown) {
             set.status = 400
@@ -229,6 +242,7 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
             }
 
             const updated = await moveItemLocation(params.inventoryId, char.id, 'CARRY')
+            broadcastInventoryUpdated(char.id)
             return updated
           } catch (e: unknown) {
             set.status = 400

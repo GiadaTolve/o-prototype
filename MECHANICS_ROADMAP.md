@@ -317,7 +317,7 @@ Dettaglio per status (Incendiato, Sovraccarico, Torpore, Appesantimento, Vertigi
 | `#Politico` | Seijika | Patti + richiamo favori (leve) |
 | `#Sacerdote` | Shisai | Ofuda + interpretazione (riti) |
 
-**Domande aperte:** Q5–Q11 in `SHAKAI_KAIKYU_SPEC.md` (Q1–Q4, Q10, Q12 risolte).
+**Domande aperte:** nessuna bloccante — design lock completo (Luglio 2026). Prossimo: Step 5 DB `social_class`.
 
 #### Economia oggetti (drop · inventario · smantellamento · mercato)
 

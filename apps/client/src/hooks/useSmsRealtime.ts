@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { dispatchInventoryUpdated } from "@/lib/inventory-events";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
@@ -92,7 +93,12 @@ export function useSmsRealtime(options: {
           fetchId?: string;
           fetchTitle?: string;
           comment?: string;
+          characterId?: string;
         };
+        if (data.type === "inventory_updated" && typeof data.characterId === "string") {
+          dispatchInventoryUpdated(data.characterId);
+          return;
+        }
         if (data.type === "welcome" && data.me?.id) {
           myCharacterIdRef.current = data.me.id;
         }

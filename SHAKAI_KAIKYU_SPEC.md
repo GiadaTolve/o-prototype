@@ -173,7 +173,7 @@ socialDailyBudget: { ... }        // HP curati, integrità, raccolta, ecc. — r
 - [x] **D0.2** — XP sottoclassi = **`experienceSpendable`** condiviso (opzione A)
 - [x] **D0.3** — Reset budget giornaliero: **00:00 UTC** con tick REM (opzione A)
 - [x] **D0.4** — Capstone: **un solo sentiero** (10 XP) prima del 20 XP
-- [ ] **D0.5** — Artigiano: Costrutti materiali condividono tabella `field_constructs` o entità separate da Genkai?
+- [x] **D0.5** — Artigiano costrutti: **ibrido (D)** — trappole/piccoli = item inventario; strutture grandi = entità campo **separate** da Genkai (`field_constructs`)
 - [x] **D0.6** — Politico: **nessun materiale** (Patti in gioco); junklist opzionale «Oggetto di valore» rimandata
 
 ### Fase 1 — Modello dati (DB)
@@ -201,7 +201,7 @@ socialDailyBudget: { ... }        // HP curati, integrità, raccolta, ecc. — r
 - [ ] **3.3** — `PATCH /characters/me/social-subclass` — sblocco sottoclasse (spesa XP)
 - [ ] **3.4** — Endpoint moderazione — cambio classe / reset sottoclassi (staff only)
 - [ ] **3.5** — Validazione anti-cheat allineata a `validateSkiruSheet`
-- [ ] **3.6** — `GET /characters/:id/public` — classe visibile? (solo nome classe o nascosta)
+- [ ] **3.6** — `GET /characters/:id/public` — **non** espone `socialClass` (decisione: No)
 
 ### Fase 4 — UI scelta classe
 
@@ -270,19 +270,25 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 | **Q2** | **Valuta** sottoclassi (5 / 10 / 20 XP) | **A)** `experienceSpendable` condiviso |
 | **Q3** | **Più sentieri** (10 XP) sulla stessa classe | **Un solo sentiero** sbloccabile |
 | **Q4** | **Reset giornaliero** limiti | **A)** 00:00 UTC con stipendio REM |
+| **Q5** | **Visibilità** classe agli altri PG | **D→3.6:** macro-classe visibile **solo al proprio PG** in scheda; **non** in profilo pubblico; sottoclassi sempre nascoste agli altri |
+| **Q6** | **Costrutti materiali** (Artigiano) | **D)** ibrido: piccoli = item; grandi = entità campo separate da Genkai |
+| **Q7** | **Patti** (Politico) | **C)** solo narrativa — log chat + note Master; **zero automazione** DB |
+| **Q8** | **Ofuda** (Sacerdote) | **D)** item in inventario → attivazione crea **buff temporaneo** |
+| **Q9** | **Trade-off** sentieri | **C)** limiti numerici hard; penalità narrative = suggerimento tool, **Master conferma** |
+| **Q10** | **Capstone** «tutti i metodi» | Capstone sblocca tutti i blueprint craft/gather della classe + limiti al massimo |
+| **Q11** | **Prima classe** | **C)** gate Skiru 1 pt; feature **opzionale** — PG può ignorare classe sociale (`social_class` null, niente tool) |
+| **Q12** | **Blueprint** contenuto | Seed da `SHAKAI_KAIKYU_TOOLS_BLUEPRINTS.md` + `blueprint-catalog.ts` |
+| **1.4** | Migrazione PG esistenti | **B)** solo nuovi PG / scelta esplicita UI; nessun auto-promote |
+| **1.5** | Tag `#Medico` in DB | **A)** derivato da `social_class`, mai salvato |
+| **3.6** | Classe in profilo pubblico | **No** — `GET /characters/:id/public` **non** espone `socialClass` |
+| **I1** | Cura Medico | **A)** applicazione HP **automatica** dal tool (entro budget) |
+| **I2** | Log azioni tool in chat | **B)** **nessun** messaggio automatico; solo narrativa PG/Master; la tool aggiorna solo dati |
+| **I3** | Scadenza Patti | **A)** solo narrativa; nessuna scadenza automatica |
+| **I4** | Gate smantellamento | **A)** Skiru `shokunin ≥ 1` (fino a `social_class` DB) |
 
-## Domande aperte (prima di Fase 1–3)
+## Domande aperte
 
-| # | Domanda | Opzioni / note |
-|---|---------|----------------|
-| **Q5** | **Visibilità** classe agli altri PG | Pubblica in scheda / nascosta / solo Shinigami? |
-| **Q6** | **Costrutti materiali** (Artigiano) | Stessa meccanica resistenza di Genkai senza Jigo-Ka? Tabella separata? |
-| **Q7** | **Patti** (Politico) | Entità DB dedicate (`pacts`)? Solo jsonb su PG? Interazione con Ordini? |
-| **Q8** | **Ofuda** (Sacerdote) | Item inventario, buff attivo, o entità campo come costrutti? |
-| **Q9** | **Trade-off** sentieri (Meishi informale 0, Senseki ritardo, …) | Automatizzati nel motore o arbitraggio Master con tool che mostra solo i limiti? |
-| **Q10** | **Capstone** «tutti i metodi» | **Risolto:** capstone sblocca tutti i blueprint craft/gather della classe + voci capstone; limiti numerici al massimo |
-| **Q11** | **Prima classe** | Obbligatoria in creazione PG o scelta successiva con blocco tool fino alla scelta? |
-| **Q12** | **Blueprint** contenuto | **Risolto:** seed da `SHAKAI_KAIKYU_TOOLS_BLUEPRINTS.md` + `blueprint-catalog.ts` |
+*Tutte le decisioni Fase 0 / economia E1–E8 sono chiuse (Luglio 2026).*
 
 ---
 

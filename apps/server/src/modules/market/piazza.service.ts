@@ -10,6 +10,7 @@ import type { ItemCategory } from '@domain/economy/types'
 import { db } from '../../plugins/db'
 import { characters, inventory, marketListings, marketTradeFeed } from '../../db/schema'
 import { applyRemDelta, getCharacterLabel } from './rem-ledger'
+import { broadcastInventoryUpdated } from '../realtime/ws.routes'
 
 export async function listPiazzaListings(limit = 50) {
   const rows = await db.query.marketListings.findMany({
@@ -91,6 +92,8 @@ export async function createPiazzaListing(
     })
     .returning()
 
+  broadcastInventoryUpdated(sellerCharacterId)
+
   return listing
 }
 
@@ -114,6 +117,8 @@ export async function cancelPiazzaListing(sellerCharacterId: string, listingId: 
       .set({ location: 'CARRY' })
       .where(eq(inventory.id, listing.inventoryId))
   })
+
+  broadcastInventoryUpdated(sellerCharacterId)
 
   return { success: true }
 }
@@ -186,6 +191,9 @@ export async function buyPiazzaListing(buyerCharacterId: string, listingId: stri
     buyerCharacterId,
     grossRem: listing.priceRem,
   })
+
+  broadcastInventoryUpdated(buyerCharacterId)
+  broadcastInventoryUpdated(listing.sellerCharacterId)
 
   return {
     listingId,

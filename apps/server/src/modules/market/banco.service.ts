@@ -12,6 +12,7 @@ import { db } from '../../plugins/db'
 import { characters, inventory, items } from '../../db/schema'
 import { addItemByCatalogKey } from '../inventory/inventory.service'
 import { applyRemDelta } from './rem-ledger'
+import { broadcastInventoryUpdated } from '../realtime/ws.routes'
 
 export function getBancoNpcCatalog() {
   return {
@@ -61,6 +62,8 @@ export async function sellInventoryToBanco(characterId: string, inventoryId: str
     { channel: 'banco', inventoryId, itemName: inv.item.name, quantity: qty },
   )
 
+  broadcastInventoryUpdated(characterId)
+
   return {
     itemName: inv.item.name,
     quantity: qty,
@@ -95,6 +98,8 @@ export async function buyMaterialFromBanco(
   )
 
   await addItemByCatalogKey(characterId, catalogKey, quantity, { origin: 'comprato' })
+
+  broadcastInventoryUpdated(characterId)
 
   const char = await db.query.characters.findFirst({
     where: eq(characters.id, characterId),

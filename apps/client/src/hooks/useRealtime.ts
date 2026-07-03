@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { Presente, ChatMessage } from "@/components/dashboard/types";
 import type { PendingLevelUpBanner } from "@domain/progression/level-up";
+import { dispatchInventoryUpdated } from "@/lib/inventory-events";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
@@ -241,6 +242,10 @@ export function useRealtime(
               },
             }),
           );
+          return;
+        }
+        if (data.type === "inventory_updated" && typeof data.characterId === "string") {
+          dispatchInventoryUpdated(data.characterId);
           return;
         }
         if (data.type === "chat_cleared" && data.zone === roomId) {

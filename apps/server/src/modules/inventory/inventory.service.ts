@@ -5,6 +5,7 @@ import {
   canFitInSlots,
   canStackCategory,
   getInventorySlotCost,
+  isEquippableItem,
   isItemBroken,
   sumInventorySlotUsage,
   usesIntegrity,
@@ -413,6 +414,18 @@ export async function toggleEquipItem(inventoryId: string, characterId: string) 
 
   if (!inv) {
     throw new Error('Oggetto non trovato nell\'inventario')
+  }
+
+  const category = (inv.item.category ?? 'junk') as ItemCategory
+  if (!isEquippableItem(inv.item.type, category)) {
+    throw new Error('Questo oggetto non può essere equipaggiato.')
+  }
+
+  if (
+    usesIntegrity(category) &&
+    isItemBroken(inv.integrityCurrent, inv.item.integrityMax)
+  ) {
+    throw new Error('Non puoi equipaggiare un oggetto rotto.')
   }
 
   // Se è uno zaino e lo stiamo equipaggiando, verifica che non ci siano altri zaini equipaggiati
