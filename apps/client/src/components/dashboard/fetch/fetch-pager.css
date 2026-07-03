@@ -388,6 +388,19 @@
   color: var(--pager-lcd-text);
 }
 
+.fetch-pager--mobile {
+  padding: 0.25rem 0.35rem 0.35rem;
+}
+
+.fetch-pager--mobile .fetch-pager__device {
+  max-width: none;
+  border-radius: 0.85rem;
+}
+
+.fetch-pager--mobile .fetch-pager__lcd {
+  min-height: 12rem;
+}
+
 .fetch-pager-loading {
   padding: 2rem;
   text-align: center;

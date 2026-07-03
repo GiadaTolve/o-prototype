@@ -105,7 +105,7 @@ export function DashboardMobileLayout({
     { id: "scheda", label: "Scheda", icon: icons.user },
     { id: "sms", label: "SMS", icon: icons.message },
     { id: "mappa", label: "Mappa", icon: icons.map },
-    { id: "fetch", label: "Assegnazioni", icon: icons.trophy },
+    { id: "fetch", label: "Cercapersone", icon: icons.cercapersone },
     { id: "altro", label: "Altro", icon: icons.news },
   ];
 
