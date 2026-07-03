@@ -36,6 +36,7 @@ export default function GestionePage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [sanctions, setSanctions] = useState<Sanction[]>([]);
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [viewerUserRole, setViewerUserRole] = useState<string | null>(null);
 
   const fetchPendingRequests = useCallback(async () => {
     try {
@@ -57,6 +58,13 @@ export default function GestionePage() {
     // Carica lista utenti
     loadUsers();
     fetchPendingRequests();
+    api
+      .get("/characters/me")
+      .then((char) => {
+        const role = (char as { userRole?: string })?.userRole ?? "";
+        setViewerUserRole(role.toUpperCase());
+      })
+      .catch(() => setViewerUserRole(null));
   }, [router, fetchPendingRequests]);
 
   const loadUsers = async () => {
@@ -231,6 +239,7 @@ export default function GestionePage() {
                 <UserManagementModal
                   user={selectedUser}
                   sanctions={sanctions}
+                  canChangeUserRole={viewerUserRole === "ADMIN"}
                   onClose={() => {
                     setSelectedUser(null);
                     setSanctions([]);
@@ -279,11 +288,13 @@ export default function GestionePage() {
 function UserManagementModal({
   user,
   sanctions,
+  canChangeUserRole = false,
   onClose,
   onUpdate,
 }: {
   user: User;
   sanctions: Sanction[];
+  canChangeUserRole?: boolean;
   onClose: () => void;
   onUpdate: () => void;
 }) {
@@ -294,6 +305,7 @@ function UserManagementModal({
   const [saving, setSaving] = useState(false);
 
   const handleUpdateRole = async () => {
+    if (!canChangeUserRole) return;
     if (newRole === user.role) return;
     setSaving(true);
     try {
@@ -401,25 +413,32 @@ function UserManagementModal({
 
           <div>
             <p className="text-sm text-gray-400 mb-1">Ruolo</p>
-            <div className="flex gap-2">
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as UserRole)}
-                className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
-              >
-                <option value="PLAYER">PLAYER</option>
-                <option value="MASTER">MASTER</option>
-                <option value="ADMIN">ADMIN</option>
-              </select>
-              <button
-                type="button"
-                onClick={handleUpdateRole}
-                disabled={saving || newRole === user.role}
-                className="px-3 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
-              >
-                Aggiorna
-              </button>
-            </div>
+            {canChangeUserRole ? (
+              <div className="flex gap-2">
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as UserRole)}
+                  className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                >
+                  <option value="PLAYER">PLAYER</option>
+                  <option value="MASTER">MASTER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={handleUpdateRole}
+                  disabled={saving || newRole === user.role}
+                  className="px-3 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+                >
+                  Aggiorna
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-sm text-white font-mono">{user.role}</p>
+                <p className="text-xs text-gray-500">Solo Admin può modificare il ruolo.</p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -2518,15 +2537,21 @@ function HousingTypesManagement() {
 function MapManagement() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchLocations = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
       const data = (await api.get("/admin/locations")) as Location[];
-      console.log("Locations ricevute dal backend:", data);
       setLocations(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Errore caricamento locations:", e);
+      setLocations([]);
+      setLoadError(e instanceof Error ? e.message : "Errore caricamento mappe");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -2628,17 +2653,28 @@ function MapManagement() {
         />
       )}
       <LocationCreator parentId={null} onCreate={handleCreate} />
-      <div className="mt-5 space-y-2">
-        {tree.map((node) => (
-          <LocationNode
-            key={node.id}
-            node={node}
-            onCreate={handleCreate}
-            onDelete={handleDelete}
-            onEdit={setEditingLocation}
-          />
-        ))}
-      </div>
+      {loadError && (
+        <p className="text-sm text-red-400 border border-red-500/40 rounded px-3 py-2">{loadError}</p>
+      )}
+      {loading ? (
+        <p className="text-sm text-gray-500">Caricamento struttura mappe…</p>
+      ) : tree.length === 0 ? (
+        <p className="text-sm text-gray-500 border border-[var(--border-color)] rounded px-4 py-6 text-center">
+          Nessuna mappa nel database. Crea una mappa sopra oppure chiedi allo staff di eseguire la migrazione da map-config.
+        </p>
+      ) : (
+        <div className="mt-5 space-y-2">
+          {tree.map((node) => (
+            <LocationNode
+              key={node.id}
+              node={node}
+              onCreate={handleCreate}
+              onDelete={handleDelete}
+              onEdit={setEditingLocation}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

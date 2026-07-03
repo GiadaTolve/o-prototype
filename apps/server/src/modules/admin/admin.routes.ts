@@ -127,7 +127,12 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
           // Aggiorna il ruolo di un utente
           .put(
             '/users/:id/role',
-            async ({ params, body, set }) => {
+            async ({ params, body, user, set }) => {
+              const actorRole = (user?.role ?? '').toUpperCase()
+              if (actorRole !== 'ADMIN') {
+                set.status = 403
+                return { error: 'Solo gli Admin possono modificare il ruolo utente' }
+              }
               try {
                 const updated = await updateUserRole(params.id, body.role)
                 return updated
