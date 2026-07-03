@@ -42,12 +42,28 @@ Richiamo per contesto — il sistema estrae con pesi fissi (nessun tiro visibile
 
 | Id tabella | Contenuto |
 |------------|-----------|
-| `rovine_urbane` | Junk metallo / stoffa / carta / chimica |
+| `rovine_urbane` | Junk metallo / stoffa / carta / chimica / **carburante** (raro) |
 | `onimori` | Junk comune + probabilità bassa Frammento onirico |
 | `creatura_kyofu` | Materiali creatura + eventuale Frammento |
 | `bottino_umano` | Oggetti finiti, junk, Rem |
 
-**Pesi esempio `rovine_urbane`:** 40% metallo, 30% stoffa, 20% carta, 10% chimica.
+**Pesi esempio `rovine_urbane`:** 38% metallo, 28% stoffa, 19% carta, 10% chimica, **5% carburante** (`junk-tanica-sigillata` → 1 Carburante).
+
+### Catalogo equipaggiamento mercato
+
+**Domain:** `packages/domain/src/economy/market-equipment-catalog.ts` · **Seed:** incluse in `seed-item-catalog.ts`
+
+| Gruppo | N | Note |
+|--------|---|------|
+| Armi bianche | 8 | Integrità, requisiti Kairiki dove indicato |
+| Armi da fuoco | 7 | Include Yumihari (balestra) |
+| Armi da lancio | 4 + Kaen-bin | Kaen-bin = consumabile craft (`artigiano-kaen-bin`) |
+| Protezioni | 10 | Scudo 4/8/12 (T1/T2/T3), regole speciali volto/dorso/freddo/Ofuda |
+| Veicoli | 5 | Movimento ×1–×4; carburante per motorizzati; Yoru no Tomo = creatura (HP 25) |
+
+**Materiale nuovo:** `carburante` — da smantellamento `junk-tanica-sigillata` o drop raro `rovine_urbane`. Consumo narrativo per veicoli motorizzati.
+
+Chiavi catalogo: prefisso `equip-*` (equipaggiamento) e `consumable-kaen-bin`.
 
 ### Anti-farming
 

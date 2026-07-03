@@ -14,6 +14,7 @@ type Props = {
   char: CharacterSummary;
   onOpenScheda: () => void;
   onOpenShop: () => void;
+  onOpenMercato: () => void;
   onOpenSms: () => void;
   onOpenBanca: () => void;
   onOpenWaza?: () => void;
@@ -22,7 +23,7 @@ type Props = {
   smsUnread?: number;
 };
 
-export function DashboardLeftCol({ char, onOpenScheda, onOpenShop, onOpenSms, onOpenBanca, onOpenWaza, onOpenOrdine, onOpenBestiario, smsUnread = 0 }: Props) {
+export function DashboardLeftCol({ char, onOpenScheda, onOpenShop, onOpenMercato, onOpenSms, onOpenBanca, onOpenWaza, onOpenOrdine, onOpenBestiario, smsUnread = 0 }: Props) {
   const avatarSrc = (char?.avatarUrl ?? char?.avatar ?? char?.miniAvatar) as string | undefined;
   const nome = (char?.name ?? "Nome PG") as string;
   const cognome = (char?.surname ?? "") as string;
@@ -121,6 +122,23 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenShop, onOpenSms, on
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
                 Shop
+              </span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={onOpenMercato}
+            className="relative group w-full h-10 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+            style={{
+              backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
+              backgroundSize: "100% 100%",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
+                Mercato
               </span>
             </div>
           </button>

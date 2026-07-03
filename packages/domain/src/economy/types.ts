@@ -26,6 +26,7 @@ export type EconomyMaterialId =
   | 'frammento_onirico'
   | 'trofeo'
   | 'trofeo_maggiore'
+  | 'carburante'
 
 export interface EconomyMaterialCost {
   readonly materialId: EconomyMaterialId

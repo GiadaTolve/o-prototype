@@ -1,7 +1,14 @@
 import type { JunkItemDef } from './junklist'
 
 /** Pool logico per estrazione tabelle drop. */
-export type DropPoolCategory = 'metallo' | 'stoffa' | 'carta' | 'chimica' | 'onimori_comune' | 'frammento_onirico'
+export type DropPoolCategory =
+  | 'metallo'
+  | 'stoffa'
+  | 'carta'
+  | 'chimica'
+  | 'carburante'
+  | 'onimori_comune'
+  | 'frammento_onirico'
 
 export interface DropTableDef {
   readonly id: string
@@ -15,10 +22,11 @@ export const DROP_TABLES: readonly DropTableDef[] = [
     id: 'rovine_urbane',
     label: 'Rovine urbane',
     entries: [
-      { pool: 'metallo', weight: 40 },
-      { pool: 'stoffa', weight: 30 },
-      { pool: 'carta', weight: 20 },
+      { pool: 'metallo', weight: 38 },
+      { pool: 'stoffa', weight: 28 },
+      { pool: 'carta', weight: 19 },
       { pool: 'chimica', weight: 10 },
+      { pool: 'carburante', weight: 5 },
     ],
   },
   {
@@ -58,6 +66,7 @@ export const DROP_POOL_JUNK_IDS: Readonly<Record<DropPoolCategory, readonly stri
   stoffa: ['junk-abiti', 'junk-ombrello', 'junk-kit-soccorso'],
   carta: ['junk-libri', 'junk-foto', 'junk-butsudan'],
   chimica: ['junk-flaconi', 'junk-batterie', 'junk-kit-soccorso'],
+  carburante: ['junk-tanica-sigillata'],
   onimori_comune: ['junk-nido', 'junk-ossa', 'junk-carcassa', 'junk-abiti'],
   frammento_onirico: ['junk-amuleto'],
 }

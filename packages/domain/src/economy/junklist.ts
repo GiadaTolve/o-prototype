@@ -16,6 +16,7 @@ export const ECONOMY_MATERIAL_LABELS: Readonly<Record<EconomyMaterialId, string>
   frammento_onirico: 'Frammento onirico',
   trofeo: 'Trofeo',
   trofeo_maggiore: 'Trofeo maggiore',
+  carburante: 'Carburante',
 }
 
 export interface JunkItemDef {
@@ -68,6 +69,11 @@ export const JUNK_ITEMS: readonly JunkItemDef[] = [
     id: 'junk-amuleto',
     name: 'Amuleto esaurito',
     yields: { carta: 1, frammento_onirico: 1 },
+  },
+  {
+    id: 'junk-tanica-sigillata',
+    name: 'Tanica sigillata',
+    yields: { carburante: 1 },
   },
 ] as const
 

@@ -8,6 +8,7 @@ import {
   usesIntegrity,
 } from './items'
 import { isMarketableCategory, piazzaCommission, piazzaSellerProceeds } from './market'
+import { MARKET_EQUIPMENT_CATALOG, marketEquipmentByKind } from './market-equipment-catalog'
 
 describe('dismantle', () => {
   it('allows only artigiano', () => {
@@ -28,6 +29,7 @@ describe('drop-tables', () => {
   it('defines rovine_urbane weights', () => {
     const t = getDropTable('rovine_urbane')
     expect(t?.entries.reduce((s, e) => s + e.weight, 0)).toBe(100)
+    expect(t?.entries.some((e) => e.pool === 'carburante')).toBe(true)
   })
 
   it('rolls junk from table with deterministic rng', () => {
@@ -72,5 +74,25 @@ describe('market', () => {
   it('applies 10% piazza commission', () => {
     expect(piazzaCommission(100)).toBe(10)
     expect(piazzaSellerProceeds(100)).toBe(90)
+  })
+})
+
+describe('market-equipment-catalog', () => {
+  it('lists 35 market items', () => {
+    expect(MARKET_EQUIPMENT_CATALOG).toHaveLength(35)
+  })
+
+  it('covers armi, protezioni e veicoli', () => {
+    expect(marketEquipmentByKind('arma_bianca')).toHaveLength(8)
+    expect(marketEquipmentByKind('arma_fuoco')).toHaveLength(7)
+    expect(marketEquipmentByKind('arma_lancio')).toHaveLength(4)
+    expect(marketEquipmentByKind('protezione')).toHaveLength(10)
+    expect(marketEquipmentByKind('veicolo')).toHaveLength(5)
+    expect(marketEquipmentByKind('consumabile')).toHaveLength(1)
+  })
+
+  it('uses unique catalog ids', () => {
+    const ids = MARKET_EQUIPMENT_CATALOG.map((e) => e.id)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })

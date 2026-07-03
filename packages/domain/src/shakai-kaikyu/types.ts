@@ -67,6 +67,7 @@ export type SocialMaterialId =
   | 'frammento_onirico'
   | 'trofeo'
   | 'trofeo_maggiore'
+  | 'carburante'
 
 export type SocialBlueprintKind =
   | 'recipe'
