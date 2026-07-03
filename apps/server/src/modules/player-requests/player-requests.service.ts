@@ -254,7 +254,8 @@ export class PlayerRequestsService {
 
   private async applyPremioApproval(characterId: string, requestedValue: string) {
     const catalogId = PREMIO_REQUEST_OPTIONS.find((p) => p.id === requestedValue.trim())?.id
-    const premioSpeciale = catalogId ?? slugifyPremioId(requestedValue) || requestedValue.trim().slice(0, 64)
+    const slug = slugifyPremioId(requestedValue)
+    const premioSpeciale = catalogId ?? (slug || requestedValue.trim().slice(0, 64))
 
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
