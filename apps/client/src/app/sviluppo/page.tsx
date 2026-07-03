@@ -17,7 +17,6 @@ export default function SviluppoPage() {
     | "waza-generiche"
     | "waza-do"
     | "waza-madosho"
-    | "waza-ordine"
     | "waza-premi"
     | "waza-create"
     | "taxonomy"
@@ -67,7 +66,6 @@ export default function SviluppoPage() {
             { id: "waza-generiche" as const, label: "Generiche" },
             { id: "waza-do" as const, label: "Dō" },
             { id: "waza-madosho" as const, label: "Madosho" },
-            { id: "waza-ordine" as const, label: "Ordine" },
             { id: "waza-premi" as const, label: "Premi" },
             { id: "waza-create" as const, label: "Crea Nuovo" },
             { id: "taxonomy" as const, label: "Tassonomie" },
@@ -96,9 +94,6 @@ export default function SviluppoPage() {
           {activeTab === "waza-do" && <GestioneWazaPanel scope="do" title="Waza Dō" />}
           {activeTab === "waza-madosho" && (
             <GestioneWazaPanel scope="madosho" title="Waza Madosho" />
-          )}
-          {activeTab === "waza-ordine" && (
-            <GestioneWazaPanel scope="ordine" title="Waza Ordine" />
           )}
           {activeTab === "waza-premi" && (
             <GestioneWazaPanel scope="premi" title="Waza Premi" />

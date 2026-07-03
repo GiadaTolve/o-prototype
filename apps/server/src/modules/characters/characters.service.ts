@@ -526,7 +526,11 @@ export class CharacterService {
           madoshoId: true,
           order: true,
           skiruSheet: true,
-          baseStats: true,
+          strength: true,
+          constitution: true,
+          dexterity: true,
+          mind: true,
+          empathy: true,
         },
       }),
       db.query.characterSkills.findMany({
@@ -541,7 +545,7 @@ export class CharacterService {
     const keys = char?.keys ?? 0;
     const skiruSheet = resolveCharacterSkiruSheet(
       char?.skiruSheet as Record<string, number> | undefined,
-      char?.baseStats as BaseStats | undefined,
+      char ? this.baseStatsFromCharacter(char) : undefined,
     );
     const { primaryStyleId, unlockedStyleIds } = readStyleHexMeta(
       (char?.uiMetadata ?? {}) as StyleHexUiMeta,
@@ -646,7 +650,11 @@ export class CharacterService {
           madoshoId: true,
           order: true,
           skiruSheet: true,
-          baseStats: true,
+          strength: true,
+          constitution: true,
+          dexterity: true,
+          mind: true,
+          empathy: true,
         },
       }),
       db.query.skills.findFirst({
@@ -684,7 +692,7 @@ export class CharacterService {
       } else if (isOrdineCatalogWaza(skill)) {
         const skiruSheet = resolveCharacterSkiruSheet(
           char.skiruSheet as Record<string, number> | undefined,
-          char.baseStats as BaseStats | undefined,
+          this.baseStatsFromCharacter(char),
         );
         const ordineCheck = canPurchaseOrdineWaza({ order: char.order ?? 'NONE' }, skiruSheet);
         if (!ordineCheck.ok) throw new Error(ordineCheck.reason ?? 'Waza d\'ordine non disponibile.');

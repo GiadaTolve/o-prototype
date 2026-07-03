@@ -213,6 +213,8 @@ export const skills = pgTable('skills', {
   
   name: text('name').notNull(),
   description: text('description'),
+  /** Testo effetto waza (authoring Sviluppo). */
+  effect: text('effect'),
   // Distinzione tra Passive (Skiru), Attive (Waza) e Patti (Path)
   type: text('type').$type<'SKIRU' | 'WAZA' | 'PATH'>().notNull(), 
   
@@ -230,6 +232,11 @@ export const skills = pgTable('skills', {
   poolId: text('pool_id'),
   /** Ramo Esagono: toka | genzai | ito | naikan | hensei | hado */
   styleId: text('style_id'),
+  /** Skiru di lancio (id catalogo, lowercase). */
+  launchSkiruIds: jsonb('launch_skiru_ids').$type<string[] | null>(),
+  /** Skiru per indice danno (CAC/CAD). */
+  damageSkiruIds: jsonb('damage_skiru_ids').$type<string[] | null>(),
+  damageIndexKind: text('damage_index_kind').$type<'CAC' | 'CAD' | null>(),
   /** Lignaggio Madoshō (Parte IV) — mutualmente esclusivo con styleId. */
   madoshoId: text('madosho_id').$type<
     'ringai-janjae' | 'gokaon' | 'komonoire' | 'nakigara' | 'ikiryo' | 'hataori'

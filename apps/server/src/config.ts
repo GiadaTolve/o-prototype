@@ -1,3 +1,8 @@
+import { config } from 'dotenv'
+import { resolve } from 'path'
+
+config({ path: resolve(import.meta.dir, '../../../.env') })
+
 export const JWT_SECRET = process.env.JWT_SECRET || 'secret-di-sviluppo-non-sicuro-12345'
 export const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 export const APP_URL = process.env.APP_URL || 'http://localhost:3000'

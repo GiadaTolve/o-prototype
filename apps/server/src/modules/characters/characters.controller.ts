@@ -91,6 +91,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           pendingLevelUp: readPendingLevelUp(char.uiMetadata),
         }
       } catch (e) {
+        console.error('[GET /characters/me]', e)
         set.status = 500
         return { error: 'Internal Server Error' }
       }
@@ -205,6 +206,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         const list = await characterService.getAvailableSkillsForPurchase(char.id)
         return list
       } catch (e) {
+        console.error('[GET /characters/me/skills/available]', e)
         set.status = 500
         return { error: 'Internal Server Error' }
       }

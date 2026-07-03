@@ -20,7 +20,6 @@ import { NAIKAN_WAZA_POOL } from './pools/naikan-waza-pool'
 import { HENSEI_WAZA_POOL } from './pools/hensei-waza-pool'
 import { HADO_WAZA_POOL } from './pools/hado-waza-pool'
 import { GENERICHE_WAZA_POOL } from './pools/generiche-waza-pool'
-import { ORDINE_WAZA_POOL } from './pools/ordine-waza-pool'
 import { ONIMORI_WAZA_POOL } from './pools/onimori-waza-pool'
 
 /** Durata effetto waza */
@@ -329,7 +328,6 @@ export function composeWazaRankText(
 /** Elenco tecniche Waza — popola dal Tool inserimento Waza (Idee e sviluppo → Esporta codice → incolla qui, o usa un file dedicato importato). */
 export const WAZA_POOL: WazaDef[] = [
   ...GENERICHE_WAZA_POOL,
-  ...ORDINE_WAZA_POOL,
   ...ONIMORI_WAZA_POOL,
   ...TOKA_WAZA_POOL,
   ...GENZAI_WAZA_POOL,

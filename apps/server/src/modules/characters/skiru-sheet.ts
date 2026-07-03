@@ -9,14 +9,22 @@ import {
 } from '@domain/skiru'
 import type { BaseStats } from '@domain/stats/calculator'
 
+const EMPTY_LEGACY_STATS: BaseStats = {
+  strength: 0,
+  constitution: 0,
+  dexterity: 0,
+  mind: 0,
+  empathy: 0,
+}
+
 export function resolveCharacterSkiruSheet(
   stored: SkiruSheet | null | undefined,
-  baseStats: BaseStats,
+  baseStats: BaseStats | null | undefined,
 ): SkiruSheet {
   if (!isSkiruSheetEmpty(stored)) {
     return normalizeSkiruSheet(migrateGugenkaToGenkaiInSheet(stored as SkiruSheet))
   }
-  return legacyStatsToSkiruSheet(baseStats)
+  return legacyStatsToSkiruSheet(baseStats ?? EMPTY_LEGACY_STATS)
 }
 
 export function buildSkiruCharacterComputed(

@@ -32,7 +32,13 @@ export const wazaRoutes = new Elysia({ prefix: '/waza' })
           set.status = 403
           return { error: 'Accesso riservato allo staff Sviluppo' }
         }
-        return listAdminWaza()
+        try {
+          return await listAdminWaza()
+        } catch (e) {
+          console.error('[GET /waza/admin]', e)
+          set.status = 500
+          return { error: 'Internal Server Error' }
+        }
       })
       .put(
         '/admin/:poolId',

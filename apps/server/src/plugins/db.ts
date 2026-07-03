@@ -1,7 +1,11 @@
+import { config } from 'dotenv'
+import { resolve } from 'path'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import pg from 'pg'
 // 👇 Importiamo lo schema appena creato
 import * as schema from '../db/schema'
+
+config({ path: resolve(import.meta.dir, '../../../../.env') })
 
 const { Pool } = pg
 
