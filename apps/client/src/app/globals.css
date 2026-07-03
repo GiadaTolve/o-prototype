@@ -1684,3 +1684,40 @@ html:has(.mobile-app-shell) body {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Chat mobile — solo la lista messaggi scrolla */
+.mobile-chat-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.mobile-chat-shell__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mobile-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.mobile-chat-compose {
+  flex-shrink: 0;
+  max-height: min(40dvh, 280px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}

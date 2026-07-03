@@ -165,7 +165,8 @@ export function DashboardMobileLayout({
 
   return (
     <div className="mobile-app-shell md:h-screen md:max-h-none">
-      {/* Header compatto mobile */}
+      {/* Header globale nascosto in chat immersiva (più spazio, meno scroll) */}
+      {!mapImmersive && (
       <header className="mobile-top-bar shrink-0 border-b border-[var(--border-color)] bg-[var(--panel-bg)] px-3 py-2 flex items-center justify-between mobile-safe-top">
         <h1 className="font-display text-sm text-[var(--accent-gold)] truncate">
           Oyasumi
@@ -182,6 +183,7 @@ export function DashboardMobileLayout({
           <FontAwesomeIcon icon={icons.logout} className="w-4 h-4" />
         </button>
       </header>
+      )}
 
       {/* Contenuto in base al tab — un solo scroll interno per tab */}
       <main className="flex-1 min-h-0 overflow-hidden flex flex-col">

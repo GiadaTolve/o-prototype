@@ -2218,9 +2218,9 @@ function ChatView({
   };
 
   return (
-    <div className={`flex flex-col flex-1 min-h-0 overflow-hidden ${compact ? "gap-0" : "gap-4"}`}>
+    <div className={compact ? "mobile-chat-shell" : "flex flex-col flex-1 min-h-0 overflow-hidden gap-4"}>
       <div 
-        className={`${compact ? "h-10 px-2 shrink-0" : "h-[50px] px-5"} flex-shrink-0 flex justify-between items-center border-b border-[var(--accent-violet)]/30`}
+        className={`${compact ? "h-10 px-2 shrink-0 mobile-safe-top" : "h-[50px] px-5"} flex-shrink-0 flex justify-between items-center border-b border-[var(--accent-violet)]/30`}
         style={{
           backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')",
           backgroundSize: 'cover',
@@ -2271,13 +2271,13 @@ function ChatView({
           </p>
         </div>
       ) : (
-      <div className={`flex flex-1 min-h-0 overflow-hidden ${compact ? "flex-col gap-0" : "gap-4"}`}>
+      <div className={compact ? "mobile-chat-shell__body" : "flex flex-1 min-h-0 overflow-hidden gap-4"}>
         {/* Sinistra: immagine luogo, descrizione, note Master, presenti */}
         {(!compact || showMobileTools) && (
         <aside
           className={`${
             compact
-              ? "flex-1 min-h-0 border-b overflow-y-auto"
+              ? "mobile-scroll-pane flex-1 border-b"
               : "w-[280px] border-r flex-shrink-0"
           } flex flex-col gap-3 min-h-0 bg-black/30 ${compact ? "p-3" : "pr-3 p-5"}`}
         >
@@ -2475,7 +2475,7 @@ function ChatView({
         <div className={`flex-1 flex flex-col min-h-0 overflow-hidden ${compact && showMobileTools ? "hidden" : ""}`}>
           <div
             ref={listRef}
-            className={`flex-1 overflow-y-auto overflow-x-visible min-h-[120px] ${compact ? "py-3 px-3" : "py-6 px-8"}`}
+            className={`${compact ? "mobile-chat-messages py-2 px-3" : "flex-1 overflow-y-auto overflow-x-visible min-h-[120px] py-6 px-8"}`}
             style={{
               backgroundImage: "url('/backgrounds/darkstone.png')",
               backgroundRepeat: 'repeat',
@@ -2523,17 +2523,17 @@ function ChatView({
               setMessageDraft("");
               setMessageLength(0);
             }}
-            className={`flex flex-col gap-1.5 shrink-0 border-t border-[var(--accent-violet)]/20 ${compact ? "px-2 py-1.5" : "px-5 py-4"}`}
+            className={`flex flex-col gap-1 shrink-0 border-t border-[var(--accent-violet)]/20 ${compact ? "mobile-chat-compose px-2 py-1.5" : "px-5 py-4 gap-2"}`}
             style={{
               backgroundImage: "url('/backgrounds/darkstone.png')",
               backgroundRepeat: "repeat",
               backgroundColor: "rgba(0,0,0,0.75)",
             }}
           >
-            <div className={compact ? "flex flex-col gap-2 w-full" : "flex gap-2 items-end flex-row gap-2.5"}>
+            <div className={compact ? "flex flex-col gap-1.5 w-full" : "flex gap-2 items-end flex-row gap-2.5"}>
               {compact ? (
                 <>
-                  <div className="flex items-center gap-1.5 w-full flex-wrap">
+                  <div className="flex items-center gap-1 w-full flex-wrap">
                     <ChatInfoPanel compact />
                     {!isPartychatRoom && canAccessShinigami && (
                       <RegistraQuestButton
@@ -2556,7 +2556,7 @@ function ChatView({
                     placeholder={isPartychatRoom ? "Posizione..." : "Luogo..."}
                     disabled={!chatConnected}
                     maxLength={120}
-                    className="bg-white/5 border border-white/10 text-[#c9a84a] px-2.5 py-2.5 rounded text-xs font-display w-full h-10 box-border text-center"
+                    className="bg-white/5 border border-white/10 text-[#c9a84a] px-2 py-1.5 rounded text-xs font-display w-full h-9 box-border text-center"
                   />
                   <textarea
                     ref={inputRef}
@@ -2580,18 +2580,21 @@ function ChatView({
                       }
                     }}
                     rows={2}
-                    className="w-full bg-white/5 border border-white/10 text-[#e6e0ff] px-2.5 py-2 rounded resize-none font-sans text-sm box-border leading-relaxed min-h-[2.75rem] max-h-[30dvh]"
+                    className="w-full bg-white/5 border border-white/10 text-[#e6e0ff] px-2 py-1.5 rounded resize-none font-sans text-sm box-border leading-snug min-h-[2.5rem] max-h-[5rem]"
                   />
                   <div className="flex items-center gap-2 w-full">
                     <button
                       type="submit"
                       disabled={!chatConnected}
-                      className="flex-1 py-2.5 border-none rounded cursor-pointer bg-gradient-to-r from-[#60519b] to-[#a270ff] text-white font-display font-bold text-xs box-border transition-all uppercase tracking-wide shadow-[0_0_10px_rgba(162,112,255,0.3)] disabled:opacity-50"
+                      className="flex-1 py-2 border-none rounded cursor-pointer bg-gradient-to-r from-[#60519b] to-[#a270ff] text-white font-display font-bold text-xs box-border transition-all uppercase tracking-wide shadow-[0_0_10px_rgba(162,112,255,0.3)] disabled:opacity-50"
                       title="Invia"
                       aria-label="Invia messaggio"
                     >
                       INVIA
                     </button>
+                    <span className={`text-[10px] font-mono shrink-0 tabular-nums ${messageLength >= MOBILE_CHAT_MAX_LENGTH ? "text-[var(--accent-gold)]" : "text-gray-500"}`}>
+                      {messageLength}/{MOBILE_CHAT_MAX_LENGTH}
+                    </span>
                   </div>
                 </>
               ) : (
@@ -2642,18 +2645,17 @@ function ChatView({
                 </>
               )}
             </div>
-            <div className={`flex justify-between items-center gap-3 flex-wrap ${compact ? "mt-1" : "mt-2.5 pl-[160px]"}`}>
-              {!compact && (
+            {!compact && (
+            <div className="flex justify-between items-center mt-2.5 pl-[160px] gap-3 flex-wrap">
               <div className="flex gap-2 flex-wrap items-center">
                 {!isPartychatRoom && canAccessShinigami && <RegistraQuestButton roomId={roomId} activeQuest={activeQuest} usersInRoom={usersInRoom} canAccessGestione={canAccessGestione} onQuestCreated={() => refreshQuest(true)} />}
                 {!isPartychatRoom && <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} />}
                 {canAccessGestione && <GlobalMessageButton />}
               </div>
-              )}
-              <div className={`flex items-center gap-4 flex-wrap ${compact ? "w-full justify-end" : "justify-end"}`}>
-                {!compact && <QuarterTurnHud draft={messageDraft} />}
-                <span className={`text-[10px] font-mono ${compact && messageLength >= MOBILE_CHAT_MAX_LENGTH ? "text-[var(--accent-gold)]" : "text-gray-500"}`}>
-                  {compact ? `${messageLength}/${MOBILE_CHAT_MAX_LENGTH}` : `${messageLength} caratteri`}
+              <div className="flex items-center gap-4 flex-wrap justify-end">
+                <QuarterTurnHud draft={messageDraft} />
+                <span className="text-[10px] text-gray-500 font-mono">
+                  {messageLength} caratteri
                   {!isDiceOnlyDraft(messageDraft) && messageLength >= 500 && (
                     <span className="text-[var(--accent-gold)]/80 ml-2">
                       +{Math.floor(messageLength / 500)} EXP
@@ -2662,6 +2664,7 @@ function ChatView({
                 </span>
               </div>
             </div>
+            )}
           </form>
         </div>
       </div>
