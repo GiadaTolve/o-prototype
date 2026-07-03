@@ -56,6 +56,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         const userRole = (user.role ?? '').toUpperCase()
 
         const canAccessShinigami =
+          userRole === 'ADMIN' ||
           userRole === 'MASTER' ||
           roleIcon === 'shinigami' ||
           roleIcon === 'capo-shinigami'
@@ -101,6 +102,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           canAccessSviluppo,
           canEditStaffAlias,
           canEditMasterNotes,
+          userRole,
           pendingLevelUp: readPendingLevelUp(char.uiMetadata),
         }
       } catch (e) {

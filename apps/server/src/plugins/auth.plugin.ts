@@ -3,7 +3,7 @@ import { jwt } from '@elysiajs/jwt'
 import { bearer } from '@elysiajs/bearer'
 import { JWT_SECRET } from '../config'
 import { db } from '../plugins/db'
-import { characters } from '../db/schema'
+import { characters, users } from '../db/schema'
 import { eq } from 'drizzle-orm'
 
 export const authPlugin = (app: Elysia) =>
@@ -25,23 +25,30 @@ export const authPlugin = (app: Elysia) =>
 
       const userId = (profile.id ?? profile.sub) as string
       
-      // Recupera characterId dal database
+      // Ruolo sempre dal DB (così cambi staff si applicano senza nuovo login)
+      let role = profile.role as string | undefined
       let characterId: string | undefined
       try {
-        const character = await db.query.characters.findFirst({
-          where: eq(characters.userId, userId),
-          columns: { id: true },
-        })
+        const [userRow, character] = await Promise.all([
+          db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { role: true },
+          }),
+          db.query.characters.findFirst({
+            where: eq(characters.userId, userId),
+            columns: { id: true },
+          }),
+        ])
+        if (userRow?.role) role = userRow.role
         characterId = character?.id
       } catch (e) {
-        // Ignora errori di query, characterId rimane undefined
-        console.debug('[AuthPlugin] Errore recupero characterId:', e)
+        console.debug('[AuthPlugin] Errore recupero user/character:', e)
       }
 
       return { 
         user: { 
           id: userId,
-          role: profile.role as string | undefined,
+          role,
           characterId,
         } 
       }

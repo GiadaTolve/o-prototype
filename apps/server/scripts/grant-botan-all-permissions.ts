@@ -1,6 +1,6 @@
 /**
  * Assegna al personaggio "Botan" tutti i permessi esistenti:
- * - User role = MASTER (Shinigami + Gestione)
+ * - User role = ADMIN (Gestione + Sviluppo + Shinigami)
  * - Character grade = Akumu Zankyō (carica militare massima)
  * - Character uiMetadata.roleIcon = admin (pixel-icon proprietario, carica staff massima)
  * - EXP totale ≥ soglia liv. 49 (coerente col grado)
@@ -39,7 +39,7 @@ async function main() {
 
   await db
     .update(users)
-    .set({ role: "MASTER" })
+    .set({ role: "ADMIN" })
     .where(eq(users.id, char.userId));
 
   const [row] = await db
@@ -65,7 +65,7 @@ async function main() {
     .where(eq(characters.id, char.id));
 
   console.log("\n✅ Permessi assegnati a", char.name);
-  console.log("   • User role: MASTER (Shinigami + Gestione)");
+  console.log("   • User role: ADMIN (Gestione + Sviluppo + Shinigami)");
   console.log(`   • Character grade: ${GRADE_MAX}`);
   console.log(`   • Character roleIcon: ${ROLE_ICON_MAX} (pixel proprietario)`);
   console.log(`   • EXP totale: ${expTotal} (≥ liv. 49)`);

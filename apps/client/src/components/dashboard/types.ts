@@ -38,6 +38,8 @@ export type CharacterSummary = {
   staffAlias?: string | null;
   /** Note Master (solo Master+ modifica). */
   masterNotes?: string | null;
+  /** Ruolo account (ADMIN / MASTER / PLAYER) — dal DB, non dal JWT. */
+  userRole?: string;
   canEditStaffAlias?: boolean;
   canEditMasterNotes?: boolean;
   /** Solo Shinigami / Capo: vedere link Shinigami, Registra Quest in chat. */
