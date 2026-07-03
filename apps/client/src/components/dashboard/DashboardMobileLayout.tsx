@@ -125,7 +125,12 @@ export function DashboardMobileLayout({
     <div className={`h-screen flex flex-col overflow-hidden ${mapImmersive ? "pb-0" : "pb-16"} md:pb-0`}>
       {/* Header compatto mobile */}
       <header className="shrink-0 border-b border-[var(--border-color)] bg-[var(--panel-bg)] px-3 py-2 flex items-center justify-between">
-        <h1 className="font-display text-sm text-[var(--accent-gold)] truncate">Oyasumi</h1>
+        <h1 className="font-display text-sm text-[var(--accent-gold)] truncate">
+          Oyasumi
+          <span className="ml-1.5 text-[9px] text-gray-600 font-sans normal-case tracking-normal">
+            {process.env.NEXT_PUBLIC_APP_BUILD ?? "dev"}
+          </span>
+        </h1>
         <button
           type="button"
           onClick={handleLogout}

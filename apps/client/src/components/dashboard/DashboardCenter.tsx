@@ -291,8 +291,26 @@ export function DashboardCenter({
       }
     >
       {view === "root" && (
-        <div className="relative flex-1 min-h-0 overflow-hidden rounded-lg border border-[var(--border-color)]">
-          <MapViewRoot onSelectGameMap={goGameMap} alwaysShowLabels={compact} />
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-0">
+          {compact && (
+            <div
+              className="shrink-0 px-3 py-2 border-b border-[var(--border-color)] flex items-center justify-between"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.85)), url('/backgrounds/cloudy.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-gold)] font-display">
+                Mappa mondiale
+              </p>
+              <p className="text-[10px] text-gray-500">Tocca un pin</p>
+            </div>
+          )}
+          <div className={`relative flex-1 min-h-0 overflow-hidden ${compact ? "" : "rounded-lg border border-[var(--border-color)]"}`}>
+            <MapViewRoot onSelectGameMap={goGameMap} alwaysShowLabels={compact} />
+          </div>
         </div>
       )}
 
@@ -607,7 +625,7 @@ function MapViewRoot({
             className={`${alwaysShowLabels ? "w-8" : "w-10"} h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] pointer-events-none`}
           />
           {alwaysShowLabels && (
-            <span className="mt-0.5 max-w-[4.5rem] truncate text-[9px] font-display uppercase tracking-wide text-[var(--accent-gold)] text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            <span className="mt-0.5 max-w-[5rem] truncate text-[10px] font-display uppercase tracking-wide text-[var(--accent-gold)] text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] px-0.5 py-0.5 rounded bg-black/50 border border-[var(--border-color)]/60">
               {pin.label}
             </span>
           )}
@@ -756,7 +774,7 @@ function MapViewZoneList({
         </div>
       </div>
       <div
-        className="flex flex-col gap-2 p-4 flex-1 min-h-0 overflow-auto rounded-b border border-[var(--border-color)]"
+        className={`flex flex-col gap-2 ${compact ? "p-2" : "p-4"} flex-1 min-h-0 overflow-auto rounded-b border border-[var(--border-color)]`}
         style={{
           backgroundImage: "url('/backgrounds/darkstone.png')",
           backgroundRepeat: "repeat",

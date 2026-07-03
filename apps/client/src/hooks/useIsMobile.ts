@@ -1,43 +1,41 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
+
+const MOBILE_MQ = "(max-width: 768px)";
+const MOBILE_UA_RE = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+
+function detectMobile(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const isSmallScreen = window.matchMedia(MOBILE_MQ).matches;
+  const ua = (navigator.userAgent || navigator.vendor || "").toLowerCase();
+  const isMobileUA = MOBILE_UA_RE.test(ua);
+
+  // Schermo stretto → layout Lite (anche finestra desktop ridotta).
+  // Su iPhone/iPad con "sito desktop" la viewport può superare 768px: usa UA + larghezza ragionevole.
+  return isSmallScreen || (isMobileUA && window.innerWidth <= 1024);
+}
 
 /**
- * Hook per rilevare se l'utente sta usando un dispositivo mobile.
- * Usa window.matchMedia per rilevare schermi piccoli e touch capability.
+ * Rileva dispositivo mobile per Oyasumi Lite (bottom nav, mappa compatta).
  */
 export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => detectMobile());
 
   useEffect(() => {
-    // Funzione per controllare se è mobile
-    const checkMobile = () => {
-      // Controlla la larghezza dello schermo (mobile tipicamente < 768px)
-      const isSmallScreen = window.matchMedia('(max-width: 768px)').matches
-      
-      // Controlla se ha touch capability
-      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-      
-      // Controlla user agent per dispositivi mobili comuni
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
-      const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())
-      
-      // È mobile se: schermo piccolo E (touch capability O mobile user agent)
-      setIsMobile(isSmallScreen && (hasTouch || isMobileUA))
-    }
+    const mq = window.matchMedia(MOBILE_MQ);
+    const update = () => setIsMobile(detectMobile());
 
-    // Controlla all'avvio
-    checkMobile()
-
-    // Ascolta cambiamenti di dimensione finestra
-    window.addEventListener('resize', checkMobile)
-    
-    // Ascolta cambiamenti di orientamento (per tablet/phone)
-    window.addEventListener('orientationchange', checkMobile)
+    update();
+    mq.addEventListener("change", update);
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
 
     return () => {
-      window.removeEventListener('resize', checkMobile)
-      window.removeEventListener('orientationchange', checkMobile)
-    }
-  }, [])
+      mq.removeEventListener("change", update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
 
-  return isMobile
+  return isMobile;
 }
