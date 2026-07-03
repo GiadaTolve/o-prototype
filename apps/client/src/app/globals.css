@@ -1627,11 +1627,60 @@ html:has(.wiki-page-root) body {
   }
 }
 
-/* Oyasumi Lite — safe area iPhone (richiede viewport-fit=cover) */
+/* Oyasumi Lite — viewport PWA / iPhone (richiede viewport-fit=cover) */
+:root {
+  --mobile-nav-height: 3.5rem;
+}
+
+html:has(.mobile-app-shell),
+html:has(.mobile-app-shell) body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.mobile-app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--background);
+}
+
+@supports not (height: 100dvh) {
+  .mobile-app-shell {
+    height: 100vh;
+    max-height: 100vh;
+  }
+}
+
+.mobile-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 .mobile-safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-.mobile-nav-pad {
-  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+.mobile-bottom-nav {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+  min-height: var(--mobile-nav-height);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--border-color);
+  background: var(--panel-bg);
+  z-index: 30;
+}
+
+.mobile-scroll-pane {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }

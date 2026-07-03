@@ -37,6 +37,11 @@ const ropaSans = Ropa_Sans({
 export const metadata: Metadata = {
   title: "𝑂𝑦𝑎𝑠𝑢𝑚𝑖",
   description: "Dark Fantasy Play-by-Chat",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Oyasumi",
+  },
 };
 
 export const viewport = {

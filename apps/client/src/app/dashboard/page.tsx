@@ -427,7 +427,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="h-screen flex flex-col overflow-hidden">
+      <div className="mobile-app-shell md:h-screen md:max-h-none">
         {/* Header Skeleton */}
         <div className="border-b border-[var(--border-color)] bg-[var(--panel-bg)]/80 p-4">
           <div className="flex items-center justify-between max-w-[1800px] mx-auto">
@@ -525,7 +525,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen md:h-screen flex flex-col overflow-hidden">
       <DashboardHeader
           onGoToMap={() => setMapTrigger((t) => t + 1)}
           onOpenShinigami={() => setShinigamiTrigger((t) => t + 1)}

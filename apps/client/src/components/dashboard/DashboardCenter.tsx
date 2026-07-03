@@ -717,7 +717,7 @@ function MapViewGameMap({
               key={z.id}
               type="button"
               onClick={() => onSelectZone(z)}
-              className="group flex flex-col items-center justify-center min-h-[88px] rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)]/80 text-[var(--accent-violet-light)]/90 shadow-[0_2px_8px_var(--shadow-dark)] hover:border-[var(--accent-gold)]/60 hover:text-[var(--accent-gold)] hover:shadow-[0_0_12px_var(--shadow-gold),inset_0_0_20px_rgba(0,0,0,0.3)] transition-all duration-300 ease-out"
+              className={`group flex flex-col items-center justify-center ${compact ? "min-h-[72px]" : "min-h-[88px]"} rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)]/80 text-[var(--accent-violet-light)]/90 shadow-[0_2px_8px_var(--shadow-dark)] hover:border-[var(--accent-gold)]/60 hover:text-[var(--accent-gold)] hover:shadow-[0_0_12px_var(--shadow-gold),inset_0_0_20px_rgba(0,0,0,0.3)] transition-all duration-300 ease-out`}
             >
               <span className="font-display text-sm uppercase tracking-wider">{z.label}</span>
             </button>
@@ -2218,9 +2218,9 @@ function ChatView({
   };
 
   return (
-    <div className={`flex flex-col flex-1 min-h-0 ${compact ? "gap-0" : "gap-4"}`}>
+    <div className={`flex flex-col flex-1 min-h-0 overflow-hidden ${compact ? "gap-0" : "gap-4"}`}>
       <div 
-        className={`${compact ? "h-11 px-2" : "h-[50px] px-5"} flex-shrink-0 flex justify-between items-center border-b border-[var(--accent-violet)]/30`}
+        className={`${compact ? "h-10 px-2 shrink-0" : "h-[50px] px-5"} flex-shrink-0 flex justify-between items-center border-b border-[var(--accent-violet)]/30`}
         style={{
           backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')",
           backgroundSize: 'cover',
@@ -2280,9 +2280,8 @@ function ChatView({
               ? "flex-1 min-h-0 border-b overflow-y-auto"
               : "w-[280px] border-r flex-shrink-0"
           } flex flex-col gap-3 min-h-0 bg-black/30 ${compact ? "p-3" : "pr-3 p-5"}`}
-          style={compact && showMobileTools ? { minHeight: "calc(95dvh - 7rem)" } : undefined}
         >
-          <div className={`relative w-full ${compact ? "h-[min(28vh,220px)]" : "h-[140px]"} rounded border border-[var(--accent-violet)]/30 overflow-hidden shrink-0`}>
+          <div className={`relative w-full ${compact ? "h-[min(22dvh,180px)]" : "h-[140px]"} rounded border border-[var(--accent-violet)]/30 overflow-hidden shrink-0`}>
             {displayImage ? (
               <Image 
                 src={displayImage} 
@@ -2524,7 +2523,7 @@ function ChatView({
               setMessageDraft("");
               setMessageLength(0);
             }}
-            className={`flex flex-col gap-2 shrink-0 border-t border-[var(--accent-violet)]/20 ${compact ? "px-2 py-2" : "px-5 py-4"}`}
+            className={`flex flex-col gap-1.5 shrink-0 border-t border-[var(--accent-violet)]/20 ${compact ? "px-2 py-1.5" : "px-5 py-4"}`}
             style={{
               backgroundImage: "url('/backgrounds/darkstone.png')",
               backgroundRepeat: "repeat",
@@ -2580,8 +2579,8 @@ function ChatView({
                         onSubmit(e);
                       }
                     }}
-                    rows={3}
-                    className="w-full bg-white/5 border border-white/10 text-[#e6e0ff] px-2.5 py-2.5 rounded resize-none font-sans text-sm box-border leading-relaxed min-h-[4.5rem]"
+                    rows={2}
+                    className="w-full bg-white/5 border border-white/10 text-[#e6e0ff] px-2.5 py-2 rounded resize-none font-sans text-sm box-border leading-relaxed min-h-[2.75rem] max-h-[30dvh]"
                   />
                   <div className="flex items-center gap-2 w-full">
                     <button

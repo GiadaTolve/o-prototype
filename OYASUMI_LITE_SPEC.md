@@ -71,6 +71,7 @@
 - **500 caratteri** per messaggi chat e SMS da mobile (client-side `maxLength`)
 - Nessun pannello combattimento su mobile
 - `viewport-fit: cover` + `safe-area-inset` per bottom nav su iPhone
+- Shell `100dvh` con bottom nav **nel flusso** (no `fixed` + padding doppio) — evita scroll pagina in PWA
 
 ---
 

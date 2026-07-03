@@ -389,16 +389,26 @@
 }
 
 .fetch-pager--mobile {
-  padding: 0.25rem 0.35rem 0.35rem;
+  padding: 0.15rem 0.2rem 0.2rem;
 }
 
 .fetch-pager--mobile .fetch-pager__device {
   max-width: none;
-  border-radius: 0.85rem;
+  border-radius: 0.65rem;
+  padding: 0.45rem;
 }
 
 .fetch-pager--mobile .fetch-pager__lcd {
-  min-height: 12rem;
+  min-height: 0;
+}
+
+.fetch-pager--mobile .fetch-pager__top {
+  padding: 0.25rem 0.4rem 0.4rem;
+}
+
+.fetch-pager--mobile .fetch-pager__hint {
+  font-size: 0.58rem;
+  padding: 0.15rem 0.35rem 0.35rem;
 }
 
 .fetch-pager-loading {

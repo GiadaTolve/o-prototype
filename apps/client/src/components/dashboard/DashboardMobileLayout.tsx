@@ -164,9 +164,9 @@ export function DashboardMobileLayout({
   };
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden ${mapImmersive ? "pb-0" : "mobile-nav-pad"} md:pb-0`}>
+    <div className="mobile-app-shell md:h-screen md:max-h-none">
       {/* Header compatto mobile */}
-      <header className="shrink-0 border-b border-[var(--border-color)] bg-[var(--panel-bg)] px-3 py-2 flex items-center justify-between">
+      <header className="mobile-top-bar shrink-0 border-b border-[var(--border-color)] bg-[var(--panel-bg)] px-3 py-2 flex items-center justify-between mobile-safe-top">
         <h1 className="font-display text-sm text-[var(--accent-gold)] truncate">
           Oyasumi
           <span className="ml-1.5 text-[9px] text-gray-600 font-sans normal-case tracking-normal">
@@ -183,10 +183,10 @@ export function DashboardMobileLayout({
         </button>
       </header>
 
-      {/* Contenuto in base al tab */}
-      <main className={`flex-1 min-h-0 ${activeTab === "sms" || activeTab === "fetch" || activeTab === "mappa" ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
+      {/* Contenuto in base al tab — un solo scroll interno per tab */}
+      <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {activeTab === "scheda" && (
-          <div className="p-4">
+          <div className="mobile-scroll-pane p-4">
             <div className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
               <div
                 className="flex items-center gap-3 cursor-pointer"
@@ -284,8 +284,8 @@ export function DashboardMobileLayout({
         )}
 
         {activeTab === "altro" && (
-          <div className="p-4 flex flex-col min-h-0 flex-1">
-          <div className="grid grid-cols-2 gap-3 flex-1 content-start">
+          <div className="mobile-scroll-pane p-4 flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {[
               { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },
               { id: "banca" as WindowId, label: "Banca", icon: icons.banca },
@@ -315,7 +315,7 @@ export function DashboardMobileLayout({
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-4 w-full py-3 rounded-lg border border-[var(--border-color)] text-sm text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/50 flex items-center justify-center gap-2 mobile-safe-bottom"
+            className="w-full py-3 rounded-lg border border-[var(--border-color)] text-sm text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/50 flex items-center justify-center gap-2 shrink-0"
           >
             <FontAwesomeIcon icon={icons.logout} className="w-4 h-4" />
             Esci
@@ -324,9 +324,9 @@ export function DashboardMobileLayout({
         )}
       </main>
 
-      {/* Bottom navigation - solo su mobile (< 768px) */}
+      {/* Bottom navigation nel flusso (no fixed — evita doppio scroll in PWA) */}
       {!mapImmersive && (
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[var(--border-color)] bg-[var(--panel-bg)] flex items-center justify-around z-30 mobile-safe-bottom h-14 min-h-14 box-content">
+      <nav className="mobile-bottom-nav md:hidden">
         {tabButtons.map(({ id, label, icon }) => (
           <button
             key={id}
@@ -355,7 +355,7 @@ export function DashboardMobileLayout({
 
       {/* Finestre modali full-screen su mobile */}
       {openWindow && openWindow !== "sms" && openWindow !== "fetch" && (
-        <div className="fixed inset-0 z-40 bg-[var(--background)]">
+        <div className="fixed inset-0 z-40 bg-[var(--background)] mobile-app-shell">
           <DashboardWindowPanel
             windowId={openWindow}
             onLower={(id) => onClose(id)}
