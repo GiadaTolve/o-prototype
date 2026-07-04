@@ -7,7 +7,8 @@ import { db } from '../../plugins/db'
 import { users, characters, passwordResetTokens } from '../../db/schema'
 import { JWT_SECRET } from '../../config'
 import { registerUser } from './auth.service'
-import { sendPasswordResetEmail, sendWelcomeEmail, sendRegistrationNotifyEmail } from '../../lib/email'
+import { sendPasswordResetEmail, sendWelcomeEmail } from '../../lib/email'
+import { notifyStaffNewRegistration } from './registration-notify.service'
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
   .use(jwt({ name: 'jwt', secret: JWT_SECRET }))
@@ -18,22 +19,20 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       const result = await registerUser(body.email, body.password, body.characterName)
       const prefs = body.playerPreferences?.trim()
 
-      const [welcomeResult, notifyResult] = await Promise.all([
-        sendWelcomeEmail(body.email, body.characterName),
-        sendRegistrationNotifyEmail({
-          characterName: body.characterName,
-          email: body.email,
-          userId: result.user.id,
-          characterId: result.character.id,
-          playerPreferences: prefs,
-        }),
-      ])
-      if (!welcomeResult.ok) {
-        console.error('[auth] welcome email non inviata:', welcomeResult.error)
-      }
+      const notifyResult = await notifyStaffNewRegistration({
+        characterName: body.characterName,
+        email: body.email,
+        userId: result.user.id,
+        characterId: result.character.id,
+        playerPreferences: prefs,
+      })
       if (!notifyResult.ok) {
         console.error('[auth] notifica staff non inviata:', notifyResult.error)
       }
+
+      void sendWelcomeEmail(body.email, body.characterName).catch((e) => {
+        console.error('[auth] welcome email:', e)
+      })
 
       set.status = 201
       return {

@@ -405,6 +405,7 @@ function NotificheContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
                   <p className="text-[10px] text-gray-500 mt-1">
                     {new Date(n.createdAt).toLocaleString("it-IT")}
                     {n.type === "fetch_responso" && " · Responso Fetch"}
+                    {n.type === "new_registration" && " · Nuova iscrizione"}
                   </p>
                 </div>
                 {!n.readAt && (

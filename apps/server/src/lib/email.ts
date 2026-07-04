@@ -1,7 +1,10 @@
 import { Resend } from 'resend'
 import { RESEND_API_KEY, APP_URL, EMAIL_FROM, REGISTRATION_NOTIFY_EMAIL } from '../config'
 
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
+function getResend() {
+  if (!RESEND_API_KEY) return null
+  return new Resend(RESEND_API_KEY)
+}
 
 export const emailConfigStatus = () => ({
   configured: Boolean(RESEND_API_KEY),
@@ -29,6 +32,7 @@ const emailShell = (inner: string) => `
  * Se RESEND_API_KEY non è configurato, non invia ma non fallisce (dev).
  */
 export async function sendPasswordResetEmail(to: string, token: string): Promise<{ ok: boolean; error?: string }> {
+  const resend = getResend()
   if (!resend) {
     console.warn('[Email] RESEND_API_KEY non configurato. Link reset (solo dev):', `${APP_URL}/auth/reset-password?token=${token}`)
     return { ok: true }
@@ -63,6 +67,7 @@ export async function sendWelcomeEmail(
   to: string,
   characterName: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  const resend = getResend()
   if (!resend) {
     console.warn('[Email] RESEND_API_KEY non configurato — benvenuto NON inviato a:', to, `(${characterName})`)
     return { ok: false, error: 'RESEND_API_KEY non configurato' }
@@ -105,6 +110,7 @@ export async function sendRegistrationNotifyEmail(params: {
     return { ok: true }
   }
 
+  const resend = getResend()
   if (!resend) {
     console.warn(
       '[Email] RESEND_API_KEY non configurato — notifica staff NON inviata per:',
