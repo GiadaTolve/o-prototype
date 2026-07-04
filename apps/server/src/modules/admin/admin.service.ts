@@ -141,7 +141,6 @@ export async function deleteUser(targetUserId: string, actorUserId: string) {
 /**
  * Aggiorna il nome di un personaggio
  */
- */
 export async function updateCharacterName(characterId: string, name: string) {
   const [updated] = await db
     .update(characters)
