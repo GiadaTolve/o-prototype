@@ -175,13 +175,13 @@ export default function DashboardPage() {
     setLoweredWindows((prev) => prev.filter((w) => w !== id));
   }, []);
 
-  /** Unico punto di ingresso: apri scheda personaggio. Sempre la stessa Scheda: la mia = completa/edit, altrui = censurata/read-only (admin/mod possono editare). */
+  /** Unico punto di ingresso: apri scheda personaggio (propria o altrui). */
   const openCharacterSheet = useCallback(
     (characterId: string) => {
-      setProfileCharacterId(char?.id && characterId === char.id ? null : characterId);
+      setProfileCharacterId(characterId);
       open("scheda");
     },
-    [char?.id, open]
+    [open],
   );
 
   const lower = useCallback((id: WindowId) => {
@@ -198,6 +198,7 @@ export default function DashboardPage() {
     setOpenWindow((prev) => (prev === id ? null : prev));
     setLoweredWindows((prev) => prev.filter((w) => w !== id));
     if (id === "sms") setSmsTargetCharacterId(null);
+    if (id === "scheda") setProfileCharacterId(null);
   }, []);
 
   const handleLevelUpFromWs = useCallback((payload: LevelUpWsPayload) => {
@@ -577,6 +578,11 @@ export default function DashboardPage() {
           onOpenPresenti={() => open("presenti")}
           onOpenFetch={() => open("fetch")}
           onOpenSpazioEventi={() => open("spazioEventi")}
+          onOpenCharacterSheet={openCharacterSheet}
+          onOpenSmsWith={(target) => {
+            setSmsTargetCharacterId(target);
+            open("sms");
+          }}
         />
       </div>
       <DashboardFooter loweredWindows={loweredWindows} onRaiseFromDock={raiseFromDock} />

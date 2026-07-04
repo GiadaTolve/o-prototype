@@ -28,6 +28,8 @@ type Props = {
   onOpenPresenti: () => void;
   onOpenFetch?: () => void;
   onOpenSpazioEventi?: () => void;
+  onOpenCharacterSheet: (characterId: string) => void;
+  onOpenSmsWith?: (target: { id: string; name: string }) => void;
 };
 
 export function DashboardRightCol({
@@ -37,6 +39,8 @@ export function DashboardRightCol({
   onOpenPresenti,
   onOpenFetch,
   onOpenSpazioEventi,
+  onOpenCharacterSheet,
+  onOpenSmsWith,
 }: Props) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [meteo, setMeteo] = useState<MeteoPrefettura | null>(null);
@@ -185,13 +189,13 @@ export function DashboardRightCol({
                   isShadow: p.isShadow,
                   paragon: p.paragon,
                 })} hover:text-[var(--accent-gold)]`}
-                onClick={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("openProfileWindow", {
-                      detail: p.isMe ? { characterId: p.id } : { characterId: p.id, openSms: true, name: p.name },
-                    })
-                  )
-                }
+                onClick={() => {
+                  if (p.isMe) {
+                    onOpenCharacterSheet(p.id);
+                  } else {
+                    onOpenSmsWith?.({ id: p.id, name: p.name });
+                  }
+                }}
               >
                 <span className="truncate min-w-0">
                   {p.name}
@@ -207,10 +211,7 @@ export function DashboardRightCol({
               {!p.isMe && (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.dispatchEvent(new CustomEvent("openProfileWindow", { detail: { characterId: p.id } }));
-                  }}
+                  onClick={() => onOpenCharacterSheet(p.id)}
                   className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-[var(--accent-gold)] hover:bg-white/5"
                   title="Vedi scheda"
                   aria-label="Vedi scheda"

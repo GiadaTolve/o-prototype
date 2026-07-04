@@ -152,7 +152,12 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
         >
           {windowId === "scheda" && (
             <div className="h-full">
-              <SchedaContent char={char} characterId={profileCharacterId} onCharUpdate={onCharUpdate} />
+              <SchedaContent
+                key={profileCharacterId ?? char?.id ?? "scheda"}
+                char={char}
+                characterId={profileCharacterId}
+                onCharUpdate={onCharUpdate}
+              />
             </div>
           )}
           {windowId === "presenti" && <PresentiEstesiContent presenti={presenti} />}
@@ -2170,36 +2175,52 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
   const [charData, setCharData] = useState<any>(null);
   const [visibility, setVisibility] = useState<Visibility>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [housingChatRoomId, setHousingChatRoomId] = useState<string | null>(null);
 
-  // Se characterId è presente e diverso da char.id, è una scheda remota (altrui = censurata, admin/mod possono editare)
-  const isRemoteCharacter = characterId && characterId !== char?.id;
+  const viewingCharacterId = characterId ?? char?.id;
+  const isOwnSheet = Boolean(char?.id && viewingCharacterId === char.id);
+  const isRemoteCharacter = Boolean(viewingCharacterId && !isOwnSheet);
 
   const loadCharData = useCallback(() => {
-    if (isRemoteCharacter && characterId) {
+    if (isRemoteCharacter && viewingCharacterId) {
       setLoading(true);
+      setLoadError(null);
       api
-        .get(`/characters/${characterId}/public`)
+        .get(`/characters/${viewingCharacterId}/public`)
         .then((publicData: any) => {
           setVisibility(publicData?.visibility ?? {});
           if (publicData?.visibility?.canEdit) {
-            return api.get(`/characters/${characterId}/full`).then((full) => full).catch(() => publicData);
+            return api.get(`/characters/${viewingCharacterId}/full`).then((full) => full).catch(() => publicData);
           }
           return publicData;
         })
         .then((d) => setCharData(d))
-        .catch(() => setCharData(null))
+        .catch(() => {
+          setCharData(null);
+          setLoadError("Impossibile caricare la scheda di questo personaggio.");
+        })
         .finally(() => setLoading(false));
     } else if (char?.id) {
       setLoading(true);
+      setLoadError(null);
       api.get(`/characters/me`)
         .then((d) => setCharData(d))
-        .catch(() => setCharData(null))
+        .catch(() => {
+          setCharData(null);
+          setLoadError("Impossibile caricare la tua scheda.");
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [char?.id, characterId, isRemoteCharacter]);
+  }, [char?.id, viewingCharacterId, isRemoteCharacter]);
+
+  useEffect(() => {
+    setCharData(null);
+    setLoadError(null);
+    setActiveSection("main");
+  }, [viewingCharacterId]);
 
   useEffect(() => {
     loadCharData();
@@ -2227,9 +2248,13 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
     return <p className="text-sm text-gray-500 p-4">Caricamento…</p>;
   }
 
-  const displayChar = (charData || char) as CharacterSummary;
+  if (isRemoteCharacter && loadError) {
+    return <p className="text-sm text-gray-500 p-4">{loadError}</p>;
+  }
+
+  const displayChar = (isRemoteCharacter ? charData : (charData || char)) as CharacterSummary | null;
   if (!displayChar) {
-    return <p className="text-sm text-gray-500 p-4">Errore: dati personaggio non disponibili.</p>;
+    return <p className="text-sm text-gray-500 p-4">{loadError ?? "Errore: dati personaggio non disponibili."}</p>;
   }
 
   const levelProgress = resolveLevelFromExp(displayChar.experienceTotal ?? char?.experienceTotal ?? 0);
@@ -2255,7 +2280,7 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
     (displayChar as CharacterSummary)?.canEditMasterNotes ??
     false;
   const showMasterNotes = isRemoteCharacter ? visibility.showMasterNotes === true : true;
-  const schedaCharacterId = characterId || displayChar.id || "";
+  const schedaCharacterId = viewingCharacterId || displayChar.id || "";
 
   return (
     <div className="flex h-full min-h-0 flex-col md:flex-row bg-[var(--panel-bg)]">
