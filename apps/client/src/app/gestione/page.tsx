@@ -51,7 +51,6 @@ export default function GestionePage() {
     configured?: boolean;
     from?: string;
     notifyTo?: string;
-    usingResendTestDomain?: boolean;
     warning?: string | null;
   } | null>(null);
   const [emailTestLoading, setEmailTestLoading] = useState(false);
@@ -161,13 +160,13 @@ export default function GestionePage() {
             <div className="space-y-4">
               {emailStatus && (
                 <div className="rounded-lg border border-[var(--border-color)] bg-black/30 p-4 space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-gray-500">Email registrazione (Resend)</p>
+                  <p className="text-xs uppercase tracking-widest text-gray-500">Email registrazione (Gmail)</p>
                   <p className="text-sm text-gray-300">
                     Mittente: <span className="text-white">{emailStatus.from}</span>
                     {" · "}
                     Staff: <span className="text-white">{emailStatus.notifyTo}</span>
                   </p>
-                  {emailStatus.usingResendTestDomain && emailStatus.warning && (
+                  {emailStatus.warning && (
                     <p className="text-xs text-yellow-500/90">{emailStatus.warning}</p>
                   )}
                   <button

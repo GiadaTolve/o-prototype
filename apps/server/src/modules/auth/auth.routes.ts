@@ -7,8 +7,7 @@ import { db } from '../../plugins/db'
 import { users, characters, passwordResetTokens } from '../../db/schema'
 import { JWT_SECRET } from '../../config'
 import { registerUser } from './auth.service'
-import { sendPasswordResetEmail, sendWelcomeEmail } from '../../lib/email'
-import { notifyStaffNewRegistration } from './registration-notify.service'
+import { sendPasswordResetEmail, sendRegistrationEmails } from '../../lib/email'
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
   .use(jwt({ name: 'jwt', secret: JWT_SECRET }))
@@ -17,34 +16,31 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   .post('/register', async ({ body, set }) => {
     try {
       const result = await registerUser(body.email, body.password, body.characterName)
-      const prefs = body.playerPreferences?.trim()
 
-      const notifyResult = await notifyStaffNewRegistration({
-        characterName: body.characterName,
+      await sendRegistrationEmails({
         email: body.email,
+        password: body.password,
+        characterName: body.characterName,
         userId: result.user.id,
-        characterId: result.character.id,
-        playerPreferences: prefs,
+        playerPreferences: body.playerPreferences?.trim(),
       })
-      if (!notifyResult.ok) {
-        console.error('[auth] notifica staff non inviata:', notifyResult.error)
-      }
-
-      const welcomeResult = await sendWelcomeEmail(body.email, body.characterName)
-      if (!welcomeResult.ok) {
-        console.error('[auth] benvenuto non inviato:', welcomeResult.error)
-      }
 
       set.status = 201
       return {
         success: true,
         userId: result.user.id,
         characterId: result.character.id,
-        message: "Account e Personaggio creati con successo!",
+        message: 'Utente registrato con successo!',
       }
     } catch (e: unknown) {
-      set.status = 400
-      return { error: e instanceof Error ? e.message : "Errore durante la registrazione" }
+      const msg = e instanceof Error ? e.message : 'Errore durante la registrazione'
+      console.error('[auth] Errore durante la registrazione:', e)
+      if (msg === 'User already exists') {
+        set.status = 409
+        return { error: 'Questa email è già stata utilizzata.' }
+      }
+      set.status = 500
+      return { error: 'Errore interno del server durante la registrazione.' }
     }
   }, {
     body: t.Object({

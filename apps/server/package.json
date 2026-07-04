@@ -42,11 +42,12 @@
         "dotenv": "^17.2.3",
         "drizzle-orm": "latest",
         "elysia": "latest",
+        "nodemailer": "^9.0.3",
         "pg": "latest",
-        "postgres": "latest",
-        "resend": "^6.9.3"
+        "postgres": "latest"
     },
     "devDependencies": {
+        "@types/nodemailer": "^8.0.1",
         "bun-types": "latest",
         "drizzle-kit": "latest"
     }
