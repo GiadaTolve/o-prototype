@@ -36,7 +36,8 @@ import { wazaRoutes } from './modules/waza/waza.routes'
 import { wikiRoutes } from './modules/wiki/wiki.routes'
 import { playerRequestsRoutes } from './modules/player-requests/player-requests.routes'
 import { startDailyTickScheduler } from './scheduler/daily-tick.scheduler'
-import { JWT_SECRET } from './config'
+import { JWT_SECRET, RESEND_API_KEY } from './config'
+import { emailConfigStatus } from './lib/email'
 
 const PORT = Number(process.env.PORT) || 4000
 
@@ -84,6 +85,16 @@ const app = new Elysia()
   .use(presenceRoutes)
   .listen(PORT, () => {
     console.log(`🚀 Server avviato su http://localhost:${PORT}`)
+    const email = emailConfigStatus()
+    if (!RESEND_API_KEY) {
+      console.warn('⚠️  RESEND_API_KEY assente: email di registrazione e reset password disabilitate')
+    } else if (email.usingResendTestDomain) {
+      console.warn(
+        '⚠️  EMAIL_FROM usa @resend.dev: Resend consente invii solo all\'email dell\'account Resend. Verifica un dominio proprio per produzione.',
+      )
+    } else {
+      console.log(`📧 Email attive (from: ${email.from}, notifiche staff → ${email.notifyTo})`)
+    }
     
     // Avvia il scheduler del Daily Tick
     if (process.env.ENABLE_DAILY_TICK_SCHEDULER !== 'false') {

@@ -18,16 +18,22 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       const result = await registerUser(body.email, body.password, body.characterName)
       const prefs = body.playerPreferences?.trim()
 
-      void sendWelcomeEmail(body.email, body.characterName).catch((e) =>
-        console.error('[auth] welcome email:', e),
-      )
-      void sendRegistrationNotifyEmail({
-        characterName: body.characterName,
-        email: body.email,
-        userId: result.user.id,
-        characterId: result.character.id,
-        playerPreferences: prefs,
-      }).catch((e) => console.error('[auth] staff notify email:', e))
+      const [welcomeResult, notifyResult] = await Promise.all([
+        sendWelcomeEmail(body.email, body.characterName),
+        sendRegistrationNotifyEmail({
+          characterName: body.characterName,
+          email: body.email,
+          userId: result.user.id,
+          characterId: result.character.id,
+          playerPreferences: prefs,
+        }),
+      ])
+      if (!welcomeResult.ok) {
+        console.error('[auth] welcome email non inviata:', welcomeResult.error)
+      }
+      if (!notifyResult.ok) {
+        console.error('[auth] notifica staff non inviata:', notifyResult.error)
+      }
 
       set.status = 201
       return {

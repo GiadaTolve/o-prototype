@@ -3,6 +3,21 @@ import { RESEND_API_KEY, APP_URL, EMAIL_FROM, REGISTRATION_NOTIFY_EMAIL } from '
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
+export const emailConfigStatus = () => ({
+  configured: Boolean(RESEND_API_KEY),
+  from: EMAIL_FROM,
+  notifyTo: REGISTRATION_NOTIFY_EMAIL,
+  usingResendTestDomain: EMAIL_FROM.includes('@resend.dev'),
+})
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 const emailShell = (inner: string) => `
   <div style="background-color:#050508;color:#bfc0d1;padding:24px;font-family:sans-serif;border:1px solid #2a2a32;max-width:520px;margin:0 auto;">
     ${inner}
@@ -49,8 +64,8 @@ export async function sendWelcomeEmail(
   characterName: string,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!resend) {
-    console.warn('[Email] RESEND_API_KEY non configurato. Benvenuto (solo dev):', to, characterName)
-    return { ok: true }
+    console.warn('[Email] RESEND_API_KEY non configurato — benvenuto NON inviato a:', to, `(${characterName})`)
+    return { ok: false, error: 'RESEND_API_KEY non configurato' }
   }
 
   const loginUrl = `${APP_URL}/`
@@ -70,9 +85,10 @@ export async function sendWelcomeEmail(
   })
 
   if (error) {
-    console.error('[Email] Errore benvenuto:', error)
+    console.error('[Email] Errore benvenuto:', error.message, { to, characterName, from: EMAIL_FROM })
     return { ok: false, error: error.message }
   }
+  console.info('[Email] Benvenuto inviato a', to, `(${characterName})`)
   return { ok: true }
 }
 
@@ -90,11 +106,16 @@ export async function sendRegistrationNotifyEmail(params: {
   }
 
   if (!resend) {
-    console.warn('[Email] RESEND_API_KEY non configurato. Notifica staff (solo dev):', params.characterName)
-    return { ok: true }
+    console.warn(
+      '[Email] RESEND_API_KEY non configurato — notifica staff NON inviata per:',
+      params.characterName,
+      '→',
+      notifyTo,
+    )
+    return { ok: false, error: 'RESEND_API_KEY non configurato' }
   }
 
-  const prefs = params.playerPreferences?.trim() || 'Nessuna preferenza espressa.'
+  const prefs = escapeHtml(params.playerPreferences?.trim() || 'Nessuna preferenza espressa.')
 
   const { error } = await resend.emails.send({
     from: EMAIL_FROM,
@@ -116,8 +137,13 @@ export async function sendRegistrationNotifyEmail(params: {
   })
 
   if (error) {
-    console.error('[Email] Errore notifica staff:', error)
+    console.error('[Email] Errore notifica staff:', error.message, {
+      notifyTo,
+      characterName: params.characterName,
+      from: EMAIL_FROM,
+    })
     return { ok: false, error: error.message }
   }
+  console.info('[Email] Notifica staff inviata a', notifyTo, `(${params.characterName})`)
   return { ok: true }
 }
