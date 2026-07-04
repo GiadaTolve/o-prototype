@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { icons } from "@/lib/icons";
 import { api } from "@/lib/api";
 import "./fetch-pager.css";
 
@@ -73,14 +75,30 @@ function truncatePager(text: string | null | undefined, max = 120): string {
 }
 
 type Props = {
-  /** mobile = stesso device, padding ridotto */
-  variant?: "default" | "mobile";
+  /** window = finestra desktop (l'intero pannello è il beeper); mobile = tab Lite */
+  variant?: "window" | "mobile";
   /** Chiamato dopo ogni refresh lista (es. badge tab Beeper). */
   onListChange?: () => void;
+  /** Controlli finestra (solo variant window). */
+  onLower?: () => void;
+  onClose?: () => void;
 };
 
-export function FetchPanel({ variant = "default", onListChange }: Props) {
+function PagerDecor() {
+  return (
+    <>
+      <span className="fetch-pager__antenna" aria-hidden />
+      <span className="fetch-pager__screw fetch-pager__screw--tl" aria-hidden />
+      <span className="fetch-pager__screw fetch-pager__screw--tr" aria-hidden />
+      <span className="fetch-pager__screw fetch-pager__screw--bl" aria-hidden />
+      <span className="fetch-pager__screw fetch-pager__screw--br" aria-hidden />
+    </>
+  );
+}
+
+export function FetchPanel({ variant = "window", onListChange, onLower, onClose }: Props) {
   const isMobile = variant === "mobile";
+  const isWindow = variant === "window";
 
   const [list, setList] = useState<FetchItem[]>([]);
   const [concluded, setConcluded] = useState<ConcludedFetch[]>([]);
@@ -145,158 +163,182 @@ export function FetchPanel({ variant = "default", onListChange }: Props) {
     setPassedIds((prev) => new Set(prev).add(id));
   };
 
-  if (loading) {
-    return (
-      <div className={`fetch-pager ${isMobile ? "fetch-pager--mobile" : ""}`}>
-        <p className="fetch-pager-loading">SINCRONIZZAZIONE SEGNALE…</p>
-      </div>
-    );
-  }
+  const rootClass = `fetch-pager${isMobile ? " fetch-pager--mobile" : ""}${isWindow ? " fetch-pager--window" : ""}`;
 
-  return (
-    <div className={`fetch-pager ${isMobile ? "fetch-pager--mobile" : ""}`}>
-      <div className="fetch-pager__device">
-        <div className="fetch-pager__top">
-          <span className="fetch-pager__brand">OYASUMI · BEEPER</span>
-          <div className="fetch-pager__status">
-            <span className={`fetch-pager__led ${incomingCount > 0 ? "fetch-pager__led--live" : ""}`} aria-hidden />
-            <span>{incomingCount > 0 ? `${incomingCount} NUOVI` : "IN ASCOLTO"}</span>
-          </div>
+  const topBar = (
+    <div className={`fetch-pager__top${isWindow ? " fetch-pager__top--window" : ""}`}>
+      <span className="fetch-pager__brand">OYASUMI · BEEPER</span>
+      <div className="fetch-pager__top-right">
+        <div className="fetch-pager__status">
+          <span className={`fetch-pager__led ${incomingCount > 0 ? "fetch-pager__led--live" : ""}`} aria-hidden />
+          <span>{loading ? "SYNC…" : incomingCount > 0 ? `${incomingCount} NUOVI` : "IN ASCOLTO"}</span>
         </div>
-
-        <div className="fetch-pager__lcd">
-          <div className="fetch-pager__lcd-scroll">
-            <p className="fetch-pager__hint">
-              Trasmissioni sul tuo Beeper da Ordine e Paradise. Accetta per rispondere — altrimenti resta in coda per altri.
-            </p>
-
-            {!myFetch && availableList.length === 0 ? (
-              <p className="fetch-pager__empty">— NESSUN MESSAGGIO IN CODA —</p>
-            ) : (
-              <>
-                {myFetch && (
-                  <article className="fetch-pager__msg fetch-pager__msg--mine">
-                    <div className="fetch-pager__msg-head">
-                      <span className="fetch-pager__msg-tag fetch-pager__msg-tag--mine">CONFERMATO</span>
-                      <span>TX OK</span>
-                    </div>
-                    <h3 className="fetch-pager__msg-title">{myFetch.title}</h3>
-                    {myFetch.description && <p className="fetch-pager__msg-body">{truncatePager(myFetch.description, 200)}</p>}
-                    <p className="fetch-pager__msg-meta">
-                      <strong>STATO:</strong> ASSEGNATA A TE
-                    </p>
-                    <div className="fetch-pager__actions">
-                      <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "assigned", item: myFetch })}>
-                        LEGGI
-                      </button>
-                    </div>
-                  </article>
-                )}
-
-                {availableList.map((f) => {
-                  const taken = Boolean(f.assignedTo);
-                  const passed = passedIds.has(f.id);
-                  return (
-                    <article
-                      key={f.id}
-                      className={`fetch-pager__msg ${taken ? "fetch-pager__msg--taken" : passed ? "fetch-pager__msg--taken" : "fetch-pager__msg--incoming"}`}
-                    >
-                      <div className="fetch-pager__msg-head">
-                        <span className="fetch-pager__msg-tag">
-                          {taken ? "OCCUPATO" : passed ? "IN CODA" : "▼ IN ARRIVO"}
-                        </span>
-                        <span>{taken ? "ALTRO PG" : passed ? "PASSATO" : "NUOVO"}</span>
-                      </div>
-                      <h3 className="fetch-pager__msg-title">{f.title}</h3>
-                      {f.description && !passed && (
-                        <p className="fetch-pager__msg-body">{truncatePager(f.description)}</p>
-                      )}
-                      {!passed && (
-                        <p className="fetch-pager__msg-meta">
-                          {formatRequirements(f.requirements) && (
-                            <>
-                              <strong>RIC:</strong> {formatRequirements(f.requirements)}
-                              <br />
-                            </>
-                          )}
-                          <strong>PREMIO:</strong> {formatRewards(f.rewardConfig)}
-                        </p>
-                      )}
-                      {!taken && !passed && (
-                        <div className="fetch-pager__actions">
-                          <button
-                            type="button"
-                            className="fetch-pager__btn fetch-pager__btn--accept"
-                            disabled={assigningId !== null}
-                            onClick={() => assign(f.id)}
-                          >
-                            {assigningId === f.id ? "TX…" : "ACCETTA"}
-                          </button>
-                          <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => passMessage(f.id)}>
-                            PASSA
-                          </button>
-                          <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "available", item: f })}>
-                            LEGGI
-                          </button>
-                        </div>
-                      )}
-                      {passed && !taken && (
-                        <div className="fetch-pager__actions">
-                          <button
-                            type="button"
-                            className="fetch-pager__btn fetch-pager__btn--accept"
-                            disabled={assigningId !== null}
-                            onClick={() => assign(f.id)}
-                          >
-                            ACCETTA ORA
-                          </button>
-                          <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setPassedIds((p) => { const n = new Set(p); n.delete(f.id); return n; })}>
-                            RIPRISTINA
-                          </button>
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-              </>
+        {isWindow && (onLower || onClose) && (
+          <div className="fetch-pager__window-controls">
+            {onLower && (
+              <button
+                type="button"
+                className="fetch-pager__win-btn"
+                onClick={onLower}
+                title="Abbassa (in dock)"
+                aria-label="Abbassa"
+              >
+                <FontAwesomeIcon icon={icons.minimize} className="w-3 h-3" />
+              </button>
             )}
+            {onClose && (
+              <button
+                type="button"
+                className="fetch-pager__win-btn fetch-pager__win-btn--close"
+                onClick={onClose}
+                title="Chiudi"
+                aria-label="Chiudi"
+              >
+                <FontAwesomeIcon icon={icons.close} className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
-            {concluded.length > 0 && (
-              <>
-                <button type="button" className="fetch-pager__archive-toggle" onClick={() => setShowConcluded((v) => !v)}>
-                  ARCHIVIO TRASMISSIONI · {concluded.length} {showConcluded ? "▲" : "▼"}
+  const lcdContent = loading ? (
+    <p className="fetch-pager__empty fetch-pager-loading">SINCRONIZZAZIONE SEGNALE…</p>
+  ) : (
+    <>
+      <p className="fetch-pager__hint">
+        Trasmissioni sul tuo Beeper da Ordine e Paradise. Accetta per rispondere — altrimenti resta in coda per altri.
+      </p>
+
+      {!myFetch && availableList.length === 0 ? (
+        <p className="fetch-pager__empty">— NESSUN MESSAGGIO IN CODA —</p>
+      ) : (
+        <>
+          {myFetch && (
+            <article className="fetch-pager__msg fetch-pager__msg--mine">
+              <div className="fetch-pager__msg-head">
+                <span className="fetch-pager__msg-tag fetch-pager__msg-tag--mine">CONFERMATO</span>
+                <span>TX OK</span>
+              </div>
+              <h3 className="fetch-pager__msg-title">{myFetch.title}</h3>
+              {myFetch.description && <p className="fetch-pager__msg-body">{truncatePager(myFetch.description, 200)}</p>}
+              <p className="fetch-pager__msg-meta">
+                <strong>STATO:</strong> ASSEGNATA A TE
+              </p>
+              <div className="fetch-pager__actions">
+                <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "assigned", item: myFetch })}>
+                  LEGGI
                 </button>
-                {showConcluded &&
-                  concluded.map((c) => (
-                    <article key={c.id} className="fetch-pager__msg fetch-pager__archive-item">
-                      <div className="fetch-pager__msg-head">
-                        <span className="fetch-pager__msg-tag">ARCHIVIO</span>
-                        <span>OK</span>
-                      </div>
-                      <h3 className="fetch-pager__msg-title">{c.title}</h3>
-                      {c.responsoComment && <p className="fetch-pager__msg-body">{truncatePager(c.responsoComment, 80)}</p>}
-                      <p className="fetch-pager__msg-meta">
-                        {c.participantNames.length > 0 ? c.participantNames.join(", ") : "—"}
-                      </p>
-                      <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "concluded", item: c })}>
-                        DETTAGLI
-                      </button>
-                    </article>
-                  ))}
-              </>
-            )}
-          </div>
-        </div>
+              </div>
+            </article>
+          )}
 
-        <div className="fetch-pager__keys" aria-hidden>
-          <span className="fetch-pager__key" />
-          <span className="fetch-pager__key" />
-          <span className="fetch-pager__key" />
-        </div>
-      </div>
+          {availableList.map((f) => {
+            const taken = Boolean(f.assignedTo);
+            const passed = passedIds.has(f.id);
+            return (
+              <article
+                key={f.id}
+                className={`fetch-pager__msg ${taken ? "fetch-pager__msg--taken" : passed ? "fetch-pager__msg--taken" : "fetch-pager__msg--incoming"}`}
+              >
+                <div className="fetch-pager__msg-head">
+                  <span className="fetch-pager__msg-tag">
+                    {taken ? "OCCUPATO" : passed ? "IN CODA" : "▼ IN ARRIVO"}
+                  </span>
+                  <span>{taken ? "ALTRO PG" : passed ? "PASSATO" : "NUOVO"}</span>
+                </div>
+                <h3 className="fetch-pager__msg-title">{f.title}</h3>
+                {f.description && !passed && (
+                  <p className="fetch-pager__msg-body">{truncatePager(f.description)}</p>
+                )}
+                {!passed && (
+                  <p className="fetch-pager__msg-meta">
+                    {formatRequirements(f.requirements) && (
+                      <>
+                        <strong>RIC:</strong> {formatRequirements(f.requirements)}
+                        <br />
+                      </>
+                    )}
+                    <strong>PREMIO:</strong> {formatRewards(f.rewardConfig)}
+                  </p>
+                )}
+                {!taken && !passed && (
+                  <div className="fetch-pager__actions">
+                    <button
+                      type="button"
+                      className="fetch-pager__btn fetch-pager__btn--accept"
+                      disabled={assigningId !== null}
+                      onClick={() => assign(f.id)}
+                    >
+                      {assigningId === f.id ? "TX…" : "ACCETTA"}
+                    </button>
+                    <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => passMessage(f.id)}>
+                      PASSA
+                    </button>
+                    <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "available", item: f })}>
+                      LEGGI
+                    </button>
+                  </div>
+                )}
+                {passed && !taken && (
+                  <div className="fetch-pager__actions">
+                    <button
+                      type="button"
+                      className="fetch-pager__btn fetch-pager__btn--accept"
+                      disabled={assigningId !== null}
+                      onClick={() => assign(f.id)}
+                    >
+                      ACCETTA ORA
+                    </button>
+                    <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setPassedIds((p) => { const n = new Set(p); n.delete(f.id); return n; })}>
+                      RIPRISTINA
+                    </button>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </>
+      )}
 
-      {selectedDetail &&
-        createPortal(
+      {concluded.length > 0 && (
+        <>
+          <button type="button" className="fetch-pager__archive-toggle" onClick={() => setShowConcluded((v) => !v)}>
+            ARCHIVIO TRASMISSIONI · {concluded.length} {showConcluded ? "▲" : "▼"}
+          </button>
+          {showConcluded &&
+            concluded.map((c) => (
+              <article key={c.id} className="fetch-pager__msg fetch-pager__archive-item">
+                <div className="fetch-pager__msg-head">
+                  <span className="fetch-pager__msg-tag">ARCHIVIO</span>
+                  <span>OK</span>
+                </div>
+                <h3 className="fetch-pager__msg-title">{c.title}</h3>
+                {c.responsoComment && <p className="fetch-pager__msg-body">{truncatePager(c.responsoComment, 80)}</p>}
+                <p className="fetch-pager__msg-meta">
+                  {c.participantNames.length > 0 ? c.participantNames.join(", ") : "—"}
+                </p>
+                <button type="button" className="fetch-pager__btn fetch-pager__btn--ghost" onClick={() => setSelectedDetail({ type: "concluded", item: c })}>
+                  DETTAGLI
+                </button>
+              </article>
+            ))}
+        </>
+      )}
+    </>
+  );
+
+  const keysRow = (
+    <div className="fetch-pager__keys" aria-hidden>
+      <span className="fetch-pager__key" />
+      <span className="fetch-pager__key" />
+      <span className="fetch-pager__key" />
+    </div>
+  );
+
+  const detailModal = selectedDetail &&
+    createPortal(
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
             onClick={() => setSelectedDetail(null)}
@@ -377,7 +419,32 @@ export function FetchPanel({ variant = "default", onListChange }: Props) {
             </div>
           </div>,
           document.body,
-        )}
+        );
+
+  if (isWindow) {
+    return (
+      <div className={rootClass}>
+        <PagerDecor />
+        {topBar}
+        <div className="fetch-pager__lcd">
+          <div className="fetch-pager__lcd-scroll">{lcdContent}</div>
+        </div>
+        {keysRow}
+        {detailModal}
+      </div>
+    );
+  }
+
+  return (
+    <div className={rootClass}>
+      <div className="fetch-pager__device">
+        {topBar}
+        <div className="fetch-pager__lcd">
+          <div className="fetch-pager__lcd-scroll">{lcdContent}</div>
+        </div>
+        {keysRow}
+      </div>
+      {detailModal}
     </div>
   );
 }

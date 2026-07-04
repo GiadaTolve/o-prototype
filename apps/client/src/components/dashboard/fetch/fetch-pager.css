@@ -411,6 +411,129 @@
   padding: 0.15rem 0.35rem 0.35rem;
 }
 
+/* ─── Finestra desktop: l'intero pannello è il beeper ─── */
+
+.fetch-pager--window {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  padding: 0.7rem 0.8rem 0.6rem;
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--pager-chassis) 80%, var(--accent-violet) 8%),
+    color-mix(in srgb, var(--pager-chassis) 92%, black 10%)
+  );
+  border: 2px solid color-mix(in srgb, var(--border-color) 80%, var(--accent-gold) 20%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--accent-gold) 12%, transparent),
+    inset 0 -3px 12px rgba(0, 0, 0, 0.5),
+    0 12px 36px var(--shadow-dark),
+    0 0 24px var(--shadow-violet),
+    0 0 0 1px color-mix(in srgb, var(--accent-gold) 10%, transparent);
+}
+
+.fetch-pager__antenna,
+.beeper-home__antenna {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.14rem;
+  height: 0.6rem;
+  border-radius: 1px;
+  background: linear-gradient(180deg, var(--accent-gold), color-mix(in srgb, var(--border-color) 70%, black));
+  box-shadow: 0 0 6px var(--glow-gold);
+  z-index: 2;
+}
+
+.fetch-pager__antenna::after,
+.beeper-home__antenna::after {
+  content: "";
+  position: absolute;
+  top: -0.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-gold) 75%, var(--accent-violet));
+  box-shadow: 0 0 8px var(--glow-violet);
+}
+
+.fetch-pager__screw,
+.beeper-home__screw {
+  position: absolute;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--accent-gold) 35%, transparent), var(--border-color));
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  opacity: 0.7;
+  z-index: 2;
+}
+
+.fetch-pager__screw--tl,
+.beeper-home__screw--tl { top: 0.45rem; left: 0.45rem; }
+.fetch-pager__screw--tr,
+.beeper-home__screw--tr { top: 0.45rem; right: 0.45rem; }
+.fetch-pager__screw--bl,
+.beeper-home__screw--bl { bottom: 0.45rem; left: 0.45rem; }
+.fetch-pager__screw--br,
+.beeper-home__screw--br { bottom: 0.45rem; right: 0.45rem; }
+
+.fetch-pager__top--window {
+  margin-top: 0.2rem;
+  padding: 0.4rem 0.45rem 0.55rem;
+}
+
+.fetch-pager__top-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.fetch-pager__window-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding-left: 0.35rem;
+  border-left: 1px solid color-mix(in srgb, var(--border-color) 70%, black);
+}
+
+.fetch-pager__win-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--pager-lcd-dim) 45%, var(--border-color));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--button-bg-hover) 75%, white 4%), var(--button-bg));
+  color: var(--pager-lcd-dim);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 6%, transparent);
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.fetch-pager__win-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent-gold) 15%, transparent), 0 0 8px var(--shadow-gold);
+}
+
+.fetch-pager__win-btn--close:hover {
+  border-color: color-mix(in srgb, var(--accent-violet) 70%, var(--border-color));
+  color: var(--accent-violet-light);
+  box-shadow: 0 0 8px var(--shadow-violet);
+}
+
+.fetch-pager--window .fetch-pager__lcd {
+  flex: 1;
+  min-height: 0;
+}
+
 .fetch-pager-loading {
   padding: 2rem;
   text-align: center;
@@ -452,46 +575,6 @@
     0 6px 18px var(--shadow-dark),
     0 0 14px var(--shadow-violet);
 }
-
-.beeper-home__antenna {
-  position: absolute;
-  top: -0.45rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0.12rem;
-  height: 0.55rem;
-  border-radius: 1px;
-  background: linear-gradient(180deg, var(--accent-gold), color-mix(in srgb, var(--border-color) 70%, black));
-  box-shadow: 0 0 6px var(--glow-gold);
-}
-
-.beeper-home__antenna::after {
-  content: "";
-  position: absolute;
-  top: -0.18rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0.28rem;
-  height: 0.28rem;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--accent-gold) 75%, var(--accent-violet));
-  box-shadow: 0 0 8px var(--glow-violet);
-}
-
-.beeper-home__screw {
-  position: absolute;
-  width: 0.28rem;
-  height: 0.28rem;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--accent-gold) 35%, transparent), var(--border-color));
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
-  opacity: 0.65;
-}
-
-.beeper-home__screw--tl { top: 0.35rem; left: 0.35rem; }
-.beeper-home__screw--tr { top: 0.35rem; right: 0.35rem; }
-.beeper-home__screw--bl { bottom: 0.35rem; left: 0.35rem; }
-.beeper-home__screw--br { bottom: 0.35rem; right: 0.35rem; }
 
 .fetch-pager--home .fetch-pager__top {
   padding: 0.2rem 0.35rem 0.35rem;

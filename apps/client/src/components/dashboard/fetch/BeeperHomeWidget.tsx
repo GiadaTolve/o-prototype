@@ -62,11 +62,11 @@ export function BeeperHomeWidget({ onOpen }: Props) {
     <section className="beeper-home" aria-label="Beeper — trasmissioni fetch">
       <div className="fetch-pager fetch-pager--home">
         <div className="fetch-pager__device beeper-home__device">
-          <span className="beeper-home__antenna" aria-hidden />
-          <span className="beeper-home__screw beeper-home__screw--tl" aria-hidden />
-          <span className="beeper-home__screw beeper-home__screw--tr" aria-hidden />
-          <span className="beeper-home__screw beeper-home__screw--bl" aria-hidden />
-          <span className="beeper-home__screw beeper-home__screw--br" aria-hidden />
+          <span className="fetch-pager__antenna" aria-hidden />
+          <span className="fetch-pager__screw fetch-pager__screw--tl" aria-hidden />
+          <span className="fetch-pager__screw fetch-pager__screw--tr" aria-hidden />
+          <span className="fetch-pager__screw fetch-pager__screw--bl" aria-hidden />
+          <span className="fetch-pager__screw fetch-pager__screw--br" aria-hidden />
 
           <div className="fetch-pager__top">
             <span className="fetch-pager__brand">OYASUMI · BEEPER</span>

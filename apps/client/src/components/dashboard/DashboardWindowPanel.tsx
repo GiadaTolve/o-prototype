@@ -75,6 +75,7 @@ const MAIN_AREA_PANEL_IDS = ["scheda", "profilo", "waza"] as const;
 
 export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione }: Props) {
   const isSms = windowId === "sms";
+  const isFetch = windowId === "fetch";
   const isScheda = windowId === "scheda";
   const isProfilo = windowId === "profilo";
   const isSchedaLike = isScheda || isProfilo;
@@ -92,15 +93,17 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
       aria-modal="true"
     >
       <div
-        className={`relative flex flex-col bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl overflow-hidden pointer-events-auto ${
-          isMainAreaPanel
-            ? "w-full max-w-full h-full md:w-[calc(100vw-37.75rem)] md:h-[calc(100vh-8rem)] md:absolute md:top-[calc(50%+5px)] md:left-[calc(50vw+0.625rem)] md:-translate-x-[50%] md:-translate-y-[50%] md:max-w-[calc(1800px-37.75rem)]"
-            : isUnifiedPanel
+        className={`relative flex flex-col overflow-hidden pointer-events-auto ${
+          isFetch
             ? "w-full max-w-4xl h-[calc(80vh-5rem)]"
-            : "w-full max-w-2xl max-h-[75vh]"
+            : isMainAreaPanel
+            ? "w-full max-w-full h-full md:w-[calc(100vw-37.75rem)] md:h-[calc(100vh-8rem)] md:absolute md:top-[calc(50%+5px)] md:left-[calc(50vw+0.625rem)] md:-translate-x-[50%] md:-translate-y-[50%] md:max-w-[calc(1800px-37.75rem)] bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl"
+            : isUnifiedPanel
+            ? "w-full max-w-4xl h-[calc(80vh-5rem)] bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl"
+            : "w-full max-w-2xl max-h-[75vh] bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl"
         }`}
       >
-        {/* Barra titolo: icona + label | _ (abbassa) | x (chiudi) */}
+        {!isFetch && (
         <div className="flex items-center justify-between shrink-0 px-4 py-3 border-b border-[var(--border-color)] bg-black/30">
           <h3 className="font-display text-sm uppercase tracking-widest text-[var(--accent-gold)] flex items-center gap-2">
             <FontAwesomeIcon icon={PANEL_ICONS[windowId]} className="w-4 h-4" />
@@ -127,16 +130,22 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
             </button>
           </div>
         </div>
+        )}
         {/* Contenuto scrollabile */}
+        {isFetch ? (
+          <FetchPanel
+            variant="window"
+            onLower={() => onLower(windowId)}
+            onClose={() => onClose(windowId)}
+          />
+        ) : (
         <div
           className={`flex-1 min-h-0 overflow-hidden ${
             isSms
               ? "flex flex-col"
               : isMainAreaPanel
                 ? "h-full"
-                : windowId === "fetch"
-                  ? "flex flex-col"
-                  : windowId === "ordine"
+                : windowId === "ordine"
                     ? "overflow-y-auto px-4 pt-0 pb-4"
                     : "overflow-y-auto px-4 py-4"
           }`}
@@ -147,7 +156,6 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
             </div>
           )}
           {windowId === "presenti" && <PresentiEstesiContent presenti={presenti} />}
-          {windowId === "fetch" && <FetchPanel />}
           {windowId === "sms" && (
             <SmsPanel onUnreadChange={onUnreadChange} initialTargetCharacterId={smsTargetCharacterId ?? undefined} />
           )}
@@ -164,6 +172,7 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
           {windowId === "notifiche" && <NotificheContent onUnreadChange={onNotificationsUnreadChange} />}
           {windowId === "spazioEventi" && <SpazioEventiContent canAccessGestione={canAccessGestione} />}
         </div>
+        )}
       </div>
     </div>
   );
