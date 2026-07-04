@@ -7,6 +7,7 @@ import {
   getAllUsers,
   updateUserRole,
   updateUserBanState,
+  deleteUser,
   updateCharacterName,
   updateCharacterRoleIcon,
   resetCharacterStats,
@@ -170,6 +171,29 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
                 banState: t.Union([t.Literal('NONE'), t.Literal('SHADOW'), t.Literal('FULL')]),
               }),
             }
+          )
+
+          // Elimina utente (e personaggi collegati)
+          .delete(
+            '/users/:id',
+            async ({ params, user, set }) => {
+              if (!user) {
+                set.status = 401
+                return { error: 'Non autenticato' }
+              }
+              try {
+                const result = await deleteUser(params.id, user.id)
+                return result
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore durante l\'eliminazione utente' }
+              }
+            },
+            {
+              params: t.Object({
+                id: t.String(),
+              }),
+            },
           )
 
           // Aggiorna il nome del personaggio

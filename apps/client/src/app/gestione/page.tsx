@@ -260,6 +260,11 @@ export default function GestionePage() {
                     loadUsers();
                     if (selectedUser) loadSanctions(selectedUser.id);
                   }}
+                  onDeleted={() => {
+                    setSelectedUser(null);
+                    setSanctions([]);
+                    loadUsers();
+                  }}
                 />
               )}
             </div>
@@ -323,12 +328,14 @@ function UserManagementModal({
   canEditUserRuolo = false,
   onClose,
   onUpdate,
+  onDeleted,
 }: {
   user: User;
   sanctions: Sanction[];
   canEditUserRuolo?: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  onDeleted: () => void;
 }) {
   const character = user.characters && user.characters.length > 0 ? user.characters[0] : null;
   const initialRuolo = (character?.uiMetadata?.roleIcon ?? "").toLowerCase();
@@ -401,6 +408,32 @@ function UserManagementModal({
       setSaving(false);
     }
   };
+
+  const handleDeleteUser = async () => {
+    const label = character?.name ? `${user.email} (${character.name})` : user.email;
+    if (
+      !confirm(
+        `Eliminare definitivamente l'utente ${label}?\n\nVerranno rimossi account e personaggi dal database. L'email potrà registrarsi di nuovo.`,
+      )
+    ) {
+      return;
+    }
+    const typed = prompt(`Digita ELIMINA per confermare la cancellazione di ${user.email}`);
+    if (typed !== "ELIMINA") return;
+
+    setSaving(true);
+    try {
+      await api.delete(`/admin/users/${user.id}`);
+      alert("Utente eliminato.");
+      onDeleted();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Errore durante l'eliminazione");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isProtectedAccount = user.role === "ADMIN" || user.role === "MASTER";
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
@@ -527,6 +560,25 @@ function UserManagementModal({
               </button>
             </div>
           )}
+
+          <div className="pt-4 border-t border-[var(--border-color)]">
+            <p className="text-sm text-gray-400 mb-2">Elimina utente</p>
+            <p className="text-xs text-gray-500 mb-3">
+              Rimuove account e personaggi dal database. Utile per cancellare iscrizioni di test e permettere una nuova registrazione con la stessa email.
+            </p>
+            {isProtectedAccount ? (
+              <p className="text-xs text-yellow-500">Gli account ADMIN e MASTER non possono essere eliminati da qui.</p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={saving}
+                className="px-4 py-2 rounded border border-red-600 text-red-400 text-xs uppercase tracking-wider hover:bg-red-600/10 disabled:opacity-50"
+              >
+                Elimina utente
+              </button>
+            )}
+          </div>
 
           <div>
             <p className="text-sm text-gray-400 mb-2">Storico Sanzioni</p>

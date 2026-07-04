@@ -1,6 +1,24 @@
-import { eq, and, gte, lte, desc, asc, isNull, sql } from 'drizzle-orm'
+import { eq, and, gte, lte, desc, asc, isNull, sql, inArray, or } from 'drizzle-orm'
 import { db } from '../../plugins/db'
-import { users, characters, zoneMessages, locations, banners, dailyEvents, sanctions, jobs, housingTypes, characterHousing, creatures } from '../../db/schema'
+import {
+  users,
+  characters,
+  zoneMessages,
+  locations,
+  banners,
+  dailyEvents,
+  sanctions,
+  jobs,
+  housingTypes,
+  characterHousing,
+  creatures,
+  characterSkills,
+  inventory,
+  sceneGroundLoot,
+  dropTableDailyUsage,
+  marketListings,
+  marketTradeFeed,
+} from '../../db/schema'
 import type { UserRole, BanState } from '@domain/security/jwt'
 
 /**
@@ -49,7 +67,80 @@ export async function updateUserBanState(userId: string, banState: BanState) {
 }
 
 /**
+ * Elimina un utente e i personaggi collegati (per test registrazione o pulizia account).
+ * Non consente di eliminare sé stessi né account ADMIN/MASTER.
+ */
+export async function deleteUser(targetUserId: string, actorUserId: string) {
+  if (targetUserId === actorUserId) {
+    throw new Error('Non puoi eliminare il tuo account da qui')
+  }
+
+  const target = await db.query.users.findFirst({
+    where: eq(users.id, targetUserId),
+    with: { characters: { columns: { id: true } } },
+  })
+
+  if (!target) {
+    throw new Error('Utente non trovato')
+  }
+
+  if (target.role === 'ADMIN' || target.role === 'MASTER') {
+    throw new Error('Non puoi eliminare un account ADMIN o MASTER')
+  }
+
+  const characterIds = target.characters.map((c) => c.id)
+
+  await db.transaction(async (tx) => {
+    if (characterIds.length > 0) {
+      await tx
+        .update(marketListings)
+        .set({ buyerCharacterId: null })
+        .where(inArray(marketListings.buyerCharacterId, characterIds))
+      await tx.delete(marketListings).where(inArray(marketListings.sellerCharacterId, characterIds))
+      await tx
+        .delete(marketTradeFeed)
+        .where(
+          or(
+            inArray(marketTradeFeed.sellerCharacterId, characterIds),
+            inArray(marketTradeFeed.buyerCharacterId, characterIds),
+          ),
+        )
+      await tx
+        .update(inventory)
+        .set({ craftedByCharacterId: null })
+        .where(inArray(inventory.craftedByCharacterId, characterIds))
+      await tx.delete(inventory).where(inArray(inventory.characterId, characterIds))
+      await tx.delete(characterSkills).where(inArray(characterSkills.characterId, characterIds))
+      await tx.delete(dropTableDailyUsage).where(inArray(dropTableDailyUsage.characterId, characterIds))
+      await tx
+        .delete(sceneGroundLoot)
+        .where(inArray(sceneGroundLoot.createdByCharacterId, characterIds))
+      await tx.delete(characters).where(inArray(characters.id, characterIds))
+    }
+
+    const [deleted] = await tx.delete(users).where(eq(users.id, targetUserId)).returning({
+      id: users.id,
+      email: users.email,
+    })
+
+    if (!deleted) {
+      throw new Error('Utente non trovato')
+    }
+
+    return deleted
+  })
+
+  return {
+    success: true,
+    deletedUserId: targetUserId,
+    email: target.email,
+    characterCount: characterIds.length,
+  }
+}
+
+/**
  * Aggiorna il nome di un personaggio
+ */
  */
 export async function updateCharacterName(characterId: string, name: string) {
   const [updated] = await db
