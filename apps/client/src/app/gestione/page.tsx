@@ -47,6 +47,14 @@ export default function GestionePage() {
   const [pendingRequests, setPendingRequests] = useState(0);
 
   const [canEditUserRuolo, setCanEditUserRuolo] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<{
+    configured?: boolean;
+    from?: string;
+    notifyTo?: string;
+    usingResendTestDomain?: boolean;
+    warning?: string | null;
+  } | null>(null);
+  const [emailTestLoading, setEmailTestLoading] = useState(false);
 
   const fetchPendingRequests = useCallback(async () => {
     try {
@@ -68,6 +76,7 @@ export default function GestionePage() {
     // Carica lista utenti
     loadUsers();
     fetchPendingRequests();
+    api.get("/admin/email/status").then((d) => setEmailStatus(d as typeof emailStatus)).catch(() => setEmailStatus(null));
     api
       .get("/characters/me")
       .then((char) => {
@@ -150,6 +159,45 @@ export default function GestionePage() {
         <div>
           {activeTab === "users" && (
             <div className="space-y-4">
+              {emailStatus && (
+                <div className="rounded-lg border border-[var(--border-color)] bg-black/30 p-4 space-y-2">
+                  <p className="text-xs uppercase tracking-widest text-gray-500">Email registrazione (Resend)</p>
+                  <p className="text-sm text-gray-300">
+                    Mittente: <span className="text-white">{emailStatus.from}</span>
+                    {" · "}
+                    Staff: <span className="text-white">{emailStatus.notifyTo}</span>
+                  </p>
+                  {emailStatus.usingResendTestDomain && emailStatus.warning && (
+                    <p className="text-xs text-yellow-500/90">{emailStatus.warning}</p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={emailTestLoading || !emailStatus.configured}
+                    onClick={async () => {
+                      setEmailTestLoading(true);
+                      try {
+                        const res = (await api.post("/admin/email/test", {})) as {
+                          ok?: boolean;
+                          error?: string;
+                          to?: string;
+                        };
+                        if (res.ok) {
+                          alert(`Email di test inviata a ${res.to ?? emailStatus.notifyTo}. Controlla anche spam.`);
+                        } else {
+                          alert(res.error ?? "Invio fallito");
+                        }
+                      } catch (e) {
+                        alert(e instanceof Error ? e.message : "Invio fallito");
+                      } finally {
+                        setEmailTestLoading(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded border border-[var(--accent-violet)] text-xs text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 disabled:opacity-50"
+                  >
+                    {emailTestLoading ? "Invio…" : "Invia email di test allo staff"}
+                  </button>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-display text-white">Lista Utenti</h2>
                 <button

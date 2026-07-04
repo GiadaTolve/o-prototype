@@ -1,17 +1,27 @@
 import { Resend } from 'resend'
 import { RESEND_API_KEY, APP_URL, EMAIL_FROM, REGISTRATION_NOTIFY_EMAIL } from '../config'
 
+const REPLY_TO = process.env.EMAIL_REPLY_TO || REGISTRATION_NOTIFY_EMAIL
+
 function getResend() {
   if (!RESEND_API_KEY) return null
   return new Resend(RESEND_API_KEY)
 }
 
-export const emailConfigStatus = () => ({
-  configured: Boolean(RESEND_API_KEY),
-  from: EMAIL_FROM,
-  notifyTo: REGISTRATION_NOTIFY_EMAIL,
-  usingResendTestDomain: EMAIL_FROM.includes('@resend.dev'),
-})
+export function emailConfigStatus() {
+  const usingResendTestDomain = EMAIL_FROM.includes('@resend.dev')
+  return {
+    configured: Boolean(RESEND_API_KEY),
+    from: EMAIL_FROM,
+    replyTo: REPLY_TO,
+    notifyTo: REGISTRATION_NOTIFY_EMAIL,
+    usingResendTestDomain,
+    canSendToArbitraryRecipients: !usingResendTestDomain,
+    warning: usingResendTestDomain
+      ? 'EMAIL_FROM usa @resend.dev: Resend invia solo all\'email dell\'account Resend. Verifica un dominio su resend.com/domains e imposta EMAIL_FROM (es. Oyasumi <noreply@tuodominio.it>).'
+      : null,
+  }
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -26,6 +36,38 @@ const emailShell = (inner: string) => `
     ${inner}
   </div>
 `
+
+function formatResendError(error: { message: string; name?: string }) {
+  return error.name ? `${error.name}: ${error.message}` : error.message
+}
+
+/** Invio diagnostico (Gestione). */
+export async function sendTestEmail(to: string): Promise<{ ok: boolean; error?: string }> {
+  const resend = getResend()
+  if (!resend) {
+    return { ok: false, error: 'RESEND_API_KEY non configurato' }
+  }
+
+  const status = emailConfigStatus()
+  const { error } = await resend.emails.send({
+    from: EMAIL_FROM,
+    to: [to],
+    replyTo: REPLY_TO,
+    subject: 'Oyasumi — Test email',
+    html: emailShell(`
+      <p>Test invio email Oyasumi.</p>
+      <p><strong>From:</strong> ${escapeHtml(EMAIL_FROM)}</p>
+      <p><strong>Mittente test Resend:</strong> ${status.usingResendTestDomain ? 'sì' : 'no'}</p>
+      ${status.warning ? `<p style="color:#f59e0b;">${escapeHtml(status.warning)}</p>` : ''}
+    `),
+    text: `Test email Oyasumi da ${EMAIL_FROM}`,
+  })
+
+  if (error) {
+    return { ok: false, error: formatResendError(error) }
+  }
+  return { ok: true }
+}
 
 /**
  * Invia email di reset password.
@@ -43,6 +85,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   const { error } = await resend.emails.send({
     from: EMAIL_FROM,
     to: [to],
+    replyTo: REPLY_TO,
     subject: 'Oyasumi — Reimposta la password',
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
@@ -56,8 +99,8 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   })
 
   if (error) {
-    console.error('[Email] Errore invio:', error)
-    return { ok: false, error: error.message }
+    console.error('[Email] Errore invio:', formatResendError(error))
+    return { ok: false, error: formatResendError(error) }
   }
   return { ok: true }
 }
@@ -78,11 +121,12 @@ export async function sendWelcomeEmail(
   const { error } = await resend.emails.send({
     from: EMAIL_FROM,
     to: [to],
+    replyTo: REPLY_TO,
     subject: `Benvenuto in Oyasumi, ${characterName}`,
     html: emailShell(`
       <h1 style="color:#a78bfa;border-bottom:2px solid #d4af37;padding-bottom:10px;">Benvenuto, Sognatore.</h1>
       <p>La tua registrazione su <strong style="color:#d4af37;">Oyasumi</strong> è stata completata con successo.</p>
-      <p>Il tuo personaggio, <strong>${characterName}</strong>, è pronto per esplorare la realtà che sanguina.</p>
+      <p>Il tuo personaggio, <strong>${escapeHtml(characterName)}</strong>, è pronto per esplorare la realtà che sanguina.</p>
       <p><a href="${loginUrl}" style="color:#a78bfa;">Accedi al sistema</a> con il tuo <strong>Nome PG</strong> e la password che hai scelto.</p>
       <p style="color:#888;font-size:12px;margin-top:24px;">A presto,<br/>Lo Staff di Oyasumi</p>
     `),
@@ -90,8 +134,9 @@ export async function sendWelcomeEmail(
   })
 
   if (error) {
-    console.error('[Email] Errore benvenuto:', error.message, { to, characterName, from: EMAIL_FROM })
-    return { ok: false, error: error.message }
+    const msg = formatResendError(error)
+    console.error('[Email] Errore benvenuto:', msg, { to, characterName, from: EMAIL_FROM })
+    return { ok: false, error: msg }
   }
   console.info('[Email] Benvenuto inviato a', to, `(${characterName})`)
   return { ok: true }
@@ -126,14 +171,15 @@ export async function sendRegistrationNotifyEmail(params: {
   const { error } = await resend.emails.send({
     from: EMAIL_FROM,
     to: [notifyTo],
+    replyTo: REPLY_TO,
     subject: `Nuova registrazione: ${params.characterName}`,
     html: emailShell(`
       <h2 style="color:#d4af37;">Un nuovo sognatore si è unito a noi</h2>
       <ul style="line-height:1.7;">
         <li><strong>ID utente:</strong> ${params.userId}</li>
         <li><strong>ID personaggio:</strong> ${params.characterId}</li>
-        <li><strong>Nome PG:</strong> ${params.characterName}</li>
-        <li><strong>Email:</strong> ${params.email}</li>
+        <li><strong>Nome PG:</strong> ${escapeHtml(params.characterName)}</li>
+        <li><strong>Email:</strong> ${escapeHtml(params.email)}</li>
       </ul>
       <hr style="border-color:#2a2a32;" />
       <h3 style="color:#a78bfa;">Preferenze / note del giocatore</h3>
@@ -143,12 +189,13 @@ export async function sendRegistrationNotifyEmail(params: {
   })
 
   if (error) {
-    console.error('[Email] Errore notifica staff:', error.message, {
+    const msg = formatResendError(error)
+    console.error('[Email] Errore notifica staff:', msg, {
       notifyTo,
       characterName: params.characterName,
       from: EMAIL_FROM,
     })
-    return { ok: false, error: error.message }
+    return { ok: false, error: msg }
   }
   console.info('[Email] Notifica staff inviata a', notifyTo, `(${params.characterName})`)
   return { ok: true }

@@ -47,6 +47,7 @@ import { musicService } from '../music/music.service'
 import { forumService } from '../forum/forum.service'
 import { userHasGestioneAccess, userCanEditUserRuolo } from '../../lib/gestione-access'
 import { setRoomOpen, getRoomState } from '../anonymous-chat/anonymous-chat.service'
+import { sendTestEmail, emailConfigStatus } from '../../lib/email'
 import type { UserRole, BanState } from '@domain/security/jwt'
 
 const PARADISE_ROOM_ID = 'edo__paradise'
@@ -123,6 +124,29 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
               return { error: e instanceof Error ? e.message : 'Errore durante il recupero utenti' }
             }
           })
+          .get('/email/status', () => emailConfigStatus())
+          .post(
+            '/email/test',
+            async ({ body, set }) => {
+              try {
+                const to = body.to?.trim() || emailConfigStatus().notifyTo
+                const result = await sendTestEmail(to)
+                if (!result.ok) {
+                  set.status = 400
+                  return { ok: false, error: result.error, to, email: emailConfigStatus() }
+                }
+                return { ok: true, to, email: emailConfigStatus() }
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore test email' }
+              }
+            },
+            {
+              body: t.Object({
+                to: t.Optional(t.String({ format: 'email' })),
+              }),
+            },
+          )
 
           // Aggiorna il ruolo di un utente
           .put(

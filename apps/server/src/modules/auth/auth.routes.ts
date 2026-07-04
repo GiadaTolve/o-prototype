@@ -30,9 +30,10 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         console.error('[auth] notifica staff non inviata:', notifyResult.error)
       }
 
-      void sendWelcomeEmail(body.email, body.characterName).catch((e) => {
-        console.error('[auth] welcome email:', e)
-      })
+      const welcomeResult = await sendWelcomeEmail(body.email, body.characterName)
+      if (!welcomeResult.ok) {
+        console.error('[auth] benvenuto non inviato:', welcomeResult.error)
+      }
 
       set.status = 201
       return {
