@@ -272,15 +272,15 @@ function NewsVisor() {
 
   return (
     <section className="news-visor shrink-0 min-h-0 bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg px-4 pt-4 pb-4 overflow-hidden flex flex-col">
-      <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-violet)] mb-2 font-display flex items-center gap-2 flex-shrink-0">
+      <h3 className="news-visor__title text-[10px] uppercase tracking-widest text-[var(--accent-violet)] mb-2 flex items-center gap-2 flex-shrink-0">
         <FontAwesomeIcon icon={icons.news} className="w-3 h-3" />
         News Visor
       </h3>
       {currentTopic ? (
         <>
-          <div className="flex justify-between items-center mb-2 text-[10px] text-[var(--accent-violet)] font-sans flex-shrink-0">
+          <div className="news-visor__meta flex justify-between items-center mb-2 text-[10px] text-[var(--accent-violet)] flex-shrink-0">
             <span className="uppercase font-bold">NEWS DAL GIOCO</span>
-            <span className="font-mono">{formatDate(currentTopic.timestamp_creazione)}</span>
+            <span>{formatDate(currentTopic.timestamp_creazione)}</span>
           </div>
           <div
             className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/40 p-2.5 relative overflow-hidden flex-shrink-0"
@@ -298,7 +298,7 @@ function NewsVisor() {
             />
             <div
               key={currentIndex}
-              className="news-visor__text text-[var(--accent-violet)] font-mono text-[11px] leading-relaxed relative z-10 h-full overflow-hidden"
+              className="news-visor__text text-[var(--accent-violet)] text-[11px] leading-relaxed relative z-10 h-full overflow-hidden"
               style={{
                 textShadow: "0 0 3px rgba(124, 58, 237, 0.5)",
                 letterSpacing: "0.5px",
@@ -316,7 +316,7 @@ function NewsVisor() {
         </>
       ) : (
         <div
-          className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/30 p-2 flex items-center justify-center text-gray-600 text-xs font-mono flex-shrink-0"
+          className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/30 p-2 flex items-center justify-center text-gray-600 text-xs flex-shrink-0"
           style={{
             boxShadow: "inset 0 0 10px rgba(124, 58, 237, 0.1)",
           }}

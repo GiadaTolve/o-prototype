@@ -168,6 +168,118 @@ body {
   animation-play-state: paused;
 }
 
+/* Font UI Beeper — News Visor, lettore MP3, widget home */
+.news-visor,
+.music-player,
+.fetch-pager--home {
+  font-family: ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.06em;
+}
+
+.news-visor h3,
+.news-visor__meta,
+.music-player select {
+  font-family: inherit;
+  letter-spacing: 0.12em;
+}
+
+/* Lettore MP3 — marquee titolo neon */
+@keyframes music-player-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.music-player__marquee {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--accent-violet) 50%, var(--border-color));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--background) 92%, black),
+    color-mix(in srgb, var(--panel-bg) 88%, black)
+  );
+  box-shadow:
+    inset 0 0 12px color-mix(in srgb, var(--accent-violet) 18%, transparent),
+    0 0 10px var(--shadow-violet);
+}
+
+.music-player__marquee::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    color-mix(in srgb, black 14%, transparent) 2px,
+    color-mix(in srgb, black 14%, transparent) 3px
+  );
+  opacity: 0.35;
+  z-index: 1;
+}
+
+.music-player__marquee-viewport {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  width: 100%;
+  padding: 0.4rem 0;
+}
+
+.music-player__marquee-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 2.5rem;
+  animation: music-player-marquee 22s linear infinite;
+}
+
+.music-player__marquee:hover .music-player__marquee-track {
+  animation-play-state: paused;
+}
+
+.music-player__marquee-text {
+  flex-shrink: 0;
+  font-size: clamp(0.55rem, 1.05vh, 0.68rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  color: var(--accent-gold);
+  text-shadow:
+    0 0 4px var(--glow-gold),
+    0 0 10px color-mix(in srgb, var(--accent-violet) 55%, transparent);
+}
+
+.music-player__marquee-prefix {
+  color: var(--accent-violet-light);
+  text-shadow: 0 0 6px var(--glow-violet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .music-player__marquee-track {
+    animation: none;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .music-player__marquee-text[aria-hidden="true"] {
+    display: none;
+  }
+
+  .music-player__marquee-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}
+
 /* Dashboard — colonne laterali su viewport stretti (tablet / landscape) */
 @media (max-width: 1023px) {
   .dashboard-left-col,
@@ -193,7 +305,7 @@ body {
   }
 
   .music-player__cover {
-    height: 56px;
+    height: 92px;
   }
 }
 
@@ -204,7 +316,7 @@ body {
     --dash-pad: clamp(0.45rem, 0.95vh, 1rem);
     --dash-btn-h: clamp(2rem, 3.6vh, 2.875rem);
     --dash-avatar: clamp(2.35rem, 4.5vh, 3.75rem);
-    --dash-cover-h: clamp(1.75rem, 4.2vh, 3.5rem);
+    --dash-cover-h: clamp(3.25rem, 7.5vh, 6rem);
     --dash-news-h: clamp(2.75rem, 7vh, 5.35rem);
     --dash-beeper-lcd-h: clamp(3.25rem, 7.5vh, 5.5rem);
     gap: var(--dash-gap);
@@ -246,8 +358,8 @@ body {
 
   .music-player {
     margin-top: clamp(0.15rem, 0.4vh, 0.5rem);
-    padding: clamp(0.35rem, 0.7vh, 0.5rem);
-    gap: clamp(0.2rem, 0.45vh, 0.375rem);
+    padding: clamp(0.4rem, 0.85vh, 0.65rem);
+    gap: clamp(0.25rem, 0.55vh, 0.5rem);
   }
 
   .music-player__cover {

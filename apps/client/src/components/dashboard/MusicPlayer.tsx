@@ -149,16 +149,21 @@ export function MusicPlayer() {
             <span className="text-gray-600 text-xs">NO COVER</span>
           </div>
         )}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.9) 100%)",
-          }}
-        >
-          <div className="absolute bottom-1 left-0 w-full text-center px-1.5 box-border">
-            <div className="font-display text-[9px] text-[#e6e0ff] font-bold uppercase tracking-[0.5px] drop-shadow-[0_2px_4px_rgba(0,0,0,1)] whitespace-nowrap overflow-hidden text-ellipsis">
+      </div>
+
+      {/* Titolo — marquee neon anni '80 */}
+      <div className="music-player__marquee" aria-label={currentTrack?.title || "Nessuna traccia"}>
+        <div className="music-player__marquee-viewport">
+          <div className="music-player__marquee-track" key={currentTrack?.id ?? currentTrackIndex}>
+            <span className="music-player__marquee-text">
+              <span className="music-player__marquee-prefix" aria-hidden>
+                ▶
+              </span>{" "}
               {currentTrack?.title || "SILENZIO"}
-            </div>
+            </span>
+            <span className="music-player__marquee-text" aria-hidden>
+              <span className="music-player__marquee-prefix">▶</span> {currentTrack?.title || "SILENZIO"}
+            </span>
           </div>
         </div>
       </div>
@@ -269,7 +274,7 @@ export function MusicPlayer() {
       {playlists.length > 0 && (
         <select
           onChange={handlePlaylistChange}
-          className="w-full py-0.5 px-1.5 bg-black/50 text-[#c9a84a] border border-white/10 rounded text-[9px] font-display cursor-pointer outline-none mt-0"
+          className="music-player__playlist w-full py-0.5 px-1.5 bg-black/50 text-[#c9a84a] border border-white/10 rounded text-[9px] cursor-pointer outline-none mt-0 uppercase"
         >
           {playlists.map((p) => (
             <option key={p.id} value={p.id}>
