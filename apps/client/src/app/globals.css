@@ -168,6 +168,18 @@ body {
   animation-play-state: paused;
 }
 
+/* Dashboard — colonne laterali su viewport stretti (tablet / landscape) */
+@media (max-width: 1023px) {
+  .dashboard-left-col,
+  .dashboard-right-col {
+    overflow: visible;
+  }
+
+  .news-visor {
+    margin-top: 0.25rem;
+  }
+}
+
 /* Parsing Narrativo — formattazione parlati e tag (stile OYASUMI, allineato al vecchio progetto) */
 .parlato {
   font-style: italic;

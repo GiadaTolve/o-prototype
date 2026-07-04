@@ -29,7 +29,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
   const skiruStats = resolveCharacterComputed(char?.computed);
 
   return (
-    <aside className="flex flex-col gap-4 w-full lg:max-w-[360px] shrink-0 order-2 lg:order-1 min-h-0 overflow-y-auto">
+    <aside className="dashboard-left-col flex flex-col gap-4 w-full lg:max-w-[360px] shrink-0 order-2 lg:order-1 min-h-0 lg:overflow-y-auto">
       {/* Mini-Profilo — click nome/avatar apre Scheda */}
       <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
         <button
@@ -271,7 +271,7 @@ function NewsVisor() {
   };
 
   return (
-    <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg px-4 pt-4 pb-6 overflow-hidden flex flex-col">
+    <section className="news-visor shrink-0 bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg px-4 pt-4 pb-4 overflow-hidden flex flex-col">
       <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-violet)] mb-2 font-display flex items-center gap-2 flex-shrink-0">
         <FontAwesomeIcon icon={icons.news} className="w-3 h-3" />
         News Visor
@@ -283,7 +283,7 @@ function NewsVisor() {
             <span className="font-mono">{formatDate(currentTopic.timestamp_creazione)}</span>
           </div>
           <div
-            className="bg-black/90 rounded border border-[var(--accent-violet)]/40 p-2.5 min-h-[85px] max-h-[85px] relative overflow-hidden flex-shrink-0"
+            className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/40 p-2.5 h-[85px] relative overflow-hidden flex-shrink-0"
             style={{
               boxShadow: "inset 0 0 10px rgba(124, 58, 237, 0.2), 0 0 15px rgba(124, 58, 237, 0.1)",
             }}
@@ -316,7 +316,7 @@ function NewsVisor() {
         </>
       ) : (
         <div
-          className="bg-black/90 rounded border border-[var(--accent-violet)]/30 p-2 min-h-[85px] max-h-[85px] flex items-center justify-center text-gray-600 text-xs font-mono flex-shrink-0"
+          className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/30 p-2 h-[85px] flex items-center justify-center text-gray-600 text-xs font-mono flex-shrink-0"
           style={{
             boxShadow: "inset 0 0 10px rgba(124, 58, 237, 0.1)",
           }}
