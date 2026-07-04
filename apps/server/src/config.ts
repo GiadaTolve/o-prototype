@@ -1,7 +1,15 @@
 import { config } from 'dotenv'
 import { resolve } from 'path'
+import { existsSync } from 'fs'
 
-config({ path: resolve(import.meta.dir, '../../../.env') })
+for (const envPath of [
+  resolve(import.meta.dir, '../../../.env'),
+  resolve(import.meta.dir, '../../.env'),
+]) {
+  if (existsSync(envPath)) {
+    config({ path: envPath })
+  }
+}
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'secret-di-sviluppo-non-sicuro-12345'
 export const RESEND_API_KEY = process.env.RESEND_API_KEY || ''

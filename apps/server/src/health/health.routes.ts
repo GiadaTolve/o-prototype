@@ -3,13 +3,15 @@ import { pool } from '../plugins/db'
 import { authPlugin } from '../plugins/auth.plugin'
 import { setRoomOpen, getRoomState } from '../modules/anonymous-chat/anonymous-chat.service'
 import { characterService } from '../modules/characters/characters.service'
+import { emailConfigStatus } from '../lib/email'
 
 const PARADISE_ROOM_ID = 'edo__paradise'
 
 export const healthRoutes = new Elysia()
   .get('/health', () => ({
     status: 'ok',
-    service: 'oyasumi-2.0'
+    service: 'oyasumi-2.0',
+    email: emailConfigStatus(),
   }))
   .get('/health/db', async () => {
     try {
