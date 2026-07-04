@@ -130,7 +130,15 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
         {/* Contenuto scrollabile */}
         <div
           className={`flex-1 min-h-0 overflow-hidden ${
-            isSms ? "flex flex-col" : isMainAreaPanel ? "h-full" : windowId === "ordine" ? "overflow-y-auto px-4 pt-0 pb-4" : "overflow-y-auto px-4 py-4"
+            isSms
+              ? "flex flex-col"
+              : isMainAreaPanel
+                ? "h-full"
+                : windowId === "fetch"
+                  ? "flex flex-col"
+                  : windowId === "ordine"
+                    ? "overflow-y-auto px-4 pt-0 pb-4"
+                    : "overflow-y-auto px-4 py-4"
           }`}
         >
           {windowId === "scheda" && (

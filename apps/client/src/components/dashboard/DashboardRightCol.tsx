@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { presentiNameClass } from "@/lib/leveling";
 import type { Presente, PrefetturaId, MeteoPrefettura } from "./types";
 import { PREFETTURE_OGON, MOCK_METEO } from "./types";
+import { BeeperHomeWidget } from "./fetch/BeeperHomeWidget";
 
 type TodayEvent = { id: string; title: string; eventDate: string };
 
@@ -18,8 +19,6 @@ const METEO_ICONS: Record<MeteoPrefettura["icon"], IconDefinition> = {
   "cloud-sun": icons.weather,
   rain: icons.rain,
 };
-
-type FetchItem = { id: string; title: string; assignedTo: string | null };
 
 type Props = {
   presenti: Presente[];
@@ -40,7 +39,6 @@ export function DashboardRightCol({
   onOpenSpazioEventi,
 }: Props) {
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [fetches, setFetches] = useState<FetchItem[]>([]);
   const [meteo, setMeteo] = useState<MeteoPrefettura | null>(null);
   const [todayEvents, setTodayEvents] = useState<TodayEvent[]>([]);
 
@@ -49,12 +47,6 @@ export function DashboardRightCol({
       .get("/admin/daily-events/today")
       .then((d: unknown) => setTodayEvents(Array.isArray(d) ? (d as TodayEvent[]) : []))
       .catch(() => setTodayEvents([]));
-  }, []);
-
-  const loadFetches = useCallback(() => {
-    api.get("/fetches")
-      .then((d: unknown) => setFetches(Array.isArray(d) ? (d as FetchItem[]) : []))
-      .catch(() => setFetches([]));
   }, []);
 
   const loadMeteo = useCallback(() => {
@@ -72,10 +64,6 @@ export function DashboardRightCol({
         setMeteo(MOCK_METEO[pref] ?? null);
       });
   }, [prefettura]);
-
-  useEffect(() => {
-    loadFetches();
-  }, [loadFetches]);
 
   useEffect(() => {
     loadMeteo();
@@ -148,45 +136,8 @@ export function DashboardRightCol({
         )}
       </section>
 
-      {/* Beeper — sotto al calendario; click apre finestra */}
-      {onOpenFetch && (
-        <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display flex items-center gap-2">
-              <FontAwesomeIcon icon={icons.beeper} className="w-3 h-3" />
-              Beeper
-            </h3>
-            <button
-              type="button"
-              onClick={onOpenFetch}
-              className="text-[10px] uppercase tracking-wider text-[var(--accent-gold)] hover:underline"
-            >
-              Apri
-            </button>
-          </div>
-          <div className="max-h-28 overflow-y-auto space-y-1.5">
-            {fetches.length === 0 ? (
-              <p className="text-xs text-gray-500">Nessuna missione.</p>
-            ) : (
-              fetches.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={onOpenFetch}
-                  className={`w-full text-left px-2 py-1.5 rounded border truncate block text-xs ${
-                    f.assignedTo
-                      ? "border-[var(--border-color)]/50 bg-black/30 text-gray-500 opacity-60"
-                      : "border-[var(--border-color)] bg-black/20 text-gray-300 hover:border-[var(--accent-gold)]/50 hover:text-[var(--accent-gold)]"
-                  }`}
-                >
-                  {f.title}
-                  {f.assignedTo && <span className="ml-1">· Assegnata</span>}
-                </button>
-              ))
-            )}
-          </div>
-        </section>
-      )}
+      {/* Beeper — mini pager Dark Arcane in home */}
+      {onOpenFetch && <BeeperHomeWidget onOpen={onOpenFetch} />}
 
       {/* Spazio Eventi — stile O Primary (sweep); sopra Lista Presenti */}
       {onOpenSpazioEventi && (
