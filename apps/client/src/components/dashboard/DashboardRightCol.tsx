@@ -143,16 +143,23 @@ export function DashboardRightCol({
         </div>
       )}
 
-      {/* Spazio Eventi — stile O Primary (sweep); sopra Lista Presenti */}
+      {/* Spazio Eventi — Paradise */}
       {onOpenSpazioEventi && (
-        <div className="btn-primary-sweep-borders shrink-0 dashboard-paradise-btn">
+        <div className="dashboard-paradise-slot shrink-0 w-full">
           <button
             type="button"
             onClick={onOpenSpazioEventi}
-            className="btn-primary-sweep w-full flex items-center justify-center relative"
+            className="dashboard-paradise-btn group w-full"
           >
-            <span className="btn-primary-sweep-sweep" aria-hidden />
-            <span className="relative z-10">PARADISE</span>
+            <span
+              className="dashboard-paradise-btn__spark dashboard-paradise-btn__spark--left"
+              aria-hidden
+            />
+            <span className="dashboard-paradise-btn__label">Paradise</span>
+            <span
+              className="dashboard-paradise-btn__spark dashboard-paradise-btn__spark--right"
+              aria-hidden
+            />
           </button>
         </div>
       )}

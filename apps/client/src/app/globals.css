@@ -278,6 +278,122 @@ body {
     text-overflow: ellipsis;
     max-width: 100%;
   }
+
+  .dashboard-paradise-btn__spark {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
+/* Bottone Paradise — cloudy + sparkles */
+@keyframes paradise-sparkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.75) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(45deg);
+  }
+}
+
+.dashboard-paradise-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 2.85rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--accent-violet) 40%, var(--border-color));
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.78)),
+    url("/backgrounds/cloudy.png");
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 4px 12px var(--shadow-dark),
+    0 0 14px var(--shadow-violet);
+  cursor: pointer;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.dashboard-paradise-btn:hover {
+  border-color: color-mix(in srgb, var(--accent-gold) 50%, var(--accent-violet));
+  box-shadow:
+    0 6px 16px var(--shadow-dark),
+    0 0 18px var(--shadow-gold),
+    0 0 10px var(--shadow-violet);
+  transform: scale(1.01);
+}
+
+.dashboard-paradise-btn:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+.dashboard-paradise-btn__label {
+  font-family: var(--font-cinzel), Cinzel, serif;
+  font-size: clamp(0.72rem, 1.35vh, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  text-shadow:
+    0 0 6px var(--glow-gold),
+    0 0 12px color-mix(in srgb, var(--accent-violet) 40%, transparent);
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.dashboard-paradise-btn:hover .dashboard-paradise-btn__label {
+  color: color-mix(in srgb, var(--accent-gold) 92%, white);
+  text-shadow:
+    0 0 10px var(--glow-gold),
+    0 0 16px var(--glow-violet);
+}
+
+.dashboard-paradise-btn__spark {
+  position: relative;
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  flex-shrink: 0;
+  animation: paradise-sparkle 1.6s ease-in-out infinite;
+}
+
+.dashboard-paradise-btn__spark::before,
+.dashboard-paradise-btn__spark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1px;
+  background: var(--accent-gold);
+  box-shadow: 0 0 6px var(--glow-gold);
+}
+
+.dashboard-paradise-btn__spark::before {
+  width: 2px;
+  height: 100%;
+}
+
+.dashboard-paradise-btn__spark::after {
+  width: 100%;
+  height: 2px;
+}
+
+.dashboard-paradise-btn__spark--right {
+  animation-delay: 0.8s;
+}
+
+.dashboard-paradise-btn__spark--left {
+  animation-delay: 0.2s;
 }
 
 /* Dashboard — colonne laterali su viewport stretti (tablet / landscape) */
@@ -378,8 +494,13 @@ body {
     height: var(--dash-btn-h);
   }
 
-  .dashboard-sidebar-btn span {
+  .dashboard-sidebar-btn span,
+  .dashboard-sidebar-btn__label {
     font-size: clamp(0.65rem, 1.2vh, 0.8rem);
+  }
+
+  .dashboard-paradise-btn {
+    min-height: clamp(2.85rem, 4.2vh, 3.35rem);
   }
 
   .news-visor {
@@ -417,11 +538,6 @@ body {
 
   .dashboard-beeper-slot .fetch-pager--home .fetch-pager__device {
     padding: clamp(0.35rem, 0.75vh, 0.5rem);
-  }
-
-  .dashboard-paradise-btn .btn-primary-sweep {
-    padding: clamp(0.4rem, 0.9vh, 0.8rem) clamp(0.85rem, 1.8vh, 2.1rem);
-    font-size: clamp(0.58rem, 1.05vh, 0.8125rem);
   }
 
   .dashboard-presenti-section {
