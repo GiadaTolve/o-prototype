@@ -125,7 +125,7 @@ export function MusicPlayer() {
 
   return (
     <div
-      className="mt-2 p-2 rounded-lg border border-[var(--accent-violet)]/20 flex flex-col gap-1.5"
+      className="music-player mt-2 p-2 rounded-lg border border-[var(--accent-violet)]/20 flex flex-col gap-1.5 shrink-0"
       style={{
         backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')",
         backgroundSize: "cover",
@@ -136,7 +136,7 @@ export function MusicPlayer() {
       <audio ref={audioRef} src={getSrc() || undefined} onEnded={playNext} controls={false} />
 
       {/* COVER ART + TITOLO */}
-      <div className="relative w-full h-[56px] rounded border border-white/10 overflow-hidden shrink-0">
+      <div className="music-player__cover relative w-full rounded border border-white/10 overflow-hidden shrink-0">
         {currentTrack?.coverImageUrl ? (
           <Image
             src={currentTrack.coverImageUrl}

@@ -29,15 +29,15 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
   const skiruStats = resolveCharacterComputed(char?.computed);
 
   return (
-    <aside className="dashboard-left-col flex flex-col gap-4 w-full lg:max-w-[360px] shrink-0 order-2 lg:order-1 min-h-0 lg:overflow-y-auto">
+    <aside className="dashboard-left-col flex flex-col gap-4 w-full lg:max-w-[360px] shrink-0 order-2 lg:order-1 min-h-0 lg:h-full lg:max-h-full lg:overflow-hidden">
       {/* Mini-Profilo — click nome/avatar apre Scheda */}
-      <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
+      <section className="dashboard-side-panel dashboard-side-panel--profile shrink-0 bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
         <button
           type="button"
           onClick={onOpenScheda}
           className="flex items-center gap-3 w-full text-left rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors -m-1 p-1"
         >
-            <div className="w-[60px] h-[60px] rounded-md bg-gray-800 shrink-0 overflow-hidden flex items-center justify-center border-2 border-[var(--border-color)] ring-2 ring-[var(--accent-gold)]/30">
+            <div className="dashboard-profile-avatar rounded-md bg-gray-800 shrink-0 overflow-hidden flex items-center justify-center border-2 border-[var(--border-color)] ring-2 ring-[var(--accent-gold)]/30">
               {avatarSrc ? (
                 <img src={avatarSrc} alt={nome} className="w-full h-full object-cover" />
               ) : (
@@ -62,11 +62,11 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
       </section>
 
       {/* SMS — Messaggi */}
-      <section className={`bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4 ${smsUnread > 0 ? "animate-sms-section" : ""}`}>
+      <section className={`dashboard-side-panel shrink-0 bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4 ${smsUnread > 0 ? "animate-sms-section" : ""}`}>
         <button
           type="button"
           onClick={onOpenSms}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors relative"
+          className="dashboard-sms-btn w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors relative"
           title={smsUnread > 0 ? `${smsUnread} messaggi non letti` : "Messaggi"}
           aria-label={smsUnread > 0 ? `${smsUnread} non letti` : "Messaggi"}
         >
@@ -87,13 +87,13 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
       </section>
 
       {/* Media — Music Player */}
-      <section className="bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
+      <section className="dashboard-side-panel dashboard-media-section flex-1 min-h-0 flex flex-col bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
         <MusicPlayer />
-        <div className="flex flex-col gap-2 mt-3">
+        <div className="dashboard-sidebar-btns flex flex-col gap-2 mt-3 min-h-0">
           <button
             type="button"
             onClick={onOpenBanca}
-            className="relative group w-full h-10 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
             style={{
               backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
               backgroundSize: "100% 100%",
@@ -110,7 +110,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
           <button
             type="button"
             onClick={onOpenMercato}
-            className="relative group w-full h-10 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
             style={{
               backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
               backgroundSize: "100% 100%",
@@ -127,7 +127,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
           <button
             type="button"
             onClick={onOpenWaza}
-            className="relative group w-full h-10 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
             style={{
               backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
               backgroundSize: "100% 100%",
@@ -144,7 +144,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
           <button
             type="button"
             onClick={onOpenOrdine}
-            className="relative group w-full h-10 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
             style={{
               backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
               backgroundSize: "100% 100%",
@@ -161,7 +161,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
           <button
             type="button"
             onClick={onOpenBestiario}
-            className="relative group w-full h-10 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
             style={{
               backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
               backgroundSize: "100% 100%",
@@ -271,7 +271,7 @@ function NewsVisor() {
   };
 
   return (
-    <section className="news-visor shrink-0 bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg px-4 pt-4 pb-4 overflow-hidden flex flex-col">
+    <section className="news-visor shrink-0 min-h-0 bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg px-4 pt-4 pb-4 overflow-hidden flex flex-col">
       <h3 className="text-[10px] uppercase tracking-widest text-[var(--accent-violet)] mb-2 font-display flex items-center gap-2 flex-shrink-0">
         <FontAwesomeIcon icon={icons.news} className="w-3 h-3" />
         News Visor
@@ -283,7 +283,7 @@ function NewsVisor() {
             <span className="font-mono">{formatDate(currentTopic.timestamp_creazione)}</span>
           </div>
           <div
-            className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/40 p-2.5 h-[85px] relative overflow-hidden flex-shrink-0"
+            className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/40 p-2.5 relative overflow-hidden flex-shrink-0"
             style={{
               boxShadow: "inset 0 0 10px rgba(124, 58, 237, 0.2), 0 0 15px rgba(124, 58, 237, 0.1)",
             }}
@@ -298,7 +298,7 @@ function NewsVisor() {
             />
             <div
               key={currentIndex}
-              className="text-[var(--accent-violet)] font-mono text-[11px] leading-relaxed relative z-10 h-full overflow-hidden"
+              className="news-visor__text text-[var(--accent-violet)] font-mono text-[11px] leading-relaxed relative z-10 h-full overflow-hidden"
               style={{
                 textShadow: "0 0 3px rgba(124, 58, 237, 0.5)",
                 letterSpacing: "0.5px",
@@ -316,7 +316,7 @@ function NewsVisor() {
         </>
       ) : (
         <div
-          className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/30 p-2 h-[85px] flex items-center justify-center text-gray-600 text-xs font-mono flex-shrink-0"
+          className="news-visor__screen bg-black/90 rounded border border-[var(--accent-violet)]/30 p-2 flex items-center justify-center text-gray-600 text-xs font-mono flex-shrink-0"
           style={{
             boxShadow: "inset 0 0 10px rgba(124, 58, 237, 0.1)",
           }}

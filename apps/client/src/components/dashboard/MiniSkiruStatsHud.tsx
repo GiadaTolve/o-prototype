@@ -67,7 +67,7 @@ export function MiniSkiruStatsHud({ stats }: { stats: ResolvedSkiruStats }) {
   const hpPct = hpMax > 0 ? (hpCurrent / hpMax) * 100 : 0;
 
   return (
-    <div className="mt-2 space-y-1.5 pt-2 border-t border-[var(--border-color)]/60">
+    <div className="mini-skiru-hud mt-2 space-y-1.5 pt-2 border-t border-[var(--border-color)]/60">
       {hpMax > 0 && (
         <StatRow
           label="HP"
