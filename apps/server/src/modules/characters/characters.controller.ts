@@ -826,6 +826,12 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       try {
         const viewerRole = (user.role ?? '').toUpperCase()
+        const dbChar = await characterService.getCharacterById(params.id)
+        if (!dbChar) {
+          set.status = 404
+          return { error: 'Personaggio non trovato' }
+        }
+
         const char = await characterService.getPublicCharacter(params.id)
         if (!char) {
           set.status = 404
@@ -834,11 +840,11 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
         const derivedLegacy = calculateDerivedStats(
           {
-            strength: char.stats.f,
-            constitution: char.stats.c,
-            dexterity: char.stats.d,
-            mind: char.stats.m,
-            empathy: char.stats.e,
+            strength: dbChar.strength,
+            constitution: dbChar.constitution,
+            dexterity: dbChar.dexterity,
+            mind: dbChar.mind,
+            empathy: dbChar.empathy,
           },
           1.0,
         )
@@ -849,8 +855,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         const canSeeFullSheet = viewerRole === 'ADMIN' || viewerRole === 'MASTER'
         const canEdit = canSeeFullSheet
 
-        const dbChar = await characterService.getCharacterById(params.id)
-        const isOwner = dbChar?.userId === user.id
+        const isOwner = dbChar.userId === user.id
         const viewerChar = await characterService.getCharacterByUserId(user.id)
         const viewerMeta = (viewerChar?.uiMetadata as { roleIcon?: string } | null) ?? {}
         const canEditStaffAlias = resolveGestioneAccess(user.role, viewerMeta.roleIcon)
@@ -905,15 +910,13 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           return { error: 'Accesso negato. Solo Moderatori e Admin possono vedere la scheda completa.' }
         }
 
-        const char = await characterService.getCharacterByUserId(
-          (await characterService.getUserByCharacterId(params.id))?.id ?? ''
-        )
+        const char = await characterService.getSkiruBundleForCharacter(params.id)
         if (!char) {
           set.status = 404
           return { error: 'Personaggio non trovato' }
         }
 
-        const meta = (char.uiMetadata as { 
+        const meta = (char.uiMetadata as {
           roleIcon?: string;
           backgroundImage?: string;
           themeMusicUrl?: string;
