@@ -49,8 +49,10 @@ export default function GestionePage() {
   const [canEditUserRuolo, setCanEditUserRuolo] = useState(false);
   const [emailStatus, setEmailStatus] = useState<{
     configured?: boolean;
+    provider?: string;
     from?: string;
     notifyTo?: string;
+    usingResendTestDomain?: boolean;
     warning?: string | null;
   } | null>(null);
   const [emailTestLoading, setEmailTestLoading] = useState(false);
@@ -160,7 +162,10 @@ export default function GestionePage() {
             <div className="space-y-4">
               {emailStatus && (
                 <div className="rounded-lg border border-[var(--border-color)] bg-black/30 p-4 space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-gray-500">Email registrazione (Gmail)</p>
+                  <p className="text-xs uppercase tracking-widest text-gray-500">
+                    Email registrazione
+                    {emailStatus.provider ? ` (${emailStatus.provider})` : ""}
+                  </p>
                   <p className="text-sm text-gray-300">
                     Mittente: <span className="text-white">{emailStatus.from}</span>
                     {" · "}

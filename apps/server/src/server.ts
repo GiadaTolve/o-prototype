@@ -87,9 +87,11 @@ const app = new Elysia()
     console.log(`🚀 Server avviato su http://localhost:${PORT}`)
     const email = emailConfigStatus()
     if (!email.configured) {
-      console.warn('⚠️  EMAIL_PASS assente: email di registrazione e reset password disabilitate')
+      console.warn('⚠️  Email disabilitate: configura RESEND_API_KEY (Render) o EMAIL_PASS (locale)')
+    } else if (email.warning) {
+      console.warn(`⚠️  Email via ${email.provider}: ${email.warning}`)
     } else {
-      console.log(`📧 Email attive via Gmail (${email.emailUser} → staff: ${email.notifyTo})`)
+      console.log(`📧 Email attive via ${email.provider} (staff → ${email.notifyTo})`)
     }
     
     // Avvia il scheduler del Daily Tick

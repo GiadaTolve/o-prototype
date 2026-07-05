@@ -44,7 +44,8 @@
         "elysia": "latest",
         "nodemailer": "^9.0.3",
         "pg": "latest",
-        "postgres": "latest"
+        "postgres": "latest",
+        "resend": "^6.17.1"
     },
     "devDependencies": {
         "@types/nodemailer": "^8.0.1",
