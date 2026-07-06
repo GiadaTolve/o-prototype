@@ -290,7 +290,7 @@ export function DashboardCenter({
       className={
         compact
           ? "flex-1 min-w-0 h-full flex flex-col overflow-hidden"
-          : "flex-1 lg:flex-[2.5] min-w-0 min-h-[min(50dvh,420px)] max-h-[58dvh] lg:max-h-none lg:h-full bg-[var(--panel-bg)]/40 border border-[var(--border-color)] rounded-lg p-4 sm:p-6 order-1 lg:order-2 flex flex-col overflow-hidden shrink-0 lg:shrink"
+          : "flex-1 lg:flex-[2.5] min-w-0 lg:min-w-[320px] min-h-[min(50dvh,420px)] max-h-[58dvh] lg:max-h-none lg:h-full bg-[var(--panel-bg)]/40 border border-[var(--border-color)] rounded-lg p-4 sm:p-6 order-1 lg:order-2 flex flex-col overflow-hidden shrink-0 lg:shrink"
       }
     >
       {view === "root" && (

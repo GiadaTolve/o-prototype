@@ -540,7 +540,7 @@ export default function DashboardPage() {
           canAccessShinigami={char?.canAccessShinigami}
           smsNotification={smsNotificationVisible}
         />
-      <div className="dashboard-main-row flex-1 flex flex-col lg:flex-row lg:items-stretch gap-4 p-4 max-w-[1800px] w-full mx-auto min-h-0 overflow-y-auto lg:overflow-hidden overscroll-y-contain">
+      <div className="dashboard-main-row flex-1 flex flex-col lg:flex-row lg:items-stretch gap-4 p-4 max-w-[2200px] w-full mx-auto min-h-0 overflow-y-auto lg:overflow-hidden overscroll-y-contain">
         <DashboardLeftCol
           char={char}
           onOpenScheda={() => char?.id && openCharacterSheet(char.id)}

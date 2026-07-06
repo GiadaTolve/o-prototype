@@ -235,12 +235,26 @@ body {
 .music-player__marquee-track {
   display: flex;
   align-items: center;
-  width: max-content;
   gap: 2.5rem;
+}
+
+.music-player__marquee-track--scrolling {
+  width: max-content;
   animation: music-player-marquee 22s linear infinite;
 }
 
-.music-player__marquee:hover .music-player__marquee-track {
+.music-player__marquee-track--static {
+  width: 100%;
+  justify-content: center;
+}
+
+.music-player__marquee-track--static .music-player__marquee-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.music-player__marquee:hover .music-player__marquee-track--scrolling {
   animation-play-state: paused;
 }
 
@@ -263,7 +277,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .music-player__marquee-track {
+  .music-player__marquee-track--scrolling {
     animation: none;
     width: 100%;
     justify-content: center;
