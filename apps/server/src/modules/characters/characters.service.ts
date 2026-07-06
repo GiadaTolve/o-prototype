@@ -43,6 +43,7 @@ import {
   getSkiruParentUnlockMessage,
   legacyStatsToSkiruSheet,
   validateSkiruSheet,
+  SHAKAI_KAIKYU_CLASS_SKIRU_IDS,
   SKIRU_CATALOG,
   SKIRU_MAX_POINTS,
   calculateSkiruDerivedStats,
@@ -2596,6 +2597,9 @@ export class CharacterService {
 
     const def = getSkiruDef(skiruId);
     if (!def) throw new Error(`Skiru «${skiruId}» non trovata nel catalogo.`);
+    if ((SHAKAI_KAIKYU_CLASS_SKIRU_IDS as readonly string[]).includes(skiruId)) {
+      throw new Error('La classe sociale si sceglie da POST /characters/me/social-class, non dall\'albero Skiru.');
+    }
     if (def.kind === 'milestone') throw new Error('Le milestone Jiga no Shihaisha non si acquistano con EXP.');
     if (def.expPurchasable === false) {
       throw new Error(`«${def.name}» non si acquista con EXP — inserimento narrativo in scheda.`);

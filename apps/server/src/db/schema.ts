@@ -108,6 +108,15 @@ export const characters = pgTable('characters', {
     'ringai-janjae' | 'gokaon' | 'komonoire' | 'nakigara' | 'ikiryo' | 'hataori'
   >(),
 
+  /** Classe sociale scelta (Shakai Kaikyū): una sola per PG, cambio solo via staff. */
+  socialClass: text('social_class').$type<
+    'ishi' | 'shokunin' | 'ryoshi' | 'seijika' | 'shisai' | null
+  >().default(null),
+  /** Timestamp della prima scelta classe sociale (audit moderazione). */
+  socialClassChosenAt: timestamp('social_class_chosen_at'),
+  /** Albero sottoclassi Shakai sbloccate (id -> true). */
+  socialSubclassSheet: jsonb('social_subclass_sheet').$type<Record<string, boolean>>().default({}).notNull(),
+
   // --- STATISTICHE BASE (I 5 Pilastri) ---
   // Esplose in colonne per permettere calcoli nel Domain e Query veloci
   strength: integer('strength').default(0).notNull(),     // Forza [F]
@@ -370,6 +379,28 @@ export const dismantleDailyUsage = pgTable(
   (t) => [primaryKey({ columns: [t.characterId, t.dayKey] })],
 )
 
+/** Shakai Kaikyū — consumo giornaliero tool classe sociale per PG (UTC). */
+export const socialClassDailyUsage = pgTable(
+  'social_class_daily_usage',
+  {
+    characterId: uuid('character_id')
+      .references(() => characters.id)
+      .notNull(),
+    dayKey: text('day_key').notNull(),
+    /** Budget cura usato oggi (Ishi). */
+    healHpUsed: integer('heal_hp_used').default(0).notNull(),
+    /** Budget integrità usato oggi (Shokunin). */
+    integrityUsed: integer('integrity_used').default(0).notNull(),
+    /** Budget raccolta usato oggi (Ryōshi). */
+    gatherUsed: integer('gather_used').default(0).notNull(),
+    /** Peso totale Patti attivi/consumati oggi (Seijika). */
+    pactWeightUsed: integer('pact_weight_used').default(0).notNull(),
+    /** Potere totale Ofuda attivi/consumati oggi (Shisai). */
+    ofudaPowerUsed: integer('ofuda_power_used').default(0).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.dayKey] })],
+)
+
 // ==========================================
 // 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC)
 // ==========================================
@@ -422,6 +453,7 @@ export const charactersRelations = relations(characters, ({ one, many }) => ({
   playerRequests: many(characterPlayerRequests),
   statusEffects: many(characterStatusEffects),
   fieldConstructs: many(fieldConstructs),
+  socialClassDailyUsage: many(socialClassDailyUsage),
 }))
 
 export const characterPlayerRequestsRelations = relations(characterPlayerRequests, ({ one }) => ({
@@ -461,6 +493,13 @@ export const characterSkillsRelations = relations(characterSkills, ({ one }) => 
 export const inventoryRelations = relations(inventory, ({ one }) => ({
   character: one(characters, { fields: [inventory.characterId], references: [characters.id] }),
   item: one(items, { fields: [inventory.itemId], references: [items.id] })
+}))
+
+export const socialClassDailyUsageRelations = relations(socialClassDailyUsage, ({ one }) => ({
+  character: one(characters, {
+    fields: [socialClassDailyUsage.characterId],
+    references: [characters.id],
+  }),
 }))
 
 // ==========================================
