@@ -95,6 +95,16 @@ export function recordNagoriShift(
   }
 }
 
+/** Consuma il bonus collaterale dopo l'uso su un colpo/waza. */
+export function clearNagoriCollateral(meta: HenseiNagoriMeta): HenseiNagoriMeta {
+  const n = readNagoriState(meta)
+  if (!n?.lastFrom) return meta
+  return {
+    ...meta,
+    henseiNagori: { ...n, lastFrom: undefined, lastTo: undefined },
+  }
+}
+
 /** Bonus collaterali Nagori applicabili al prossimo colpo/waza dopo uno shift. */
 export function compileNagoriCollateralModifiers(
   meta: HenseiNagoriMeta | null | undefined,

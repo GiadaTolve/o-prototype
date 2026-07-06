@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createStatusContainer } from '../../combat/status/engine.ts'
 import { compileCombatModifiers } from '../../combat/status/modifiers.ts'
-import { compileNagoriCollateralModifiers, recordNagoriShift, activateNagori } from './nagori.ts'
+import { compileNagoriCollateralModifiers, recordNagoriShift, activateNagori, clearNagoriCollateral } from './nagori.ts'
 import { applyKomeiRoventeOnContactHit } from '../naikan/komei.ts'
 
 describe('Nagori collateral modifiers', () => {
@@ -23,6 +23,13 @@ describe('Nagori collateral modifiers', () => {
     meta = recordNagoriShift(meta, { from: 'solido', to: 'gassoso' })
     const m = compileCombatModifiers(createStatusContainer(), meta)
     expect(m.offensiveTierBonus).toBe(1)
+  })
+
+  it('clearNagoriCollateral consuma bonus', () => {
+    let meta = activateNagori({})
+    meta = recordNagoriShift(meta, { from: 'solido', to: 'liquido' })
+    meta = clearNagoriCollateral(meta)
+    expect(compileNagoriCollateralModifiers(meta).offensiveTierBonus ?? 0).toBe(0)
   })
 })
 

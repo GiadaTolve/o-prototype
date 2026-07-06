@@ -173,6 +173,82 @@ describe('waza chat automation', () => {
     })
     expect(claim.effects.some((e) => e.kind === 'giurisdizione_claim')).toBe(true)
     expect(claim.csDelta).toBe(-2)
+
+    const rejected = processWazaChatAutomation({
+      content: '[giurisdizione:reclama]',
+      meta: claim.meta,
+      statusContainer: emptyContainer,
+      wazaIndex: index,
+      chronoCsAvailable: 10,
+      actorCharacterId: 'a',
+    })
+    expect(rejected.effects.some((e) => e.kind === 'giurisdizione_claim_rejected')).toBe(true)
+  })
+
+  it('applica Decreto con tag applica su waza Proiettile', () => {
+    const proiettileWaza = 'Meidan (鳴弾) — Sibilo Proiettile'
+    const index2 = buildWazaTagIndex([
+      ...CATALOG_ENTRIES,
+      {
+        name: proiettileWaza,
+        poolId: 'generiche-meidan-sibilo-proiettile',
+        rank: 'T1',
+        styleId: 'generiche',
+        isPassive: false,
+        effect: 'Attiva · [Proiettile][Sonoro] · CS 1',
+      },
+    ])
+    const imposed = processWazaChatAutomation({
+      content: '[waza:Chokurei (勅令) — Decreto] [decreto: Quella Proiettile torna al mittente]',
+      meta: {},
+      statusContainer: emptyContainer,
+      wazaIndex: index2,
+      chronoCsAvailable: 10,
+      actorCharacterId: 'a',
+    })
+    const applied = processWazaChatAutomation({
+      content: `[decreto:applica] [waza:${proiettileWaza}]`,
+      meta: imposed.meta,
+      statusContainer: emptyContainer,
+      wazaIndex: index2,
+      chronoCsAvailable: 10,
+      actorCharacterId: 'a',
+    })
+    expect(applied.effects.some((e) => e.kind === 'decreto_applied')).toBe(true)
+  })
+
+  it('consuma collaterale Nagori su colpo dichiarato', () => {
+    const wazaName = 'Colpo Test Nagori'
+    const index2 = buildWazaTagIndex([
+      ...CATALOG_ENTRIES,
+      {
+        name: wazaName,
+        poolId: 'test-nagori-hit',
+        rank: 'T2',
+        styleId: 'generiche',
+        isPassive: false,
+        effect: 'Attiva · [Proiettile][Sonoro] · CS 2',
+      },
+    ])
+    const prep = processWazaChatAutomation({
+      content: '[waza:Nagori (名残) — Principio di Instabilità] [yuragi:solido→liquido]',
+      meta: {},
+      statusContainer: emptyContainer,
+      wazaIndex: index2,
+      chronoCsAvailable: 10,
+      actorCharacterId: 'a',
+    })
+    const hit = processWazaChatAutomation({
+      content: `[waza:${wazaName}] [tier:2] [hit:1] [target:Yuki]`,
+      meta: prep.meta,
+      statusContainer: emptyContainer,
+      wazaIndex: index2,
+      chronoCsAvailable: 10,
+      actorCharacterId: 'a',
+      roomParticipants: [{ characterId: 'b', name: 'Yuki' }],
+    })
+    expect(hit.effects.some((e) => e.kind === 'nagori_collateral_consumed')).toBe(true)
+    expect(hit.meta.henseiNagori?.lastFrom).toBeUndefined()
   })
 
   it('impone Decreto Chokurei', () => {

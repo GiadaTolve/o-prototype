@@ -62,6 +62,8 @@ export function WazaLaunchPanel({
   const [giurisdizioneCategory, setGiurisdizioneCategory] = useState<"proiettile" | "raggio">("proiettile");
   const [suturaKind, setSuturaKind] = useState<"offensiva" | "stile" | "elementale">("offensiva");
   const [decretoText, setDecretoText] = useState("");
+  const [nagoriFrom, setNagoriFrom] = useState<"solido" | "liquido" | "gassoso" | "sonoro" | "elementale" | "energetico">("liquido");
+  const [nagoriTo, setNagoriTo] = useState<"solido" | "liquido" | "gassoso" | "sonoro" | "elementale" | "energetico">("solido");
   const [meisakuLabel, setMeisakuLabel] = useState("");
   const [narrative, setNarrative] = useState("");
 
@@ -162,6 +164,8 @@ export function WazaLaunchPanel({
     setGiurisdizioneCategory("proiettile");
     setSuturaKind("offensiva");
     setDecretoText("");
+    setNagoriFrom("liquido");
+    setNagoriTo("solido");
     setMeisakuLabel("");
     setDeclareHit(false);
     setTargetCharacterId("");
@@ -175,6 +179,9 @@ export function WazaLaunchPanel({
       suturaKind: launchProfile?.needsSuturaKind ? suturaKind : null,
       surpriseAttack: surpriseAttack && hikanRank > 0,
       decretoText: launchProfile?.needsDecreto ? decretoText : null,
+      nagoriShift: launchProfile?.needsNagoriShift
+        ? { from: nagoriFrom, to: nagoriTo }
+        : null,
       meisakuLabel: launchProfile?.needsMeisakuLabel ? meisakuLabel : null,
     }),
     [
@@ -184,6 +191,8 @@ export function WazaLaunchPanel({
       surpriseAttack,
       hikanRank,
       decretoText,
+      nagoriFrom,
+      nagoriTo,
       meisakuLabel,
     ],
   );
@@ -429,6 +438,35 @@ export function WazaLaunchPanel({
                 <option value="raggio">Raggio</option>
               </select>
             </label>
+          )}
+
+          {wazaPreview && launchProfile?.needsNagoriShift && (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="text-[9px] uppercase text-gray-500 font-display">Da</span>
+                <select
+                  value={nagoriFrom}
+                  onChange={(e) => setNagoriFrom(e.target.value as typeof nagoriFrom)}
+                  className="mt-0.5 w-full rounded border border-[var(--accent-violet)]/40 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+                >
+                  {["solido", "liquido", "gassoso", "sonoro", "elementale", "energetico"].map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[9px] uppercase text-gray-500 font-display">A</span>
+                <select
+                  value={nagoriTo}
+                  onChange={(e) => setNagoriTo(e.target.value as typeof nagoriTo)}
+                  className="mt-0.5 w-full rounded border border-[var(--accent-violet)]/40 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+                >
+                  {["solido", "liquido", "gassoso", "sonoro", "elementale", "energetico"].map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           )}
 
           {wazaPreview && launchProfile?.needsDecreto && (

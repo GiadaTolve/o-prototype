@@ -97,7 +97,7 @@
 | Sōkaiju in combattimento | ✅ | Kongen, Gojū, Shōdō, Eiga, Chikō, Seimitsu, Hikan, Jikai |
 | Status engine (17 status) | ✅ | Emotivi, elementali, atipici |
 | Costrutti & scudi sul campo | ✅ | `field_constructs`, API Master |
-| Automazione waza avanzate (Hadō, Naikan, …) | 🟡 | ~25 hook; Giurisdizione/Chokurei enforcement incompleti |
+| Automazione waza avanzate (Hadō, Naikan, …) | ✅ | Giurisdizione/Chokurei/Nagori enforcement in domain + chat |
 | Tracker quarti 4/4 in UI | ✅ | `QuarterTurnHud` (narrativo, non validato server) |
 | Validazione CS/quarti lato server | 🔲 | Opzionale — oggi Master + giocatori |
 
@@ -228,10 +228,9 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
-| 2 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
-| 3 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
-| 4 | Mobile | Notifiche push SMS/chat | Infrastruttura |
+| 1 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
+| 2 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
+| 3 | Mobile | Notifiche push SMS/chat | Infrastruttura |
 
 ---
 

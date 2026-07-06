@@ -1,10 +1,12 @@
 import type { GiurisdizioneCategory } from '../styles/ito/giurisdizione'
+import type { ConsistencyKind } from '../styles/hensei/nagori'
 import type { HogosuturaKind } from '../styles/naikan/hogo'
 import type { WazaLaunchTargetSpec } from './waza-launch'
 
 export type WazaLaunchExtras = {
   giurisdizioneCategory?: GiurisdizioneCategory | null
   suturaKind?: HogosuturaKind | null
+  nagoriShift?: { from: ConsistencyKind; to: ConsistencyKind } | null
   /** `[sorpresa:1]` — Hikan vs schivata reattiva. */
   surpriseAttack?: boolean
   /** `[decreto: …]` — Chokurei. */
@@ -18,6 +20,7 @@ export type WazaLaunchProfile = {
   needsGiurisdizioneCategory?: boolean
   needsSuturaKind?: boolean
   needsDecreto?: boolean
+  needsNagoriShift?: boolean
   needsTarget?: boolean
   allowsSurprise?: boolean
   needsMeisakuLabel?: boolean
@@ -27,6 +30,11 @@ const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
   'kankatsu-giurisdizione': {
     poolId: 'kankatsu-giurisdizione',
     needsGiurisdizioneCategory: true,
+    allowsSurprise: true,
+  },
+  'nagori-principio-instabilita': {
+    poolId: 'nagori-principio-instabilita',
+    needsNagoriShift: true,
     allowsSurprise: true,
   },
   'chokurei-decreto': {
@@ -76,6 +84,10 @@ export function buildWazaLaunchExtraTags(
 
   if (profile?.needsGiurisdizioneCategory && extras.giurisdizioneCategory) {
     tags.push(`[giurisdizione:${extras.giurisdizioneCategory}]`)
+  }
+
+  if (profile?.needsNagoriShift && extras.nagoriShift) {
+    tags.push(`[yuragi:${extras.nagoriShift.from}→${extras.nagoriShift.to}]`)
   }
 
   if (profile?.needsDecreto && extras.decretoText?.trim()) {

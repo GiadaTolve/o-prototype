@@ -40,6 +40,8 @@ import {
 } from '../styles/naikan/shokushin'
 import {
   activateNagori,
+  clearNagoriCollateral,
+  compileNagoriCollateralModifiers,
   extractConsistencyShift,
   formatNagoriSegment,
   NAGORI_CS_COST,
@@ -58,14 +60,19 @@ import {
   hasGiurisdizioneClaimTag,
   readGiurisdizioneState,
   tickGiurisdizioneEndOfTurn,
+  tryGiurisdizioneClaim,
 } from '../styles/ito/giurisdizione'
 import {
+  canImposeDecreto,
   CHOKUREI_CS_COST,
   extractDecretoText,
   formatDecretoSegment,
+  hasDecretoApplyTag,
   imposeDecreto,
   readDecretoState,
   tickDecretoEndOfTurn,
+  tryApplyDecreto,
+  type DecretoEffectKind,
 } from '../styles/ito/chokurei'
 import {
   activateMugenShihai,
@@ -216,7 +223,11 @@ export type WazaChatAutomationEffect =
   | { kind: 'nagori_shift'; from: string; to: string; collateral: string }
   | { kind: 'giurisdizione_activated'; category: 'proiettile' | 'raggio' }
   | { kind: 'giurisdizione_claim' }
+  | { kind: 'giurisdizione_claim_rejected'; reason: string }
   | { kind: 'decreto_imposed'; text: string }
+  | { kind: 'decreto_applied'; effect: DecretoEffectKind }
+  | { kind: 'decreto_rejected'; reason: string }
+  | { kind: 'nagori_collateral_consumed'; collateral: string }
   | { kind: 'eden_activated' }
   | {
       kind: 'eden_regen'
@@ -493,20 +504,54 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
   }
 
   if (hasGiurisdizioneClaimTag(input.content) && readGiurisdizioneState(meta)) {
-    csDelta -= GIURISDICTION_CLAIM_CS_COST
-    const tension = accumulateItoTensionInMeta(meta, 1)
-    meta = tension.meta
-    effects.push({ kind: 'giurisdizione_claim' })
-    log.push(`Giurisdizione: reclamo (+1 Tensione, ${GIURISDICTION_CLAIM_CS_COST} CS)`)
+    const claimedWaza = extractWazaTagNames(input.content)[0]
+    const claimedEntry = claimedWaza
+      ? input.wazaIndex.get(normalizeWazaLookupKey(claimedWaza))
+      : undefined
+    const wazaEffectText = claimedEntry?.effect ?? claimedEntry?.description ?? null
+    const claim = tryGiurisdizioneClaim(meta, { wazaEffectText })
+    if (!claim.ok) {
+      effects.push({ kind: 'giurisdizione_claim_rejected', reason: claim.reason })
+      log.push(`Giurisdizione: ${claim.reason}`)
+    } else {
+      meta = claim.meta
+      csDelta -= GIURISDICTION_CLAIM_CS_COST
+      const tension = accumulateItoTensionInMeta(meta, 1)
+      meta = tension.meta
+      effects.push({ kind: 'giurisdizione_claim' })
+      log.push(`Giurisdizione: reclamo (+1 Tensione, ${GIURISDICTION_CLAIM_CS_COST} CS)`)
+    }
   }
 
   if (poolIds.includes(CHOKUREI_POOL)) {
     const decree = extractDecretoText(input.content)
     if (decree) {
-      meta = imposeDecreto(meta, decree)
-      csDelta -= CHOKUREI_CS_COST
-      effects.push({ kind: 'decreto_imposed', text: decree })
-      log.push(`Chokurei: «${decree}»`)
+      if (!canImposeDecreto(meta)) {
+        effects.push({ kind: 'decreto_rejected', reason: 'Hai già imposto un Decreto questo turno.' })
+        log.push('Chokurei: Decreto già imposto questo turno.')
+      } else {
+        meta = imposeDecreto(meta, decree)
+        csDelta -= CHOKUREI_CS_COST
+        effects.push({ kind: 'decreto_imposed', text: decree })
+        log.push(`Chokurei: «${decree}»`)
+      }
+    }
+  }
+
+  if (hasDecretoApplyTag(input.content) && readDecretoState(meta)) {
+    const wazaNames = extractWazaTagNames(input.content)
+    const entry = wazaNames[0] ? input.wazaIndex.get(normalizeWazaLookupKey(wazaNames[0])) : undefined
+    const effectText = entry?.effect ?? entry?.description ?? ''
+    if (effectText) {
+      const applied = tryApplyDecreto(meta, effectText)
+      if (!applied.ok) {
+        effects.push({ kind: 'decreto_rejected', reason: applied.reason })
+        log.push(`Chokurei: ${applied.reason}`)
+      } else {
+        meta = applied.meta
+        effects.push({ kind: 'decreto_applied', effect: applied.effect })
+        log.push(`Chokurei: Decreto applicato (${applied.effect})`)
+      }
     }
   }
 
@@ -928,6 +973,30 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
           const bumped = Math.min(5, launchTier + passiveBonus.tierSteps)
           launchTier = bumped
           log.push(`Passive: +${passiveBonus.tierSteps} tier (${passiveBonus.sources.join(', ')})`)
+        }
+
+        const nagoriMods = compileNagoriCollateralModifiers(meta)
+        if (nagoriMods.offensiveTierBonus) {
+          const bumped = Math.min(5, launchTier + nagoriMods.offensiveTierBonus)
+          launchTier = bumped
+          log.push(`Nagori: +${nagoriMods.offensiveTierBonus} tier danno`)
+        }
+        if (nagoriMods.bonusRangeMeters) {
+          log.push(`Nagori: +${nagoriMods.bonusRangeMeters} m gittata (narrativo)`)
+        }
+        if (nagoriMods.shieldPenetrationTier) {
+          log.push(`Nagori: ignora ${nagoriMods.shieldPenetrationTier} tier Resistenza/Scudo`)
+        }
+        if (nagoriMods.bonusDurationTurns) {
+          log.push(`Nagori: +${nagoriMods.bonusDurationTurns} turno durata (narrativo)`)
+        }
+        if (Object.keys(nagoriMods).length > 0) {
+          const collateral = readNagoriState(meta)?.lastFrom
+            ? nagoriCollateralLabel(readNagoriState(meta)!.lastFrom!)
+            : 'collaterale'
+          meta = clearNagoriCollateral(meta)
+          effects.push({ kind: 'nagori_collateral_consumed', collateral })
+          log.push('Nagori: collaterale consumato')
         }
 
         meta = noteWazaLaunchThisTurn(meta)
