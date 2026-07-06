@@ -431,6 +431,24 @@ export const socialPacts = pgTable('social_pacts', {
   spentAt: timestamp('spent_at'),
 })
 
+/** Shakai Kaikyū — Ofuda attivi del Sacerdote (Reliquiario). */
+export const socialOfuda = pgTable('social_ofuda', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  crafterCharacterId: uuid('crafter_character_id')
+    .references(() => characters.id, { onDelete: 'cascade' })
+    .notNull(),
+  bearerCharacterId: uuid('bearer_character_id')
+    .references(() => characters.id, { onDelete: 'cascade' })
+    .notNull(),
+  blueprintId: text('blueprint_id').notNull(),
+  blueprintName: text('blueprint_name').notNull(),
+  power: integer('power').notNull(),
+  status: text('status').$type<'active' | 'consumed'>().default('active').notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  consumedAt: timestamp('consumed_at'),
+})
+
 // ==========================================
 // 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC)
 // ==========================================

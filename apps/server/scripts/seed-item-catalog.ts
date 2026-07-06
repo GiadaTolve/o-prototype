@@ -18,6 +18,7 @@ import {
   inferArtigianoProjectOutput,
   isArtigianoCraftBlueprint,
 } from '@domain/shakai-kaikyu/artigiano'
+import { isSacerdoteRiteBlueprint, sacerdoteOfudaCatalogKey } from '@domain/shakai-kaikyu/sacerdote'
 import * as schema from '../src/db/schema'
 
 const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/oyasumi_2'
@@ -140,14 +141,33 @@ async function main() {
     artigianoProj += 1
   }
 
+  let sacerdoteOfuda = 0
+  for (const bp of SOCIAL_BLUEPRINTS) {
+    if (!isSacerdoteRiteBlueprint(bp)) continue
+    await upsertCatalogItem({
+      catalogKey: sacerdoteOfudaCatalogKey(bp.id),
+      name: bp.name,
+      description: bp.description,
+      category: 'consumabile',
+      inventorySlotCost: 1,
+      isStackable: true,
+      type: 'GENERIC',
+      blueprintId: bp.id,
+      effectText: bp.description,
+      isActiveInMarket: false,
+    })
+    sacerdoteOfuda += 1
+  }
+
   const total =
     JUNK_ITEMS.length +
     Object.keys(ECONOMY_MATERIAL_LABELS).length +
     MARKET_EQUIPMENT_CATALOG.length +
     medicoPrep +
-    artigianoProj
+    artigianoProj +
+    sacerdoteOfuda
   console.log(
-    `OK — ${JUNK_ITEMS.length} junk + ${Object.keys(ECONOMY_MATERIAL_LABELS).length} materiali + ${MARKET_EQUIPMENT_CATALOG.length} equip + ${medicoPrep} prep medico + ${artigianoProj} proj artigiano = ${total} voci`,
+    `OK — ${JUNK_ITEMS.length} junk + ${Object.keys(ECONOMY_MATERIAL_LABELS).length} materiali + ${MARKET_EQUIPMENT_CATALOG.length} equip + ${medicoPrep} prep medico + ${artigianoProj} proj artigiano + ${sacerdoteOfuda} ofuda sacerdote = ${total} voci`,
   )
   await client.end()
 }

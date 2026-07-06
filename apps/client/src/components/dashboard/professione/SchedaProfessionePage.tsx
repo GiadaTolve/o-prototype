@@ -8,6 +8,7 @@ import { ArtigianoToolSection } from "./ArtigianoToolSection";
 import { CacciatoreToolSection } from "./CacciatoreToolSection";
 import { MedicoToolSection } from "./MedicoToolSection";
 import { PoliticoToolSection } from "./PoliticoToolSection";
+import { SacerdoteToolSection } from "./SacerdoteToolSection";
 import { SOCIAL_CLASS_ICON, ROLE_LABEL } from "./social-class-ui";
 import type { SocialBudgetMetric, SocialClassState, SocialSubclassEntry } from "./types";
 
@@ -188,6 +189,8 @@ export function SchedaProfessionePage({ state, char, roomId, onUpdate }: Props) 
           <CacciatoreToolSection char={char} roomId={roomId} onUpdate={onUpdate} />
         ) : state.classDef.id === "seijika" ? (
           <PoliticoToolSection char={char} roomId={roomId} onUpdate={onUpdate} />
+        ) : state.classDef.id === "shisai" ? (
+          <SacerdoteToolSection char={char} roomId={roomId} onUpdate={onUpdate} />
         ) : (
           <div className="p-4 rounded-lg border border-[var(--border-color)] bg-black/20">
             <p className="text-sm text-gray-400 leading-relaxed">

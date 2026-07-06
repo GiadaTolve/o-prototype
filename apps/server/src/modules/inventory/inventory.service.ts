@@ -681,3 +681,39 @@ export async function consumeMaterialsByCatalogKey(
     }
   }
 }
+
+/** Consuma uno o più stack consumabili per catalog_key (es. Ofuda). */
+export async function consumeStackableByCatalogKey(
+  characterId: string,
+  catalogKey: string,
+  quantity: number = 1,
+  options?: { location?: InventoryLocation },
+) {
+  if (quantity <= 0) return
+  const location = options?.location ?? 'CARRY'
+  let remaining = quantity
+
+  const rows = await db.query.inventory.findMany({
+    where: and(eq(inventory.characterId, characterId), eq(inventory.location, location)),
+    with: { item: true },
+    orderBy: [desc(inventory.createdAt)],
+  })
+
+  for (const row of rows) {
+    if (row.item.catalogKey !== catalogKey) continue
+    const qty = row.quantity ?? 0
+    if (qty <= 0) continue
+    const take = Math.min(remaining, qty)
+    remaining -= take
+    if (qty <= take) {
+      await db.delete(inventory).where(eq(inventory.id, row.id))
+    } else {
+      await db.update(inventory).set({ quantity: qty - take }).where(eq(inventory.id, row.id))
+    }
+    if (remaining <= 0) break
+  }
+
+  if (remaining > 0) {
+    throw new Error(`Oggetto insufficiente: ${catalogKey} (mancano ${remaining}).`)
+  }
+}
