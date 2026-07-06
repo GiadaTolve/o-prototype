@@ -25,6 +25,7 @@
         "migrate-locations": "bun run scripts/migrate-locations-from-config.ts",
         "seed-bestiario": "bun run scripts/seed-bestiario.ts",
         "seed-item-catalog": "bun run scripts/seed-item-catalog.ts",
+        "seed-social-blueprints": "bun run scripts/seed-social-blueprints.ts",
         "seed-skills": "bun run scripts/seed-skills.ts",
         "publish-waza-catalog": "bun run scripts/generate-waza-tag-catalog.ts && bun run scripts/sync-waza-manual.ts",
         "rename-cost-kotodama-to-jigoka": "bun run scripts/rename-cost-kotodama-to-jigoka.ts",

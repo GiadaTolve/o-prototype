@@ -431,6 +431,34 @@ export const socialPacts = pgTable('social_pacts', {
   spentAt: timestamp('spent_at'),
 })
 
+/** Shakai Kaikyū — mirror catalogo blueprint (sync da domain). */
+export const socialBlueprints = pgTable('social_blueprints', {
+  id: text('id').primaryKey(),
+  tag: text('tag')
+    .$type<'#Medico' | '#Artigiano' | '#Cacciatore' | '#Politico' | '#Sacerdote'>()
+    .notNull(),
+  classId: text('class_id')
+    .$type<'ishi' | 'shokunin' | 'ryoshi' | 'seijika' | 'shisai'>()
+    .notNull(),
+  requiredSubclassId: text('required_subclass_id').notNull(),
+  kind: text('kind')
+    .$type<'recipe' | 'project' | 'gather' | 'procedure' | 'pact_template' | 'rite'>()
+    .notNull(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  materials: jsonb('materials').$type<Array<{ materialId: string; quantity: number }>>(),
+  gatherUnits: integer('gather_units'),
+  dailyBudgetCost: integer('daily_budget_cost'),
+  weightOrPower: integer('weight_or_power'),
+  gatherRequires: jsonb('gather_requires').$type<Array<{ materialId: string; quantity: number }>>(),
+  isProcedure: boolean('is_procedure').default(false).notNull(),
+  pathConstraint: text('path_constraint'),
+  exclusiveSubclassIds: jsonb('exclusive_subclass_ids').$type<string[]>(),
+  outputCatalogKey: text('output_catalog_key'),
+  isActive: boolean('is_active').default(true).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
 /** Shakai Kaikyū — Ofuda attivi del Sacerdote (Reliquiario). */
 export const socialOfuda = pgTable('social_ofuda', {
   id: uuid('id').defaultRandom().primaryKey(),

@@ -29,6 +29,7 @@ import { medicoRoutes } from './modules/medico/medico.routes'
 import { cacciatoreRoutes } from './modules/cacciatore/cacciatore.routes'
 import { politicoRoutes } from './modules/politico/politico.routes'
 import { sacerdoteRoutes } from './modules/sacerdote/sacerdote.routes'
+import { shakaiRoutes } from './modules/shakai/shakai.routes'
 import { marketRoutes } from './modules/market/market.routes'
 import { marketCatalogAdminRoutes } from './modules/market/market-catalog-admin.routes'
 import { shopRoutes } from './modules/shop/shop.routes'
@@ -80,6 +81,7 @@ const app = new Elysia()
   .use(cacciatoreRoutes)
   .use(politicoRoutes)
   .use(sacerdoteRoutes)
+  .use(shakaiRoutes)
   .use(marketRoutes)
   .use(marketCatalogAdminRoutes)
   .use(shopRoutes)

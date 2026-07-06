@@ -1,25 +1,38 @@
-import { and, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import {
   SOCIAL_CLASSES,
   assignSocialClass,
   buildSocialSubclassTree,
+  canAccessSocialBlueprint,
   getActiveSocialClassTag,
   getRemainingDailyBudget,
   getSocialToolUx,
+  isCraftableBlueprint,
   isSocialClassId,
   listAccessibleSocialBlueprints,
+  resolveDailyLimitFromSubclasses,
+  socialBlueprintOutputCatalogKey,
   syncSkiruSheetForSocialClass,
   unlockSocialSubclass,
   clearSkiruSocialClassGates,
+  validateCraftOfuda,
   EMPTY_SOCIAL_DAILY_USAGE,
   type SocialDailyUsage,
 } from '@domain/shakai-kaikyu'
+import { getSocialBlueprint } from '@domain/shakai-kaikyu/blueprint-catalog'
 import type { SocialClassId, SocialSubclassSheet } from '@domain/shakai-kaikyu/types'
 import type { BaseStats } from '@domain/stats/calculator'
 import { validateSkiruSheet } from '@domain/skiru'
 import { db } from '../../plugins/db'
-import { characters, socialClassDailyUsage } from '../../db/schema'
+import { characters, socialBlueprints, socialClassDailyUsage } from '../../db/schema'
 import { resolveCharacterSkiruSheet } from '../characters/skiru-sheet'
+import { insertMessage, isValidRoom } from '../chat/chat.service'
+import {
+  addItemByCatalogKey,
+  consumeMaterialsByCatalogKey,
+} from '../inventory/inventory.service'
+import { broadcastInventoryUpdated } from '../realtime/ws.routes'
+import * as presence from '../realtime/presence.store'
 
 function utcDayKey(d = new Date()): string {
   return d.toISOString().slice(0, 10)
@@ -275,4 +288,136 @@ export async function moderateSocialClass(
     .where(eq(characters.id, character.id))
 
   return getSocialClassState(character.userId)
+}
+
+function displayName(char: { name: string; surname?: string | null }): string {
+  return [char.name, char.surname].filter(Boolean).join(' ')
+}
+
+function resolveCraftRoom(characterId: string, roomId?: string): string | null {
+  if (roomId?.trim() && isValidRoom(roomId.trim())) return roomId.trim()
+  return presence.getRoomForCharacter(characterId)
+}
+
+export async function listCharacterBlueprints(userId: string) {
+  const character = await loadCharacterForUser(userId)
+  if (!character) return null
+
+  const socialClass = (character.socialClass as SocialClassId | null) ?? null
+  if (!socialClass) {
+    return { socialClass: null, tag: null, blueprints: [] as const }
+  }
+
+  const subclassSheet = normalizeSubclassSheet(
+    character.socialSubclassSheet as Record<string, boolean> | undefined,
+  )
+  const tag = getActiveSocialClassTag(socialClass)
+
+  const rows = await db.query.socialBlueprints.findMany({
+    where: eq(socialBlueprints.classId, socialClass),
+    orderBy: [asc(socialBlueprints.kind), asc(socialBlueprints.name)],
+  })
+
+  const blueprints = rows
+    .filter((row) => row.isActive && canAccessSocialBlueprint(socialClass, subclassSheet, row.id))
+    .map((row) => ({
+      id: row.id,
+      tag: row.tag,
+      kind: row.kind,
+      name: row.name,
+      description: row.description,
+      materials: row.materials ?? [],
+      gatherUnits: row.gatherUnits,
+      weightOrPower: row.weightOrPower,
+      outputCatalogKey: row.outputCatalogKey,
+      craftable: row.outputCatalogKey != null,
+      isProcedure: row.isProcedure,
+      pathConstraint: row.pathConstraint,
+    }))
+
+  return { socialClass, tag, blueprints }
+}
+
+export async function craftFromBlueprint(
+  userId: string,
+  input: { blueprintId: string; consecratedPlace?: boolean; roomId?: string },
+) {
+  const character = await db.query.characters.findFirst({
+    where: eq(characters.userId, userId),
+    columns: {
+      id: true,
+      name: true,
+      surname: true,
+      socialClass: true,
+      socialSubclassSheet: true,
+    },
+  })
+  if (!character) throw new Error('Personaggio non trovato.')
+
+  const socialClass = (character.socialClass as SocialClassId | null) ?? null
+  if (!socialClass) throw new Error('Scegli prima una classe sociale.')
+
+  const subclassSheet = normalizeSubclassSheet(
+    character.socialSubclassSheet as Record<string, boolean> | undefined,
+  )
+
+  const dbRow = await db.query.socialBlueprints.findFirst({
+    where: eq(socialBlueprints.id, input.blueprintId),
+  })
+  if (!dbRow?.isActive) throw new Error('Blueprint non disponibile.')
+
+  const blueprint = getSocialBlueprint(input.blueprintId)
+  if (!blueprint || blueprint.classId !== socialClass) {
+    throw new Error('Blueprint non valido per la tua classe.')
+  }
+  if (!canAccessSocialBlueprint(socialClass, subclassSheet, input.blueprintId)) {
+    throw new Error('Blueprint non sbloccato nel tuo albero sottoclassi.')
+  }
+  if (!isCraftableBlueprint(blueprint)) {
+    throw new Error('Questo blueprint non produce oggetti tramite craft generico.')
+  }
+
+  if (blueprint.kind === 'rite') {
+    const check = validateCraftOfuda(
+      blueprint,
+      {
+        maxPower: resolveDailyLimitFromSubclasses('shisai', subclassSheet, 'ofudaPowerMax'),
+        maxActive: resolveDailyLimitFromSubclasses('shisai', subclassSheet, 'ofudaActiveMax'),
+        activeCount: 0,
+      },
+      { subclassSheet, consecratedPlace: input.consecratedPlace },
+    )
+    if (!check.ok) throw new Error(check.reason ?? 'Fabbricazione Ofuda non valida.')
+  }
+
+  const materials = blueprint.materials ?? []
+  if (materials.length === 0) throw new Error('Blueprint senza materiali.')
+
+  await consumeMaterialsByCatalogKey(character.id, materials)
+
+  const outputKey = socialBlueprintOutputCatalogKey(blueprint)!
+  if (dbRow.outputCatalogKey && dbRow.outputCatalogKey !== outputKey) {
+    throw new Error('Catalogo output non allineato — esegui seed-social-blueprints.')
+  }
+
+  await addItemByCatalogKey(character.id, outputKey, 1, {
+    craftedByCharacterId: character.id,
+    craftedByName: displayName(character),
+    blueprintId: blueprint.id,
+    origin: 'craftato',
+  })
+  broadcastInventoryUpdated(character.id)
+
+  const resolvedRoom = resolveCraftRoom(character.id, input.roomId)
+  const line = `[${getActiveSocialClassTag(socialClass)?.replace('#', '') ?? 'Shakai'}] ${displayName(character)} crafta «${blueprint.name}»`
+  if (resolvedRoom && isValidRoom(resolvedRoom)) {
+    await insertMessage(resolvedRoom, character.id, line, null, false, null, null, false, true)
+  }
+
+  return {
+    blueprintId: blueprint.id,
+    outputCatalogKey: outputKey,
+    name: blueprint.name,
+    loggedToRoom: resolvedRoom,
+  }
 }
