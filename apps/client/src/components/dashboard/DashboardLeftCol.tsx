@@ -90,91 +90,38 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
       <section className="dashboard-side-panel dashboard-media-section flex-1 min-h-0 flex flex-col bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
         <MusicPlayer />
         <div className="dashboard-sidebar-btns flex flex-col gap-2 mt-3 min-h-0">
-          <button
-            type="button"
-            onClick={onOpenBanca}
-            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
-            style={{
-              backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
-              backgroundSize: "100% 100%",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
-                Banca
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={onOpenMercato}
-            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
-            style={{
-              backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
-              backgroundSize: "100% 100%",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
-                Mercato
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={onOpenWaza}
-            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
-            style={{
-              backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
-              backgroundSize: "100% 100%",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
-                Skiru &amp; Waza
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={onOpenOrdine}
-            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
-            style={{
-              backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
-              backgroundSize: "100% 100%",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
-                Ordine
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={onOpenBestiario}
-            className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
-            style={{
-              backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
-              backgroundSize: "100% 100%",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
-                Bestiario
-              </span>
-            </div>
-          </button>
+          {[
+            { label: "Banca", icon: icons.banca, onClick: onOpenBanca },
+            { label: "Mercato", icon: icons.mercato, onClick: onOpenMercato },
+            { label: "Skiru & Waza", icon: icons.waza, onClick: onOpenWaza },
+            { label: "Ordine", icon: icons.ordine, onClick: onOpenOrdine },
+            { label: "Bestiario", icon: icons.trophy, onClick: onOpenBestiario },
+          ].map(({ label, icon, onClick }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={onClick}
+              title={label}
+              aria-label={label}
+              className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+              style={{
+                backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+              }}
+            >
+              <div className="absolute inset-0 flex items-center justify-center gap-1.5">
+                <FontAwesomeIcon
+                  icon={icon}
+                  className="dashboard-sidebar-btn__icon w-3.5 h-3.5 text-[var(--accent-gold)] group-hover:text-white transition-colors"
+                />
+                <span className="dashboard-sidebar-btn__label text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
+                  {label}
+                </span>
+              </div>
+            </button>
+          ))}
         </div>
       </section>
 

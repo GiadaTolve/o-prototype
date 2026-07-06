@@ -499,6 +499,7 @@ body {
   .dashboard-sidebar-btns {
     gap: clamp(0.2rem, 0.45vh, 0.5rem);
     margin-top: clamp(0.25rem, 0.6vh, 0.75rem);
+    overflow: hidden;
   }
 
   .dashboard-sidebar-btn {
@@ -570,6 +571,32 @@ body {
   .dashboard-presenti-list::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--accent-gold) 40%, transparent);
     border-radius: 4px;
+  }
+}
+
+/* Dashboard — laptop con poca altezza (desktop layout ma viewport basso):
+   i bottoni sidebar diventano una griglia di icone invece di righe piene di testo,
+   per non far traboccare il menu sopra il News Visor. */
+@media (min-width: 1024px) and (max-height: 800px) {
+  .dashboard-sidebar-btns {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-sidebar-btn {
+    flex: 1 1 calc(33.333% - 0.4rem);
+    min-height: 2.35rem;
+    max-height: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .dashboard-sidebar-btn__label {
+    display: none;
+  }
+
+  .dashboard-sidebar-btn__icon {
+    width: 1rem;
+    height: 1rem;
   }
 }
 
