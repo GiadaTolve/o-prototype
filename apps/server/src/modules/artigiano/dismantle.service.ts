@@ -56,10 +56,13 @@ async function incrementDismantleCount(characterId: string, dayKey: string, by: 
 export async function assertArtigiano(characterId: string): Promise<void> {
   const char = await db.query.characters.findFirst({
     where: eq(characters.id, characterId),
-    columns: { skiruSheet: true },
+    columns: { skiruSheet: true, socialClass: true },
   })
-  if (!char || !isArtigianoFromSkiruSheet(char.skiruSheet ?? {})) {
-    throw new Error('Solo gli Artigiani (Shokunin in scheda Skiru) possono smantellare.')
+  const isArtigiano =
+    char?.socialClass === 'shokunin' ||
+    (char != null && isArtigianoFromSkiruSheet(char.skiruSheet ?? {}))
+  if (!char || !isArtigiano) {
+    throw new Error('Solo gli Artigiani (Shokunin) possono smantellare.')
   }
 }
 

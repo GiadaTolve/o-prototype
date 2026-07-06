@@ -1,6 +1,7 @@
 export * from './types'
 export * from './catalog'
 export * from './progression'
+export * from './social-class'
 export * from './materials'
 export * from './tool-ux'
 export * from './blueprint-catalog'

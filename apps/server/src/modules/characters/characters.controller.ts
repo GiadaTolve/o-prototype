@@ -2,6 +2,11 @@ import { Elysia, t } from 'elysia'
 import { calculateDerivedStats } from '@domain/stats/calculator'
 import { characterService } from './characters.service'
 import {
+  chooseSocialClass,
+  getSocialClassState,
+  unlockSocialSubclassForUser,
+} from '../shakai/shakai.service'
+import {
   acknowledgeLevelUpBanner,
   dismissLevelUpBanner,
   readPendingLevelUp,
@@ -20,6 +25,14 @@ async function resolveMasterAccessForUser(user: { id: string; role?: string | nu
   const icon = (char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon
   return resolveShinigamiAccess(user.role, icon)
 }
+
+const socialClassIdSchema = t.Union([
+  t.Literal('ishi'),
+  t.Literal('shokunin'),
+  t.Literal('ryoshi'),
+  t.Literal('seijika'),
+  t.Literal('shisai'),
+])
 
 export const charactersController = new Elysia({ prefix: '/characters' })
   .use(authPlugin) // Carica il plugin Auth
@@ -1032,6 +1045,60 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       }),
       detail: {
         summary: 'Raise a Skiru node — spende EXP spendibile',
+      },
+    })
+
+    // ── Shakai Kaikyū API ─────────────────────────────────────────────
+
+    .get('/me/social-class', async ({ user, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      try {
+        const data = await getSocialClassState(user.id)
+        if (!data) { set.status = 404; return { error: 'Personaggio non trovato' } }
+        return data
+      } catch (e) {
+        set.status = 500
+        return { error: 'Internal Server Error' }
+      }
+    }, {
+      detail: {
+        summary: 'Get Shakai class, subclass tree, daily budget',
+      },
+    })
+
+    .post('/me/social-class', async ({ user, body, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      try {
+        const data = await chooseSocialClass(user.id, body.classId)
+        return data
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore scelta classe sociale' }
+      }
+    }, {
+      body: t.Object({
+        classId: socialClassIdSchema,
+      }),
+      detail: {
+        summary: 'Choose social class (one-time, irreversible for players)',
+      },
+    })
+
+    .patch('/me/social-subclass', async ({ user, body, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      try {
+        const data = await unlockSocialSubclassForUser(user.id, body.subclassId)
+        return data
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore sblocco sottoclasse' }
+      }
+    }, {
+      body: t.Object({
+        subclassId: t.String({ description: 'ID sottoclasse Shakai (es. ishi-minarai)' }),
+      }),
+      detail: {
+        summary: 'Unlock a Shakai subclass — spends experienceSpendable XP',
       },
     })
   )

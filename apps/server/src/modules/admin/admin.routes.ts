@@ -46,6 +46,7 @@ import {
 import { musicService } from '../music/music.service'
 import { forumService } from '../forum/forum.service'
 import { userHasGestioneAccess, userCanEditUserRuolo } from '../../lib/gestione-access'
+import { moderateSocialClass } from '../shakai/shakai.service'
 import { setRoomOpen, getRoomState } from '../anonymous-chat/anonymous-chat.service'
 import { sendTestEmail, emailConfigStatus } from '../../lib/email'
 import type { UserRole, BanState } from '@domain/security/jwt'
@@ -299,6 +300,41 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
                 id: t.String(),
               }),
             }
+          )
+
+          // Moderazione classe sociale Shakai (cambio classe / reset sottoclassi)
+          .patch(
+            '/characters/:id/social-class',
+            async ({ params, body, set }) => {
+              try {
+                const updated = await moderateSocialClass(params.id, {
+                  socialClass: body.socialClass,
+                  resetSubclasses: body.resetSubclasses,
+                })
+                return updated
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore moderazione classe sociale' }
+              }
+            },
+            {
+              params: t.Object({
+                id: t.String(),
+              }),
+              body: t.Object({
+                socialClass: t.Optional(
+                  t.Union([
+                    t.Literal('ishi'),
+                    t.Literal('shokunin'),
+                    t.Literal('ryoshi'),
+                    t.Literal('seijika'),
+                    t.Literal('shisai'),
+                    t.Null(),
+                  ]),
+                ),
+                resetSubclasses: t.Optional(t.Boolean()),
+              }),
+            },
           )
 
           // ==========================================
