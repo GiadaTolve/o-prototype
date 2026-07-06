@@ -81,7 +81,7 @@ export function DashboardRightCol({
   const firstEventToday = todayEvents[0];
 
   return (
-    <aside className="dashboard-right-col flex flex-col gap-4 w-full lg:max-w-[260px] shrink-0 order-3 min-h-0 lg:h-full lg:max-h-full lg:overflow-hidden overflow-x-hidden min-w-0">
+    <aside className="dashboard-right-col flex flex-col gap-4 w-full lg:w-auto lg:basis-[clamp(190px,14vw,300px)] lg:shrink lg:grow-0 order-3 min-h-0 lg:h-full lg:max-h-full lg:overflow-hidden overflow-x-hidden min-w-0">
       {/* Meteo — stile come MusicPlayer: cloudy.png, bordo viola, box-shadow */}
       <section className="dashboard-side-panel dashboard-meteo-panel shrink-0 p-2.5 rounded-lg border border-[var(--accent-violet)]/20 flex flex-col gap-2" style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')", backgroundSize: "cover", backgroundPosition: "center", boxShadow: "0 4px 10px rgba(0,0,0,0.5)" }}>
         <div className="flex items-center justify-between gap-2">

@@ -29,7 +29,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
   const skiruStats = resolveCharacterComputed(char?.computed);
 
   return (
-    <aside className="dashboard-left-col flex flex-col gap-4 w-full lg:max-w-[360px] shrink-0 order-2 lg:order-1 min-h-0 lg:h-full lg:max-h-full lg:overflow-hidden">
+    <aside className="dashboard-left-col flex flex-col gap-4 w-full lg:w-auto lg:basis-[clamp(240px,19vw,420px)] lg:shrink lg:grow-0 order-2 lg:order-1 min-h-0 lg:h-full lg:max-h-full lg:overflow-hidden">
       {/* Mini-Profilo — click nome/avatar apre Scheda */}
       <section className="dashboard-side-panel dashboard-side-panel--profile shrink-0 bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg p-4">
         <button

@@ -34,6 +34,9 @@ export function MusicPlayer() {
     return false;
   });
   const audioRef = useRef<HTMLAudioElement>(null);
+  const marqueeViewportRef = useRef<HTMLDivElement>(null);
+  const marqueeTextRef = useRef<HTMLSpanElement>(null);
+  const [marqueeScrolling, setMarqueeScrolling] = useState(false);
 
   // Carica playlist al mount
   useEffect(() => {
@@ -113,6 +116,23 @@ export function MusicPlayer() {
   };
 
   const currentTrack = currentPlaylist[currentTrackIndex];
+
+  // Il marquee scorre solo se il titolo eccede davvero la larghezza disponibile,
+  // altrimenti resta fermo e centrato (evita le due copie che si accavallano).
+  useEffect(() => {
+    const viewport = marqueeViewportRef.current;
+    const text = marqueeTextRef.current;
+    if (!viewport || !text) return;
+
+    const measure = () => setMarqueeScrolling(text.scrollWidth > viewport.clientWidth);
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(viewport);
+    ro.observe(text);
+    return () => ro.disconnect();
+  }, [currentTrack?.id, currentTrackIndex]);
+
   const getSrc = () => {
     if (!currentTrack) return null;
     if (currentTrack.sourceType === "youtube") {
@@ -153,17 +173,22 @@ export function MusicPlayer() {
 
       {/* Titolo — marquee neon anni '80 */}
       <div className="music-player__marquee" aria-label={currentTrack?.title || "Nessuna traccia"}>
-        <div className="music-player__marquee-viewport">
-          <div className="music-player__marquee-track" key={currentTrack?.id ?? currentTrackIndex}>
-            <span className="music-player__marquee-text">
+        <div className="music-player__marquee-viewport" ref={marqueeViewportRef}>
+          <div
+            className={`music-player__marquee-track ${marqueeScrolling ? "music-player__marquee-track--scrolling" : "music-player__marquee-track--static"}`}
+            key={currentTrack?.id ?? currentTrackIndex}
+          >
+            <span className="music-player__marquee-text" ref={marqueeTextRef}>
               <span className="music-player__marquee-prefix" aria-hidden>
                 ▶
               </span>{" "}
               {currentTrack?.title || "SILENZIO"}
             </span>
-            <span className="music-player__marquee-text" aria-hidden>
-              <span className="music-player__marquee-prefix">▶</span> {currentTrack?.title || "SILENZIO"}
-            </span>
+            {marqueeScrolling && (
+              <span className="music-player__marquee-text" aria-hidden>
+                <span className="music-player__marquee-prefix">▶</span> {currentTrack?.title || "SILENZIO"}
+              </span>
+            )}
           </div>
         </div>
       </div>
