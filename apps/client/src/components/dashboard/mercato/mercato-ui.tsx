@@ -2,12 +2,11 @@
 
 import type { ReactNode } from 'react'
 
-export type MercatoTabId = 'banco' | 'piazza' | 'smantellamento' | 'immobiliare'
+export type MercatoTabId = 'banco' | 'piazza' | 'immobiliare'
 
 const TABS: { id: MercatoTabId; label: string }[] = [
   { id: 'banco', label: 'Il Banco' },
   { id: 'piazza', label: 'La Piazza' },
-  { id: 'smantellamento', label: 'Officina' },
   { id: 'immobiliare', label: 'Immobiliare' },
 ]
 
