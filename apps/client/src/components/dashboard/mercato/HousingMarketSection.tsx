@@ -13,8 +13,18 @@ const PLACEHOLDER_ICON = '/dark-fantasy-ui/icon-placeholder.svg'
 
 type CurrentHousingRow = {
   id: string
-  housingType: { id: string; code: string; name: string; dailyRent: number | null; monthlyRent: number | null }
+  housingType: {
+    id: string
+    code: string
+    name: string
+    dailyRent: number | null
+    monthlyRent: number | null
+  }
+  nextDueDate: string | null
+  hasPaidCurrentMonth: boolean
+  daysOverdue: number
   evicted: boolean
+  chatRoomId: string | null
 } | null
 
 type Props = {
@@ -128,6 +138,7 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
   const [housingLoading, setHousingLoading] = useState(false)
   const [rentingId, setRentingId] = useState<string | null>(null)
   const [leavingHousing, setLeavingHousing] = useState(false)
+  const [payingRent, setPayingRent] = useState(false)
 
   const refreshHousing = useCallback(async () => {
     setHousingLoading(true)
@@ -167,6 +178,28 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
     }
   }
 
+  const handlePayRent = async () => {
+    if (!confirm("Vuoi pagare l'affitto mensile ora?")) return
+    setPayingRent(true)
+    try {
+      await api.post('/housing/pay-rent', {})
+      await refreshHousing()
+      onCharUpdate?.()
+      toast.success('Affitto pagato.')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Errore durante il pagamento')
+    } finally {
+      setPayingRent(false)
+    }
+  }
+
+  const openHousingChat = () => {
+    if (!currentHousing?.chatRoomId) return
+    window.dispatchEvent(
+      new CustomEvent('openHousingChat', { detail: { roomId: currentHousing.chatRoomId } }),
+    )
+  }
+
   const handleLeaveHousing = async () => {
     if (
       !confirm(
@@ -194,19 +227,82 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
     <div className="space-y-4">
       {currentHousing && !currentHousing.evicted && (
         <MercatoSection title="Abitazione attuale">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-[var(--accent-violet-light)]">
-              Risiedi in <strong className="text-white">{currentHousing.housingType.name}</strong>. Per cambiare,
-              rescindi prima il contratto.
-            </p>
-            <button
-              type="button"
-              onClick={() => void handleLeaveHousing()}
-              disabled={leavingHousing}
-              className="px-3 py-2 rounded border border-red-900/50 text-red-400 text-xs font-display uppercase tracking-wider hover:bg-red-950/30 disabled:opacity-50 shrink-0"
-            >
-              {leavingHousing ? '…' : 'Lascia immobile'}
-            </button>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm text-[var(--accent-violet-light)]">
+                  Risiedi in <strong className="text-white">{currentHousing.housingType.name}</strong>.
+                </p>
+                {currentHousing.housingType.monthlyRent != null && currentHousing.housingType.monthlyRent > 0 && (
+                  <div className="mt-2 space-y-1 text-xs text-gray-400">
+                    <p>Affitto: {currentHousing.housingType.monthlyRent} REM/mese</p>
+                    {currentHousing.nextDueDate && (
+                      <p>
+                        Scadenza:{' '}
+                        {new Date(currentHousing.nextDueDate).toLocaleDateString('it-IT')}
+                        {currentHousing.daysOverdue > 0 && (
+                          <span className="text-red-400 ml-2">
+                            ({currentHousing.daysOverdue} giorni di ritardo)
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    <p>
+                      Pagato questo mese:{' '}
+                      <span
+                        className={
+                          currentHousing.hasPaidCurrentMonth
+                            ? 'text-[var(--accent-violet-light)]'
+                            : 'text-[var(--accent-gold)]'
+                        }
+                      >
+                        {currentHousing.hasPaidCurrentMonth ? 'Sì' : 'No'}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                {currentHousing.housingType.monthlyRent != null &&
+                  currentHousing.housingType.monthlyRent > 0 &&
+                  !currentHousing.hasPaidCurrentMonth && (
+                    <button
+                      type="button"
+                      onClick={() => void handlePayRent()}
+                      disabled={payingRent}
+                      className="px-3 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs font-display uppercase tracking-wider hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+                    >
+                      {payingRent ? '…' : 'Paga affitto'}
+                    </button>
+                  )}
+                {currentHousing.chatRoomId && (
+                  <button
+                    type="button"
+                    onClick={openHousingChat}
+                    className="px-3 py-2 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-xs font-display uppercase tracking-wider hover:bg-[var(--accent-violet)]/10"
+                  >
+                    <FontAwesomeIcon icon={icons.message} className="w-3 h-3 mr-1" />
+                    Chat casa
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void handleLeaveHousing()}
+                  disabled={leavingHousing}
+                  className="px-3 py-2 rounded border border-red-900/50 text-red-400 text-xs font-display uppercase tracking-wider hover:bg-red-950/30 disabled:opacity-50"
+                >
+                  {leavingHousing ? '…' : 'Lascia immobile'}
+                </button>
+              </div>
+            </div>
+            {currentHousing.housingType.monthlyRent != null &&
+              !currentHousing.hasPaidCurrentMonth &&
+              currentHousing.daysOverdue === 0 && (
+                <p className="text-[11px] text-gray-500 border-t border-[var(--border-color)] pt-2">
+                  Il Locatario ti invierà un messaggio alla scadenza (15 del mese) se l&apos;affitto non risulta
+                  saldato.
+                </p>
+              )}
           </div>
         </MercatoSection>
       )}

@@ -3,6 +3,10 @@ import { db } from '../../plugins/db'
 import { characters, characterHousing, housingGuests, housingTypes, ledgerEntries } from '../../db/schema'
 import { createRem } from '@domain/types/money'
 import { spend } from '@domain/ledger/transaction'
+import {
+  computeInitialDueDate,
+  computeNextDueDateAfterPayment,
+} from '@domain/ledger/rules/housing-rent-cycle'
 
 /**
  * Ottiene tutte le tipologie di abitazione disponibili.
@@ -70,12 +74,7 @@ export async function assignHousing(
   let nextDueDate: Date | null = null
 
   if (housingType.monthlyRent) {
-    // Per affitti mensili, la scadenza è il 15 del mese corrente (se siamo prima del 15) o del mese successivo
-    if (today.getDate() <= 15) {
-      nextDueDate = new Date(today.getFullYear(), today.getMonth(), 15)
-    } else {
-      nextDueDate = new Date(today.getFullYear(), today.getMonth() + 1, 15)
-    }
+    nextDueDate = computeInitialDueDate(today)
     nextDueDate.setHours(23, 59, 59, 999)
   }
 
@@ -149,7 +148,7 @@ export async function payMonthlyRent(characterId: string) {
 
   // Calcola la prossima scadenza (15 del mese successivo)
   const today = new Date()
-  const nextDueDate = new Date(today.getFullYear(), today.getMonth() + 1, 15)
+  const nextDueDate = computeNextDueDateAfterPayment(today)
   nextDueDate.setHours(23, 59, 59, 999)
 
   await db.transaction(async (tx) => {
