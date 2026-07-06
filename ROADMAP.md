@@ -150,8 +150,8 @@
 | API smantellamento Artigiano | ✅ | Gate Shokunin temporaneo |
 | UI scheda oggetto (categorie, integrità, origine) | ✅ | |
 | UI sezione MARKET in inventario | ✅ | WS `inventory_updated` |
-| **Pannello Mercato giocabile** (Banco + Piazza) | 🔲 | **Priorità alta** |
-| **Pannello Smantellamento in UI** | 🔲 | **Priorità alta** |
+| **Pannello Mercato** (Banco + Piazza + Immobiliare) | ✅ | `MercatoPanel` nel dock |
+| **Pannello Smantellamento** Artigiano | ✅ | Tab Officina in Mercato; gate Skiru Shokunin |
 | Baratto Piazza | 🔲 | Rimandato |
 
 ---
@@ -225,16 +225,14 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Economia | Pannello **Mercato** client (Banco + Piazza) | API ✅ |
-| 2 | Economia | Pannello **Smantellamento** Artigiano in UI | API ✅ |
-| 3 | Shakai | Migrazione DB classi sociali | `db:push` prod |
-| 4 | Shakai | API + UI scelta classe e albero sottoclassi | Step 3 |
-| 5 | Shakai | Prima tool **Medico** (cura + preparati) | Step 4 |
-| 6 | Shakai | Tool Artigiano (ripara + craft blueprint) | Step 4; loop junk |
-| 7 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
-| 8 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
-| 9 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
-| 10 | Mobile | Notifiche push SMS/chat | Infrastruttura |
+| 1 | Shakai | Migrazione DB classi sociali | `db:push` prod |
+| 2 | Shakai | API + UI scelta classe e albero sottoclassi | Step 1 |
+| 3 | Shakai | Prima tool **Medico** (cura + preparati) | Step 2 |
+| 4 | Shakai | Tool Artigiano (ripara + craft blueprint) | Step 2; smantellamento ✅ |
+| 5 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
+| 6 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
+| 7 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
+| 8 | Mobile | Notifiche push SMS/chat | Infrastruttura |
 
 ---
 
