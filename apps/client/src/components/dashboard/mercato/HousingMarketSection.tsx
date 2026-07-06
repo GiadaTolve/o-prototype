@@ -6,19 +6,10 @@ import { icons } from '@/lib/icons'
 import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import type { CharacterSummary } from '../types'
-import { MercatoSection } from './mercato-ui'
+import { MercatoEmpty, MercatoSection } from './mercato-ui'
+import type { HousingCatalogItem } from './mercato-types'
 
-type HousingTypeRow = {
-  id: string
-  code: string
-  name: string
-  squareMeters: number
-  dailyRent: number | null
-  monthlyRent: number | null
-  hpBonus: number
-  inventorySlotsBonus: number
-  requirements: { paradisePass?: boolean } | null
-}
+const PLACEHOLDER_ICON = '/dark-fantasy-ui/icon-placeholder.svg'
 
 type CurrentHousingRow = {
   id: string
@@ -31,8 +22,107 @@ type Props = {
   onCharUpdate?: () => void
 }
 
+function HousingCatalogCard({
+  type,
+  char,
+  currentHousing,
+  rentingId,
+  onRent,
+}: {
+  type: HousingCatalogItem
+  char?: CharacterSummary
+  currentHousing: CurrentHousingRow
+  rentingId: string | null
+  onRent: (id: string) => void
+}) {
+  const isSalary = type.dailyRent != null && type.dailyRent > 0
+  const costRem = type.monthlyRent ?? type.dailyRent ?? 0
+  const rem = char?.rem ?? 0
+  const canAfford = isSalary || rem >= costRem
+  const isMyHouse =
+    currentHousing && !currentHousing.evicted && currentHousing.housingType.id === type.id
+  const hasOtherHouse =
+    currentHousing && !currentHousing.evicted && currentHousing.housingType.id !== type.id
+
+  let btnLabel: string
+  let disabled = false
+  let isOwned = false
+
+  if (isMyHouse) {
+    btnLabel = isSalary ? 'Assegnato' : 'Contratto attivo'
+    disabled = true
+    isOwned = true
+  } else if (hasOtherHouse) {
+    btnLabel = 'Non disponibile'
+    disabled = true
+  } else {
+    btnLabel = isSalary ? 'Richiedi assegnazione' : 'Firma contratto'
+    disabled = !canAfford || rentingId !== null
+  }
+
+  return (
+    <div
+      className={`flex gap-3 p-3 rounded-lg border ${
+        isMyHouse
+          ? 'border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/5'
+          : 'border-[var(--border-color)] bg-black/25'
+      }`}
+    >
+      <img
+        src={type.iconUrl || PLACEHOLDER_ICON}
+        alt={type.name}
+        width={100}
+        height={100}
+        className="w-[100px] h-[100px] shrink-0 rounded border border-white/10 bg-black/40 object-cover p-2"
+        onError={(e) => {
+          ;(e.target as HTMLImageElement).src = PLACEHOLDER_ICON
+        }}
+      />
+      <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+        <div>
+          <p className="font-display text-sm text-white">{type.name}</p>
+          {type.nameRomaji && (
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider">{type.nameRomaji}</p>
+          )}
+        </div>
+        {type.description && (
+          <p className="text-xs text-gray-400 leading-relaxed">{type.description}</p>
+        )}
+        {type.effectText && (
+          <p className="text-[11px] text-[var(--accent-violet-light)]/90">{type.effectText}</p>
+        )}
+        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+          <div>
+            <span className="text-sm text-[var(--accent-gold)] font-display tabular-nums block">
+              {costRem} Rem
+            </span>
+            <span className="text-[10px] text-gray-500 uppercase">
+              {isSalary ? 'Detrazione giornaliera' : 'Mensile'}
+            </span>
+          </div>
+          {isOwned ? (
+            <div className="px-3 py-1.5 rounded border border-[var(--accent-gold)]/40 text-[var(--accent-gold)] text-[10px] uppercase tracking-wider flex items-center gap-1.5">
+              <FontAwesomeIcon icon={icons.check} className="w-3 h-3" />
+              {btnLabel}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => !disabled && onRent(type.id)}
+              disabled={disabled}
+              className="px-3 py-1.5 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-[10px] uppercase tracking-wider hover:bg-[var(--accent-gold)]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {rentingId === type.id ? '…' : btnLabel}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function HousingMarketSection({ char, onCharUpdate }: Props) {
-  const [housingTypes, setHousingTypes] = useState<HousingTypeRow[]>([])
+  const [housingTypes, setHousingTypes] = useState<HousingCatalogItem[]>([])
   const [currentHousing, setCurrentHousing] = useState<CurrentHousingRow>(null)
   const [loading, setLoading] = useState(true)
   const [housingLoading, setHousingLoading] = useState(false)
@@ -43,7 +133,7 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
     setHousingLoading(true)
     try {
       const [types, housing] = await Promise.all([
-        api.get('/housing/types').then((d) => (Array.isArray(d) ? d : []) as HousingTypeRow[]).catch(() => []),
+        api.get('/housing/types').then((d) => (Array.isArray(d) ? d : []) as HousingCatalogItem[]).catch(() => []),
         api.get('/housing/me').then((d) => d as CurrentHousingRow).catch(() => null),
       ])
       setHousingTypes(types)
@@ -63,7 +153,7 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
     const isSalary = type?.dailyRent != null && type.dailyRent > 0
     const msg = isSalary
       ? `Vuoi assegnarti: ${type?.name}? (Detrazione giornaliera: ${type?.dailyRent} REM)`
-      : `Vuoi affittare: ${type?.name}? Costo: ${cost} REM${type?.monthlyRent ? ' mensili' : ''}`
+      : `Vuoi affittare: ${type?.name}? Costo: ${cost} REM mensili`
     if (!confirm(msg)) return
     setRentingId(housingTypeId)
     try {
@@ -122,87 +212,29 @@ export function HousingMarketSection({ char, onCharUpdate }: Props) {
       )}
 
       <MercatoSection
-        title="Tipologie disponibili"
-        hint="Affitta o assegna un'abitazione per slot inventario extra e bonus PF."
+        title="Catalogo immobiliare"
+        hint="Affitta o assegna un'abitazione per slot inventario extra, bonus PF e chat casa privata."
       >
-      {housingLoading ? (
-        <p className="text-sm text-gray-500">Caricamento listino…</p>
-      ) : housingTypes.length === 0 ? (
-        <p className="text-sm text-gray-500">Nessuna tipologia di abitazione disponibile.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {housingTypes.map((type) => {
-            const isSalary = type.dailyRent != null && type.dailyRent > 0
-            const costRem = type.monthlyRent ?? type.dailyRent ?? 0
-            const rem = char?.rem ?? 0
-            const canAfford = isSalary || rem >= costRem
-            const isMyHouse =
-              currentHousing && !currentHousing.evicted && currentHousing.housingType.id === type.id
-            const hasOtherHouse =
-              currentHousing && !currentHousing.evicted && currentHousing.housingType.id !== type.id
-            let btnLabel: string
-            let disabled = false
-            let isOwned = false
-            if (isMyHouse) {
-              btnLabel = isSalary ? 'Assegnato' : 'Contratto firmato'
-              disabled = true
-              isOwned = true
-            } else if (hasOtherHouse) {
-              btnLabel = 'Non disponibile'
-              disabled = true
-            } else {
-              btnLabel = isSalary ? 'Assegnazione' : 'Firma contratto'
-              disabled = !canAfford || rentingId !== null
-            }
-            return (
-              <div
+        {housingLoading ? (
+          <p className="text-sm text-gray-500">Caricamento listino…</p>
+        ) : housingTypes.length === 0 ? (
+          <MercatoEmpty>
+            Nessuna abitazione in catalogo — esegui il seed housing o aggiungi tipologie da Gestione.
+          </MercatoEmpty>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {housingTypes.map((type) => (
+              <HousingCatalogCard
                 key={type.id}
-                className={`p-4 rounded border flex flex-col gap-3 ${
-                  isMyHouse
-                    ? 'border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/5'
-                    : 'border-[var(--border-color)] bg-black/20'
-                }`}
-              >
-                <div className="flex justify-between items-start border-b border-[var(--border-color)] pb-2">
-                  <h4 className="font-display text-sm text-[var(--accent-violet)] flex items-center gap-2">
-                    <FontAwesomeIcon icon={icons.home} className="w-3 h-3 opacity-70" />
-                    {type.name}
-                  </h4>
-                  <div className="text-right">
-                    <span className="text-[var(--accent-gold)] font-mono font-bold block">{costRem} REM</span>
-                    <span className="text-[10px] text-gray-500 uppercase">
-                      {isSalary ? 'Detrazione' : 'Mensile'}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 flex-1">
-                  {type.squareMeters} m²
-                  {type.requirements?.paradisePass && ' · Richiede Paradise Pass'}
-                </p>
-                <div className="flex justify-between text-xs py-2 px-3 rounded bg-black/30 border border-[var(--border-color)]">
-                  <span className="text-[var(--accent-gold)]">+{type.inventorySlotsBonus} slot</span>
-                  <span className="text-red-400/90">+{type.hpBonus} PF</span>
-                </div>
-                {isOwned ? (
-                  <div className="py-2 px-3 rounded border border-[var(--accent-gold)]/40 text-[var(--accent-gold)] text-xs font-display text-center flex items-center justify-center gap-2">
-                    <FontAwesomeIcon icon={icons.check} />
-                    {btnLabel}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => !disabled && void handleRentHousing(type.id)}
-                    disabled={disabled}
-                    className="py-2 px-3 rounded border border-[var(--accent-violet)] text-[var(--accent-violet-light)] text-xs font-display uppercase tracking-wider hover:bg-[var(--accent-violet)]/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {rentingId === type.id ? '…' : btnLabel}
-                  </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                type={type}
+                char={char}
+                currentHousing={currentHousing}
+                rentingId={rentingId}
+                onRent={(id) => void handleRentHousing(id)}
+              />
+            ))}
+          </div>
+        )}
       </MercatoSection>
     </div>
   )
