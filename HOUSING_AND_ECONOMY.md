@@ -19,7 +19,7 @@ Riepilogo di cosa è stato portato dal vecchio progetto (OYASUMI) al nuovo (o-pr
 
 - **Tipologie di abitazione** da DB (`housing_types`): codice, nome, m², affitto giornaliero (es. Stanza dell’Ordine), affitto mensile, bonus HP, bonus slot inventario.
 - **Assegnazione**: `POST /housing/assign` con `housingTypeId`. Se il personaggio ha già una casa, viene sostituita.
-- **Affitto mensile**: scadenza (15 del mese), pagamento manuale `POST /housing/pay-rent`.
+- **Affitto mensile**: scadenza (15 del mese), pagamento manuale `POST /housing/pay-rent`, solleciti SMS dal personaggio **Locatario** (daily tick), addebito automatico il 15 se il saldo basta.
 - **Affitto giornaliero**: per la Stanza dell’Ordine, detrazione automatica allo stipendio (logica in `calculateSalary` e daily-tick se abilitato).
 - **Rimozione**: `POST /housing/remove` (diventa “senzatetto”).
 - **Chat casa**: per le case con `chatRoomId` (affitto mensile), il personaggio ha una chat privata della casa; pulsante “Chat Casa” apre quella room dalla dashboard.
@@ -29,7 +29,7 @@ Riepilogo di cosa è stato portato dal vecchio progetto (OYASUMI) al nuovo (o-pr
 
 - **Completo**: assegnazione casa, pagamento affitto mensile, rimozione, chat casa, bonus HP/slot, integrazione stipendio con affitto giornaliero.
 - **Opzionale / da estendere**:
-  - **Daily tick**: lo sfratto per morosità (dopo X giorni di ritardo) e l’aggiornamento di `daysOverdue` dipendono dallo scheduler daily-tick; verificare che le regole in `packages/domain` e nel server siano collegate.
+  - **Daily tick**: sfratto (8 del mese successivo), solleciti Locatario via SMS, addebito automatico il 15 — `housing-monthly-rent.service.ts`; seed NPC con `scripts/seed-locatario.ts`.
   - **Descrizione abitazione**: nel vecchio progetto le case avevano un campo `description`; nello schema attuale `housing_types` non ce l’ha. Si può aggiungere una colonna `description` se serve in UI/admin.
   - **Vincolo “lascia lavoro” 10 giorni**: si può introdurre una colonna `job_started_at` su `characters` e rifiutare `leave-job` se non sono passati 10 giorni.
 
