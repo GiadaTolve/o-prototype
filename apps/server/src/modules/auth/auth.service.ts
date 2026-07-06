@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, ilike } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import { users, characters } from '../../db/schema' 
 
@@ -11,7 +11,12 @@ import type { UserRole, BanState } from '@domain/security/jwt'
 // ==========================
 // REGISTRAZIONE (User + Character)
 // ==========================
-export async function registerUser(email: string, pass: string, characterName: string) {
+export async function registerUser(
+  email: string,
+  pass: string,
+  characterName: string,
+  playerPreferences?: string,
+) {
   
   // 1. Controllo se l'email esiste già
   const existingUser = await db.query.users.findFirst({
@@ -20,6 +25,14 @@ export async function registerUser(email: string, pass: string, characterName: s
   
   if (existingUser) {
     throw new Error('User already exists')
+  }
+
+  const existingChar = await db.query.characters.findFirst({
+    where: ilike(characters.name, characterName.trim()),
+  })
+
+  if (existingChar) {
+    throw new Error('Character name taken')
   }
 
   // 2. Criptiamo la password
@@ -31,6 +44,7 @@ export async function registerUser(email: string, pass: string, characterName: s
     passwordHash,
     role: 'PLAYER',
     banState: 'NONE',
+    playerPreferences: playerPreferences?.trim() || null,
   }).returning()
 
   // 4. Salviamo il PERSONAGGIO attivo alla registrazione (nome PG; profilo e richieste dopo)

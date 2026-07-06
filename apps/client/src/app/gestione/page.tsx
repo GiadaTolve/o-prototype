@@ -21,6 +21,7 @@ type User = {
   email: string;
   role: string;
   banState: string;
+  playerPreferences?: string | null;
   characters?: Array<{
     id: string;
     name: string;
@@ -459,6 +460,13 @@ function UserManagementModal({
             <p className="text-sm text-gray-400 mb-1">Email</p>
             <p className="text-white">{user.email}</p>
           </div>
+
+          {user.playerPreferences?.trim() && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Preferenze iscrizione (Yume)</p>
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{user.playerPreferences}</p>
+            </div>
+          )}
 
           {character && (
             <div>

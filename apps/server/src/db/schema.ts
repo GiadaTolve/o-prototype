@@ -14,6 +14,9 @@ export const users = pgTable('users', {
   
   // Gestione Ban (Shadowban non invia messaggi in chat)
   banState: text('ban_state').$type<'NONE' | 'SHADOW' | 'FULL'>().default('NONE'),
+
+  /** Preferenze espresse in chat Yume-chan alla registrazione (visibile a staff) */
+  playerPreferences: text('player_preferences'),
   
   createdAt: timestamp('created_at').defaultNow()
 })

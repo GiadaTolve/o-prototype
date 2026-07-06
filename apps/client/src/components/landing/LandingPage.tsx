@@ -8,7 +8,7 @@ import { LandingInfoModal } from "./LandingInfoModal";
 import "./landing.css";
 
 type View = "LOGIN" | "REGISTER";
-type Modal = "GUIDE" | "LORE" | null;
+type Modal = "GUIDE" | "LORE" | "PRIVACY" | "PRINCIPIA" | null;
 
 export function LandingPage({ initialView = "LOGIN" }: { initialView?: View }) {
   const router = useRouter();
@@ -23,6 +23,8 @@ export function LandingPage({ initialView = "LOGIN" }: { initialView?: View }) {
   }, [router]);
 
   const closeModal = () => setActiveModal(null);
+
+  const openModal = (modal: Modal) => setActiveModal(modal);
 
   return (
     <div className="landing-page">
@@ -60,30 +62,43 @@ export function LandingPage({ initialView = "LOGIN" }: { initialView?: View }) {
             <button
               type="button"
               className={`landing-nav-btn${activeModal === "GUIDE" ? " is-active" : ""}`}
-              onClick={() => setActiveModal("GUIDE")}
+              onClick={() => openModal("GUIDE")}
             >
               Guida
             </button>
             <button
               type="button"
               className={`landing-nav-btn${activeModal === "LORE" ? " is-active" : ""}`}
-              onClick={() => setActiveModal("LORE")}
+              onClick={() => openModal("LORE")}
             >
               Ambientazione
             </button>
           </nav>
         </header>
 
-        <div className="landing-panel">
+        <div className={`landing-panel${activeView === "REGISTER" ? " landing-panel--chat" : ""}`}>
           {activeModal === "GUIDE" ? (
             <LandingInfoModal kind="guida" onClose={closeModal} />
           ) : activeModal === "LORE" ? (
             <LandingInfoModal kind="ambientazione" onClose={closeModal} />
+          ) : activeModal === "PRIVACY" ? (
+            <LandingInfoModal kind="privacy" onClose={closeModal} />
+          ) : activeModal === "PRINCIPIA" ? (
+            <LandingInfoModal kind="principia" onClose={closeModal} />
           ) : activeView === "REGISTER" ? (
             <LandingRegisterForm
-              onRegisterSuccess={() => setActiveView("LOGIN")}
-              onOpenGuida={() => setActiveModal("GUIDE")}
-              onOpenLore={() => setActiveModal("LORE")}
+              onRegisterSuccess={(token) => {
+                localStorage.setItem("token", token);
+                router.replace("/dashboard");
+              }}
+              onOpenGuida={() => openModal("GUIDE")}
+              onOpenLore={() => openModal("LORE")}
+              onOpenPrivacy={() => openModal("PRIVACY")}
+              onOpenPrincipia={() => openModal("PRINCIPIA")}
+              onOpenLogin={() => {
+                closeModal();
+                setActiveView("LOGIN");
+              }}
             />
           ) : (
             <LandingLoginForm />

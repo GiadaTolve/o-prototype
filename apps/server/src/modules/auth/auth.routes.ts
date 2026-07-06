@@ -12,10 +12,30 @@ import { sendPasswordResetEmail, sendRegistrationEmails } from '../../lib/email'
 export const authRoutes = new Elysia({ prefix: '/auth' })
   .use(jwt({ name: 'jwt', secret: JWT_SECRET }))
 
+  .get('/check-character-name', async ({ query }) => {
+    const name = query.name?.trim() ?? ''
+    if (name.length < 2 || name.length > 30) {
+      return { available: false }
+    }
+    const existing = await db.query.characters.findFirst({
+      where: ilike(characters.name, name),
+    })
+    return { available: !existing }
+  }, {
+    query: t.Object({
+      name: t.String({ minLength: 1, maxLength: 30 }),
+    }),
+  })
+
   // ===================== REGISTER =====================
   .post('/register', async ({ body, set }) => {
     try {
-      const result = await registerUser(body.email, body.password, body.characterName)
+      const result = await registerUser(
+        body.email,
+        body.password,
+        body.characterName,
+        body.playerPreferences,
+      )
 
       await sendRegistrationEmails({
         email: body.email,
@@ -37,7 +57,11 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       console.error('[auth] Errore durante la registrazione:', e)
       if (msg === 'User already exists') {
         set.status = 409
-        return { error: 'Questa email è già stata utilizzata.' }
+        return { error: 'Questa email è già stata utilizzata.', code: 'EMAIL_TAKEN' }
+      }
+      if (msg === 'Character name taken') {
+        set.status = 409
+        return { error: 'Nome personaggio già in uso.', code: 'CHARACTER_NAME_TAKEN' }
       }
       set.status = 500
       return { error: 'Errore interno del server durante la registrazione.' }

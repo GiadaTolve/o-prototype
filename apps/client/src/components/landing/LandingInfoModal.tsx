@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-type InfoKind = "guida" | "ambientazione";
+type InfoKind = "guida" | "ambientazione" | "privacy" | "principia";
 
 const CONTENT: Record<InfoKind, { title: string; body: ReactNode }> = {
   guida: {
@@ -37,6 +37,39 @@ const CONTENT: Record<InfoKind, { title: string; body: ReactNode }> = {
           Oyasumi è un dark fantasy narrativo: la storia viene prima, ma le regole — matematica compresa — non si
           piegano arbitrariamente.
         </p>
+      </>
+    ),
+  },
+  privacy: {
+    title: "Informativa privacy",
+    body: (
+      <>
+        <h1>Privacy</h1>
+        <p>
+          Oyasumi tratta i dati necessari alla registrazione e al funzionamento del gioco (account, email, preferenze
+          espresse in fase di iscrizione). I contenuti di gioco possono includere temi per un pubblico maggiorenne.
+        </p>
+        <p>
+          Per richieste relative ai tuoi dati puoi contattare lo staff all&apos;indirizzo indicato sul sito. L&apos;informativa
+          completa sarà aggiornata in versione definitiva prima dell&apos;apertura pubblica.
+        </p>
+      </>
+    ),
+  },
+  principia: {
+    title: "Principia Satirica",
+    body: (
+      <>
+        <h1>Principia Satirica</h1>
+        <p>
+          In Oyasumi la narrazione è libera, ma la <strong>matematica non si negozia</strong>: dadi, statistiche, costi
+          delle Waza e regole di combattimento valgono per tutti allo stesso modo.
+        </p>
+        <p>
+          Il Master arbitra la scena in chat; quando serve un tiro, lo chiede e lo esegue il giocatore. Niente
+          &quot;fuffa&quot; che bypassa i numeri — è il patto che tiene in piedi il gioco per tutti gli invitati alla festa.
+        </p>
+        <p>La versione estesa sarà disponibile dalla guida in gioco.</p>
       </>
     ),
   },

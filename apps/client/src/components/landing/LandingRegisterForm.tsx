@@ -1,259 +1,113 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { YumeMessageText, type YumeLinkHandlers } from "./YumeMessageText";
+import {
+  clearYumeSession,
+  createFreshSession,
+  isAffirmativeDreamAnswer,
+  isContinuationInput,
+  loadYumeSession,
+  parseYesNo,
+  saveYumeSession,
+  validateCharacterName,
+  validateEmail,
+  type StoredChatMessage,
+  type YumeRegisterSession,
+  type YumeUserData,
+} from "./yume-register-session";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-type UserData = {
-  nomePg: string;
-  email: string;
-  password: string;
-  playerPreferences: string;
-};
+type FlowMessage = { text: string | ((data: YumeUserData) => string); delay: number };
 
-type FlowMessage = { text: string | ((data: UserData) => string); delay: number };
+type ChatMessage = { content: React.ReactNode; sender: "yume" | "user"; plain?: string };
 
-type StepConfig = {
-  messages?: FlowMessage[];
-  nextStep?: number;
-  handleUserReply?: (
-    input: string,
-    ctx: {
-      advance: (nextStep: number, messages: FlowMessage[]) => void;
-      terminate: (message: string) => void;
-      openGuida: () => void;
-      openLore: () => void;
-      userData: UserData;
-    },
-  ) => void;
-  action?: (
-    input: string,
-    dataSetter: {
-      setNomePg: (v: string) => void;
-      setEmail: (v: string) => void;
-      setPassword: (v: string) => void;
-      setPlayerPreferences: (v: string) => void;
-    },
-    submit: () => void,
-  ) => void;
-  validator?: (input: string, data?: UserData) => boolean;
-  errorMessage?: string;
-};
+const OPENING: FlowMessage[] = [
+  { text: "Hey ✨ Se sei arrivat* fin qui, hai deciso di fare un passo fuori dalla realtà.", delay: 800 },
+  { text: "...", delay: 1200 },
+  { text: "Beh, benvenut*!", delay: 800 },
+  {
+    text: 'Prima di aprirti la porta, però, una formalità — le porte serie hanno sempre un buttafuori.\nSei maggiorenne? Rispondi solo "sì" o "no".',
+    delay: 1400,
+  },
+];
 
-const conversationFlow: Record<number, StepConfig> = {
-  0: {
-    messages: [
-      {
-        text: "Hey ✨ Se sei venuto qui, hai deciso d'intraprendere un percorso totalmente nuovo, facendo un passo al di fuori della realta' ! ",
-        delay: 1000,
-      },
-      { text: "...", delay: 1500 },
-      { text: "Beh, benvenuto!", delay: 1000 },
-      { text: "Hai già giocato ai giochi di ruolo via chat? (GDR PBC)", delay: 1500 },
-    ],
-    nextStep: 1,
-  },
-  1: {
-    handleUserReply: (input, { openGuida, openLore, advance }) => {
-      if (input.toLowerCase().includes("no")) {
-        advance(2, [
-          { text: "Non ti preoccupare, abbiamo pensato anche a te.", delay: 500 },
-          {
-            text: "Puoi leggere la Guida per scoprire come funziona e come muovere i primi passi.",
-            delay: 1500,
-          },
-          {
-            text: "E puoi esplorare l'Ambientazione per conoscere il mondo che abiterà il tuo personaggio.",
-            delay: 1500,
-          },
-          { text: "Quando sei pronto, scrivi 'ok' o '...' per continuare.", delay: 1500 },
-        ]);
-        void openGuida;
-        void openLore;
-      } else {
-        advance(2, [
-          { text: "Oh, bene. Allora io mi occupero' solo di darti una piccola premessa utile!", delay: 500 },
-        ]);
-      }
-    },
-  },
-  2: {
-    messages: [
-      {
-        text: "Ho costruito questo mondo, mattone dopo mattone. L'ho costruito per me, perche' volevo un posto sicuro.",
-        delay: 1500,
-      },
-      {
-        text: "L'ho costruito per te, poiche' ti sentissi a casa. Chiunque tu sia, ovunque tu vada e da qualsiasi luogo tu venga.",
-        delay: 2000,
-      },
-      {
-        text: "Certo, Oyasumi non e' reale. Il tuo personaggio e' solo un pupazzetto; ma il protagonista inconsapevole sei tu, e sei solo tu a renderti tale. Con la tua fantasia.",
-        delay: 2500,
-      },
-      { text: "...", delay: 2000 },
-    ],
-    nextStep: 3,
-  },
-  3: {
-    messages: [
-      {
-        text: "Immagina Oyasumi dopotutto come una festa. Io ho stampato gli inviti, e ho fatto delle regole poiche' tutti si sentano a proprio agio. Tu sei l'invitat*.",
-        delay: 1500,
-      },
-      {
-        text: "Divertiti con tutto ciò che ti offriamo e tutto quello che trovi da sol*, senza rovinare la festa a tutti gli invitati.",
-        delay: 2500,
-      },
-      { text: "*coff* Bene, proseguiamo! 🎀", delay: 1500 },
-      {
-        text: "Qui la narrazione e' la carta vincente. 💫 Del resto alla base del gioco di ruolo c'e' il raccontare una storia, no?",
-        delay: 1500,
-      },
-      {
-        text: "E attenzione... 😒 Non sto parlando di esser scrittori da premi nobel, ma di voler raccontare! Bene o male, in modo arzigogolato o semplice. L'unica cosa non opinabile, amico mio, e' la matematica.",
-        delay: 2500,
-      },
-      {
-        text: 'A tal proposito, prima che io e te iniziamo una rissa basata sulla fuffa... 💀 Leggi "Principia Satirica". E poi torna a dirmi se hai capito, e che ne pensi!',
-        delay: 3500,
-      },
-    ],
-    nextStep: 4,
-  },
-  4: {
-    messages: [
-      {
-        text: "Ah, ho parlato troppo. Ma almeno le basi sono chiare. Ora parliamo di te, del tuo personaggio! Come ti @chiami?",
-        delay: 500,
-      },
-    ],
-    action: (input, dataSetter) => dataSetter.setNomePg(input),
-    validator: (input) => input.trim().length > 0,
-    errorMessage: "Per favore, inserisci un nome per il tuo personaggio.",
-    nextStep: 5,
-  },
-  5: {
-    messages: [
-      {
-        text: (data) =>
-          `Beh, complimenti ${data.nomePg}. Un pugno di lettere ti hanno appena concesso l'apertura del terzo occhio. Ora sei un'analista.`,
-        delay: 1000,
-      },
-      { text: "...oh, beh, per lo meno, lo sarai.", delay: 2000 },
-      {
-        text: "Ora sei un “nemuribito”, un sonnambulo. Li chiamano così quelli come te. Deve esser iniziata da poco- e se non è così, sei stat* brav* a nasconderlo. Noi holic amiamo la vostra aria smarrita, eccessivamente emotivamente coinvolta.",
-        delay: 1500,
-      },
-      {
-        text: "Comunque non demordere, l'ordine ti troverà. Lo fanno sempre. E' per il tuo bene!",
-        delay: 1500,
-      },
-      { text: "Senti, un paio di domande... Sei maggiorenne? Rispondi solo 'Si' o 'No' ", delay: 1500 },
-    ],
-    handleUserReply: (input, { advance, terminate }) => {
-      if (input.toLowerCase().includes("si")) {
-        advance(6, [
-          { text: "Non per qualcosa. Ma non si sa mai quali argomenti forti possono uscire, sempre meglio prevenire.", delay: 500 },
-          { text: 'Hai letto l\'informativa @privacy? Se l\'hai letta, rispondi "Si" 🖤', delay: 2000 },
-        ]);
-      } else if (input.toLowerCase().includes("no")) {
-        terminate("Mi dispiace, Oyasumi e' un mondo riservato ai maggiorenni. Le porte per te, per ora, restano chiuse.");
-      } else {
-        advance(5, [{ text: "Non ho capito bene. Per favore, rispondi solo 'si' o 'no'.", delay: 500 }]);
-      }
-    },
-  },
-  6: {
-    handleUserReply: (input, { advance, userData }) => {
-      if (input.toLowerCase().includes("si")) {
-        advance(7, [
-          { text: `Allora ${userData.nomePg}, credo con le scartoffie siamo a posto.`, delay: 1000 },
-          {
-            text: "Non dare di matto, o quelli della Mugen ti staranno addosso. Prendi un bel respiro, okay? Hai trenta giorni per scegliere cosa fare.",
-            delay: 2000,
-          },
-          {
-            text: "Non molestare nessuno, non parlare con gli ✨Holic✨ davanti ai civili, non fare nessuna cazzo di mossa strana nei paraggi di Edo.",
-            delay: 2000,
-          },
-          {
-            text: "E no, non mi interessa sapere cos'hai fra le gambe. Credo a nessuno interessi qui.",
-            delay: 2000,
-          },
-          { text: "Però… potrebbe interessarmi cos'hai nella testa… Quello sì!", delay: 2000 },
-          {
-            text: "Sei libero di dirmi quello che vuoi, o magari assolutamente nulla. Ma tutto ciò che vorrai dirmi sarà impiegato attivamente per render la tua esperienza di gioco più affine possibile alla tua aspettativa, se possibile!",
-            delay: 1500,
-          },
-        ]);
-      } else {
-        advance(6, [
-          { text: "Devi confermare di aver letto l'informativa per proseguire. Rispondi 'si' se l'hai fatto.", delay: 500 },
-        ]);
-      }
-    },
-  },
-  7: {
-    messages: [{ text: "Abbiamo finito! Lasciami un tuo contatto, così ci sentiamo presto!", delay: 500 }],
-    action: (input, dataSetter) => dataSetter.setPlayerPreferences(input),
-    nextStep: 8,
-  },
-  8: {
-    messages: [{ text: "Qual è il tuo indirizzo @email?", delay: 500 }],
-    action: (input, dataSetter) => dataSetter.setEmail(input),
-    validator: (input) => /\S+@\S+\.\S+/.test(input),
-    errorMessage: "Mmmh, questo non sembra un indirizzo email valido. Puoi ricontrollare?",
-    nextStep: 9,
-  },
-  9: {
-    messages: [{ text: "...ah, e una @password! 👽", delay: 500 }],
-    action: (input, dataSetter) => dataSetter.setPassword(input),
-    validator: (input) => input.length >= 8,
-    errorMessage: "La password deve essere di almeno 8 caratteri.",
-    nextStep: 10,
-  },
-  10: {
-    messages: [{ text: "Riscrivila per @conferma.", delay: 500 }],
-    validator: (input, data) => input === data?.password,
-    errorMessage: "Le password non coincidono. Riprova.",
-    action: (_input, _dataSetter, submit) => submit(),
-  },
-};
-
-type ChatMessage = { content: React.ReactNode; sender: "yume" | "user" };
+async function checkNameAvailable(name: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/auth/check-character-name?name=${encodeURIComponent(name.trim())}`);
+  if (!res.ok) return false;
+  const body = (await res.json()) as { available?: boolean };
+  return body.available === true;
+}
 
 export function LandingRegisterForm({
   onRegisterSuccess,
   onOpenGuida,
   onOpenLore,
+  onOpenPrivacy,
+  onOpenPrincipia,
+  onOpenLogin,
 }: {
-  onRegisterSuccess: () => void;
+  onRegisterSuccess: (token: string) => void;
   onOpenGuida: () => void;
   onOpenLore: () => void;
+  onOpenPrivacy: () => void;
+  onOpenPrincipia: () => void;
+  onOpenLogin: () => void;
 }) {
-  const [userData, setUserData] = useState<UserData>({
-    nomePg: "",
-    email: "",
-    password: "",
-    playerPreferences: "",
-  });
+  const [session, setSession] = useState<YumeRegisterSession>(() => loadYumeSession() ?? createFreshSession());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [step, setStep] = useState(0);
-  const [isYumeTyping, setIsYumeTyping] = useState(true);
+  const [isYumeTyping, setIsYumeTyping] = useState(false);
   const [isInputDisabled, setIsInputDisabled] = useState(true);
-  const [isTerminated, setIsTerminated] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
+  const [showYesNo, setShowYesNo] = useState(false);
+  const [showRecapButtons, setShowRecapButtons] = useState(false);
   const [error, setError] = useState("");
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const activeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const userDataRef = useRef(userData);
-  userDataRef.current = userData;
+  const [hydrated, setHydrated] = useState(false);
 
-  const addMessage = useCallback((content: React.ReactNode, sender: "yume" | "user") => {
-    setMessages((prev) => [...prev, { content, sender }]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const activeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const sessionRef = useRef(session);
+  const fixFieldRef = useRef<"name" | "email" | null>(null);
+  sessionRef.current = session;
+
+  const linkHandlers: YumeLinkHandlers = {
+    onOpenPrivacy,
+    onOpenPrincipia,
+    onOpenGuida,
+    onOpenLore,
+    onOpenLogin,
+  };
+
+  const persist = useCallback((patch: Partial<YumeRegisterSession>) => {
+    setSession((prev) => {
+      const next = { ...prev, ...patch };
+      saveYumeSession(next);
+      return next;
+    });
   }, []);
+
+  const renderYume = useCallback(
+    (text: string) => <YumeMessageText text={text} handlers={linkHandlers} />,
+    [linkHandlers],
+  );
+
+  const addMessage = useCallback(
+    (content: React.ReactNode, sender: "yume" | "user", plain?: string) => {
+      const entry: StoredChatMessage = {
+        sender,
+        text: plain ?? (typeof content === "string" ? content : ""),
+      };
+      setMessages((prev) => [...prev, { content, sender, plain: entry.text }]);
+      setSession((prev) => {
+        const next = { ...prev, messages: [...prev.messages, entry] };
+        saveYumeSession(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const clearAllTimers = useCallback(() => {
     activeTimers.current.forEach((t) => clearTimeout(t));
@@ -264,11 +118,13 @@ export function LandingRegisterForm({
     (messageList: FlowMessage[] = [], onComplete?: () => void) => {
       clearAllTimers();
       setIsYumeTyping(true);
+      setShowYesNo(false);
+      setShowRecapButtons(false);
       let totalDelay = 0;
       messageList.forEach(({ text, delay }) => {
         const timer = setTimeout(() => {
-          const messageText = typeof text === "function" ? text(userDataRef.current) : text;
-          addMessage(messageText, "yume");
+          const messageText = typeof text === "function" ? text(sessionRef.current.userData) : text;
+          addMessage(renderYume(messageText), "yume", messageText);
         }, totalDelay + delay);
         activeTimers.current.push(timer);
         totalDelay += delay;
@@ -276,25 +132,82 @@ export function LandingRegisterForm({
       const finalTimer = setTimeout(() => {
         setIsYumeTyping(false);
         onComplete?.();
-      }, totalDelay + 500);
+      }, totalDelay + 400);
       activeTimers.current.push(finalTimer);
     },
-    [addMessage, clearAllTimers],
+    [addMessage, clearAllTimers, renderYume],
+  );
+
+  const finishYesNoStep = useCallback(
+    (nextStep: number, msgs: FlowMessage[], patch?: Partial<YumeRegisterSession>) => {
+      if (patch) persist({ ...patch, yesNoFailCount: 0 });
+      else persist({ yesNoFailCount: 0 });
+      playMessageSequence(msgs, () => {
+        persist({ step: nextStep });
+        setIsInputDisabled(false);
+      });
+    },
+    [persist, playMessageSequence],
+  );
+
+  const handleYesNoAmbiguous = useCallback(
+    (errorText: string, onStay: () => void) => {
+      const fails = sessionRef.current.yesNoFailCount + 1;
+      persist({ yesNoFailCount: fails });
+      if (fails >= 2) setShowYesNo(true);
+      playMessageSequence([{ text: errorText, delay: 400 }], () => {
+        onStay();
+        setIsInputDisabled(false);
+      });
+    },
+    [persist, playMessageSequence],
+  );
+
+  const autoLoginAndFinish = useCallback(
+    async (data: YumeUserData) => {
+      const loginRes = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nomePg: data.nomePg, password: data.password }),
+      });
+      const loginBody = (await loginRes.json()) as { token?: string; error?: string };
+      if (!loginRes.ok || !loginBody.token) {
+        throw new Error(loginBody.error || "Login automatico non riuscito");
+      }
+      clearYumeSession();
+      persist({ isComplete: true });
+      playMessageSequence(
+        [
+          { text: `Ecco fatto. Ora ${data.nomePg} è pronto a venire al mondo.`, delay: 900 },
+          { text: "Ti aspettiamo~ 🖤", delay: 1200 },
+        ],
+        () => {
+          setTimeout(() => onRegisterSuccess(loginBody.token!), 2200);
+        },
+      );
+    },
+    [onRegisterSuccess, persist, playMessageSequence],
   );
 
   const handleFinalSubmit = useCallback(async () => {
-    const data = userDataRef.current;
+    const data = sessionRef.current.userData;
     if (!data.nomePg || !data.email || !data.password) {
-      addMessage(
-        "Oh no! Sembra che manchi qualche informazione fondamentale. Per favore, ricarica la pagina e riprova.",
-        "yume",
+      playMessageSequence(
+        [
+          {
+            text: "Ugh. Qualcosa si è inceppato negli ingranaggi — non è colpa tua.\nRiprova pure: io mi ricordo tutto. 🖤",
+            delay: 500,
+          },
+        ],
+        () => setIsInputDisabled(false),
       );
-      setError("Dati obbligatori mancanti.");
-      setIsInputDisabled(true);
       return;
     }
+
     setIsYumeTyping(true);
     setIsInputDisabled(true);
+    setShowRecapButtons(false);
+
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
@@ -303,153 +216,739 @@ export function LandingRegisterForm({
           email: data.email,
           password: data.password,
           characterName: data.nomePg,
-          playerPreferences: data.playerPreferences || "Nessuna preferenza espressa.",
+          playerPreferences: data.playerPreferences.trim() || undefined,
         }),
       });
-      const body = (await res.json()) as { success?: boolean; error?: string };
+      const body = (await res.json()) as { success?: boolean; error?: string; code?: string };
+
+      if (res.status === 409 && body.code === "EMAIL_TAKEN") {
+        persist({ step: 8, submitRetryCount: sessionRef.current.submitRetryCount + 1 });
+        playMessageSequence(
+          [
+            {
+              text: "Uhm. Qualcuno ha già lasciato questo contatto... o forse sei già dei nostri?\nSe è così, la porta giusta è il [@login]. Se invece l'email è sbagliata, correggiamola: qual è il tuo indirizzo [@email]?",
+              delay: 600,
+            },
+          ],
+          () => setIsInputDisabled(false),
+        );
+        return;
+      }
+
+      if (res.status === 409 && body.code === "CHARACTER_NAME_TAKEN") {
+        persist({ step: 7, submitRetryCount: sessionRef.current.submitRetryCount + 1 });
+        playMessageSequence(
+          [
+            {
+              text: "Ops — qualcuno ti ha rubato il nome sul filo di lana. Capita, nei sogni affollati. Scegline un altro~",
+              delay: 500,
+            },
+            {
+              text: "Come si [@chiami]? Nome e cognome, per favore — sui documenti ci va tutto.",
+              delay: 1200,
+            },
+          ],
+          () => setIsInputDisabled(false),
+        );
+        return;
+      }
+
       if (!res.ok) throw new Error(body.error || "Registrazione non riuscita");
 
-      playMessageSequence(
-        [
-          { text: `Ecco fatto. Ora ${data.nomePg} è pronto a venire al mondo.`, delay: 1000 },
-          { text: "Ti aspettiamo~", delay: 1500 },
-        ],
-        () => {
-          setIsComplete(true);
-          setTimeout(() => onRegisterSuccess(), 3000);
-        },
-      );
+      persist({ submitRetryCount: 0 });
+      await autoLoginAndFinish(data);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Qualcosa è andato storto";
-      setError(msg);
-      addMessage(`Oh no! C'è stato un problema: ${msg}. Ricarica la pagina per riprovare.`, "yume");
-      setIsYumeTyping(false);
+      const retries = sessionRef.current.submitRetryCount + 1;
+      persist({ submitRetryCount: retries });
+      const msg =
+        retries >= 2
+          ? "Okay, gli ingranaggi fanno i capricci sul serio. Concedimi qualche minuto e riprova — i tuoi dati restano al sicuro con me."
+          : "Ugh. Qualcosa si è inceppato negli ingranaggi — non è colpa tua.\nRiprova pure: io mi ricordo tutto. 🖤";
+      setError(err instanceof Error ? err.message : "Errore");
+      playMessageSequence([{ text: msg, delay: 500 }], () => {
+        setIsInputDisabled(false);
+        setShowRecapButtons(true);
+      });
     }
-  }, [addMessage, onRegisterSuccess, playMessageSequence]);
+  }, [autoLoginAndFinish, persist, playMessageSequence]);
+
+  const processInput = useCallback(
+    async (rawInput: string) => {
+      const userInput = rawInput.trim();
+      const step = sessionRef.current.step;
+
+      if (!userInput && step !== 6 && !isContinuationInput(userInput)) return;
+
+      const displayUser = userInput || "...";
+      addMessage(displayUser, "user", displayUser);
+      setInputValue("");
+      setIsInputDisabled(true);
+      clearAllTimers();
+      setShowYesNo(false);
+      setShowRecapButtons(false);
+
+      const data = sessionRef.current.userData;
+
+      // STEP 5 — ok dopo Principia → Mugen + preferenze
+      if (step === 5) {
+        playMessageSequence(
+          [
+            {
+              text: "Bene. Basta parlare della festa — parliamo di quello che c'è *fuori* dalla porta.",
+              delay: 500,
+            },
+            {
+              text: "Non dare di matto, o quelli della Mugen ti staranno addosso. Prendi un bel respiro, okay? Hai trenta giorni per scegliere cosa fare.",
+              delay: 1800,
+            },
+            {
+              text: "Non molestare nessuno, non parlare con gli ✨Holic✨ davanti ai civili, non fare nessuna cazzo di mossa strana nei paraggi di Edo.",
+              delay: 2000,
+            },
+            {
+              text: "Ah — e non ti chiederò mai chi sei o cosa sei. Qui contano altre cose.",
+              delay: 1800,
+            },
+            {
+              text: "Però... potrebbe interessarmi cos'hai *nella testa*. Quello sì!\nSei liber* di dirmi quello che vuoi — o assolutamente nulla. Tutto ciò che vorrai dirmi verrà usato per rendere la tua esperienza di gioco il più affine possibile alle tue aspettative. Se possibile!",
+              delay: 2000,
+            },
+          ],
+          () => {
+            persist({ step: 6 });
+            setIsInputDisabled(false);
+          },
+        );
+        return;
+      }
+
+      // STEP 0 — maggiorenne
+      if (step === 0) {
+        const yn = parseYesNo(userInput);
+        if (yn === "yes") {
+          finishYesNoStep(1, [
+            {
+              text: "Non per qualcosa. Ma qui possono uscire argomenti forti, e prevenire è meglio che spiegare dopo.",
+              delay: 500,
+            },
+            {
+              text: 'Hai letto l\'informativa [@privacy]? Se l\'hai letta, rispondi "sì" 🖤',
+              delay: 1600,
+            },
+          ]);
+          return;
+        }
+        if (yn === "no") {
+          playMessageSequence(
+            [
+              {
+                text: "Mi dispiace. Oyasumi è un mondo riservato ai maggiorenni: le porte, per te, per ora restano chiuse.\nNon è un addio — è un \"ci vediamo più avanti\". 🖤",
+                delay: 600,
+              },
+            ],
+            () => persist({ isTerminated: true }),
+          );
+          return;
+        }
+        handleYesNoAmbiguous('Ho l\'udito fino ma la pazienza corta. Solo "sì" o "no", tesoro.', () => {});
+        return;
+      }
+
+      // STEP 1 — privacy
+      if (step === 1) {
+        const yn = parseYesNo(userInput);
+        if (yn === "yes") {
+          finishYesNoStep(2, [
+            { text: "Perfetto. Scartoffie fatte, adesso viene il bello.", delay: 500 },
+            { text: "Dimmi: hai già giocato ai giochi di ruolo via chat? (GDR PBC)", delay: 1400 },
+          ]);
+          return;
+        }
+        if (yn === "no") {
+          const count = sessionRef.current.privacyNoCount + 1;
+          persist({ privacyNoCount: count });
+          const msg =
+            count >= 2
+              ? "Fai con calma~ io da qui non mi muovo."
+              : 'Nessuna fretta. Il link è lì sopra: leggila e torna da me con un "sì".';
+          playMessageSequence([{ text: msg, delay: 500 }], () => setIsInputDisabled(false));
+          return;
+        }
+        handleYesNoAmbiguous('Rispondi "sì" solo dopo aver letto l\'informativa [@privacy].', () => {});
+        return;
+      }
+
+      // STEP 2 — GDR
+      if (step === 2) {
+        const yn = parseYesNo(userInput);
+        if (yn === "no") {
+          persist({ branch: "novice" });
+          playMessageSequence(
+            [
+              { text: "Non ti preoccupare, abbiamo pensato anche a te.", delay: 500 },
+              {
+                text: "Puoi leggere la [@guida] per scoprire come funziona e come muovere i primi passi.",
+                delay: 1400,
+              },
+              {
+                text: "E puoi esplorare l'[@ambientazione] per conoscere il mondo che abiterà il tuo personaggio.",
+                delay: 1400,
+              },
+              { text: 'Quando sei pront*, scrivi "ok" o "..." per continuare.', delay: 1400 },
+            ],
+            () => {
+              persist({ step: 3 });
+              setIsInputDisabled(false);
+            },
+          );
+          return;
+        }
+        if (yn === "yes") {
+          persist({ branch: "veteran", step: 5 });
+          playMessageSequence(
+            [
+              {
+                text: "Oh, bene. Un vetereano — pardon, *veteran*. Allora mi risparmio la lezioncina e ti do solo quello che ti serve: le stranezze di casa nostra.",
+                delay: 500,
+              },
+              {
+                text: "Oyasumi non è reale, ma tu lo sei: il personaggio è un pupazzetto, il protagonista sei tu. E le regole della casa sono poche, ma non negoziabili.",
+                delay: 1800,
+              },
+              {
+                text: 'A tal proposito, prima che io e te iniziamo una rissa basata sulla fuffa... 💀 leggi i [@principia] ("Principia Satirica"), quando hai un attimo. Fidati: ti risparmia la rissa.\nQuando sei pront*, un "ok" e andiamo avanti.',
+                delay: 2000,
+              },
+            ],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        handleYesNoAmbiguous('Dimmi solo "sì" o "no" — hai già giocato ai GDR via chat?', () => {});
+        return;
+      }
+
+      // STEP 3 — novice ok
+      if (step === 3) {
+        if (!isContinuationInput(userInput)) {
+          playMessageSequence(
+            [{ text: 'Quando sei pront*, scrivi "ok" o "..." per continuare.', delay: 400 }],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        playMessageSequence(
+          [
+            {
+              text: "Ho costruito questo mondo, mattone dopo mattone. L'ho costruito per me, perché volevo un posto sicuro.",
+              delay: 500,
+            },
+            {
+              text: "L'ho costruito per te, perché tu ti sentissi a casa. Chiunque tu sia, ovunque tu vada e da qualsiasi luogo tu venga.",
+              delay: 1600,
+            },
+            {
+              text: "Certo, Oyasumi non è reale. Il tuo personaggio è solo un pupazzetto; ma il vero protagonista sei tu. E sei tu a decidere quanto renderlo vivo — con la tua fantasia.",
+              delay: 2000,
+            },
+            { text: "...", delay: 1200 },
+            {
+              text: "Dimmi una cosa. Ti è mai capitato di svegliarti con la sensazione di aver dimenticato un sogno importante?",
+              delay: 1400,
+            },
+          ],
+          () => {
+            persist({ step: 4 });
+            setIsInputDisabled(false);
+          },
+        );
+        return;
+      }
+
+      // STEP 4 — dream answer
+      if (step === 4) {
+        const affirmative = isAffirmativeDreamAnswer(userInput);
+        const reaction = affirmative
+          ? "Lo sapevo. Avete tutti quella faccia, voi che ricordate a metà.\nTienila stretta, quella sensazione. Qui dentro tornerà utile."
+          : "Beati i sonni pesanti~ Ma non ti affezionare troppo: qui i sogni hanno la brutta abitudine di ricordarsi di te.";
+        playMessageSequence(
+          [
+            { text: reaction, delay: 500 },
+            {
+              text: "Immagina Oyasumi come una festa. Io ho stampato gli inviti, e ho scritto delle regole perché tutti si sentano a proprio agio. Tu sei l'invitat*.",
+              delay: 1600,
+            },
+            {
+              text: "Divertiti con tutto ciò che ti offriamo e tutto quello che trovi da sol*, senza rovinare la festa agli altri invitati.",
+              delay: 1800,
+            },
+            { text: "*coff* Bene, proseguiamo! 🎀", delay: 1200 },
+            {
+              text: "Qui la narrazione è la carta vincente. 💫 Del resto alla base del gioco di ruolo c'è il raccontare una storia, no?",
+              delay: 1400,
+            },
+            {
+              text: "E attenzione... 😒 Non sto parlando di essere scrittori da premio Nobel, ma di *voler* raccontare! Bene o male, in modo arzigogolato o semplice.",
+              delay: 1800,
+            },
+            {
+              text: "L'unica cosa non opinabile, credimi, è la matematica.",
+              delay: 1400,
+            },
+            {
+              text: 'A tal proposito, prima che io e te iniziamo una rissa basata sulla fuffa... 💀 leggi i [@principia] ("Principia Satirica"), quando hai un attimo. Fidati: ti risparmia la rissa.\nQuando sei pront*, un "ok" e andiamo avanti.',
+              delay: 2000,
+            },
+          ],
+          () => {
+            persist({ step: 5 });
+            setIsInputDisabled(false);
+          },
+        );
+        return;
+      }
+
+      // STEP 6 — preferenze
+      if (step === 6) {
+        const prefs = userInput;
+        persist({ userData: { ...data, playerPreferences: prefs } });
+        const tail =
+          prefs.trim().length > 0
+            ? "Mmh. Interessante. Me lo segno — e non chiedermi dove."
+            : "Il tipo silenzioso, eh? Va bene anche così.";
+        playMessageSequence(
+          [
+            { text: tail, delay: 500 },
+            {
+              text: "Ora parliamo di te. Anzi: del tuo personaggio.\nCome si [@chiami]? Nome e cognome, per favore — sui documenti ci va tutto.",
+              delay: 1400,
+            },
+          ],
+          () => {
+            persist({ step: 7 });
+            setIsInputDisabled(false);
+          },
+        );
+        return;
+      }
+
+      // STEP 7 — nome
+      if (step === 7) {
+        const v = validateCharacterName(userInput);
+        if (v === "empty") {
+          playMessageSequence(
+            [{ text: "Il silenzio è affascinante, ma non si scrive sui documenti. Un nome, dai.", delay: 400 }],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        if (v === "invalid") {
+          playMessageSequence(
+            [
+              {
+                text: "Mmh, questo nome non entra nei moduli. Niente simboli strani, e una lunghezza umana, per favore.",
+                delay: 400,
+              },
+            ],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        const available = await checkNameAvailable(userInput);
+        if (!available) {
+          playMessageSequence(
+            [
+              {
+                text: "Ops. Qualcuno in Oyasumi porta già questo nome — e due omonimi alla stessa festa portano sfortuna. Scegline un altro~",
+                delay: 400,
+              },
+            ],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        persist({ userData: { ...data, nomePg: userInput.trim() } });
+        if (fixFieldRef.current === "name") {
+          fixFieldRef.current = null;
+          playMessageSequence(
+            [
+              {
+                text: (d) =>
+                  `Ultimo sguardo alle scartoffie prima del timbro:\n— Personaggio: ${d.nomePg}\n— Email: ${d.email}\nTutto giusto?`,
+                delay: 500,
+              },
+            ],
+            () => {
+              persist({ step: 11 });
+              setIsInputDisabled(false);
+              setShowRecapButtons(true);
+            },
+          );
+          return;
+        }
+        playMessageSequence(
+          [
+            {
+              text: (d) =>
+                `Beh, complimenti, ${d.nomePg}. Un pugno di lettere ti ha appena concesso l'apertura del terzo occhio. Ora sei un analista.`,
+              delay: 500,
+            },
+            { text: "...oh, beh. Per lo meno, lo *sarai*.", delay: 1400 },
+            {
+              text: 'Per ora sei un "nemuribito", un sonnambulo. Li chiamano così quelli come te, quando la veglia è appena iniziata — e se per te è iniziata da un pezzo, sei stat* brav* a nasconderlo. Noi holic amiamo la vostra aria smarrita, eccessivamente coinvolta.',
+              delay: 1800,
+            },
+            {
+              text: "Comunque non demordere: l'ordine ti troverà. Lo fanno sempre. È per il tuo bene!",
+              delay: 1600,
+            },
+            {
+              text: "Ora le ultime scartoffie, promesso. Lasciami un contatto, così ci sentiamo presto: qual è il tuo indirizzo [@email]?",
+              delay: 1400,
+            },
+          ],
+          () => {
+            persist({ step: 8 });
+            setIsInputDisabled(false);
+          },
+        );
+        return;
+      }
+
+      // STEP 8 — email
+      if (step === 8) {
+        if (!validateEmail(userInput)) {
+          playMessageSequence(
+            [{ text: "Mmh... questo non profuma di email. Ricontrolla?", delay: 400 }],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        persist({ userData: { ...data, email: userInput.trim() } });
+        if (fixFieldRef.current === "email") {
+          fixFieldRef.current = null;
+          playMessageSequence(
+            [
+              {
+                text: (d) =>
+                  `Ultimo sguardo alle scartoffie prima del timbro:\n— Personaggio: ${d.nomePg}\n— Email: ${d.email}\nTutto giusto?`,
+                delay: 500,
+              },
+            ],
+            () => {
+              persist({ step: 11 });
+              setIsInputDisabled(false);
+              setShowRecapButtons(true);
+            },
+          );
+          return;
+        }
+        playMessageSequence(
+          [
+            {
+              text: "...ah, e una [@password]! 👽\nMinimo 8 caratteri. E non dirla a nessuno — nemmeno a me, che infatti non la vedrò.",
+              delay: 500,
+            },
+          ],
+          () => {
+            persist({ step: 9 });
+            setIsInputDisabled(false);
+          },
+        );
+        return;
+      }
+
+      // STEP 9 — password
+      if (step === 9) {
+        if (userInput.length < 8) {
+          playMessageSequence(
+            [{ text: "Troppo corta. Almeno 8 caratteri — i segreti brevi durano poco, qui.", delay: 400 }],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        persist({ userData: { ...data, password: userInput } });
+        playMessageSequence([{ text: "Riscrivila per [@conferma].", delay: 400 }], () => {
+          persist({ step: 10 });
+          setIsInputDisabled(false);
+        });
+        return;
+      }
+
+      // STEP 10 — conferma password
+      if (step === 10) {
+        if (userInput !== data.password) {
+          persist({ userData: { ...data, password: "" }, step: 9 });
+          playMessageSequence(
+            [
+              {
+                text: "Non combaciano. Succede anche ai migliori~ Riproviamo dall'inizio: nuova [@password]!",
+                delay: 500,
+              },
+            ],
+            () => setIsInputDisabled(false),
+          );
+          return;
+        }
+        playMessageSequence(
+          [
+            {
+              text: (d) =>
+                `Ultimo sguardo alle scartoffie prima del timbro:\n— Personaggio: ${d.nomePg}\n— Email: ${d.email}\nTutto giusto?`,
+              delay: 500,
+            },
+          ],
+          () => {
+            persist({ step: 11 });
+            setIsInputDisabled(false);
+            setShowRecapButtons(true);
+          },
+        );
+        return;
+      }
+
+      // STEP 11 — recap
+      if (step === 11) {
+        const yn = parseYesNo(userInput);
+        if (yn === "yes") {
+          await handleFinalSubmit();
+          return;
+        }
+        if (yn === "no") {
+          playMessageSequence(
+            [{ text: "Nessun problema. Cosa sistemiamo — il nome o l'email?", delay: 400 }],
+            () => {
+              persist({ step: 12 });
+              setIsInputDisabled(false);
+            },
+          );
+          return;
+        }
+        setShowRecapButtons(true);
+        setIsInputDisabled(false);
+        return;
+      }
+
+      // STEP 12 — correzione campo
+      if (step === 12) {
+        const lower = userInput.toLowerCase();
+        if (lower.includes("nome") || lower.includes("personaggio") || lower.includes("pg")) {
+          fixFieldRef.current = "name";
+          playMessageSequence(
+            [
+              {
+                text: "Va bene. Come si [@chiami]? Nome e cognome, per favore — sui documenti ci va tutto.",
+                delay: 400,
+              },
+            ],
+            () => {
+              persist({ step: 7 });
+              setIsInputDisabled(false);
+            },
+          );
+          return;
+        }
+        if (lower.includes("email") || lower.includes("mail")) {
+          fixFieldRef.current = "email";
+          playMessageSequence(
+            [{ text: "Qual è il tuo indirizzo [@email]?", delay: 400 }],
+            () => {
+              persist({ step: 8 });
+              setIsInputDisabled(false);
+            },
+          );
+          return;
+        }
+        playMessageSequence(
+          [{ text: "Scrivi nome o email — così so cosa correggere.", delay: 400 }],
+          () => setIsInputDisabled(false),
+        );
+      }
+    },
+    [
+      addMessage,
+      clearAllTimers,
+      finishYesNoStep,
+      handleFinalSubmit,
+      handleYesNoAmbiguous,
+      persist,
+      playMessageSequence,
+    ],
+  );
 
   useEffect(() => {
-    playMessageSequence(conversationFlow[0].messages ?? [], () => {
+    const stored = loadYumeSession();
+    if (stored && stored.messages.length > 0) {
+      setSession(stored);
+      setMessages(
+        stored.messages.map((m) => ({
+          sender: m.sender,
+          plain: m.text,
+          content: m.sender === "yume" ? renderYume(m.text) : m.text,
+        })),
+      );
+      setIsInputDisabled(stored.isTerminated || stored.isComplete || false);
+      setShowRecapButtons(stored.step === 11 && !stored.isComplete && !stored.isTerminated);
+      setHydrated(true);
+      return;
+    }
+
+    playMessageSequence(OPENING, () => {
+      persist({ step: 0 });
       setIsInputDisabled(false);
-      setStep(conversationFlow[0].nextStep ?? 1);
+      setHydrated(true);
     });
     return () => clearAllTimers();
-  }, [clearAllTimers, playMessageSequence]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const frame = requestAnimationFrame(() => {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [messages, isYumeTyping]);
 
   const handleUserReply = (e: React.FormEvent) => {
     e.preventDefault();
-    const userInput = inputValue.trim();
-    const isContinuationInput = ["...", "ok", ""].includes(userInput.toLowerCase());
-
-    if (!isContinuationInput && !userInput) return;
-
-    addMessage(inputValue || "...", "user");
-    setInputValue("");
-    setIsInputDisabled(true);
-    clearAllTimers();
-
-    const currentStepConfig = conversationFlow[step];
-    if (!currentStepConfig) return;
-
-    if (currentStepConfig.handleUserReply) {
-      const advance = (nextStep: number, msgs: FlowMessage[]) => {
-        playMessageSequence(msgs, () => {
-          setStep(nextStep);
-          setIsInputDisabled(false);
-        });
-      };
-      const terminate = (message: string) => {
-        playMessageSequence([{ text: message, delay: 500 }], () => setIsTerminated(true));
-      };
-      currentStepConfig.handleUserReply(userInput, {
-        advance,
-        terminate,
-        openGuida: onOpenGuida,
-        openLore: onOpenLore,
-        userData: userDataRef.current,
-      });
-      return;
-    }
-
-    if (currentStepConfig.validator && !currentStepConfig.validator(userInput, userDataRef.current)) {
-      playMessageSequence([{ text: currentStepConfig.errorMessage ?? "Riprova.", delay: 500 }], () => {
-        setIsInputDisabled(false);
-      });
-      return;
-    }
-
-    if (currentStepConfig.action) {
-      const dataSetter = {
-        setNomePg: (val: string) => setUserData((p) => ({ ...p, nomePg: val })),
-        setEmail: (val: string) => setUserData((p) => ({ ...p, email: val })),
-        setPassword: (val: string) => setUserData((p) => ({ ...p, password: val })),
-        setPlayerPreferences: (val: string) => setUserData((p) => ({ ...p, playerPreferences: val })),
-      };
-      currentStepConfig.action(userInput, dataSetter, handleFinalSubmit);
-    }
-
-    const nextStep = currentStepConfig.nextStep;
-    if (nextStep && conversationFlow[nextStep]) {
-      const nextStepConfig = conversationFlow[nextStep];
-      if (nextStepConfig.handleUserReply && !nextStepConfig.messages) {
-        setStep(nextStep);
-        setIsInputDisabled(false);
-      } else {
-        playMessageSequence(nextStepConfig.messages ?? [], () => {
-          setStep(nextStep);
-          setIsInputDisabled(false);
-        });
-      }
-    }
+    void processInput(inputValue);
   };
 
+  const sendYesNo = (answer: "yes" | "no") => {
+    void processInput(answer === "yes" ? "sì" : "no");
+  };
+
+  const step = session.step;
   const inputType = step === 9 || step === 10 ? "password" : step === 8 ? "email" : "text";
 
   const placeholder = (() => {
-    if (isTerminated) return "Registrazione non possibile.";
-    if (isComplete) return "Registrazione completata!";
+    if (session.isTerminated) return "Registrazione non possibile.";
+    if (session.isComplete) return "Registrazione completata!";
     if (isInputDisabled) return "Yume-chan sta scrivendo...";
+    if (step === 6) return "Preferenze di gioco (opzionale)...";
+    if (step === 11) return 'Scrivi "sì" o "no"...';
     return "Scrivi la tua risposta...";
   })();
 
+  if (!hydrated) {
+    return (
+      <div className="chat-register-container chat-register-container--loading">
+        <p className="text-gray-500 text-sm p-4">Caricamento...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="chat-register-container">
-      <div className="chat-header">
-        <h2>Parla con Yume-chan</h2>
-        <img src="/yumechan/iconayumetalk.png" alt="Yume-chan" className="yume-icon" />
-      </div>
-      <div className="chat-messages">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message-bubble ${msg.sender}`}>
-            <p>{msg.content}</p>
+      <header className="chat-header">
+        <div className="chat-header-contact">
+          <img src="/yumechan/iconayumetalk.png" alt="" className="chat-header-avatar" />
+          <div className="chat-header-meta">
+            <h2>Yume-chan</h2>
+            <p className="chat-header-status">
+              {isYumeTyping
+                ? "sta scrivendo…"
+                : session.isComplete
+                  ? "iscrizione completata"
+                  : "guida all'iscrizione"}
+            </p>
           </div>
-        ))}
+        </div>
+      </header>
+
+      <div className="chat-messages" ref={messagesContainerRef}>
+        {messages.map((msg, index) => {
+          const prev = messages[index - 1];
+          const showYumeAvatar = msg.sender === "yume" && prev?.sender !== "yume";
+          return (
+            <div
+              key={`${index}-${msg.plain?.slice(0, 12) ?? index}`}
+              className={`chat-message-row ${msg.sender}${showYumeAvatar ? " chat-message-row--group-start" : ""}`}
+            >
+              {msg.sender === "yume" && (
+                <div className="chat-avatar-slot" aria-hidden>
+                  {showYumeAvatar ? (
+                    <img src="/yumechan/iconayumetalk.png" alt="" className="chat-avatar" />
+                  ) : (
+                    <span className="chat-avatar-spacer" />
+                  )}
+                </div>
+              )}
+              <div className={`message-bubble ${msg.sender}`}>
+                <p>{msg.content}</p>
+              </div>
+            </div>
+          );
+        })}
         {isYumeTyping && (
-          <div className="message-bubble yume typing-indicator">
-            <span>.</span>
-            <span>.</span>
-            <span>.</span>
+          <div className="chat-message-row yume chat-message-row--group-start">
+            <div className="chat-avatar-slot" aria-hidden>
+              <img src="/yumechan/iconayumetalk.png" alt="" className="chat-avatar" />
+            </div>
+            <div className="message-bubble yume typing-indicator" aria-label="Yume-chan sta scrivendo">
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+            </div>
           </div>
         )}
-        {isComplete && <p className="success-message">Benvenuto in Oyasumi! Verrai reindirizzato a breve...</p>}
+        {session.isComplete && (
+          <p className="success-message">Benvenuto in Oyasumi! Ti porto alla land...</p>
+        )}
         {error && <p className="error-message">{error}</p>}
         <div ref={chatEndRef} />
       </div>
-      <form className="chat-input-area" onSubmit={handleUserReply}>
-        <input
-          type={inputType}
-          className="chat-input"
-          placeholder={placeholder}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          disabled={isInputDisabled || isComplete || isTerminated}
-        />
-        <button type="submit" className="chat-send-button" disabled={isInputDisabled || isComplete || isTerminated}>
-          Invia
-        </button>
+
+      {(showYesNo || showRecapButtons) && !isInputDisabled && !session.isTerminated && !session.isComplete && (
+        <div className="chat-quick-replies">
+          {showYesNo && (
+            <>
+              <button type="button" className="chat-quick-btn" onClick={() => sendYesNo("yes")}>
+                Sì
+              </button>
+              <button type="button" className="chat-quick-btn" onClick={() => sendYesNo("no")}>
+                No
+              </button>
+            </>
+          )}
+          {showRecapButtons && (
+            <>
+              <button type="button" className="chat-quick-btn chat-quick-btn--gold" onClick={() => sendYesNo("yes")}>
+                Tutto giusto
+              </button>
+              <button type="button" className="chat-quick-btn" onClick={() => sendYesNo("no")}>
+                Correggi
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      <form className="chat-composer" onSubmit={handleUserReply}>
+        <div className="chat-composer-field">
+          <input
+            type={inputType}
+            className="chat-input"
+            placeholder={placeholder}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            disabled={isInputDisabled || session.isComplete || session.isTerminated}
+            aria-label="Risposta a Yume-chan"
+            autoComplete={step === 9 || step === 10 ? "new-password" : step === 8 ? "email" : "off"}
+          />
+          <button
+            type="submit"
+            className="chat-send-button"
+            disabled={isInputDisabled || session.isComplete || session.isTerminated}
+            aria-label="Invia messaggio"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+              <path fill="currentColor" d="M3.4 20.6 21 12 3.4 3.4l2.8 7.2L17 12l-10.8 1.4-2.8 7.2z" />
+            </svg>
+          </button>
+        </div>
       </form>
     </div>
   );
