@@ -1,6 +1,6 @@
 # Roadmap Oyasumi 2.0
 
-> **Ultimo aggiornamento:** Luglio 2026 (Shakai Step 1–2)  
+> **Ultimo aggiornamento:** Luglio 2026 (housing rent/locatario + Shakai UI Professione)  
 > **Uso:** vista unica per stato progetto e priorità. Le regole di gioco restano nelle **spec** (non duplicate qui).
 
 ## Legenda
@@ -147,11 +147,12 @@
 | Drop in chat (`/drop`, `/prendi`) | ✅ | `drop` module |
 | Inventario 5 slot + zaini + housing | ✅ | |
 | API mercato (Banco + Piazza 10%) | ✅ | `market` module |
-| API smantellamento Artigiano | ✅ | Gate Shokunin temporaneo |
+| API smantellamento Artigiano | ✅ | Gate `social_class === shokunin` o Skiru `shokunin ≥ 1` (legacy) |
 | UI scheda oggetto (categorie, integrità, origine) | ✅ | |
 | UI sezione MARKET in inventario | ✅ | WS `inventory_updated` |
 | **Pannello Mercato** (Banco + Piazza + Immobiliare) | ✅ | `MercatoPanel` nel dock |
-| **Pannello Smantellamento** Artigiano | ✅ | Tab Officina in Mercato; gate Skiru Shokunin |
+| **Pannello Smantellamento** Artigiano | ✅ | Tab Officina in Mercato + sezione Strumento in Scheda Professione |
+| Catalogo mercato da DB + CRUD Gestione | ✅ | `GET /market/catalog`, `MarketCatalogManagement` in Sviluppo |
 | Baratto Piazza | 🔲 | Rimandato |
 
 ---
@@ -163,9 +164,9 @@
 | Spec + catalogo 5×5 sottoclassi | ✅ | `SHAKAI_KAIKYU_SPEC.md`, domain |
 | Blueprint catalog (~70 ricette) | ✅ | `blueprint-catalog.ts` |
 | Schema DB (`social_class`, sheet, daily usage) | ✅ | `characters.social_class`, `social_subclass_sheet`, tabella `social_class_daily_usage`; `db:push` eseguito |
-| API scelta classe + albero XP | 🟡 | `GET/POST /characters/me/social-class`, `PATCH /characters/me/social-subclass`; manca UI dedicata |
-| UI scelta classe + sottoclassi in scheda | 🔲 | |
-| Tool ×5 (Medico, Artigiano, Cacciatore, Politico, Sacerdote) | 🔲 | Iniziare da Medico 5.1–5.2 |
+| API scelta classe + albero XP | ✅ | `GET/POST /characters/me/social-class`, `PATCH /characters/me/social-subclass`; `shakai.service` |
+| UI scelta classe + sottoclassi in scheda | ✅ | Tab **Professione** in Scheda; `SocialClassChoiceBanner` + `SchedaProfessionePage` |
+| Tool ×5 (Medico, Artigiano, Cacciatore, Politico, Sacerdote) | 🟡 | Artigiano: smantellamento ✅; altre classi: budget giornaliero + placeholder «prossimamente» |
 | Sync blueprint in DB + craft generico | 🔲 | |
 | Moderazione cambio classe (staff) | ✅ | `PATCH /admin/characters/:id/social-class` |
 
@@ -189,7 +190,8 @@
 | Voce | Stato | Note |
 |------|-------|------|
 | Daily tick stipendio (+20 REM) | ✅ | |
-| Affitto, scadenze, sfratto | ✅ | UI housing |
+| Affitto mensile, solleciti, sfratto | ✅ | `housing-monthly-rent.service`, SMS Locatario (`rent-reminder`) |
+| Catalogo immobiliare (formato Market) | ✅ | `housing-catalog.ts`, seed + tab Immobiliare |
 | Entra in casa / chat privata abitazione | ✅ | Da scheda PG |
 | Armadio casa + rubare (ospiti) | ✅ | |
 | Gestione ospiti (inviti owner) | ✅ | |
@@ -218,6 +220,7 @@
 | Mappe, eventi, banner, musica, log | ✅ | |
 | Bestiario CRUD | ✅ | |
 | Preferenze iscrizione Yume (lettura) | ✅ | Da `player_preferences` |
+| Catalogo mercato (equip/junk Banco) | ✅ | `MarketCatalogManagement` in Sviluppo |
 
 ---
 
@@ -225,9 +228,9 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Shakai | UI scelta classe + albero sottoclassi in scheda | API Shakai ✅ |
-| 2 | Shakai | Prima tool **Medico** (cura + preparati) | UI scelta/base classe |
-| 3 | Shakai | Tool Artigiano (ripara + craft blueprint) | Tool Medico; smantellamento ✅ |
+| 1 | Shakai | Prima tool **Medico** (cura + preparati) | UI Professione ✅ |
+| 2 | Shakai | Tool Artigiano (ripara + craft blueprint) | Medico; smantellamento ✅ |
+| 3 | Shakai | Sync blueprint in DB + craft generico | Blueprint catalog domain ✅ |
 | 4 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
 | 5 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
 | 6 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
