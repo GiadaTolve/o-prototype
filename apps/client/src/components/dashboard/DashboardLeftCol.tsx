@@ -104,12 +104,6 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
               title={label}
               aria-label={label}
               className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
-              style={{
-                backgroundImage: "url('/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png')",
-                backgroundSize: "100% 100%",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-              }}
             >
               <div className="absolute inset-0 flex items-center justify-center gap-1.5">
                 <FontAwesomeIcon

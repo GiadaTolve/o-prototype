@@ -574,20 +574,40 @@ body {
   }
 }
 
-/* Dashboard — laptop con poca altezza (desktop layout ma viewport basso):
-   i bottoni sidebar diventano una griglia di icone invece di righe piene di testo,
-   per non far traboccare il menu sopra il News Visor. */
-@media (min-width: 1024px) and (max-height: 800px) {
+.dashboard-sidebar-btn {
+  background-image: url("/buttons-bottoni-frame/bottoni-frame/sidebar.menu.button.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Dashboard — bottoni sidebar a icona nella fascia intermedia fra desktop
+   pieno e iPad (stessa soglia usata da useIsMobile per il tablet: 1024–1279px),
+   oppure quando l'altezza disponibile resta comunque bassa (laptop larghi ma
+   bassi). Icone piccole e quadrate invece delle righe di testo, per non far
+   traboccare il menu sopra il News Visor. */
+@media (min-width: 1024px) and (max-width: 1279px),
+  (min-width: 1024px) and (max-height: 800px) {
   .dashboard-sidebar-btns {
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: center;
   }
 
   .dashboard-sidebar-btn {
-    flex: 1 1 calc(33.333% - 0.4rem);
-    min-height: 2.35rem;
-    max-height: 2.35rem;
-    height: 2.35rem;
+    flex: 0 0 auto;
+    width: 2.1rem;
+    height: 2.1rem;
+    min-height: 2.1rem;
+    max-height: 2.1rem;
+    background-image: none;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+  }
+
+  .dashboard-sidebar-btn:hover {
+    border-color: color-mix(in srgb, var(--accent-gold) 50%, var(--border-color));
   }
 
   .dashboard-sidebar-btn__label {
@@ -595,8 +615,8 @@ body {
   }
 
   .dashboard-sidebar-btn__icon {
-    width: 1rem;
-    height: 1rem;
+    width: 0.85rem;
+    height: 0.85rem;
   }
 }
 
