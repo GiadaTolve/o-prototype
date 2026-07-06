@@ -1,4 +1,32 @@
 import type { ItemCategory } from '@domain/economy/types'
+import type { MarketCategory } from '@domain/economy/market-catalog'
+
+export type MarketCatalogItem = {
+  id: string
+  catalogKey: string | null
+  marketCategory: MarketCategory
+  name: string
+  nameRomaji: string | null
+  description: string | null
+  iconUrl: string | null
+  integrityMax: number | null
+  effectText: string | null
+  priceRem: number | null
+  isActiveInMarket: boolean
+  category: ItemCategory
+}
+
+export type MarketCatalogResponse = {
+  items: MarketCatalogItem[]
+}
+
+export type MarketCatalogBuyResponse = {
+  itemId: string
+  itemName: string
+  quantity: number
+  totalRem: number
+  newBalance: number
+}
 
 export type BancoCatalogResponse = {
   buyPrices: Array<{

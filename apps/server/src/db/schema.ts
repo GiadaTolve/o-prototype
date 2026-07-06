@@ -300,6 +300,8 @@ export const items = pgTable('items', {
   /** Chiave stabile per seed/sync (es. junk-lattine, mat-stoffa). */
   catalogKey: text('catalog_key').unique(),
   name: text('name').notNull(),
+  /** Nome romaji (kanji) — visualizzato sotto il titolo italiano nel Market. */
+  nameRomaji: text('name_romaji'),
   description: text('description'),
   iconUrl: text('icon_url'),
   type: text('type').$type<'GENERIC' | 'WEAPON' | 'ARMOR' | 'BAG'>().default('GENERIC'),
@@ -320,6 +322,13 @@ export const items = pgTable('items', {
   slotsBonus: integer('slots_bonus').default(0),
   /** Prezzo in REM (null = non in vendita). */
   price: integer('price'),
+
+  /** Categoria vetrina Market (armi/armature/veicoli/tecnologia/rimedi/oggettistica) — null = non nel catalogo. */
+  marketCategory: text('market_category').$type<
+    'armi' | 'armature' | 'veicoli' | 'tecnologia' | 'rimedi' | 'oggettistica'
+  >(),
+  /** Visibile/acquistabile nel catalogo Market — permette allo staff di ritirare una voce senza eliminarla. */
+  isActiveInMarket: boolean('is_active_in_market').default(true).notNull(),
 
   createdAt: timestamp('created_at').defaultNow()
 })

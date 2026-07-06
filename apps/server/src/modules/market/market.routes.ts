@@ -4,6 +4,7 @@ import { db } from '../../plugins/db'
 import { characters } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth.plugin'
 import { buyMaterialFromBanco, getBancoNpcCatalog, sellInventoryToBanco } from './banco.service'
+import { buyFromMarketCatalog, listMarketCatalog } from './catalog.service'
 import {
   buyPiazzaListing,
   cancelPiazzaListing,
@@ -17,6 +18,33 @@ export const marketRoutes = new Elysia({ prefix: '/market' })
   .use(authPlugin)
   .guard({ isAuthenticated: true }, (app) =>
     app
+      .get('/catalog', async () => ({ items: await listMarketCatalog() }))
+      .post(
+        '/catalog/:itemId/buy',
+        async ({ params, body, user, set }) => {
+          if (!user) {
+            set.status = 401
+            return { error: 'Unauthorized' }
+          }
+          try {
+            const char = await db.query.characters.findFirst({
+              where: eq(characters.userId, user.id),
+            })
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            return await buyFromMarketCatalog(char.id, params.itemId, body?.quantity ?? 1)
+          } catch (e: unknown) {
+            set.status = 400
+            return { error: e instanceof Error ? e.message : 'Acquisto fallito' }
+          }
+        },
+        {
+          params: t.Object({ itemId: t.String() }),
+          body: t.Optional(t.Object({ quantity: t.Optional(t.Number()) })),
+        },
+      )
       .get('/banco/catalog', () => getBancoNpcCatalog())
       .post(
         '/banco/sell',

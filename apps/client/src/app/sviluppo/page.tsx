@@ -7,6 +7,7 @@ import { BestiarioManagement } from "@/components/gestione/BestiarioManagement";
 import { GestioneWazaCreatePanel } from "@/components/gestione/GestioneWazaCreatePanel";
 import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
 import { GestioneTaxonomyPanel } from "@/components/gestione/GestioneTaxonomyPanel";
+import { MarketCatalogManagement } from "@/components/gestione/MarketCatalogManagement";
 import { api } from "@/lib/api";
 
 export default function SviluppoPage() {
@@ -22,6 +23,7 @@ export default function SviluppoPage() {
     | "taxonomy"
     | "status"
     | "bestiario"
+    | "market"
   >("waza-generiche");
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function SviluppoPage() {
             { id: "taxonomy" as const, label: "Tassonomie" },
             { id: "status" as const, label: "Status" },
             { id: "bestiario" as const, label: "Bestiario" },
+            { id: "market" as const, label: "Market" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -117,6 +120,7 @@ export default function SviluppoPage() {
           {activeTab === "taxonomy" && <GestioneTaxonomyPanel />}
           {activeTab === "status" && <GestioneStatusPanel />}
           {activeTab === "bestiario" && <BestiarioManagement />}
+          {activeTab === "market" && <MarketCatalogManagement />}
         </div>
       </div>
     </div>

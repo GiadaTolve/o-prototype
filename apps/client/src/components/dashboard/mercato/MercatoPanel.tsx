@@ -8,6 +8,7 @@ import { resolveBancoBuyPrice, PIAZZA_COMMISSION_RATE, PIAZZA_MAX_ACTIVE_LISTING
 import type { ItemCategory } from '@domain/economy/types'
 import type { CharacterSummary } from '../types'
 import { HousingMarketSection } from './HousingMarketSection'
+import { MarketCatalogSection } from './MarketCatalogSection'
 import {
   MercatoActionButton,
   MercatoEmpty,
@@ -65,7 +66,7 @@ function listingSubtitle(listing: MarketListing): string {
 }
 
 export function MercatoPanel({ char, onCharUpdate }: Props) {
-  const [tab, setTab] = useState<MercatoTabId>('banco')
+  const [tab, setTab] = useState<MercatoTabId>('market')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [catalog, setCatalog] = useState<BancoCatalogResponse | null>(null)
@@ -242,8 +243,16 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
 
       <MercatoTabBar tab={tab} onTab={setTab} rem={char?.rem} />
 
-      {tab === 'banco' && catalog && (
-        <div className="grid gap-4 lg:grid-cols-2">
+      {tab === 'market' && (
+        <MarketCatalogSection onCharUpdate={onCharUpdate} />
+      )}
+
+      {tab === 'market' && catalog && (
+        <div className="mt-5 pt-5 border-t border-[var(--border-color)]/60">
+          <p className="text-[10px] uppercase tracking-widest text-gray-600 font-display mb-3">
+            Servizi rapidi (in aggiornamento — confluiranno ne Il Vecchio Ratto)
+          </p>
+          <div className="grid gap-4 lg:grid-cols-2">
           <MercatoSection title="Vendi al Banco" hint="Riscatta oggetti dallo zaino a prezzo fisso.">
             {sellableToBanco.length === 0 ? (
               <MercatoEmpty>Nessun oggetto vendibile nello zaino.</MercatoEmpty>
@@ -301,6 +310,7 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
               ))}
             </div>
           </MercatoSection>
+          </div>
         </div>
       )}
 
