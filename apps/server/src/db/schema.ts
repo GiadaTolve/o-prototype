@@ -410,6 +410,27 @@ export const socialClassDailyUsage = pgTable(
   (t) => [primaryKey({ columns: [t.characterId, t.dayKey] })],
 )
 
+/** Shakai Kaikyū — Patti del Politico (registro PG). */
+export const socialPacts = pgTable('social_pacts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  holderCharacterId: uuid('holder_character_id')
+    .references(() => characters.id, { onDelete: 'cascade' })
+    .notNull(),
+  templateId: text('template_id').notNull(),
+  templateName: text('template_name').notNull(),
+  counterpartyName: text('counterparty_name').notNull(),
+  counterpartyCharacterId: uuid('counterparty_character_id').references(() => characters.id),
+  weight: integer('weight').notNull(),
+  leverage: text('leverage')
+    .$type<'formale' | 'popolare' | 'sotterranea' | 'neutro'>()
+    .default('neutro')
+    .notNull(),
+  status: text('status').$type<'active' | 'spent' | 'expired'>().default('active').notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  spentAt: timestamp('spent_at'),
+})
+
 // ==========================================
 // 5b. GRADI e LIVELLI (QUEST_AND_FETCH_SPEC)
 // ==========================================

@@ -27,6 +27,7 @@ import { dropRoutes } from './modules/drop/drop.routes'
 import { artigianoRoutes } from './modules/artigiano/artigiano.routes'
 import { medicoRoutes } from './modules/medico/medico.routes'
 import { cacciatoreRoutes } from './modules/cacciatore/cacciatore.routes'
+import { politicoRoutes } from './modules/politico/politico.routes'
 import { marketRoutes } from './modules/market/market.routes'
 import { marketCatalogAdminRoutes } from './modules/market/market-catalog-admin.routes'
 import { shopRoutes } from './modules/shop/shop.routes'
@@ -76,6 +77,7 @@ const app = new Elysia()
   .use(artigianoRoutes)
   .use(medicoRoutes)
   .use(cacciatoreRoutes)
+  .use(politicoRoutes)
   .use(marketRoutes)
   .use(marketCatalogAdminRoutes)
   .use(shopRoutes)
