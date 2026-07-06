@@ -1,7 +1,23 @@
 import type { ItemCategory } from '@domain/economy/types'
 import type { MarketCategory } from '@domain/economy/market-catalog'
 
-export type MarketCatalogItem = {
+export type HousingCatalogItem = {
+  id: string
+  code: string
+  name: string
+  nameRomaji: string | null
+  description: string | null
+  effectText: string | null
+  iconUrl: string | null
+  squareMeters: number
+  dailyRent: number | null
+  monthlyRent: number | null
+  hpBonus: number
+  inventorySlotsBonus: number
+  requirements: { paradisePass?: boolean } | null
+  isActiveInCatalog: boolean
+}
+
   id: string
   catalogKey: string | null
   marketCategory: MarketCategory

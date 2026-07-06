@@ -891,8 +891,16 @@ export const housingTypes = pgTable('housing_types', {
   id: uuid('id').defaultRandom().primaryKey(),
   /** Codice univoco (es. 'order_room', 'container', 'monolocale', ecc.). */
   code: text('code').notNull().unique(),
-  /** Nome descrittivo. */
+  /** Titolo italiano in vetrina Immobiliare. */
   name: text('name').notNull(),
+  /** Romaji (Kanji) — sotto il titolo, come nel catalogo Market. */
+  nameRomaji: text('name_romaji'),
+  /** Descrizione ambientale / lore. */
+  description: text('description'),
+  /** Riepilogo meccanico (bonus, affitto) per card. */
+  effectText: text('effect_text'),
+  /** Icona vetrina (placeholder se null). */
+  iconUrl: text('icon_url'),
   /** Metri quadri. */
   squareMeters: integer('square_meters').notNull(),
   /** Affitto giornaliero (solo per Stanza dell'Ordine, altrimenti null). */
@@ -907,6 +915,8 @@ export const housingTypes = pgTable('housing_types', {
   requirements: jsonb('requirements').$type<{
     paradisePass?: boolean;
   }>().default({}),
+  /** Visibile nel tab Immobiliare del Mercato. */
+  isActiveInCatalog: boolean('is_active_in_catalog').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 })
 

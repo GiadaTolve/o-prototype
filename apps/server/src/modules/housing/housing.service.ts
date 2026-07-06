@@ -9,7 +9,8 @@ import { spend } from '@domain/ledger/transaction'
  */
 export async function getAllHousingTypes() {
   return await db.query.housingTypes.findMany({
-    orderBy: (types, { asc }) => [asc(types.monthlyRent ?? 0)],
+    where: eq(housingTypes.isActiveInCatalog, true),
+    orderBy: (types, { asc }) => [asc(types.squareMeters)],
   })
 }
 
