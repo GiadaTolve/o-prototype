@@ -166,7 +166,7 @@
 | Schema DB (`social_class`, sheet, daily usage) | ✅ | `characters.social_class`, `social_subclass_sheet`, tabella `social_class_daily_usage`; `db:push` eseguito |
 | API scelta classe + albero XP | ✅ | `GET/POST /characters/me/social-class`, `PATCH /characters/me/social-subclass`; `shakai.service` |
 | UI scelta classe + sottoclassi in scheda | ✅ | Tab **Professione** in Scheda; `SocialClassChoiceBanner` + `SchedaProfessionePage` |
-| Tool ×5 (Medico, Artigiano, Cacciatore, Politico, Sacerdote) | 🟡 | Medico + Artigiano (cura/ripara/craft/smantellamento) ✅; altre classi placeholder |
+| Tool ×5 (Medico, Artigiano, Cacciatore, Politico, Sacerdote) | 🟡 | Medico + Artigiano + Cacciatore (battuta) ✅; Politico/Sacerdote placeholder |
 | Sync blueprint in DB + craft generico | 🔲 | |
 | Moderazione cambio classe (staff) | ✅ | `PATCH /admin/characters/:id/social-class` |
 
@@ -228,12 +228,13 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Shakai | Tool **Cacciatore** (battuta + raccolta) | Medico + Artigiano ✅ |
-| 2 | Shakai | Sync blueprint in DB + craft generico (Politico/Sacerdote) | Blueprint catalog domain ✅ |
-| 3 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
-| 4 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
-| 5 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
-| 6 | Mobile | Notifiche push SMS/chat | Infrastruttura |
+| 1 | Shakai | Tool **Politico** (Registro Patti) | Cacciatore battuta ✅ |
+| 2 | Shakai | Tool **Sacerdote** (Reliquiario + Ofuda) | Politico |
+| 3 | Shakai | Sync blueprint in DB + craft generico | Blueprint catalog domain ✅ |
+| 4 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
+| 5 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
+| 6 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
+| 7 | Mobile | Notifiche push SMS/chat | Infrastruttura |
 
 ---
 
