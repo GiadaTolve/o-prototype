@@ -3,12 +3,17 @@ import type {
   BancoCatalogResponse,
   BancoBuyResponse,
   BancoSellResponse,
+  MarketCatalogBuyResponse,
+  MarketCatalogResponse,
   PiazzaBuyResponse,
   PiazzaFeedResponse,
   PiazzaListingsResponse,
 } from '@/components/dashboard/mercato/mercato-types'
 
 export const marketApi = {
+  getCatalog: () => api.get('/market/catalog') as Promise<MarketCatalogResponse>,
+  buyFromCatalog: (itemId: string, quantity = 1) =>
+    api.post(`/market/catalog/${itemId}/buy`, { quantity }) as Promise<MarketCatalogBuyResponse>,
   getBancoCatalog: () => api.get('/market/banco/catalog') as Promise<BancoCatalogResponse>,
   sellToBanco: (inventoryId: string) =>
     api.post('/market/banco/sell', { inventoryId }) as Promise<BancoSellResponse>,

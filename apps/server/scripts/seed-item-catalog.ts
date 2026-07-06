@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { ECONOMY_MATERIAL_LABELS, JUNK_ITEMS } from '@domain/economy/junklist'
-import { MARKET_EQUIPMENT_CATALOG } from '@domain/economy/market-equipment-catalog'
+import { MARKET_EQUIPMENT_CATALOG, marketEquipmentCategory } from '@domain/economy/market-equipment-catalog'
 import * as schema from '../src/db/schema'
 
 const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/oyasumi_2'
@@ -24,6 +24,7 @@ async function upsertCatalogItem(values: typeof schema.items.$inferInsert) {
   })
   const fields = {
     name: values.name,
+    nameRomaji: values.nameRomaji,
     description: values.description,
     category: values.category,
     junkTemplateId: values.junkTemplateId,
@@ -34,6 +35,9 @@ async function upsertCatalogItem(values: typeof schema.items.$inferInsert) {
     integrityMax: values.integrityMax,
     effectText: values.effectText,
     blueprintId: values.blueprintId,
+    marketCategory: values.marketCategory,
+    price: values.price,
+    isActiveInMarket: values.isActiveInMarket ?? true,
   }
   if (existing) {
     await db.update(schema.items).set(fields).where(eq(schema.items.id, existing.id))
@@ -75,7 +79,8 @@ async function main() {
   for (const equip of MARKET_EQUIPMENT_CATALOG) {
     await upsertCatalogItem({
       catalogKey: equip.id,
-      name: equip.name,
+      name: equip.nameItalian,
+      nameRomaji: equip.nameRomaji,
       description: equip.description,
       category: equip.category,
       integrityMax: equip.integrityMax,
@@ -84,6 +89,9 @@ async function main() {
       isStackable: equip.isStackable,
       type: equip.type,
       blueprintId: equip.blueprintId,
+      marketCategory: marketEquipmentCategory(equip.kind),
+      price: equip.priceRem,
+      isActiveInMarket: true,
     })
   }
 
