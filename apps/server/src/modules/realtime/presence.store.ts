@@ -22,6 +22,8 @@ const wsToRoom = new Map<string, string>();
 const allOnlineByCharacter = new Map<string, PresenceUser>();
 /** wsId -> characterId (per cleanup su close) */
 const wsToCharacter = new Map<string, string>();
+/** characterId -> wsId attivi (più tab / riconnessioni) */
+const wsIdsByCharacter = new Map<string, Set<string>>();
 
 function getOrCreateRoom(roomId: string): Map<string, PresenceUser> {
   let m = byRoom.get(roomId);
@@ -62,6 +64,21 @@ export function getRoom(wsId: string): string | null {
   return wsToRoom.get(wsId) ?? null;
 }
 
+/** Room corrente del personaggio (qualsiasi WS attivo). */
+export function getRoomForCharacter(characterId: string): string | null {
+  const set = wsIdsByCharacter.get(characterId);
+  if (!set) return null;
+  for (const wsId of set) {
+    const room = wsToRoom.get(wsId);
+    if (room) return room;
+  }
+  return null;
+}
+
+export function hasActiveConnection(characterId: string): boolean {
+  return (wsIdsByCharacter.get(characterId)?.size ?? 0) > 0;
+}
+
 /**
  * Registra un utente come "online" indipendentemente dalla room.
  * Chiamato quando si apre la connessione WS.
@@ -69,6 +86,12 @@ export function getRoom(wsId: string): string | null {
 export function markOnline(wsId: string, user: { userId: string; characterId: string; name: string; isShadow?: boolean }): void {
   const presenceUser: PresenceUser = { ...user, wsId };
   wsToCharacter.set(wsId, user.characterId);
+  let set = wsIdsByCharacter.get(user.characterId);
+  if (!set) {
+    set = new Set();
+    wsIdsByCharacter.set(user.characterId, set);
+  }
+  set.add(wsId);
   allOnlineByCharacter.set(user.characterId, presenceUser);
 }
 
@@ -78,9 +101,19 @@ export function markOnline(wsId: string, user: { userId: string; characterId: st
  */
 export function markOffline(wsId: string): void {
   const charId = wsToCharacter.get(wsId);
-  if (charId) {
-    wsToCharacter.delete(wsId);
+  if (!charId) return;
+  wsToCharacter.delete(wsId);
+  const set = wsIdsByCharacter.get(charId);
+  set?.delete(wsId);
+  if (!set || set.size === 0) {
+    wsIdsByCharacter.delete(charId);
     allOnlineByCharacter.delete(charId);
+    return;
+  }
+  const current = allOnlineByCharacter.get(charId);
+  if (current?.wsId === wsId) {
+    const nextWsId = set.values().next().value as string;
+    allOnlineByCharacter.set(charId, { ...current, wsId: nextWsId });
   }
 }
 

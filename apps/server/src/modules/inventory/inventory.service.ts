@@ -641,3 +641,43 @@ export async function stealFromHousing(
 
   return { success: true }
 }
+
+/** Consuma materiali dallo zaino per catalog_key `mat-{materialId}`. */
+export async function consumeMaterialsByCatalogKey(
+  characterId: string,
+  costs: readonly { materialId: string; quantity: number }[],
+  options?: { location?: InventoryLocation },
+) {
+  const location = options?.location ?? 'CARRY'
+
+  for (const cost of costs) {
+    if (cost.quantity <= 0) continue
+    const catalogKey = `mat-${cost.materialId}`
+    let remaining = cost.quantity
+
+    const rows = await db.query.inventory.findMany({
+      where: and(eq(inventory.characterId, characterId), eq(inventory.location, location)),
+      with: { item: true },
+      orderBy: [desc(inventory.createdAt)],
+    })
+
+    for (const row of rows) {
+      if (row.item.catalogKey !== catalogKey) continue
+      const qty = row.quantity ?? 0
+      if (qty <= 0) continue
+      const take = Math.min(remaining, qty)
+      remaining -= take
+      if (qty <= take) {
+        await db.delete(inventory).where(eq(inventory.id, row.id))
+      } else {
+        await db.update(inventory).set({ quantity: qty - take }).where(eq(inventory.id, row.id))
+      }
+      if (remaining <= 0) break
+    }
+
+    if (remaining > 0) {
+      const label = cost.materialId.replace(/_/g, ' ')
+      throw new Error(`Materiale insufficiente: ${label} (mancano ${remaining}).`)
+    }
+  }
+}

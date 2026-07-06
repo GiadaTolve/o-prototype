@@ -7,6 +7,9 @@ import { dispatchInventoryUpdated } from "@/lib/inventory-events";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 30000;
+const INITIAL_CONNECT_TIMEOUT_MS = 8000;
 
 export type LevelUpWsPayload = {
   pendingLevelUp: PendingLevelUpBanner;
@@ -77,6 +80,11 @@ export function useRealtime(
       return;
     }
 
+    let shouldReconnect = true;
+    let reconnectAttempts = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let connectTimeout: ReturnType<typeof setTimeout> | null = null;
+
     const loadHistory = async () => {
       try {
         const res = await fetch(`${API_BASE}/chat/${roomId}`, {
@@ -92,27 +100,14 @@ export function useRealtime(
     };
     loadHistory();
 
-    const url = `${WS_BASE}/ws?token=${encodeURIComponent(token)}`;
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
-
-    let didOpen = false;
-    const timeout = setTimeout(() => {
-      if (ws.readyState !== WebSocket.OPEN) {
-        didOpen = false;
-        setConnectionFailed(true);
-        ws.close();
-      }
-    }, 8000);
-
-    ws.onopen = () => {
-      didOpen = true;
-      clearTimeout(timeout);
-      setConnected(true);
-      setConnectionFailed(false);
+    const scheduleReconnect = () => {
+      if (!shouldReconnect || !roomRef.current) return;
+      const delay = Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempts, RECONNECT_MAX_MS);
+      reconnectAttempts += 1;
+      reconnectTimer = setTimeout(connect, delay);
     };
 
-    ws.onmessage = (ev) => {
+    const handleMessage = (ev: MessageEvent, ws: WebSocket) => {
       try {
         const data = JSON.parse(ev.data as string) as {
           type: string;
@@ -149,7 +144,8 @@ export function useRealtime(
         }
         if (data.type === "welcome" && data.me) {
           meIdRef.current = data.me.id;
-          ws.send(JSON.stringify({ type: "join", zone: roomId }));
+          const r = roomRef.current;
+          if (r) ws.send(JSON.stringify({ type: "join", zone: r }));
           return;
         }
         if (data.type === "presence" && Array.isArray(data.users)) {
@@ -175,7 +171,6 @@ export function useRealtime(
           typeof data.content === "string" &&
           data.createdAt
         ) {
-          // Ignora messaggi con createdAt prima dell'ultimo clear (evita che messaggi "in ritardo" riappaiano)
           const ca = clearedAtRef.current;
           if (ca && data.createdAt <= ca) return;
           const m: ChatMessage = {
@@ -248,7 +243,7 @@ export function useRealtime(
           dispatchInventoryUpdated(data.characterId);
           return;
         }
-        if (data.type === "chat_cleared" && data.zone === roomId) {
+        if (data.type === "chat_cleared" && data.zone === roomRef.current) {
           const clearedAt = typeof data.clearedAt === "string" ? data.clearedAt : new Date().toISOString();
           clearedAtRef.current = clearedAt;
           setMessages([]);
@@ -263,7 +258,6 @@ export function useRealtime(
           "timestamp" in data &&
           typeof data.timestamp === "string"
         ) {
-          // Crea un messaggio globale con un ID univoco basato sul timestamp
           const globalMsg: ChatMessage = {
             id: `global-${data.timestamp}`,
             zone: "GLOBAL",
@@ -274,7 +268,6 @@ export function useRealtime(
             createdAt: data.timestamp,
           };
           setMessages((prev) => {
-            // Evita duplicati
             if (prev.some((p) => p.id === globalMsg.id)) return prev;
             return [...prev, globalMsg];
           });
@@ -284,25 +277,59 @@ export function useRealtime(
       }
     };
 
-    ws.onclose = () => {
-      clearTimeout(timeout);
-      setConnected(false);
-      setUsers([]);
-      wsRef.current = null;
-      if (!didOpen) setConnectionFailed(true);
+    const connect = () => {
+      if (!shouldReconnect || !roomRef.current) return;
+
+      const url = `${WS_BASE}/ws?token=${encodeURIComponent(token)}`;
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      let didOpen = false;
+      connectTimeout = setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          ws.close();
+        }
+      }, INITIAL_CONNECT_TIMEOUT_MS);
+
+      ws.onopen = () => {
+        didOpen = true;
+        reconnectAttempts = 0;
+        if (connectTimeout) clearTimeout(connectTimeout);
+        setConnected(true);
+        setConnectionFailed(false);
+      };
+
+      ws.onmessage = (ev) => handleMessage(ev, ws);
+
+      ws.onclose = () => {
+        if (connectTimeout) clearTimeout(connectTimeout);
+        setConnected(false);
+        setUsers([]);
+        if (wsRef.current === ws) wsRef.current = null;
+        if (!shouldReconnect) return;
+        if (!didOpen && reconnectAttempts >= 5) {
+          setConnectionFailed(true);
+        }
+        scheduleReconnect();
+      };
+
+      ws.onerror = () => {
+        if (!didOpen) setConnectionFailed(true);
+        setConnected(false);
+      };
     };
 
-    ws.onerror = () => {
-      if (!didOpen) setConnectionFailed(true);
-      setConnected(false);
-    };
+    connect();
 
     return () => {
-      clearTimeout(timeout);
-      if (ws.readyState === WebSocket.OPEN) {
+      shouldReconnect = false;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (connectTimeout) clearTimeout(connectTimeout);
+      const ws = wsRef.current;
+      if (ws?.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "leave" }));
       }
-      ws.close();
+      ws?.close();
       wsRef.current = null;
       setConnected(false);
       setUsers([]);

@@ -4,13 +4,15 @@ import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { api } from "@/lib/api";
 import type { CharacterSummary } from "../types";
-import { DismantleSection } from "../mercato/DismantleSection";
+import { ArtigianoToolSection } from "./ArtigianoToolSection";
+import { MedicoToolSection } from "./MedicoToolSection";
 import { SOCIAL_CLASS_ICON, ROLE_LABEL } from "./social-class-ui";
 import type { SocialBudgetMetric, SocialClassState, SocialSubclassEntry } from "./types";
 
 type Props = {
   state: SocialClassState;
   char?: CharacterSummary;
+  roomId?: string | null;
   onUpdate: () => void;
 };
 
@@ -100,7 +102,7 @@ function SubclassCard({
   );
 }
 
-export function SchedaProfessionePage({ state, char, onUpdate }: Props) {
+export function SchedaProfessionePage({ state, char, roomId, onUpdate }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -177,7 +179,9 @@ export function SchedaProfessionePage({ state, char, onUpdate }: Props) {
           Strumento
         </h3>
         {state.classDef.id === "shokunin" ? (
-          <DismantleSection char={char} onCharUpdate={onUpdate} />
+          <ArtigianoToolSection char={char} roomId={roomId} onUpdate={onUpdate} />
+        ) : state.classDef.id === "ishi" ? (
+          <MedicoToolSection char={char} roomId={roomId} onUpdate={onUpdate} />
         ) : (
           <div className="p-4 rounded-lg border border-[var(--border-color)] bg-black/20">
             <p className="text-sm text-gray-400 leading-relaxed">

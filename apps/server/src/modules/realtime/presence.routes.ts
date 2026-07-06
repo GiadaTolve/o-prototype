@@ -38,7 +38,7 @@ export const presenceRoutes = new Elysia({ prefix: '/presence' })
               return {
                 id: u.characterId,
                 name: u.name,
-                room: presence.getRoom(u.wsId) ?? null,
+                room: presence.getRoomForCharacter(u.characterId) ?? null,
                 isShadow: u.isShadow ?? false,
                 level,
                 paragon,

@@ -25,6 +25,7 @@ import { loreRoutes } from './modules/lore/lore.routes'
 import { inventoryRoutes } from './modules/inventory/inventory.routes'
 import { dropRoutes } from './modules/drop/drop.routes'
 import { artigianoRoutes } from './modules/artigiano/artigiano.routes'
+import { medicoRoutes } from './modules/medico/medico.routes'
 import { marketRoutes } from './modules/market/market.routes'
 import { marketCatalogAdminRoutes } from './modules/market/market-catalog-admin.routes'
 import { shopRoutes } from './modules/shop/shop.routes'
@@ -72,6 +73,7 @@ const app = new Elysia()
   .use(inventoryRoutes)
   .use(dropRoutes)
   .use(artigianoRoutes)
+  .use(medicoRoutes)
   .use(marketRoutes)
   .use(marketCatalogAdminRoutes)
   .use(shopRoutes)

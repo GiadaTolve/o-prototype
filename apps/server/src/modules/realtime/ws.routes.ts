@@ -626,8 +626,10 @@ export const realtimeRoutes = new Elysia()
         broadcastPresence(roomId);
       }
       const user = wsSessions.get(ws.id);
-      if (user) characterSockets.delete(user.characterId);
       presence.markOffline(ws.id);
+      if (user && !presence.hasActiveConnection(user.characterId)) {
+        characterSockets.delete(user.characterId);
+      }
       wsSessions.delete(ws.id);
     },
   });
