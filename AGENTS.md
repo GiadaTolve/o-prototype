@@ -10,7 +10,7 @@ Monorepo RPG **Oyasumi 2.0**: `apps/server` (Elysia/Bun), `apps/client` (Next.js
 | Combattimento in chat | `COMBAT_SPEC.md`, `CHRONO_STACK.md`, `WAZA_CALCOLI.md` |
 | Economia oggetti (drop · inventario · mercato) | `ECONOMY_ITEMS_SPEC.md`, `ITEMS_IMPLEMENTATION_SPEC.md` |
 | Sōkaiju | `Oyasumi_Sokaiju_Spec_Cursor.md` |
-| Roadmap | `MECHANICS_ROADMAP.md`, `ROADMAP_CONTEXT.md` |
+| Roadmap | `ROADMAP.md` |
 | UI Dark Arcane | `.cursor/rules/design-dark-arcane.mdc` |
 | Combattimento (regole fisse) | `.cursor/rules/combat-system.mdc` |
 

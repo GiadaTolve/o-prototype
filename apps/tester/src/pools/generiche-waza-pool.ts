@@ -1,4 +1,4 @@
-/** Waza Generiche — Parte trasversale ROADMAP_CONTEXT.md (fondamentali + accademia). */
+/** Waza Generiche — pool trasversale; stato in ROADMAP.md §7. */
 import type { WazaDef } from '../wazaPool'
 import { makeActive, makePassive } from './waza-pool-builders'
 

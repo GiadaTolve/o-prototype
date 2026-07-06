@@ -256,7 +256,7 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 ### Fase 9 — Documentazione & allineamento
 
 - [ ] **9.1** — Allineare `SKIRU_CATALOG` descrizioni classi con tool
-- [ ] **9.2** — `MECHANICS_ROADMAP.md` §2.7 aggiornato a ogni milestone
+- [ ] **9.2** — `ROADMAP.md` §9 aggiornato a ogni milestone
 - [ ] **9.3** — Guida giocatore in `ChatInfoPanel` o Guida — cosa fa ogni classe
 - [ ] **9.4** — Copy onboarding classe sociale
 
@@ -294,4 +294,4 @@ Ordine suggerito: **Medico → Artigiano → Cacciatore → Politico → Sacerdo
 
 ## Checklist roadmap
 
-Vedi `MECHANICS_ROADMAP.md` § Shakai Kaikyū — sottosezione completa con fasi 0–9.
+Vedi `ROADMAP.md` §9 — Shakai Kaikyū.

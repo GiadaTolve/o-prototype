@@ -133,12 +133,12 @@ Nel **Combat Tester** (`bun run dev:tester` → tab "Combat Tester") trovi:
 - IR + tier + CS (motore `packages/domain`) — leggi `apps/tester/src/combatSimulator.ts`
 - Pool Waza (attive con danno) — AI usa la tecnica con maggior danno disponibile
 
-> Il tester è in corso di aggiornamento per il sistema v3 (IR + 4/4 + Tier). Segui [MECHANICS_ROADMAP.md](./MECHANICS_ROADMAP.md) § Tester per lo stato.
+> Il tester è allineato al sistema v3 (IR + 4/4 + Tier). Stato: [ROADMAP.md](./ROADMAP.md) §5–§7.
 
 ---
 
 ## Vedi anche
 
 - **[COMBAT_SPEC.md](./COMBAT_SPEC.md)** — Flusso combattimento v3, iniziativa, IR.
-- **[MECHANICS_ROADMAP.md](./MECHANICS_ROADMAP.md)** — Checklist implementazione §2.2 Chronostack.
+- **[ROADMAP.md](./ROADMAP.md)** — Stato Chronostack e combattimento §5.
 - `packages/domain/src/combat/chrono-stack.ts` — Motore CS (costanti, Overheat, Defaticamento).

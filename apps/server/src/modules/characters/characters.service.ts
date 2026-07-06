@@ -2494,7 +2494,7 @@ export class CharacterService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Skiru API — Integrazione dati (MECHANICS_ROADMAP)
+  // Skiru API — v. ROADMAP.md §6
   // ─────────────────────────────────────────────────────────────────────────
 
   /**

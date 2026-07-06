@@ -2,7 +2,7 @@
 
 > **Stato:** Spec allineata al manuale (`docs/Oyasumi_Manuale_Completo.pdf`, Giugno 2026)
 > **Breaking vs legacy:** rimossi Reflexes (iniziativa), Jigoka come costo waza obbligatorio. Overheat aggiornato a −2 HP/stack, max 3 turni.
-> **Riferimenti:** [CHRONO_STACK.md](./CHRONO_STACK.md), [MECHANICS_ROADMAP.md](./MECHANICS_ROADMAP.md)
+> **Riferimenti:** [CHRONO_STACK.md](./CHRONO_STACK.md), [ROADMAP.md](./ROADMAP.md) §5
 
 ---
 
@@ -109,6 +109,6 @@ Le **Waza** costano **CS** (Chrono Stack):
 | Documento | Contenuto |
 |-----------|-----------|
 | [CHRONO_STACK.md](./CHRONO_STACK.md) | Accumulo CS, Overheat (−2 HP, max 3 turni), Defaticamento, limiti mosse |
-| [MECHANICS_ROADMAP.md](./MECHANICS_ROADMAP.md) | Checklist implementazione §2.2–§2.10 |
+| [ROADMAP.md](./ROADMAP.md) | Stato implementazione combattimento §5 |
 | `packages/domain/src/combat/` | Motore CS, IR, tier, pipeline danno |
 | `apps/tester/` | Simulatore combat v3 (IR + tier + CS) |

@@ -1,7 +1,7 @@
 /**
  * Simulatore combattimento v3 — IR + Tier + CS.
  * Niente Reflexes, Jigoka, né stats legacy F/C/D/M/E.
- * Refs: COMBAT_SPEC.md v3, MECHANICS_ROADMAP
+ * Refs: COMBAT_SPEC.md v3, ROADMAP.md §5
  *
  * Iniziativa: coin flip (in v3 il Master la gestisce narrativamente;
  * nel simulatore usiamo randomizzazione per rappresentare parità di partenza).
