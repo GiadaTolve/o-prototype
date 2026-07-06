@@ -1,6 +1,6 @@
 # Roadmap Oyasumi 2.0
 
-> **Ultimo aggiornamento:** Luglio 2026  
+> **Ultimo aggiornamento:** Luglio 2026 (Shakai Step 1–2)  
 > **Uso:** vista unica per stato progetto e priorità. Le regole di gioco restano nelle **spec** (non duplicate qui).
 
 ## Legenda
@@ -162,12 +162,12 @@
 |------|-------|------|
 | Spec + catalogo 5×5 sottoclassi | ✅ | `SHAKAI_KAIKYU_SPEC.md`, domain |
 | Blueprint catalog (~70 ricette) | ✅ | `blueprint-catalog.ts` |
-| Schema DB (`social_class`, sheet, daily usage) | 🔲 | **Prossimo blocco** |
-| API scelta classe + albero XP | 🔲 | |
+| Schema DB (`social_class`, sheet, daily usage) | ✅ | `characters.social_class`, `social_subclass_sheet`, tabella `social_class_daily_usage`; `db:push` eseguito |
+| API scelta classe + albero XP | 🟡 | `GET/POST /characters/me/social-class`, `PATCH /characters/me/social-subclass`; manca UI dedicata |
 | UI scelta classe + sottoclassi in scheda | 🔲 | |
 | Tool ×5 (Medico, Artigiano, Cacciatore, Politico, Sacerdote) | 🔲 | Iniziare da Medico 5.1–5.2 |
 | Sync blueprint in DB + craft generico | 🔲 | |
-| Moderazione cambio classe (staff) | 🔲 | |
+| Moderazione cambio classe (staff) | ✅ | `PATCH /admin/characters/:id/social-class` |
 
 ---
 
@@ -225,14 +225,13 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Shakai | Migrazione DB classi sociali | `db:push` prod |
-| 2 | Shakai | API + UI scelta classe e albero sottoclassi | Step 1 |
-| 3 | Shakai | Prima tool **Medico** (cura + preparati) | Step 2 |
-| 4 | Shakai | Tool Artigiano (ripara + craft blueprint) | Step 2; smantellamento ✅ |
-| 5 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
-| 6 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
-| 7 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
-| 8 | Mobile | Notifiche push SMS/chat | Infrastruttura |
+| 1 | Shakai | UI scelta classe + albero sottoclassi in scheda | API Shakai ✅ |
+| 2 | Shakai | Prima tool **Medico** (cura + preparati) | UI scelta/base classe |
+| 3 | Shakai | Tool Artigiano (ripara + craft blueprint) | Tool Medico; smantellamento ✅ |
+| 4 | Combattimento | Enforcement Giurisdizione / Chokurei / Nagori completo | Domain |
+| 5 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
+| 6 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
+| 7 | Mobile | Notifiche push SMS/chat | Infrastruttura |
 
 ---
 
