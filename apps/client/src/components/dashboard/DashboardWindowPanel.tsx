@@ -16,6 +16,10 @@ import { WINDOW_LABELS } from "./types";
 import { SchedaSkiruPage } from "./SchedaSkiruPage";
 import { SchedaWazaPage } from "./SchedaWazaPage";
 import { SchedaRichiestePage } from "./SchedaRichiestePage";
+import { SchedaProfessionePage } from "./professione/SchedaProfessionePage";
+import { SocialClassChoiceBanner } from "./professione/SocialClassChoiceBanner";
+import { SOCIAL_CLASS_ICON } from "./professione/social-class-ui";
+import type { SocialClassState } from "./professione/types";
 import { InventorySection } from "./inventory/InventorySection";
 import { SkiruWazaPanel } from "./SkiruWazaPanel";
 import { MercatoPanel } from "./mercato/MercatoPanel";
@@ -2170,17 +2174,31 @@ function SchedaAvatarSidebar({
 
 function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSummary; characterId?: string; onCharUpdate?: () => void }) {
   const [activeSection, setActiveSection] = useState<
-    "main" | "skiru" | "modifica" | "background" | "inventario" | "waza" | "registrazioni" | "log" | "richieste"
+    "main" | "skiru" | "modifica" | "background" | "inventario" | "waza" | "registrazioni" | "log" | "richieste" | "professione"
   >("main");
   const [charData, setCharData] = useState<any>(null);
   const [visibility, setVisibility] = useState<Visibility>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [housingChatRoomId, setHousingChatRoomId] = useState<string | null>(null);
+  const [socialClassState, setSocialClassState] = useState<SocialClassState | null>(null);
 
   const viewingCharacterId = characterId ?? char?.id;
   const isOwnSheet = Boolean(char?.id && viewingCharacterId === char.id);
   const isRemoteCharacter = Boolean(viewingCharacterId && !isOwnSheet);
+
+  // Classe sociale (Shakai Kaikyū) — visibile solo sulla propria scheda, mai su PG altrui.
+  const loadSocialClassState = useCallback(() => {
+    if (isRemoteCharacter) return;
+    api
+      .get("/characters/me/social-class")
+      .then((d) => setSocialClassState(d as SocialClassState))
+      .catch(() => setSocialClassState(null));
+  }, [isRemoteCharacter]);
+
+  useEffect(() => {
+    loadSocialClassState();
+  }, [loadSocialClassState]);
 
   const loadCharData = useCallback(() => {
     if (isRemoteCharacter && viewingCharacterId) {
@@ -2396,6 +2414,20 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
             <FontAwesomeIcon icon={icons.gear} className="w-4 h-4" />
           </button>
         )}
+        {!isRemoteCharacter && socialClassState?.socialClass && (
+          <button
+            type="button"
+            onClick={() => setActiveSection("professione")}
+            className={`w-10 h-10 shrink-0 rounded border flex items-center justify-center transition-all ${
+              activeSection === "professione"
+                ? "border-[var(--accent-gold)] bg-[var(--accent-gold)]/10 text-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+                : "border-[var(--border-color)] text-gray-500 hover:border-gray-600 hover:text-gray-400"
+            }`}
+            title={`Professione — ${socialClassState.classDef?.nameItalian ?? ""}`}
+          >
+            <FontAwesomeIcon icon={SOCIAL_CLASS_ICON[socialClassState.socialClass]} className="w-4 h-4" />
+          </button>
+        )}
         {!isRemoteCharacter && (
           <button
             type="button"
@@ -2464,17 +2496,27 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
             />
           )}
           {activeSection === "main" && (
-            <SchedaMainPage
-              char={displayChar}
-              level={level}
-              levelLabel={levelProgress.label}
-              paragon={paragon}
-              grade={grade}
-              housingChatRoomId={housingChatRoomId}
-              skiruDomains={skiruDomains}
-              themeMusicUrl={themeMusicUrl}
-              bannerPg={bannerPg}
-            />
+            <>
+              {!isRemoteCharacter && socialClassState && !socialClassState.socialClass && (
+                <div className="p-6 pb-0">
+                  <SocialClassChoiceBanner catalog={socialClassState.catalog} onChosen={loadSocialClassState} />
+                </div>
+              )}
+              <SchedaMainPage
+                char={displayChar}
+                level={level}
+                levelLabel={levelProgress.label}
+                paragon={paragon}
+                grade={grade}
+                housingChatRoomId={housingChatRoomId}
+                skiruDomains={skiruDomains}
+                themeMusicUrl={themeMusicUrl}
+                bannerPg={bannerPg}
+              />
+            </>
+          )}
+          {activeSection === "professione" && !isRemoteCharacter && socialClassState?.socialClass && (
+            <SchedaProfessionePage state={socialClassState} char={displayChar ?? undefined} onUpdate={loadSocialClassState} />
           )}
           {activeSection === "modifica" && (!isRemoteCharacter || visibility.canEdit) && <SchedaModificaPage char={displayChar} characterId={characterId || displayChar.id} onCharUpdate={handleCharUpdate} />}
           {activeSection === "background" && <SchedaBackgroundPage char={displayChar} />}

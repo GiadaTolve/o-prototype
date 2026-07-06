@@ -8,7 +8,6 @@ import { resolveBancoBuyPrice, PIAZZA_COMMISSION_RATE, PIAZZA_MAX_ACTIVE_LISTING
 import type { ItemCategory } from '@domain/economy/types'
 import type { CharacterSummary } from '../types'
 import { HousingMarketSection } from './HousingMarketSection'
-import { DismantleSection } from './DismantleSection'
 import {
   MercatoActionButton,
   MercatoEmpty,
@@ -428,8 +427,6 @@ export function MercatoPanel({ char, onCharUpdate }: Props) {
           </MercatoSection>
         </div>
       )}
-
-      {tab === 'smantellamento' && <DismantleSection char={char} onCharUpdate={onCharUpdate} />}
 
       {tab === 'immobiliare' && <HousingMarketSection char={char} onCharUpdate={onCharUpdate} />}
     </div>
