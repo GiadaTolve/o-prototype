@@ -434,7 +434,23 @@ export class CharacterService {
       char.skiruSheet as Record<string, number> | undefined,
       baseStats,
     );
-    const skiruPayload = buildSkiruCharacterComputed(skiruSheet, 0);
+    const housing = await db.query.characterHousing.findFirst({
+      where: eq(characterHousing.characterId, char.id),
+      with: {
+        housingType: true,
+      },
+    });
+
+    let hpModifier = 0;
+    if (!housing || housing.evicted) {
+      // Senzatetto: -5pf (stessa regola della scheda privata).
+      hpModifier = -5;
+    } else if (housing.housingType) {
+      hpModifier = housing.housingType.hpBonus || 0;
+    }
+
+    const skiruPayload = buildSkiruCharacterComputed(skiruSheet, hpModifier);
+    const hp = resolveCombatHp(char.currentHp, skiruPayload.computed.hpMax);
 
     return {
       id: char.id,
@@ -454,7 +470,13 @@ export class CharacterService {
       order: char.order,
       skiruSheet: skiruPayload.skiruSheet,
       skiruDomains: skiruPayload.skiruDomains,
-      computed: skiruPayload.computed,
+      currentHp: hp.hpCurrent,
+      computed: {
+        ...skiruPayload.computed,
+        hpMax: hp.hpMax,
+        hpCurrent: hp.hpCurrent,
+        body: hp.hpMax,
+      },
     };
   }
 
