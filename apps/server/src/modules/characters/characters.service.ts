@@ -58,6 +58,8 @@ import {
   resolveCharacterSkiruSheet,
 } from './skiru-sheet';
 import {
+  getGradeForLevel,
+  getLevelFromExp,
   canUnlockNextPassiveSlot,
   getNextPassiveSlotToUnlock,
   getNextPassiveSlotUnlockCost,
@@ -225,6 +227,18 @@ export class CharacterService {
       throw new Error('Personaggio non trovato. Effettua prima la registrazione.');
     }
 
+    const level = getLevelFromExp(existing.experienceTotal ?? 0);
+    const grade = getGradeForLevel(level);
+    const canChooseOrder = level >= 4;
+    const requestedOrder = data.order ?? 'NONE';
+    const nextOrder = canChooseOrder ? requestedOrder : 'NONE';
+
+    if (!canChooseOrder && requestedOrder !== 'NONE') {
+      throw new Error(
+        `L'Ordine si sceglie dal grado Hakyō (attuale: ${grade}, livello ${level}).`,
+      );
+    }
+
     const [updated] = await db
       .update(characters)
       .set({
@@ -238,7 +252,7 @@ export class CharacterService {
         mind: data.baseStats.mind,
         empathy: data.baseStats.empathy,
         skiruSheet: legacyStatsToSkiruSheet(data.baseStats),
-        order: data.order,
+        order: nextOrder,
         isRaw: false,
       })
       .where(eq(characters.id, existing.id))
