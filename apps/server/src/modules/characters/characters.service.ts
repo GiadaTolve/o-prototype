@@ -2249,6 +2249,56 @@ export class CharacterService {
     };
   }
 
+  /**
+   * Validazione pre-invio chat: blocca solo i lanci waza non sostenibili in CS.
+   * Non valida quarti/turni (restano narrativa Master).
+   */
+  async validateChatWazaCsOnly(
+    characterId: string,
+    content: string,
+    options: {
+      roomParticipants?: WazaChatParticipant[];
+      isMasterscreen?: boolean;
+    } = {},
+  ): Promise<{ ok: true } | { ok: false; message: string }> {
+    if (options.isMasterscreen) return { ok: true };
+    if (!/\[waza:[^\]]+\]/i.test(content)) return { ok: true };
+
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { uiMetadata: true, name: true, surname: true, madoshoId: true, skiruSheet: true, constitution: true, dexterity: true, mind: true, empathy: true },
+    });
+    if (!char) return { ok: true };
+
+    const baseStats = this.baseStatsFromCharacter(char);
+    const actorSkiruSheet = resolveCharacterSkiruSheet(
+      char.skiruSheet as Record<string, number> | undefined,
+      baseStats,
+    );
+    const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
+    const chronoState = await this.loadStoredChronoState(characterId);
+    const chronoBefore = chronoState.current;
+    const statusContainer = await this.loadCharacterStatusContainer(characterId);
+    const equippedPassivePoolIds = await this.getEquippedPassivePoolIds(characterId);
+
+    const automation = processWazaChatAutomation({
+      content,
+      meta,
+      statusContainer,
+      wazaIndex: WAZA_TAG_INDEX,
+      chronoCsAvailable: chronoBefore,
+      actorCharacterId: characterId,
+      roomParticipants: options.roomParticipants,
+      madoshoId: char.madoshoId,
+      actorSkiruSheet,
+      equippedPassivePoolIds,
+    });
+
+    const csBlock = validateWazaChatCsAffordability(automation.csDelta, chronoBefore);
+    if (csBlock) return { ok: false, message: csBlock };
+    return { ok: true };
+  }
+
   async applyItoEmorragiaFromOverflow(characterId: string, stacksToAdd: number) {
     if (stacksToAdd <= 0) return;
     let container = await this.loadCharacterStatusContainer(characterId);

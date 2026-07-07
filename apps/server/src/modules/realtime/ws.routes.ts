@@ -456,6 +456,21 @@ export const realtimeRoutes = new Elysia()
           const participant = roomId === PARADISE_ROOM ? await getParticipant(roomId, user.characterId) : null;
           const activeQuest = await getActiveQuestForRoom(roomId);
           const isMasterscreen = !!(activeQuest && activeQuest.creatorId === user.characterId);
+          if (!isMasterscreen) {
+            const roomParticipants = presence.getPresence(roomId).map((u) => ({
+              characterId: u.characterId,
+              name: u.name,
+            }));
+            const csValidation = await characterService.validateChatWazaCsOnly(
+              user.characterId,
+              resolvedText,
+              { roomParticipants, isMasterscreen },
+            );
+            if (!csValidation.ok) {
+              ws.send(JSON.stringify({ type: "error", message: csValidation.message }));
+              return;
+            }
+          }
           const { row, levelUp } = await insertMessage(
             roomId,
             user.characterId,

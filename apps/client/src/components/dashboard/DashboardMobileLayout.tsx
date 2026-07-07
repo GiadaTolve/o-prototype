@@ -170,14 +170,14 @@ export function DashboardMobileLayout({
       <header className="mobile-top-bar shrink-0 border-b border-[var(--border-color)] bg-[var(--panel-bg)] px-3 py-2 flex items-center justify-between mobile-safe-top">
         <h1 className="font-display text-sm text-[var(--accent-gold)] truncate">
           Oyasumi
-          <span className="ml-1.5 text-[9px] text-gray-600 font-sans normal-case tracking-normal">
+          <span className="ml-1.5 text-[9px] text-[var(--accent-violet-light)]/65 font-sans normal-case tracking-normal">
             {process.env.NEXT_PUBLIC_APP_BUILD ?? "dev"}
           </span>
         </h1>
         <button
           type="button"
           onClick={handleLogout}
-          className="p-2 -m-2 text-gray-400 hover:text-[var(--accent-gold)]"
+          className="p-2 -m-2 text-[var(--accent-violet-light)]/80 hover:text-[var(--accent-gold)]"
           aria-label="Logout"
         >
           <FontAwesomeIcon icon={icons.logout} className="w-4 h-4" />
@@ -206,7 +206,7 @@ export function DashboardMobileLayout({
                     {nome} {cognome}
                     <PixelIcons pixelIcons={char?.pixelIcons} />
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-[var(--accent-violet-light)]/75">
                     REM: {char?.rem ?? 0} · EXP: {char?.experienceSpendable ?? 0}
                   </p>
                   <MiniSkiruStatsHud stats={skiruStats} />
@@ -216,7 +216,7 @@ export function DashboardMobileLayout({
                 <button
                   type="button"
                   onClick={() => char?.id && openCharacterSheet(char.id)}
-                  className="py-2 px-3 rounded border border-[var(--border-color)] text-xs text-[var(--accent-gold)] hover:bg-white/5"
+                  className="py-2 px-3 rounded border border-[var(--border-color)] text-xs text-[var(--accent-gold)] hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)]"
                 >
                   Scheda completa
                 </button>
@@ -233,7 +233,7 @@ export function DashboardMobileLayout({
                   <button
                     type="button"
                     onClick={() => onOpen("housing")}
-                    className="py-2 px-3 rounded border border-[var(--border-color)] text-xs text-gray-300 hover:bg-white/5"
+                    className="py-2 px-3 rounded border border-[var(--border-color)] text-xs text-[var(--accent-violet-light)] hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)]"
                   >
                     Housing
                   </button>
@@ -302,12 +302,12 @@ export function DashboardMobileLayout({
                 key={id}
                 type="button"
                 onClick={() => onOpen(id)}
-                className="py-4 px-3 rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)] flex flex-col items-center gap-2 hover:border-[var(--accent-gold)]/50 relative"
+                className="py-4 px-3 rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)] flex flex-col items-center gap-2 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_85%,black)] relative transition-colors"
               >
                 <FontAwesomeIcon icon={icon} className="w-6 h-6 text-[var(--accent-gold)]" />
-                <span className="text-xs text-gray-300">{label}</span>
+                <span className="text-xs text-[var(--accent-violet-light)]">{label}</span>
                 {id === "notifiche" && notificheUnread > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[var(--accent-violet)] text-[10px] flex items-center justify-center text-white">
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] rounded-full px-1 bg-[var(--accent-violet)] text-[10px] flex items-center justify-center text-white">
                     {notificheUnread > 9 ? "9+" : notificheUnread}
                   </span>
                 )}
@@ -317,7 +317,7 @@ export function DashboardMobileLayout({
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full py-3 rounded-lg border border-[var(--border-color)] text-sm text-gray-400 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/50 flex items-center justify-center gap-2 shrink-0"
+            className="w-full py-3 rounded-lg border border-[var(--border-color)] text-sm text-[var(--accent-violet-light)]/80 hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/50 flex items-center justify-center gap-2 shrink-0"
           >
             <FontAwesomeIcon icon={icons.logout} className="w-4 h-4" />
             Esci
@@ -334,17 +334,19 @@ export function DashboardMobileLayout({
             key={id}
             type="button"
             onClick={() => setActiveTab(id)}
-            className={`relative flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-w-[56px] transition-colors ${
-              activeTab === id ? "text-[var(--accent-gold)]" : "text-gray-500"
+            className={`relative flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-w-[56px] rounded-md transition-colors ${
+              activeTab === id
+                ? "text-[var(--accent-gold)] bg-[color-mix(in_srgb,var(--panel-bg)_75%,black)] border border-[color-mix(in_srgb,var(--accent-gold)_35%,var(--border-color))]"
+                : "text-[var(--accent-violet-light)]/70"
             }`}
           >
             {id === "sms" && smsUnread > 0 && (
-              <span className="absolute top-0 right-1/4 w-4 h-4 rounded-full bg-[var(--accent-violet)] text-[9px] flex items-center justify-center text-white">
+              <span className="absolute top-0 right-1/4 min-w-[17px] h-[17px] rounded-full px-1 bg-[var(--accent-violet)] text-[9px] flex items-center justify-center text-white">
                 {smsUnread > 9 ? "9+" : smsUnread}
               </span>
             )}
             {id === "fetch" && fetchIncoming > 0 && (
-              <span className="absolute top-0 right-1/4 w-4 h-4 rounded-full bg-[var(--accent-gold)] text-[9px] flex items-center justify-center text-[var(--background)] font-bold">
+              <span className="absolute top-0 right-1/4 min-w-[17px] h-[17px] rounded-full px-1 bg-[var(--accent-gold)] text-[9px] flex items-center justify-center text-[var(--background)] font-bold">
                 {fetchIncoming > 9 ? "9+" : fetchIncoming}
               </span>
             )}

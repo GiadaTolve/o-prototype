@@ -1,6 +1,6 @@
 # Roadmap Oyasumi 2.0
 
-> **Ultimo aggiornamento:** Luglio 2026 (audit visivo Dark Arcane: header + sidebar)  
+> **Ultimo aggiornamento:** Luglio 2026 (Oyasumi Lite polishing mobile UI)  
 > **Uso:** vista unica per stato progetto e priorità. Le regole di gioco restano nelle **spec** (non duplicate qui).
 
 ## Legenda
@@ -67,7 +67,7 @@
 | Lista Presenti real-time | ✅ | WebSocket presence |
 | Meteo per prefettura | ✅ | API `/meteo` |
 | Calendario eventi | ✅ | CRUD Gestione → widget dashboard |
-| Oyasumi Lite (mobile) | 🟡 | `DashboardMobileLayout`, bottom nav, limite 500 char chat |
+| Oyasumi Lite (mobile) | ✅ | Polishing UI mobile: bottom nav attiva, badge unread, contrasto e spaziature |
 | PWA / notifiche push | ✅ | Service Worker + subscribe VAPID + push per SMS e notifiche di sistema |
 | Audit visivo vs vecchio OYASUMI | ✅ | Passata parity su header + colonne dashboard (palette/bordi/hover) |
 
@@ -99,7 +99,7 @@
 | Costrutti & scudi sul campo | ✅ | `field_constructs`, API Master |
 | Automazione waza avanzate (Hadō, Naikan, …) | ✅ | Giurisdizione/Chokurei/Nagori enforcement in domain + chat |
 | Tracker quarti 4/4 in UI | ✅ | `QuarterTurnHud` (narrativo, non validato server) |
-| Validazione CS/quarti lato server | 🔲 | Opzionale — oggi Master + giocatori |
+| Validazione CS lato server (quarti narrativa) | ✅ | Blocco invio chat se CS insufficiente; quarti/turni restano arbitraggio Master |
 
 ---
 
@@ -195,8 +195,8 @@
 | Entra in casa / chat privata abitazione | ✅ | Da scheda PG |
 | Armadio casa + rubare (ospiti) | ✅ | |
 | Gestione ospiti (inviti owner) | ✅ | |
-| Richieste ospite (knock → approvazione) | 🔲 | Oggi solo inviti espliciti |
-| Cap ospiti per casa | 🔲 | Illimitato |
+| Richieste ospite (knock → approvazione) | ✅ | Non previsto: accesso via invito/chiavi owner, revocabile |
+| Cap ospiti per casa | ✅ | Scelta di design: illimitato |
 
 ---
 
@@ -228,9 +228,9 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Combattimento | Validazione CS/quarti lato server (oggi opzionale) | API combat |
-| 2 | Economia | Baratto Piazza | Market |
-| 3 | Housing | Richieste ospite (knock → approvazione) + cap ospiti | Housing |
+| 1 | Contenuto | Automazione contenuto batch generiche avanzate | Tester + domain |
+| 2 | UI/UX | Rifiniture parity Dark Arcane residue | Design |
+| 3 | Progressione | Migrazione legacy stats/gems completa | Characters + domain |
 
 ---
 
