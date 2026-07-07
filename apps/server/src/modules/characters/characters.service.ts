@@ -352,8 +352,21 @@ export class CharacterService {
     };
   }
 
+  private async resolveHousingHpModifier(characterId: string): Promise<number> {
+    const housing = await db.query.characterHousing.findFirst({
+      where: eq(characterHousing.characterId, characterId),
+      with: {
+        housingType: true,
+      },
+    });
+    if (!housing || housing.evicted) {
+      return -5;
+    }
+    return housing.housingType?.hpBonus || 0;
+  }
+
   /** Payload Skiru + derivati per un personaggio (senza join user). */
-  async getSkiruBundleForCharacter(characterId: string, hpModifier = 0) {
+  async getSkiruBundleForCharacter(characterId: string, hpModifier?: number) {
     const char = await this.getCharacterById(characterId);
     if (!char) return null;
 
@@ -363,8 +376,12 @@ export class CharacterService {
       baseStats,
     );
     const derived = calculateDerivedStats(baseStats, 1.0);
+    const resolvedHpModifier =
+      typeof hpModifier === 'number'
+        ? hpModifier
+        : await this.resolveHousingHpModifier(characterId);
 
-    return this.mergeCharacterWithSkiru(char, skiruSheet, hpModifier, derived);
+    return this.mergeCharacterWithSkiru(char, skiruSheet, resolvedHpModifier, derived);
   }
 
   /** Elenco personaggi (id, name, miniAvatar) per Nuova conversazione SMS. Esclude excludeCharacterId. */
