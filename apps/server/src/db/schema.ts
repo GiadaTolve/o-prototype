@@ -950,6 +950,27 @@ export const systemNotificationsRelations = relations(systemNotifications, ({ on
 }))
 
 // ==========================================
+// 11c. WEB PUSH SUBSCRIPTIONS (PWA)
+// ==========================================
+
+export const webPushSubscriptions = pgTable('web_push_subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  characterId: uuid('character_id').references(() => characters.id, { onDelete: 'cascade' }).notNull(),
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  unique().on(t.characterId, t.endpoint),
+])
+
+export const webPushSubscriptionsRelations = relations(webPushSubscriptions, ({ one }) => ({
+  character: one(characters, { fields: [webPushSubscriptions.characterId], references: [characters.id] }),
+}))
+
+// ==========================================
 // 12. HOUSING (Abitazioni)
 // ==========================================
 

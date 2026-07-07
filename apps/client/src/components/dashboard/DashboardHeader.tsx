@@ -100,7 +100,7 @@ export function DashboardHeader({
       <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 max-w-[1800px] mx-auto">
         <h1
           className="font-display text-2xl md:text-3xl font-bold tracking-[0.12em] text-[var(--accent-gold)]"
-          style={{ textShadow: "0 0 12px rgba(212,175,55,0.5)" }}
+          style={{ textShadow: "0 0 12px var(--glow-gold)" }}
         >
           Oyasumi
         </h1>
@@ -112,7 +112,7 @@ export function DashboardHeader({
             <button
               type="button"
               onClick={onGoToMap}
-              className="text-xs md:text-sm uppercase tracking-wider text-gray-400 hover:text-[var(--accent-gold)] transition-colors px-2 py-1"
+              className="text-xs md:text-sm uppercase tracking-wider text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)] transition-colors px-2 py-1"
             >
               Mappa
             </button>
@@ -124,7 +124,7 @@ export function DashboardHeader({
                 key={link.href}
                 type="button"
                 onClick={() => handleLinkClick(linkKey, link.href)}
-                className="text-xs md:text-sm uppercase tracking-wider text-gray-400 hover:text-[var(--accent-gold)] transition-colors px-2 py-1"
+                className="text-xs md:text-sm uppercase tracking-wider text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)] transition-colors px-2 py-1"
               >
                 {link.label}
               </button>
@@ -133,7 +133,7 @@ export function DashboardHeader({
           <button
             type="button"
             onClick={logout}
-            className="text-xs md:text-sm uppercase tracking-wider text-gray-400 hover:text-red-400 transition-colors px-2 py-1 flex items-center gap-1.5"
+            className="text-xs md:text-sm uppercase tracking-wider text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)] transition-colors px-2 py-1 flex items-center gap-1.5"
           >
             <FontAwesomeIcon icon={icons.logout} className="w-3.5 h-3.5" />
             Logout

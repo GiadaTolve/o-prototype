@@ -35,7 +35,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
         <button
           type="button"
           onClick={onOpenScheda}
-          className="flex items-center gap-3 w-full text-left rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors -m-1 p-1"
+          className="flex items-center gap-3 w-full text-left rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors -m-1 p-1"
         >
             <div className="dashboard-profile-avatar rounded-md bg-gray-800 shrink-0 overflow-hidden flex items-center justify-center border-2 border-[var(--border-color)] ring-2 ring-[var(--accent-gold)]/30">
               {avatarSrc ? (
@@ -66,7 +66,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
         <button
           type="button"
           onClick={onOpenSms}
-          className="dashboard-sms-btn w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-white/5 transition-colors relative"
+          className="dashboard-sms-btn w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors relative"
           title={smsUnread > 0 ? `${smsUnread} messaggi non letti` : "Messaggi"}
           aria-label={smsUnread > 0 ? `${smsUnread} non letti` : "Messaggi"}
         >
@@ -75,7 +75,7 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
           ) : (
             <FontAwesomeIcon icon={icons.envelope} className="w-4 h-4 text-gray-500" />
           )}
-          <span className="text-xs font-display text-gray-300">
+            <span className="text-xs font-display text-[var(--accent-violet-light)]">
             {smsUnread > 0 ? `${smsUnread} messaggi` : "Messaggi"}
           </span>
           {smsUnread > 0 && (

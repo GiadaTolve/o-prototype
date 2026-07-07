@@ -18,6 +18,7 @@ import { getMockPresenti } from "@/components/dashboard/types";
 import { roomToPrefettura, getChatLocationByRoomId, GAME_MAPS } from "@/config/map-config";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useSmsRealtime } from "@/hooks/useSmsRealtime";
+import { useWebPush } from "@/hooks/useWebPush";
 import { api } from "@/lib/api";
 import { isCharacterMeFound, characterMeToSummary } from "@/lib/character-me";
 import { toast } from "@/components/ui/Toast";
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const [levelUpDismissed, setLevelUpDismissed] = useState(false);
 
   const isMobile = useIsMobile();
+  useWebPush(Boolean(char?.id));
 
   const reloadChar = useCallback(async () => {
     const token = localStorage.getItem("token");

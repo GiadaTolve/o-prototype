@@ -258,6 +258,7 @@ export interface WazaFormHydration {
   costJigoTipo: CostJigoTipo
   costJigo: number
   costCs: number
+  manualTier: 1 | 2 | 3 | 4 | 5 | ''
   applicaStatus: 'si' | 'no'
   statusApplicabileId: string
   applicaCounter: 'si' | 'no'
@@ -429,6 +430,7 @@ export function hydrationFromWazaDef(w: WazaDef): WazaFormHydration {
     costJigoTipo: w.costJigoTipo ?? 'fisso',
     costJigo: extractCostJigoNumber(w.costJigo),
     costCs: w.costCs,
+    manualTier: w.manualTier ?? '',
     applicaStatus: w.applicaStatusId ? 'si' : 'no',
     statusApplicabileId: w.applicaStatusId ?? '',
     applicaCounter: w.applicaCounterId ? 'si' : 'no',

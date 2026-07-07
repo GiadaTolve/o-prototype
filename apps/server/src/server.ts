@@ -41,6 +41,8 @@ import { bestiarioRoutes } from './modules/bestiario/bestiario.routes'
 import { wazaRoutes } from './modules/waza/waza.routes'
 import { wikiRoutes } from './modules/wiki/wiki.routes'
 import { playerRequestsRoutes } from './modules/player-requests/player-requests.routes'
+import { notificationsRoutes } from './modules/notifications/notifications.routes'
+import { pushRoutes } from './modules/push/push.routes'
 import { startDailyTickScheduler } from './scheduler/daily-tick.scheduler'
 import { JWT_SECRET } from './config'
 import { emailConfigStatus } from './lib/email'
@@ -93,6 +95,8 @@ const app = new Elysia()
   .use(wazaRoutes)
   .use(wikiRoutes)
   .use(playerRequestsRoutes)
+  .use(notificationsRoutes)
+  .use(pushRoutes)
   .use(realtimeRoutes)
   .use(presenceRoutes)
   .listen(PORT, () => {

@@ -3,6 +3,7 @@ import { authPlugin } from "../../plugins/auth.plugin";
 import { characterService } from "../characters/characters.service";
 import { broadcastSms } from "../realtime/ws.routes";
 import * as sms from "./sms.service";
+import { sendWebPushToCharacter } from "../push/push.service";
 
 export const smsRoutes = new Elysia({ prefix: "/sms" })
   .use(authPlugin)
@@ -60,6 +61,14 @@ export const smsRoutes = new Elysia({ prefix: "/sms" })
         }
         try {
           const row = await sms.sendMessage(characterId, body.recipientId, body.content);
+          const sender = await characterService.getCharacterById(characterId).catch(() => null)
+          await sendWebPushToCharacter(body.recipientId, {
+            title: `SMS da ${sender?.name ?? 'Sconosciuto'}`,
+            body: row.content.slice(0, 120),
+            url: "/dashboard",
+            tag: `sms:${characterId}`,
+            kind: "sms",
+          })
           // Invia al destinatario (se connesso)
           broadcastSms(body.recipientId, {
             id: row.id,

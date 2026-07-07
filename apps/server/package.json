@@ -35,7 +35,8 @@
         "generate-waza-tag-catalog": "bun run scripts/generate-waza-tag-catalog.ts",
         "add-wiki-tables": "bun run scripts/add-wiki-tables.ts",
         "seed-wiki": "bun run scripts/seed-wiki.ts",
-        "sync-music-manifest": "bun run scripts/sync-music-manifest.ts"
+        "sync-music-manifest": "bun run scripts/sync-music-manifest.ts",
+        "add-web-push-subscriptions-table": "bun run scripts/add-web-push-subscriptions-table.ts"
     },
     "dependencies": {
         "@elysiajs/bearer": "^1.4.2",
@@ -47,7 +48,8 @@
         "nodemailer": "^9.0.3",
         "pg": "latest",
         "postgres": "latest",
-        "resend": "^6.17.1"
+        "resend": "^6.17.1",
+        "web-push": "^3.6.7"
     },
     "devDependencies": {
         "@types/nodemailer": "^8.0.1",

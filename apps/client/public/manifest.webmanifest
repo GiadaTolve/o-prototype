@@ -1,0 +1,17 @@
+{
+  "name": "Oyasumi",
+  "short_name": "Oyasumi",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0B0A12",
+  "theme_color": "#D4AF37",
+  "description": "Dark Fantasy Play-by-Chat",
+  "icons": [
+    {
+      "src": "/dark-fantasy-ui/icon-swords.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

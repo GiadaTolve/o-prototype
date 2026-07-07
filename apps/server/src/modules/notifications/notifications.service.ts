@@ -1,6 +1,7 @@
 import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "../../plugins/db";
 import { systemNotifications } from "../../db/schema";
+import { sendWebPushToCharacter } from "../push/push.service";
 
 export async function getUnreadCount(characterId: string): Promise<number> {
   const result = await db
@@ -24,6 +25,17 @@ export async function createSystemNotification(
       content: opts.content ?? null,
     })
     .returning();
+
+  const title = opts.title?.trim() || 'Oyasumi'
+  const body = opts.content?.trim() || 'Hai una nuova notifica.'
+  await sendWebPushToCharacter(characterId, {
+    title,
+    body,
+    url: '/dashboard',
+    tag: `system:${type}`,
+    kind: 'system_notification',
+  })
+
   return row;
 }
 

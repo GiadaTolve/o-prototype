@@ -1,6 +1,6 @@
 # Roadmap Oyasumi 2.0
 
-> **Ultimo aggiornamento:** Luglio 2026 (housing rent/locatario + Shakai UI Professione)  
+> **Ultimo aggiornamento:** Luglio 2026 (audit visivo Dark Arcane: header + sidebar)  
 > **Uso:** vista unica per stato progetto e priorità. Le regole di gioco restano nelle **spec** (non duplicate qui).
 
 ## Legenda
@@ -52,7 +52,7 @@
 | Login Nome PG + password | ✅ | Email solo per recupero |
 | Reset password (token 1h) | ✅ | `/auth/forgot-password`, `/auth/reset-password` |
 | Landing Dark Arcane | ✅ | Login, Guida, Ambientazione, Privacy, Principia Satirica |
-| Scelta ordine al grado Hakyō | 🟡 | UI permette ordine subito; regola lore = solo a Hakyō — da allineare |
+| Scelta ordine da Nemuribito | ✅ | Confermato: ordine selezionabile anche a Nemuribito (non vincolato al grado) |
 | Onboarding post-registrazione | 🟡 | Profilo in Scheda; niente wizard dedicato |
 
 ---
@@ -68,8 +68,8 @@
 | Meteo per prefettura | ✅ | API `/meteo` |
 | Calendario eventi | ✅ | CRUD Gestione → widget dashboard |
 | Oyasumi Lite (mobile) | 🟡 | `DashboardMobileLayout`, bottom nav, limite 500 char chat |
-| PWA / notifiche push | 🔲 | Non implementato |
-| Audit visivo vs vecchio OYASUMI | 🔲 | Checklist gap residui (background, spaziature) |
+| PWA / notifiche push | ✅ | Service Worker + subscribe VAPID + push per SMS e notifiche di sistema |
+| Audit visivo vs vecchio OYASUMI | ✅ | Passata parity su header + colonne dashboard (palette/bordi/hover) |
 
 ---
 
@@ -134,8 +134,8 @@
 | Skill shop legacy `POST /me/skills` | 🟡 | Sostituito in gran parte da acquisto waza |
 | Automazione contenuto batch 3+ generiche | 🟡 | Scudi avanzati, emanazioni extra |
 | Meccaniche lignaggio (Gōkaon, Hataori, Ikiryō) | 🟡 | Lore + waza in pool; runtime narrativo parziale |
-| Pannello authoring effetti unificato | 🔲 | Consolidare `WazaInsertionTool` + registry effetti |
-| Tier esplicito in authoring (non da CS) | 🔲 | Oggi inferito in sync |
+| Pannello authoring effetti unificato | ✅ | Fase 1: `WazaInsertionTool` usa registry accessori unificato (condizioni/status/counter) |
+| Tier esplicito in authoring (non da CS) | ✅ | `manualTier` in `WazaInsertionTool`; sync legge tier esplicito |
 
 ---
 
@@ -228,9 +228,9 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Onboarding | Bloccare ordine fino a grado Hakyō (se richiesto lore) | Gradi |
-| 2 | Contenuto | Pannello authoring effetti (Fase 1 consolidamento) | Tester |
-| 3 | Mobile | Notifiche push SMS/chat | Infrastruttura |
+| 1 | Combattimento | Validazione CS/quarti lato server (oggi opzionale) | API combat |
+| 2 | Economia | Baratto Piazza | Market |
+| 3 | Housing | Richieste ospite (knock → approvazione) + cap ospiti | Housing |
 
 ---
 

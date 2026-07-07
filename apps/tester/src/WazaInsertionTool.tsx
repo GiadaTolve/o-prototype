@@ -96,6 +96,8 @@ const MADOSHO_BRANCH_OPTIONS: MadoshoRamo[] = Object.keys(MADOSHO_RAMO_LABELS) a
 const PATTI_BRANCH_OPTIONS: PattiRamo[] = Object.keys(PATTI_RAMO_LABELS) as PattiRamo[]
 
 const DURATA_OPTIONS: DurataType[] = ['mantenimento', 'un_turno', 'utilizzo', 'due_turni', 'tre_turni', 'quattro_turni']
+const MANUAL_TIER_OPTIONS = [1, 2, 3, 4, 5] as const
+type ManualTier = (typeof MANUAL_TIER_OPTIONS)[number]
 
 const LAUNCH_TRIGGER_KINDS: WazaLaunchTriggerKind[] = ['boost', 'sconto', 'raccolta', 'deficit']
 const LAUNCH_TRIGGER_RESOURCES: WazaLaunchTriggerResource[] = ['jigoka', 'chrono_stack', 'statistiche']
@@ -130,6 +132,39 @@ function statusTagSuffix(statusId: string, labelById: Record<string, string>): s
 function counterTagSuffix(counterId: string, labelById: Record<string, string>): string {
   const label = labelById[counterId] ?? counterId
   return ` [ Counter ] ${label}`
+}
+
+function AccessorioSelect({
+  value,
+  onChange,
+  ids,
+  labelsById,
+  placeholder,
+  ariaLabel,
+}: {
+  value: string
+  onChange: (value: string) => void
+  ids: string[]
+  labelsById: Record<string, string>
+  placeholder: string
+  ariaLabel: string
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="wit-select"
+      style={{ minWidth: 260, marginTop: '0.5rem' }}
+      aria-label={ariaLabel}
+    >
+      <option value="">{placeholder}</option>
+      {ids.map((id) => (
+        <option key={id} value={id}>
+          {labelsById[id] ?? id}
+        </option>
+      ))}
+    </select>
+  )
 }
 
 /** Suffissi [ Status ] / [ Counter ] vanno sull’effetto se presente; altrimenti sulla descrizione. */
@@ -680,6 +715,7 @@ export default function WazaInsertionTool({
   const [costJigoTipo, setCostJigoTipo] = useState<CostJigoTipo>('fisso')
   const [costJigo, setCostJigo] = useState(0)
   const [costCs, setCostCs] = useState(0)
+  const [manualTier, setManualTier] = useState<ManualTier | ''>('')
   const [applicaStatus, setApplicaStatus] = useState<'si' | 'no'>('no')
   const [statusApplicabileId, setStatusApplicabileId] = useState<string>('')
   const [applicaCounter, setApplicaCounter] = useState<'si' | 'no'>('no')
@@ -768,6 +804,8 @@ export default function WazaInsertionTool({
     () => getWazaManualTierSummary(costCs, type === 'passive'),
     [costCs, type],
   )
+  const selectedRankLabel = manualTier === '' ? null : `T${manualTier}`
+  const effectiveRankLabel = selectedRankLabel ?? tierSummary.rankLabel ?? null
 
   const insertTaxonomyTag = (tagLabel: string) => {
     if (taxonomyField === 'desc') {
@@ -809,6 +847,7 @@ export default function WazaInsertionTool({
     setCostJigoTipo(h.costJigoTipo)
     setCostJigo(h.costJigo)
     setCostCs(h.costCs)
+    setManualTier(h.manualTier)
     setApplicaStatus(h.applicaStatus)
     setStatusApplicabileId(h.statusApplicabileId)
     setApplicaCounter(h.applicaCounter)
@@ -984,6 +1023,7 @@ export default function WazaInsertionTool({
       costJigo: () => costJigo,
       costJigoTipo,
       costCs,
+      manualTier: !isPassive && kind === 'waza' && manualTier !== '' ? manualTier : undefined,
       velBonus: 0,
       velFormula: velFormulaFn,
       velFormulaRank2: velFormulaRank2Fn,
@@ -1130,6 +1170,10 @@ export default function WazaInsertionTool({
 
     const durataStr = durata ? `    durata: '${durata}',\n` : ''
     const costJigoTipoStr = `    costJigoTipo: '${costJigoTipo}',\n`
+    const manualTierStr =
+      !isPassive && kind === 'waza' && draftWaza.manualTier != null
+        ? `    manualTier: ${draftWaza.manualTier},\n`
+        : ''
     const applicaStatusStr =
       applicaStatus === 'si' && statusApplicabileId
         ? `    applicaStatusId: '${statusApplicabileId}',\n`
@@ -1197,7 +1241,7 @@ export default function WazaInsertionTool({
     branch: '${draftWaza.branch}',
 ${proseExport}${descUp2Str}${descUp3Str}${upExp2Str}${upExp3Str}${quadranteStr ? quadranteStr + '\n' : ''}${costJigoTipoStr}    costJigo: () => ${costJigo},
     costCs: ${costCs},
-    velBonus: 0,${velFormulaStr ? '\n' + velFormulaStr : ''}
+${manualTierStr}    velBonus: 0,${velFormulaStr ? '\n' + velFormulaStr : ''}
 ${velR2Str}${velR3Str}    ${dbwStr}
 ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
     hasDamage: ${hasDamage},${durataStr ? '\n' + durataStr : ''}${applicaStatusStr}${applicaCounterStr}${prereqSkiruStr}${prereqWazaStr}${prereqGradoStr}${ltStr}${wcStr}
@@ -1294,6 +1338,7 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
     setCostJigoTipo('fisso')
     setCostJigo(0)
     setCostCs(0)
+    setManualTier('')
     setApplicaStatus('no')
     setStatusApplicabileId('')
     setApplicaCounter('no')
@@ -1725,18 +1770,14 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
                 {grantsWeaponCondition === 'si' && (
                   <label className="wit-label wit-label--inline" style={{ margin: 0 }}>
                     <span className="wit-sr-only">Tag concesso</span>
-                    <select
-                      className="wit-select"
+                    <AccessorioSelect
                       value={grantCondTag}
-                      onChange={(e) => setGrantCondTag(e.target.value)}
-                      aria-label="Tag concesso nel contesto di gioco"
-                    >
-                      {weaponTagIds.map((t) => (
-                        <option key={t} value={t}>
-                          {weaponTagLabels[t] ?? t}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setGrantCondTag}
+                      ids={weaponTagIds}
+                      labelsById={weaponTagLabels}
+                      placeholder="Scegli un tag…"
+                      ariaLabel="Tag concesso nel contesto di gioco"
+                    />
                   </label>
                 )}
               </div>
@@ -1774,18 +1815,14 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
                 {readsConditionalBranch === 'si' && (
                   <label className="wit-label wit-label--inline" style={{ margin: 0 }}>
                     <span className="wit-sr-only">Tag richiesto</span>
-                    <select
-                      className="wit-select"
+                    <AccessorioSelect
                       value={condReadTag}
-                      onChange={(e) => setCondReadTag(e.target.value)}
-                      aria-label="Tag richiesto nel contesto per attivare il ramo condizionale"
-                    >
-                      {weaponTagIds.map((t) => (
-                        <option key={t} value={t}>
-                          {weaponTagLabels[t] ?? t}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setCondReadTag}
+                      ids={weaponTagIds}
+                      labelsById={weaponTagLabels}
+                      placeholder="Scegli un tag…"
+                      ariaLabel="Tag richiesto nel contesto per attivare il ramo condizionale"
+                    />
                   </label>
                 )}
               </div>
@@ -2154,11 +2191,33 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
             <span className="wit-hint">Chrono Stack per lanciare la waza. Usa 0 se non consuma CS.</span>
             {kind === 'waza' && (
               <div className="wit-tier-summary" aria-live="polite">
+                {type !== 'passive' && (
+                  <label className="wit-label" htmlFor="wit-manual-tier">
+                    Tier esplicito (DB rank)
+                    <select
+                      id="wit-manual-tier"
+                      value={manualTier === '' ? '' : String(manualTier)}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setManualTier(v === '' ? '' : (Number(v) as ManualTier))
+                      }}
+                      className="wit-select"
+                      style={{ minWidth: 180, marginTop: '0.5rem' }}
+                    >
+                      <option value="">Non impostato</option>
+                      {MANUAL_TIER_OPTIONS.map((tier) => (
+                        <option key={tier} value={tier}>
+                          {`T${tier}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 {tierSummary.note ? (
                   <p className="wit-hint">{tierSummary.note}</p>
                 ) : (
                   <p className="wit-tier-summary-line">
-                    <span className="wit-tag-gold">{tierSummary.rankLabel}</span>
+                    <span className="wit-tag-gold">{effectiveRankLabel ?? '—'}</span>
                     <span className="wit-tier-sep">·</span>
                     <span>{tierSummary.csCost} CS tabella</span>
                     <span className="wit-tier-sep">·</span>
@@ -2168,8 +2227,16 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
                   </p>
                 )}
                 <p className="wit-hint wit-hint--flush-top">
-                  Rank DB suggerito: <code className="wit-inline-code">{tierSummary.rankLabel ?? '—'}</code> (sync-waza-manual).
-                  In chat usa anche <code className="wit-inline-code">[tier:N]</code> se serve esplicitare.
+                  {selectedRankLabel ? (
+                    <>
+                      Rank DB esplicito: <code className="wit-inline-code">{selectedRankLabel}</code> (sync non inferisce da CS).
+                    </>
+                  ) : (
+                    <>
+                      Rank DB suggerito: <code className="wit-inline-code">{tierSummary.rankLabel ?? '—'}</code> (se non imposti tier esplicito).
+                    </>
+                  )}
+                  {' '}In chat usa anche <code className="wit-inline-code">[tier:N]</code> se serve esplicitare.
                 </p>
               </div>
             )}
@@ -2197,20 +2264,17 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
               ))}
             </div>
             {applicaStatus === 'si' && (
-              <select
+              <AccessorioSelect
                 value={statusApplicabileId}
-                onChange={(e) => setStatusApplicabileId(e.target.value)}
-                className="wit-select"
-                style={{ minWidth: 260, marginTop: '0.5rem' }}
-              >
-                <option value="">Scegli uno status…</option>
-                {statusIds.map((id) => (
-                  <option key={id} value={id}>{statusLabelById[id] ?? id}</option>
-                ))}
-              </select>
+                onChange={setStatusApplicabileId}
+                ids={statusIds}
+                labelsById={statusLabelById}
+                placeholder="Scegli uno status…"
+                ariaLabel="Status applicato"
+              />
             )}
             <span className="wit-hint">
-              Con <strong>No</strong> non viene aggiunto alcun tag. Se <strong>Sì</strong>, in export si aggiunge <span className="wit-kbd">[ Status ] nome</span> in coda alla descrizione.
+              Con <strong>No</strong> non viene aggiunto alcun tag. Se <strong>Sì</strong>, in export si aggiunge <span className="wit-kbd">[ Status ] nome</span> in coda all’effetto (oppure alla descrizione se effetto vuoto).
             </span>
           </div>
 
@@ -2233,17 +2297,14 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
               ))}
             </div>
             {applicaCounter === 'si' && (
-              <select
+              <AccessorioSelect
                 value={counterApplicabileId}
-                onChange={(e) => setCounterApplicabileId(e.target.value)}
-                className="wit-select"
-                style={{ minWidth: 260, marginTop: '0.5rem' }}
-              >
-                <option value="">Scegli un counter…</option>
-                {counterIds.map((id) => (
-                  <option key={id} value={id}>{counterLabelById[id] ?? id}</option>
-                ))}
-              </select>
+                onChange={setCounterApplicabileId}
+                ids={counterIds}
+                labelsById={counterLabelById}
+                placeholder="Scegli un counter…"
+                ariaLabel="Counter applicato"
+              />
             )}
             <span className="wit-hint">
               Con <strong>No</strong> nessun counter in export. Se <strong>Sì</strong>, dopo eventuale status si aggiunge <span className="wit-kbd">[ Counter ] nome</span>.
@@ -2566,10 +2627,10 @@ ${dbwR2Str}${dbwR3Str}${gittaR2Str}${gittaR3Str}    hasVelocity: ${hasVelocity},
                 <>
                   {' · '}
                   CS: {draftWaza.costCs}
-                  {kind === 'waza' && tierSummary.rankLabel && (
+                  {kind === 'waza' && effectiveRankLabel && (
                     <>
                       {' · '}
-                      <span className="wit-tag-gold">{tierSummary.rankLabel}</span>
+                      <span className="wit-tag-gold">{effectiveRankLabel}</span>
                       {' '}
                       ({tierSummary.damage} dmg · {tierSummary.csCost} CS tabella)
                     </>

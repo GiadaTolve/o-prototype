@@ -83,7 +83,7 @@ export function DashboardRightCol({
   return (
     <aside className="dashboard-right-col flex flex-col gap-4 w-full lg:w-auto lg:basis-[clamp(190px,14vw,300px)] lg:shrink lg:grow-0 order-3 min-h-0 lg:h-full lg:max-h-full lg:overflow-hidden overflow-x-hidden min-w-0">
       {/* Meteo — stile come MusicPlayer: cloudy.png, bordo viola, box-shadow */}
-      <section className="dashboard-side-panel dashboard-meteo-panel shrink-0 p-2.5 rounded-lg border border-[var(--accent-violet)]/20 flex flex-col gap-2" style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')", backgroundSize: "cover", backgroundPosition: "center", boxShadow: "0 4px 10px rgba(0,0,0,0.5)" }}>
+      <section className="dashboard-side-panel dashboard-meteo-panel shrink-0 p-2.5 rounded-lg border border-[var(--accent-violet)]/20 flex flex-col gap-2" style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('/backgrounds/cloudy.png')", backgroundSize: "cover", backgroundPosition: "center", boxShadow: "0 4px 10px color-mix(in srgb, var(--panel-bg) 72%, black)" }}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
             {meteo && pre ? (
@@ -112,7 +112,7 @@ export function DashboardRightCol({
           <button
             type="button"
             onClick={() => setCalendarOpen((o) => !o)}
-            className="w-9 h-9 shrink-0 flex items-center justify-center rounded border border-white/10 text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors bg-black/30"
+            className="w-9 h-9 shrink-0 flex items-center justify-center rounded border border-[var(--border-color)] text-[var(--accent-violet-light)] hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors bg-black/30"
             title="Calendario eventi"
             aria-expanded={calendarOpen}
             aria-label="Mostra eventi in corso"
@@ -121,7 +121,7 @@ export function DashboardRightCol({
           </button>
         </div>
         {calendarOpen && (
-          <div className="mt-1 p-2 rounded border border-white/10 bg-black/50">
+          <div className="mt-1 p-2 rounded border border-[var(--border-color)] bg-black/50">
             {firstEventToday ? (
               <div className="space-y-1.5">
                 {todayEvents.map((e) => (
@@ -131,9 +131,9 @@ export function DashboardRightCol({
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">Nessun evento in corso.</p>
+              <p className="text-xs text-[var(--accent-violet-light)]/70">Nessun evento in corso.</p>
             )}
-            <p className="text-[10px] text-gray-600 mt-1">
+            <p className="text-[10px] text-[var(--accent-violet-light)]/55 mt-1">
               Perchè non vai a farti una passeggiata? La FOMO è pericolosa di sti tempi...
             </p>
           </div>
@@ -178,9 +178,12 @@ export function DashboardRightCol({
           {presenti.map((p) => (
             <li
               key={p.id}
-              className="text-xs text-gray-400 flex items-center gap-2"
+              className="text-xs text-[var(--accent-violet-light)] flex items-center gap-2"
             >
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${p.isShadow ? "bg-amber-500" : "bg-emerald-500"}`} aria-hidden />
+              <span
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${p.isShadow ? "bg-[var(--accent-violet)]" : "bg-[var(--accent-gold)]"}`}
+                aria-hidden
+              />
               {p.isMe && <span className="text-[var(--accent-gold)]">Tu</span>}
               <button
                 type="button"
@@ -212,21 +215,21 @@ export function DashboardRightCol({
                 <button
                   type="button"
                   onClick={() => onOpenCharacterSheet(p.id)}
-                  className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-[var(--accent-gold)] hover:bg-white/5"
+                  className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-[var(--accent-violet-light)]/70 hover:text-[var(--accent-gold)] hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)]"
                   title="Vedi scheda"
                   aria-label="Vedi scheda"
                 >
                   <FontAwesomeIcon icon={icons.user} className="w-3 h-3" />
                 </button>
               )}
-              {p.zone && <span className="text-gray-500 shrink-0">{p.zone}</span>}
+              {p.zone && <span className="text-[var(--accent-violet-light)]/60 shrink-0">{p.zone}</span>}
             </li>
           ))}
         </ul>
         <button
           type="button"
           onClick={onOpenPresenti}
-          className="shrink-0 w-full text-left text-xs text-gray-500 hover:text-[var(--accent-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-gold)]/50 rounded py-1 transition-colors flex items-center gap-2"
+          className="shrink-0 w-full text-left text-xs text-[var(--accent-violet-light)]/70 hover:text-[var(--accent-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-gold)]/50 rounded py-1 transition-colors flex items-center gap-2"
         >
           <FontAwesomeIcon icon={icons.presenti} className="w-3.5 h-3.5" />
           Apri Presenti Estesi

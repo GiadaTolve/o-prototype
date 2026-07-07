@@ -257,6 +257,7 @@ function defaultCostExp(isPassive: boolean, w: WazaDef | null): number {
 function defaultRank(w: WazaDef | null, isPassive: boolean): string | null {
   if (isPassive) return null
   if (!w) return 'T2'
+  if (w.manualTier != null) return `T${w.manualTier}`
   const cs = w.costCs ?? 0
   if (cs <= 1) return 'T1'
   if (cs <= 3) return 'T2'

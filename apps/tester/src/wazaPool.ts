@@ -238,6 +238,8 @@ export interface WazaDef {
   name: string
   type: WazaType
   branch: WazaBranch
+  /** Tier manuale esplicito per sync catalogo (T1..T5), non inferito dal costo CS. */
+  manualTier?: 1 | 2 | 3 | 4 | 5
   /** Testo narrativo (fluff / scene) — Waza I o intera passive */
   description?: string
   /** Meccanica in scheda ([Effetto], tag tra parentesi quadre, ecc.) */
