@@ -25,9 +25,20 @@ type User = {
   characters?: Array<{
     id: string;
     name: string;
+    grade?: string | null;
     uiMetadata?: { roleIcon?: string } | null;
   }>;
 };
+
+const GRADE_OPTIONS = [
+  "Nemuribito",
+  "Hakyō",
+  "Bunsekikan",
+  "Sentatsu Bunsekikan",
+  "Kanteikan",
+  "Shin'enkan",
+  "Akumu Zankyō",
+] as const;
 
 type Sanction = {
   id: string;
@@ -345,6 +356,7 @@ function UserManagementModal({
   const [newRuolo, setNewRuolo] = useState(
     PIXEL_ICON_RUOLI.includes(initialRuolo as PixelIconRuolo) ? initialRuolo : "",
   );
+  const [newGrade, setNewGrade] = useState(character?.grade ?? "Nemuribito");
   const [saving, setSaving] = useState(false);
 
   const handleUpdateBan = async () => {
@@ -395,16 +407,66 @@ function UserManagementModal({
     }
   };
 
-  const handleResetStats = async () => {
+  const handleAssignGrade = async () => {
     if (!character) return;
-    if (!confirm("Vuoi resettare le statistiche di questo personaggio ai valori base (tutti a 1)?")) return;
+    const current = (character.grade ?? "Nemuribito").trim();
+    const next = newGrade.trim();
+    if (!next || next === current) return;
+    if (!confirm(`Assegnare il grado "${next}" a ${character.name}?`)) return;
     setSaving(true);
     try {
-      await api.post(`/admin/characters/${character.id}/reset-stats`, {});
+      await api.put(`/admin/characters/${character.id}/grade`, { grade: next });
       onUpdate();
-      alert("Statistiche resettate!");
+      alert("Grado assegnato!");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Errore durante assegnazione grado");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetCharacter = async () => {
+    if (!character) return;
+    const newName = prompt(
+      `Reset Personaggio: inserisci il NUOVO nome per ${character.name}.\n(Obbligatorio)`,
+      character.name,
+    )?.trim();
+    if (!newName) return;
+    if (
+      !confirm(
+        `Confermi reset completo del personaggio?\n\nVerrà riportato allo stato di fabbrica e rinominato in "${newName}".`,
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.put(`/admin/characters/${character.id}/reset-character`, { newName });
+      onUpdate();
+      alert("Personaggio resettato allo stato di fabbrica.");
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Errore durante il reset");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetAbilities = async () => {
+    if (!character) return;
+    if (
+      !confirm(
+        "Confermi reset abilità?\n\nAzzera Skiru e Waza, ma conserva l'EXP del personaggio.",
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.put(`/admin/characters/${character.id}/reset-abilities`, {});
+      onUpdate();
+      alert("Abilità resettate (Skiru + Waza).");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Errore durante il reset abilità");
     } finally {
       setSaving(false);
     }
@@ -557,15 +619,64 @@ function UserManagementModal({
 
           {character && (
             <div>
+              <p className="text-sm text-gray-400 mb-1">Grado</p>
+              <div className="flex gap-2 mb-2">
+                <select
+                  value={newGrade}
+                  onChange={(e) => setNewGrade(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                >
+                  {GRADE_OPTIONS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleAssignGrade}
+                  disabled={saving || newGrade.trim() === (character.grade ?? "Nemuribito").trim()}
+                  className="px-3 py-2 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] text-xs hover:bg-[var(--accent-gold)]/10 disabled:opacity-50"
+                >
+                  Assegna Grado
+                </button>
+              </div>
+            </div>
+          )}
+
+          {character && (
+            <div>
               <p className="text-sm text-gray-400 mb-2">Azioni Amministrative</p>
-              <button
-                type="button"
-                onClick={handleResetStats}
-                disabled={saving}
-                className="px-4 py-2 rounded border border-red-500/60 text-red-400 text-xs hover:bg-red-500/10 disabled:opacity-50"
-              >
-                Reset Statistiche
-              </button>
+              <details className="group rounded border border-red-500/40 bg-black/20">
+                <summary className="list-none cursor-pointer select-none px-4 py-2 text-red-400 text-xs uppercase tracking-wider flex items-center justify-between">
+                  <span>Reset</span>
+                  <FontAwesomeIcon icon={icons.abbassare} className="w-3 h-3 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-red-500/30 p-2 space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleResetCharacter}
+                    disabled={saving}
+                    className="w-full text-left px-3 py-2 rounded border border-red-500/60 text-red-300 text-xs hover:bg-red-500/10 disabled:opacity-50"
+                  >
+                    Reset Personaggio
+                    <span className="block mt-1 text-[10px] text-gray-400 normal-case">
+                      Riporta il personaggio allo stato di fabbrica (a zero) e richiede nuovo nome.
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetAbilities}
+                    disabled={saving}
+                    className="w-full text-left px-3 py-2 rounded border border-red-500/60 text-red-300 text-xs hover:bg-red-500/10 disabled:opacity-50"
+                  >
+                    Reset Abilità
+                    <span className="block mt-1 text-[10px] text-gray-400 normal-case">
+                      Azzera Skiru e Waza, mantenendo EXP totale e spendibile.
+                    </span>
+                  </button>
+                </div>
+              </details>
             </div>
           )}
 

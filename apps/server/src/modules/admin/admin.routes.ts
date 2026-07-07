@@ -10,6 +10,9 @@ import {
   deleteUser,
   updateCharacterName,
   updateCharacterRoleIcon,
+  assignCharacterGrade,
+  resetCharacterAbilities,
+  resetCharacterFactory,
   resetCharacterStats,
   getChatRooms,
   getChatLogs,
@@ -300,6 +303,69 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
                 id: t.String(),
               }),
             }
+          )
+
+          // Assegna grado personaggio (manuale da Gestionale)
+          .put(
+            '/characters/:id/grade',
+            async ({ params, body, set }) => {
+              try {
+                const updated = await assignCharacterGrade(params.id, body.grade)
+                return updated
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore durante assegnazione grado' }
+              }
+            },
+            {
+              params: t.Object({
+                id: t.String(),
+              }),
+              body: t.Object({
+                grade: t.String({ minLength: 2, maxLength: 80 }),
+              }),
+            },
+          )
+
+          // Reset personaggio completo (stato di fabbrica), con rinomina obbligatoria
+          .put(
+            '/characters/:id/reset-character',
+            async ({ params, body, set }) => {
+              try {
+                const updated = await resetCharacterFactory(params.id, body.newName)
+                return updated
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore durante reset personaggio' }
+              }
+            },
+            {
+              params: t.Object({
+                id: t.String(),
+              }),
+              body: t.Object({
+                newName: t.String({ minLength: 2, maxLength: 30 }),
+              }),
+            },
+          )
+
+          // Reset abilità (Skiru + Waza), conserva EXP
+          .put(
+            '/characters/:id/reset-abilities',
+            async ({ params, set }) => {
+              try {
+                const updated = await resetCharacterAbilities(params.id)
+                return updated
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore durante reset abilità' }
+              }
+            },
+            {
+              params: t.Object({
+                id: t.String(),
+              }),
+            },
           )
 
           // Moderazione classe sociale Shakai (cambio classe / reset sottoclassi)

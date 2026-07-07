@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, asc, isNull, sql, inArray, or } from 'drizzle-orm'
+import { eq, and, gte, lte, desc, asc, isNull, sql, inArray, or, ne, ilike } from 'drizzle-orm'
 import { db } from '../../plugins/db'
 import {
   users,
@@ -18,6 +18,7 @@ import {
   dropTableDailyUsage,
   marketListings,
   marketTradeFeed,
+  characterPlayerRequests,
 } from '../../db/schema'
 import type { UserRole, BanState } from '@domain/security/jwt'
 
@@ -199,15 +200,21 @@ export async function updateCharacterRoleIcon(characterId: string, roleIcon: str
  * Resetta le statistiche base di un personaggio a 0
  */
 export async function resetCharacterStats(characterId: string) {
+  return resetCharacterAbilities(characterId)
+}
+
+/**
+ * Assegna il grado di un personaggio (manuale, da Gestionale).
+ */
+export async function assignCharacterGrade(characterId: string, grade: string) {
+  const normalized = grade.trim()
+  if (!normalized) {
+    throw new Error('Il grado non può essere vuoto')
+  }
+
   const [updated] = await db
     .update(characters)
-    .set({
-      strength: 0,
-      constitution: 0,
-      dexterity: 0,
-      mind: 0,
-      empathy: 0,
-    })
+    .set({ grade: normalized })
     .where(eq(characters.id, characterId))
     .returning()
 
@@ -216,6 +223,120 @@ export async function resetCharacterStats(characterId: string) {
   }
 
   return updated
+}
+
+/**
+ * Reset abilità: azzera Skiru + Waza, conserva EXP e dati identitari.
+ */
+export async function resetCharacterAbilities(characterId: string) {
+  return db.transaction(async (tx) => {
+    const char = await tx.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { id: true, uiMetadata: true },
+    })
+    if (!char) throw new Error('Personaggio non trovato')
+
+    await tx.delete(characterSkills).where(eq(characterSkills.characterId, characterId))
+
+    const meta = (char.uiMetadata as Record<string, unknown> | null) ?? {}
+    const nextMeta = { ...meta }
+    delete nextMeta.passiveSlotsUnlocked
+    delete nextMeta.equippedPassiveIds
+    delete nextMeta.primaryStyleId
+    delete nextMeta.unlockedStyleIds
+
+    const [updated] = await tx
+      .update(characters)
+      .set({
+        skiruSheet: {},
+        uiMetadata: nextMeta,
+      })
+      .where(eq(characters.id, characterId))
+      .returning()
+
+    return updated
+  })
+}
+
+/**
+ * Reset personaggio completo: stato di fabbrica, con rinomina obbligatoria.
+ */
+export async function resetCharacterFactory(characterId: string, newName: string) {
+  const normalizedName = newName.trim()
+  if (!normalizedName) {
+    throw new Error('Il nuovo nome personaggio è obbligatorio')
+  }
+
+  const duplicate = await db.query.characters.findFirst({
+    where: and(ilike(characters.name, normalizedName), ne(characters.id, characterId)),
+    columns: { id: true },
+  })
+  if (duplicate) {
+    throw new Error('Nome personaggio già in uso')
+  }
+
+  return db.transaction(async (tx) => {
+    const char = await tx.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { id: true, uiMetadata: true },
+    })
+    if (!char) throw new Error('Personaggio non trovato')
+
+    await tx.delete(characterSkills).where(eq(characterSkills.characterId, characterId))
+    await tx.delete(inventory).where(eq(inventory.characterId, characterId))
+    await tx.delete(characterHousing).where(eq(characterHousing.characterId, characterId))
+    await tx.delete(dropTableDailyUsage).where(eq(dropTableDailyUsage.characterId, characterId))
+    await tx.delete(characterPlayerRequests).where(eq(characterPlayerRequests.characterId, characterId))
+
+    const meta = (char.uiMetadata as Record<string, unknown> | null) ?? {}
+    const nextMeta: Record<string, unknown> = {}
+    if (typeof meta.roleIcon === 'string' && meta.roleIcon.trim()) {
+      nextMeta.roleIcon = meta.roleIcon
+    }
+
+    const [updated] = await tx
+      .update(characters)
+      .set({
+        name: normalizedName,
+        surname: null,
+        bio: null,
+        avatar: null,
+        miniAvatar: null,
+        order: 'NONE',
+        grade: 'Nemuribito',
+        staffAlias: null,
+        masterNotes: null,
+        jobId: null,
+        rem: 0,
+        experienceTotal: 0,
+        experienceSpendable: 0,
+        keys: 0,
+        gems: 0,
+        madoshoId: null,
+        socialClass: null,
+        socialClassChosenAt: null,
+        socialSubclassSheet: {},
+        strength: 0,
+        constitution: 0,
+        dexterity: 0,
+        mind: 0,
+        empathy: 0,
+        skiruSheet: {},
+        currentHp: null,
+        chronoStackState: {
+          current: 0,
+          accumulating: false,
+          overheatTurns: 0,
+          skipNextTurn: false,
+        },
+        baseSlots: 5,
+        uiMetadata: nextMeta,
+      })
+      .where(eq(characters.id, characterId))
+      .returning()
+
+    return updated
+  })
 }
 
 // ==========================================
