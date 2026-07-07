@@ -1,0 +1,782 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oyasumi.local/schemas/effetti.schema.json",
+  "title": "Oyasumi - Schema effetti Waza (Sprint 1)",
+  "description": "Lista blocchi effetto supportati nello Sprint 1: DANNO, MOD_DANNO, BUFF_SKIRU, APPLICA_STATUS, EVOCA_COSTRUTTO, MANUALE.",
+  "type": "array",
+  "default": [],
+  "items": {
+    "$ref": "#/$defs/bloccoEffetto"
+  },
+  "$defs": {
+    "triggerEnum": {
+      "type": "string",
+      "enum": [
+        "AL_LANCIO",
+        "PRE_COSTO",
+        "PRE_LANCIO",
+        "ALL_IMPATTO",
+        "QUANDO_SUBISCI_DANNO",
+        "QUANDO_SUBISCI_STATUS",
+        "INIZIO_TURNO",
+        "FINE_TURNO",
+        "A_COMANDO",
+        "A_SCADENZA",
+        "ENTRA_IN_ZONA",
+        "SU_DISTRUZIONE",
+        "SU_MOVIMENTO"
+      ]
+    },
+    "bersaglioEnum": {
+      "type": "string",
+      "enum": [
+        "SE_STESSO",
+        "BERSAGLIO_SINGOLO",
+        "AREA",
+        "CONO",
+        "LINEA",
+        "PROPRIO_COSTRUTTO",
+        "COSTRUTTO_NEMICO",
+        "TORO",
+        "ZONA_TERRENO",
+        "TUTTI_IN_AREA"
+      ]
+    },
+    "durata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "ISTANTANEA",
+            "TURNI",
+            "PERSISTENTE",
+            "FINO_A_CONDIZIONE",
+            "COMBATTIMENTO"
+          ]
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "condizione_fine": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "tipo"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tipo": {
+                "const": "TURNI"
+              }
+            },
+            "required": [
+              "tipo"
+            ]
+          },
+          "then": {
+            "properties": {
+              "n": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "n"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tipo": {
+                "const": "FINO_A_CONDIZIONE"
+              }
+            },
+            "required": [
+              "tipo"
+            ]
+          },
+          "then": {
+            "properties": {
+              "condizione_fine": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "condizione_fine"
+            ]
+          }
+        }
+      ]
+    },
+    "costoExtra": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cs": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "cs"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hp": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "hp"
+          ]
+        }
+      ]
+    },
+    "areaSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "forma": {
+          "type": "string",
+          "enum": [
+            "cerchio",
+            "cono",
+            "linea"
+          ]
+        },
+        "raggio_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "profondita_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "forma"
+      ]
+    },
+    "valoreFisso": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "FISSO"
+        },
+        "n": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "tipo",
+        "n"
+      ]
+    },
+    "valoreTier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "TIER"
+        }
+      },
+      "required": [
+        "tipo"
+      ]
+    },
+    "valoreTierDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "TIER_DELTA"
+        },
+        "n": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "tipo",
+        "n"
+      ]
+    },
+    "valoreTierPerStack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "TIER_PER_STACK"
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "tipo",
+        "status"
+      ]
+    },
+    "valoreSommaBoost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "SOMMA_BOOST"
+        }
+      },
+      "required": [
+        "tipo"
+      ]
+    },
+    "valoreTierColpoSubito": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "TIER_COLPO_SUBITO"
+        }
+      },
+      "required": [
+        "tipo"
+      ]
+    },
+    "valoreFormula": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "FORMULA"
+        },
+        "base": {
+          "type": "number"
+        },
+        "skiru": {
+          "type": "string",
+          "minLength": 1
+        },
+        "per_punto": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "tipo",
+        "base",
+        "skiru",
+        "per_punto"
+      ]
+    },
+    "valoreMoltiplicatore": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "MOLT"
+        },
+        "x": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "tipo",
+        "x"
+      ]
+    },
+    "valoreScala": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "SCALA"
+        },
+        "passi": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "number"
+          }
+        },
+        "cap": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "tipo",
+        "passi",
+        "cap"
+      ]
+    },
+    "valore": {
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/valoreFisso"
+        },
+        {
+          "$ref": "#/$defs/valoreTier"
+        },
+        {
+          "$ref": "#/$defs/valoreTierDelta"
+        },
+        {
+          "$ref": "#/$defs/valoreTierPerStack"
+        },
+        {
+          "$ref": "#/$defs/valoreSommaBoost"
+        },
+        {
+          "$ref": "#/$defs/valoreTierColpoSubito"
+        },
+        {
+          "$ref": "#/$defs/valoreFormula"
+        },
+        {
+          "$ref": "#/$defs/valoreMoltiplicatore"
+        },
+        {
+          "$ref": "#/$defs/valoreScala"
+        }
+      ]
+    },
+    "condizioneCanonica": {
+      "type": "string",
+      "minLength": 1
+    },
+    "campiTrasversaliComuni": {
+      "type": "object",
+      "properties": {
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "trigger",
+        "bersaglio",
+        "durata"
+      ]
+    },
+    "bloccoDanno": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "DANNO"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "valore": {
+          "$ref": "#/$defs/valore"
+        },
+        "consistenza": {
+          "type": "string",
+          "minLength": 1
+        },
+        "area": {
+          "$ref": "#/$defs/areaSpec"
+        },
+        "ripetizioni": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "valore"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "bersaglio": {
+                "const": "AREA"
+              }
+            },
+            "required": [
+              "bersaglio"
+            ]
+          },
+          "then": {
+            "properties": {
+              "area": {
+                "$ref": "#/$defs/areaSpec"
+              }
+            },
+            "required": [
+              "area"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "bersaglio": {
+                "const": "CONO"
+              }
+            },
+            "required": [
+              "bersaglio"
+            ]
+          },
+          "then": {
+            "properties": {
+              "area": {
+                "$ref": "#/$defs/areaSpec"
+              }
+            },
+            "required": [
+              "area"
+            ]
+          }
+        }
+      ]
+    },
+    "bloccoModDanno": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "MOD_DANNO"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "valore": {
+          "$ref": "#/$defs/valore"
+        },
+        "filtro_waza": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tag": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "default": []
+            }
+          }
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "valore"
+      ]
+    },
+    "bloccoBuffSkiru": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "BUFF_SKIRU"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "skiru": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valore": {
+          "$ref": "#/$defs/valore"
+        },
+        "conta_junkan": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "skiru",
+        "valore"
+      ]
+    },
+    "bloccoApplicaStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "APPLICA_STATUS"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stack": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "status"
+      ]
+    },
+    "bloccoEvocaCostrutto": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "EVOCA_COSTRUTTO"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "taglia": {
+          "type": "string",
+          "enum": [
+            "Piccola",
+            "Media",
+            "Grande"
+          ]
+        },
+        "consistenza": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resistenza": {
+          "$ref": "#/$defs/valore"
+        },
+        "danno": {
+          "$ref": "#/$defs/valore"
+        },
+        "gittata_controllo_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "movimento_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "attacchi_per_turno": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "n_copie": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "comportamento": {
+          "type": "string",
+          "enum": [
+            "COMANDATO",
+            "SEGUE",
+            "AUTO_REAZIONE",
+            "STATICO"
+          ]
+        },
+        "conta_mei": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "taglia",
+        "consistenza",
+        "resistenza",
+        "danno",
+        "comportamento"
+      ]
+    },
+    "bloccoManuale": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "MANUALE"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "testo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mostra_a": {
+          "type": "string",
+          "enum": [
+            "MASTER",
+            "TUTTI"
+          ],
+          "default": "MASTER"
+        },
+        "suggerimento_bottoni": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "tipo",
+        "testo"
+      ]
+    },
+    "bloccoEffetto": {
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/bloccoDanno"
+        },
+        {
+          "$ref": "#/$defs/bloccoModDanno"
+        },
+        {
+          "$ref": "#/$defs/bloccoBuffSkiru"
+        },
+        {
+          "$ref": "#/$defs/bloccoApplicaStatus"
+        },
+        {
+          "$ref": "#/$defs/bloccoEvocaCostrutto"
+        },
+        {
+          "$ref": "#/$defs/bloccoManuale"
+        }
+      ]
+    }
+  }
+}

@@ -36,12 +36,17 @@
         "add-wiki-tables": "bun run scripts/add-wiki-tables.ts",
         "seed-wiki": "bun run scripts/seed-wiki.ts",
         "sync-music-manifest": "bun run scripts/sync-music-manifest.ts",
-        "add-web-push-subscriptions-table": "bun run scripts/add-web-push-subscriptions-table.ts"
+        "add-web-push-subscriptions-table": "bun run scripts/add-web-push-subscriptions-table.ts",
+        "add-waza-authoring-tables": "bun run scripts/add-waza-authoring-tables.ts",
+        "alter-waza-taxonomy": "bun run scripts/alter-waza-taxonomy.ts",
+        "add-waza-legacy-id": "bun run scripts/add-waza-legacy-id.ts",
+        "test:waza-admin": "bun test src/modules/waza/waza-admin.routes.test.ts"
     },
     "dependencies": {
         "@elysiajs/bearer": "^1.4.2",
         "@elysiajs/cors": "latest",
         "@elysiajs/jwt": "latest",
+        "ajv": "^8.20.0",
         "dotenv": "^17.2.3",
         "drizzle-orm": "latest",
         "elysia": "latest",

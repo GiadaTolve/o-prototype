@@ -39,6 +39,7 @@ import { musicRoutes } from './modules/music/music.routes'
 import { forumRoutes } from './modules/forum/forum.routes'
 import { bestiarioRoutes } from './modules/bestiario/bestiario.routes'
 import { wazaRoutes } from './modules/waza/waza.routes'
+import { wazaAdminRoutes } from './modules/waza/waza-admin.routes'
 import { wikiRoutes } from './modules/wiki/wiki.routes'
 import { playerRequestsRoutes } from './modules/player-requests/player-requests.routes'
 import { notificationsRoutes } from './modules/notifications/notifications.routes'
@@ -93,6 +94,7 @@ const app = new Elysia()
   .use(forumRoutes)
   .use(bestiarioRoutes)
   .use(wazaRoutes)
+  .use(wazaAdminRoutes)
   .use(wikiRoutes)
   .use(playerRequestsRoutes)
   .use(notificationsRoutes)

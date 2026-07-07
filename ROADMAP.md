@@ -1,6 +1,6 @@
 # Roadmap Oyasumi 2.0
 
-> **Ultimo aggiornamento:** Luglio 2026 (Oyasumi Lite polishing mobile UI)  
+> **Ultimo aggiornamento:** Luglio 2026 (parity Dark Arcane residue: chat-combat + SMS)  
 > **Uso:** vista unica per stato progetto e priorità. Le regole di gioco restano nelle **spec** (non duplicate qui).
 
 ## Legenda
@@ -69,7 +69,7 @@
 | Calendario eventi | ✅ | CRUD Gestione → widget dashboard |
 | Oyasumi Lite (mobile) | ✅ | Polishing UI mobile: bottom nav attiva, badge unread, contrasto e spaziature |
 | PWA / notifiche push | ✅ | Service Worker + subscribe VAPID + push per SMS e notifiche di sistema |
-| Audit visivo vs vecchio OYASUMI | ✅ | Passata parity su header + colonne dashboard (palette/bordi/hover) |
+| Audit visivo vs vecchio OYASUMI | ✅ | Rifiniture residue su chat-combat + SMS (palette/hover/contrasto) |
 
 ---
 
@@ -132,7 +132,7 @@
 | Acquisto waza EXP + `WazaDoBrowser` | ✅ | Vincoli Esagono / keystone |
 | Bestiario (Holic, Phobias, Muen) | ✅ | CRUD Gestione |
 | Skill shop legacy `POST /me/skills` | 🟡 | Sostituito in gran parte da acquisto waza |
-| Automazione contenuto batch 3+ generiche | 🟡 | Scudi avanzati, emanazioni extra |
+| Automazione contenuto batch 3+ generiche | ✅ | Tool `Batch generiche avanzate` in Idee e sviluppo (JSON create/replace) |
 | Meccaniche lignaggio (Gōkaon, Hataori, Ikiryō) | 🟡 | Lore + waza in pool; runtime narrativo parziale |
 | Pannello authoring effetti unificato | ✅ | Fase 1: `WazaInsertionTool` usa registry accessori unificato (condizioni/status/counter) |
 | Tier esplicito in authoring (non da CS) | ✅ | `manualTier` in `WazaInsertionTool`; sync legge tier esplicito |
@@ -228,9 +228,9 @@
 
 | # | Area | Task | Dipendenze |
 |---|------|------|------------|
-| 1 | Contenuto | Automazione contenuto batch generiche avanzate | Tester + domain |
-| 2 | UI/UX | Rifiniture parity Dark Arcane residue | Design |
-| 3 | Progressione | Migrazione legacy stats/gems completa | Characters + domain |
+| 1 | Progressione | Migrazione legacy stats/gems completa | Characters + domain |
+| 2 | Narrativa | Lignaggi runtime narrativo ancora parziale | Domain styles |
+| 3 | Mobile | Notifiche push tuning UX (permessi/stati) | PWA |
 
 ---
 

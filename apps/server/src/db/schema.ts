@@ -221,6 +221,75 @@ export const fieldConstructs = pgTable('field_constructs', {
 })
 
 // ==========================================
+// 3b. CATALOGO WAZA (Authoring Admin)
+// ==========================================
+
+/** Anagrafica stabile waza (non versionata). */
+export const waza = pgTable('waza', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  slug: text('slug').notNull().unique(),
+  /** generica · do (sei Vie) · madosho (scuole ereditarie). */
+  categoria: text('categoria').$type<'generica' | 'do' | 'madosho'>().notNull(),
+  /** Via o Madoshō specifica; NULL solo per generiche. */
+  genitore: text('genitore'),
+  tipo: text('tipo').$type<'passiva' | 'attiva'>().notNull(),
+  /** Tier congelato alla prima pubblicazione; null per passive senza tier. */
+  tier: integer('tier'),
+  creatoIl: timestamp('creato_il').defaultNow().notNull(),
+  archiviata: boolean('archiviata').default(false).notNull(),
+  /** Puntatore alla versione pubblicata corrente. */
+  versionePubblicataId: uuid('versione_pubblicata_id'),
+  /** Tracciabilità verso skills.id (sync legacy). */
+  legacyId: uuid('legacy_id'),
+})
+
+/** Snapshot versionati di ogni waza (bozza/validata/pubblicata/superata). */
+export const wazaVersioni = pgTable(
+  'waza_versioni',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wazaId: uuid('waza_id')
+      .references(() => waza.id, { onDelete: 'cascade' })
+      .notNull(),
+    numero: integer('numero').notNull(),
+    stato: text('stato').$type<'bozza' | 'validata' | 'pubblicata' | 'superata'>().notNull(),
+    nomeRomaji: text('nome_romaji').notNull(),
+    nomeItaliano: text('nome_italiano').notNull(),
+    kanji: text('kanji'),
+    kanjiVerificato: boolean('kanji_verificato').default(false).notNull(),
+    descrizione: text('descrizione').notNull(),
+    cs: integer('cs').notNull(),
+    tempoQuarti: integer('tempo_quarti'),
+    tags: jsonb('tags').$type<string[]>().default([]).notNull(),
+    scelteAlLancio: jsonb('scelte_al_lancio').$type<unknown[]>().default([]).notNull(),
+    effetti: jsonb('effetti').$type<unknown[]>().default([]).notNull(),
+    atomiUsati: jsonb('atomi_usati').$type<string[]>().default([]).notNull(),
+    statoCodifica: text('stato_codifica')
+      .$type<'da_codificare' | 'automatica' | 'ibrida' | 'manuale'>()
+      .notNull(),
+    changelog: text('changelog'),
+    salvataIl: timestamp('salvata_il').defaultNow().notNull(),
+    salvataDa: uuid('salvata_da')
+      .references(() => users.id, { onDelete: 'restrict' })
+      .notNull(),
+  },
+  (t) => [unique().on(t.wazaId, t.numero)],
+)
+
+/** Vocabolari dinamici per editor condizioni/tag/status/skiru/elementi. */
+export const vocabolari = pgTable(
+  'vocabolari',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    categoria: text('categoria').notNull(),
+    valore: text('valore').notNull(),
+    extra: jsonb('extra').$type<Record<string, unknown>>(),
+    attivo: boolean('attivo').default(true).notNull(),
+  },
+  (t) => [unique().on(t.categoria, t.valore)],
+)
+
+// ==========================================
 // 4. IL GRIMOIRE (Sistema Skills)
 // ==========================================
 

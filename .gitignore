@@ -20,6 +20,7 @@ apps/tester/dist/
 # misc
 .DS_Store
 *.pem
+.cache/
 
 # debug
 npm-debug.log*

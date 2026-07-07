@@ -9,9 +9,24 @@ export default defineConfig({
     base: './',
     plugins: [react(), oyasumiWriteFilePlugin(testerRoot)],
     resolve: {
-        alias: {
-            '@domain': path.resolve(__dirname, '../../packages/domain/src'),
-        },
+        alias: [
+            {
+                find: '@domain/combat',
+                replacement: path.resolve(__dirname, '../../packages/domain/src/combat/index.ts'),
+            },
+            {
+                find: '@domain/skiru',
+                replacement: path.resolve(__dirname, '../../packages/domain/src/skiru/index.ts'),
+            },
+            {
+                find: '@domain/progression',
+                replacement: path.resolve(__dirname, '../../packages/domain/src/progression/index.ts'),
+            },
+            {
+                find: '@domain',
+                replacement: path.resolve(__dirname, '../../packages/domain/src'),
+            },
+        ],
     },
     server: {
         port: 3002,

@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_BUILD: buildId,
   },
+  experimental: {
+    externalDir: true,
+  },
   // TEMPORANEO: sblocca il deploy nonostante gli errori TS pre-esistenti in fase
   // di sistemazione (vedi task Cursor). Rimuovere non appena risolti.
   typescript: {

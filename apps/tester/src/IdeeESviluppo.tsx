@@ -14,6 +14,7 @@ import SkiruCategoryTool from './SkiruCategoryTool'
 import WazaTaxonomyTool from './WazaTaxonomyTool'
 import RamoTaxonomyTool from './RamoTaxonomyTool'
 import WazaAccessoriSection from './WazaAccessoriSection'
+import BatchGenericheTool from './BatchGenericheTool'
 
 type IdeeSection =
   | 'waza'
@@ -27,6 +28,7 @@ type IdeeSection =
   | 'acc-condizioni'
   | 'acc-status'
   | 'acc-counter'
+  | 'batch-generiche'
 
 export default function IdeeESviluppo({
   wazaEditPayload,
@@ -309,6 +311,16 @@ export default function IdeeESviluppo({
             Counter
           </button>
         </div>
+        <p className="idee-hub-nav-group">Waza · batch</p>
+        <div className="idee-hub-nav-buttons">
+          <button
+            type="button"
+            className={`idee-hub-nav-btn${section === 'batch-generiche' ? ' idee-hub-nav-btn--active' : ''}`}
+            onClick={() => setSection('batch-generiche')}
+          >
+            Batch generiche avanzate
+          </button>
+        </div>
         <p className="idee-hub-nav-group">Madōsho / Patti</p>
         <div className="idee-hub-nav-buttons">
           <button
@@ -369,6 +381,7 @@ export default function IdeeESviluppo({
         {section === 'acc-condizioni' && <WazaAccessoriSection tab="condizioni" />}
         {section === 'acc-status' && <WazaAccessoriSection tab="status" />}
         {section === 'acc-counter' && <WazaAccessoriSection tab="counter" />}
+        {section === 'batch-generiche' && <BatchGenericheTool />}
         {section === 'patti' && <WazaInsertionTool kind="patti" />}
         {section === 'skiru' && <SkiruInsertionTool />}
         {section === 'tax-skiru' && <SkiruCategoryTool />}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { GestioneWazaPanel } from "@/components/gestione/GestioneWazaPanel";
 import { BestiarioManagement } from "@/components/gestione/BestiarioManagement";
 import { GestioneWazaCreatePanel } from "@/components/gestione/GestioneWazaCreatePanel";
@@ -9,11 +10,13 @@ import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
 import { GestioneTaxonomyPanel } from "@/components/gestione/GestioneTaxonomyPanel";
 import { MarketCatalogManagement } from "@/components/gestione/MarketCatalogManagement";
 import { api } from "@/lib/api";
+import { canAccessWazaAuthoring } from "@/lib/waza-authoring-access";
 
 export default function SviluppoPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [canAccess, setCanAccess] = useState(false);
+  const [canAuthoring, setCanAuthoring] = useState(false);
   const [activeTab, setActiveTab] = useState<
     | "waza-generiche"
     | "waza-do"
@@ -35,11 +38,15 @@ export default function SviluppoPage() {
     api
       .get("/characters/me")
       .then((char) => {
-        const access = Boolean((char as { canAccessSviluppo?: boolean })?.canAccessSviluppo);
-        setCanAccess(access);
+        const data = char as Parameters<typeof canAccessWazaAuthoring>[0] & {
+          canAccessSviluppo?: boolean;
+        };
+        setCanAccess(Boolean(data?.canAccessSviluppo));
+        setCanAuthoring(canAccessWazaAuthoring(data));
       })
       .catch(() => {
         setCanAccess(false);
+        setCanAuthoring(false);
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -88,6 +95,14 @@ export default function SviluppoPage() {
               {tab.label}
             </button>
           ))}
+          {canAuthoring && (
+            <Link
+              href="/sviluppo/waza"
+              className="px-4 py-2 text-xs uppercase tracking-wider font-display transition-colors border-b-2 text-gray-500 border-transparent hover:text-[var(--accent-gold)]"
+            >
+              Catalogo Waza
+            </Link>
+          )}
         </div>
 
         <div>
