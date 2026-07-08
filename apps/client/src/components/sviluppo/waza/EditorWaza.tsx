@@ -465,6 +465,10 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
         </p>
       )}
 
+      <p className="text-xs text-[var(--accent-violet-light)] border border-[var(--border-color)] rounded px-3 py-2 bg-black/20">
+        Tocca la (i) accanto a ogni blocco o campo per sapere cosa fa.
+      </p>
+
       {/* ===== Tab MODIFICA (mobile) / colonna scheda (desktop) ===== */}
       <div className={tab === "anteprima" ? "hidden md:block space-y-4" : "space-y-4"}>
       <section className="rounded border border-[var(--border-color)] bg-[var(--background)]/30 p-4 space-y-4">

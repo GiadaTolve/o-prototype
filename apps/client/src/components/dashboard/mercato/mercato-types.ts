@@ -18,6 +18,7 @@ export type HousingCatalogItem = {
   isActiveInCatalog: boolean
 }
 
+export type MarketCatalogItem = {
   id: string
   catalogKey: string | null
   marketCategory: MarketCategory

@@ -4,13 +4,18 @@
  * render meccanico. Non fa parte del bundle dell'app.
  *
  *   bun run scripts/editor-mobile-harness.ts <stato> <larghezza> > out.html
- *   stato: blocchi | skiru | validazione
+ *   stato: blocchi | skiru | validazione | danno-info | quanto-info
  */
 import { BLOCCO_TIPO_LABELS } from "../src/components/sviluppo/waza/editor/effetti-schema";
 import { renderBloccoMeccanico } from "../src/components/sviluppo/waza/editor/waza-blocco-render";
 import { SKIRU_BRANCHES, SKIRU_CATALOG } from "@domain/skiru/catalog";
 
-const STATE = (process.argv[2] ?? "blocchi") as "blocchi" | "skiru" | "validazione";
+const STATE = (process.argv[2] ?? "blocchi") as
+  | "blocchi"
+  | "skiru"
+  | "validazione"
+  | "danno-info"
+  | "quanto-info";
 const W = Number(process.argv[3]) || 390;
 
 const TIER_DMG = 6;
@@ -52,15 +57,15 @@ function cardBloccoAperta(): string {
       </div>
     </header>
     <div class="card-blocco-body">
-      <label class="fld"><span class="lbl">Quando scatta</span>
+      <label class="fld"><span class="lbl">Quando scatta <button class="i-btn">i</button></span>
         <select class="sel"><option>AL_LANCIO</option></select></label>
-      <label class="fld"><span class="lbl">Su chi/dove</span>
+      <label class="fld"><span class="lbl">Su chi o dove <button class="i-btn">i</button></span>
         <select class="sel"><option>BERSAGLIO_SINGOLO</option></select></label>
-      <label class="fld"><span class="lbl">Per quanto dura</span>
+      <label class="fld"><span class="lbl">Per quanto <button class="i-btn">i</button></span>
         <div class="grid3"><select class="sel"><option>ISTANTANEA</option></select></div></label>
-      <label class="fld"><span class="lbl">Danno</span>
+      <label class="fld"><span class="lbl">Quanto <button class="i-btn">i</button></span>
         <div class="valore-box">
-          <span class="lbl">Tipo valore</span>
+          <span class="lbl">Come calcolare quanto <button class="i-btn">i</button></span>
           <select class="sel"><option>Danno tier (piatto)</option></select>
           <p class="hint">Danno piatto tier: <b>${TIER_DMG}</b></p>
         </div>
@@ -83,6 +88,22 @@ function cardBloccoAperta(): string {
         <select class="sel"><option>kensei</option></select></label>
     </div>
   </article>`;
+}
+
+function bloccoInfoPanel(): string {
+  return `
+  <div class="info-panel">
+    <p class="ip-title">Danno</p>
+    <p class="ip-body">Fa male a un bersaglio. Scegli quanto (di solito «usa la forza della waza», cioè il tier) e a chi (una persona, un'area, un cono). Il sistema calcola da solo scudo e resistenza al dolore. Esempio: Hōshutsu fa danno in un cono davanti a te.</p>
+  </div>`;
+}
+
+function quantoInfoPanel(): string {
+  return `
+  <div class="info-panel">
+    <p class="ip-title">Quanto</p>
+    <p class="ip-body">Quanto vale l’effetto. Puoi usare: forza della waza (tier, es. T2 = 8), numero fisso, un gradino più forte/debole (tier ±1) o altre formule guidate.</p>
+  </div>`;
 }
 
 function miniPreview(): string {
@@ -194,6 +215,7 @@ const css = `
   .card-blocco-body{padding:12px;display:flex;flex-direction:column;gap:12px;}
   .fld{display:flex;flex-direction:column;gap:4px;}
   .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#7a7a83;}
+  .i-btn{width:44px;height:44px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent-violet) 40%,transparent);background:rgba(0,0,0,.2);color:var(--accent-violet-light);font-size:12px;margin-left:4px;}
   .sel{width:100%;min-height:44px;padding:0 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--background);color:var(--foreground);font-size:14px;}
   .grid3{display:grid;grid-template-columns:1fr;gap:8px;}
   .valore-box{border:1px solid color-mix(in srgb,var(--border-color) 70%,transparent);background:rgba(0,0,0,.2);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:6px;}
@@ -204,6 +226,9 @@ const css = `
   .mp-link{font-size:10px;color:var(--accent-gold);}
   .mp-body{display:block;font-size:14px;color:color-mix(in srgb,var(--accent-violet-light) 90%,transparent);line-height:1.35;margin-top:4px;}
   .valida{margin:14px;border:1px solid var(--border-color);border-radius:8px;background:color-mix(in srgb,var(--background) 95%,transparent);padding:12px;box-shadow:0 0 12px rgba(124,58,237,.25);}
+  .info-panel{margin:10px 14px 14px;border:1px solid var(--border-color);background:var(--panel-bg);border-radius:8px;padding:10px;box-shadow:0 0 12px rgba(124,58,237,.2);}
+  .ip-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-gold);margin:0 0 6px;}
+  .ip-body{font-size:12px;line-height:1.45;color:var(--accent-violet-light);margin:0;}
   .valida-title{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-violet-light);margin:0 0 6px;}
   .v-info{font-size:12px;color:var(--accent-violet-light);margin:0 0 6px;}
   .v-list{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:4px;}
@@ -242,6 +267,10 @@ if (STATE === "blocchi") {
   body = `${tabSwitch}${blocchiSection()}${stickyBar(0, 1)}`;
 } else if (STATE === "validazione") {
   body = `${tabSwitch}<section class="sec"><div class="sec-head"><h2 class="sec-title">Blocchi effetto</h2><button class="add-btn">+ Aggiungi effetto</button></div>${miniPreview()}</section>${validazionePanel()}${stickyBar(2, 1)}`;
+} else if (STATE === "danno-info") {
+  body = `${tabSwitch}${blocchiSection()}${bloccoInfoPanel()}${stickyBar(0, 1)}`;
+} else if (STATE === "quanto-info") {
+  body = `${tabSwitch}${blocchiSection()}${quantoInfoPanel()}${stickyBar(0, 1)}`;
 } else {
   body = `${tabSwitch}${blocchiSection()}${stickyBar(0, 1)}${skiruSheet()}`;
 }
