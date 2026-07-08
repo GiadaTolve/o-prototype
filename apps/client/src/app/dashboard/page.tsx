@@ -514,6 +514,8 @@ export default function DashboardPage() {
         fetchSmsUnread={fetchSmsUnread}
         fetchNotificationsUnread={fetchNotificationsUnread}
         onCharUpdate={reloadChar}
+        onOpenGestione={() => setGestioneTrigger((t) => t + 1)}
+        onOpenSviluppo={() => setSviluppoTrigger((t) => t + 1)}
       />
       {char?.pendingLevelUp && (
         <LevelUpOverlay
