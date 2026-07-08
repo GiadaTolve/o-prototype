@@ -40,6 +40,8 @@
         "add-waza-authoring-tables": "bun run scripts/add-waza-authoring-tables.ts",
         "alter-waza-taxonomy": "bun run scripts/alter-waza-taxonomy.ts",
         "add-waza-legacy-id": "bun run scripts/add-waza-legacy-id.ts",
+        "add-waza-versioni-skiru-ir": "bun run scripts/add-waza-versioni-skiru-ir.ts",
+        "seed-vocabolari-skiru": "bun run scripts/seed-vocabolari-skiru.ts",
         "test:waza-admin": "bun test src/modules/waza/waza-admin.routes.test.ts"
     },
     "dependencies": {

@@ -33,6 +33,7 @@ const versionBody = t.Object({
   cs: t.Number(),
   tempoQuarti: t.Optional(t.Nullable(t.Number())),
   tags: t.Optional(t.Array(t.String())),
+  skiruIr: t.Optional(t.Array(t.String())),
   scelteAlLancio: t.Optional(t.Array(t.Record(t.String(), t.Unknown()))),
   effetti: t.Optional(t.Array(t.Record(t.String(), t.Unknown()))),
 });

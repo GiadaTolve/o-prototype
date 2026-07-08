@@ -263,6 +263,8 @@ export const wazaVersioni = pgTable(
     tags: jsonb('tags').$type<string[]>().default([]).notNull(),
     scelteAlLancio: jsonb('scelte_al_lancio').$type<unknown[]>().default([]).notNull(),
     effetti: jsonb('effetti').$type<unknown[]>().default([]).notNull(),
+    /** Slug Skiru ammissibili per il calcolo IR al lancio (authoring; vuoto finché non codificata). */
+    skiruIr: jsonb('skiru_ir').$type<string[]>().default([]).notNull(),
     atomiUsati: jsonb('atomi_usati').$type<string[]>().default([]).notNull(),
     statoCodifica: text('stato_codifica')
       .$type<'da_codificare' | 'automatica' | 'ibrida' | 'manuale'>()

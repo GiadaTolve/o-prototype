@@ -384,4 +384,50 @@ describe("permessi ruoli /admin/waza", () => {
     });
     expect(postRes.status).toBe(403);
   });
+
+  it("salva skiru_ir valide su bozza attiva", async () => {
+    const createRes = await api("POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: "Kaji Skiru Ir Ok",
+      nomeItaliano: "Skiru IR valide",
+      skiruIr: ["kensei", "jusei"],
+    });
+    expect(createRes.status).toBe(200);
+    const created = await readJson<{ waza: { id: string }; versione: { skiruIr: string[] } }>(
+      createRes,
+    );
+    createdWazaIds.push(created.waza.id);
+    expect(created.versione.skiruIr).toEqual(["jusei", "kensei"]);
+  });
+
+  it("slug skiru_ir non nel vocabolario → 422", async () => {
+    const createRes = await api("POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: "Kaji Skiru Ir Bad",
+      nomeItaliano: "Skiru IR invalide",
+      skiruIr: ["skiru-inventata"],
+    });
+    expect(createRes.status).toBe(422);
+  });
+
+  it("valida waza attiva senza skiru_ir → avviso SKIRU_IR_MANCANTE", async () => {
+    const createRes = await api("POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: "Kaji Skiru Ir Warn",
+      nomeItaliano: "Skiru IR mancanti",
+      tipo: "attiva",
+      skiruIr: [],
+    });
+    const created = await readJson<{ waza: { id: string } }>(createRes);
+    createdWazaIds.push(created.waza.id);
+
+    const validaRes = await api("POST", `/admin/waza/${created.waza.id}/versioni/1/valida`);
+    expect(validaRes.status).toBe(200);
+    const body = await readJson<{
+      avvisi: Array<{ codice: string }>;
+      errori: unknown[];
+    }>(validaRes);
+    expect(body.errori).toEqual([]);
+    expect(body.avvisi.some((a) => a.codice === "SKIRU_IR_MANCANTE")).toBe(true);
+  });
 });

@@ -11,6 +11,7 @@ import {
 } from "./waza-admin-ui";
 import { SezioneBlocchi } from "./editor/SezioneBlocchi";
 import { PannelloValidazione } from "./editor/PannelloValidazione";
+import { SelettoreSkiruIr } from "./editor/SelettoreSkiruIr";
 import { WazaApiError, wazaApi } from "./editor/waza-api";
 import {
   translateValidationIssues,
@@ -44,6 +45,7 @@ type WazaVersione = {
   tags: string[];
   scelteAlLancio: unknown[];
   effetti: unknown[];
+  skiruIr: string[];
   statoCodifica: string;
   changelog: string | null;
 };
@@ -61,6 +63,7 @@ type EditorForm = {
   cs: number;
   tempoQuarti: number | null;
   tags: string[];
+  skiruIr: string[];
   effetti: Record<string, unknown>[];
 };
 
@@ -99,6 +102,7 @@ function versioneToForm(waza: WazaAnagrafica, versione: WazaVersione): EditorFor
     cs: versione.cs,
     tempoQuarti: versione.tempoQuarti,
     tags: versione.tags ?? [],
+    skiruIr: Array.isArray(versione.skiruIr) ? versione.skiruIr : [],
     effetti: Array.isArray(versione.effetti)
       ? (versione.effetti as Record<string, unknown>[])
       : [],
@@ -226,6 +230,7 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
       cs: form.cs,
       tempoQuarti: form.tipo === "attiva" ? form.tempoQuarti : null,
       tags: form.tags,
+      skiruIr: form.skiruIr,
       effetti: form.effetti,
       categoria: form.categoria,
       genitore: form.categoria === "generica" ? null : form.genitore,
@@ -553,6 +558,14 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
             </label>
           )}
         </div>
+
+        <SelettoreSkiruIr
+          value={form.skiruIr}
+          onChange={(next) => patchForm("skiruIr", next)}
+          disabled={readOnly}
+          required={form.tipo === "attiva"}
+          allowedSlugs={vocabMap.skiru ?? []}
+        />
 
         <div className="space-y-2">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Tags</span>

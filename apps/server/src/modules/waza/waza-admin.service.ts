@@ -22,6 +22,12 @@ import {
   VOCABOLARIO_GENITORE_BY_CATEGORIA,
   type WazaCategoria,
 } from "./waza-taxonomy";
+import {
+  loadActiveSkiruSlugs,
+  normalizeSkiruIr,
+  validateSkiruIrSlugs,
+  warnAttivaSenzaSkiruIr,
+} from "./waza-skiru-ir";
 
 export class WazaAdminHttpError extends Error {
   constructor(
@@ -57,6 +63,7 @@ export type WazaVersionDraftInput = {
   tags?: string[];
   scelteAlLancio?: unknown[];
   effetti?: unknown[];
+  skiruIr?: string[];
 };
 
 export type WazaAnagraficaInput = {
@@ -114,6 +121,15 @@ function validateEffettiOrThrow(effetti: unknown[]): void {
     throw new WazaAdminHttpError("Effetti non conformi allo schema.", 422, {
       errori: result.errors,
     });
+  }
+}
+
+async function validateSkiruIrOrThrow(skiruIr: string[]): Promise<void> {
+  if (skiruIr.length === 0) return;
+  const allowed = await loadActiveSkiruSlugs();
+  const errori = validateSkiruIrSlugs(skiruIr, allowed);
+  if (errori.length > 0) {
+    throw new WazaAdminHttpError(errori[0]!.messaggio, 422, { errori });
   }
 }
 
@@ -374,6 +390,8 @@ export async function getAdminWazaVersione(wazaId: string, numero: number) {
 export async function createAdminWaza(input: WazaCreateInput, userId: string) {
   const effetti = input.effetti ?? [];
   validateEffettiOrThrow(effetti);
+  const skiruIr = normalizeSkiruIr(input.skiruIr);
+  await validateSkiruIrOrThrow(skiruIr);
   const derivate = deriveFromEffetti(effetti);
   const anagrafica = await validateCategoriaGenitore(input.categoria, input.genitore ?? null);
   const slug = await resolveUniqueSlug(input.nomeRomaji);
@@ -406,6 +424,7 @@ export async function createAdminWaza(input: WazaCreateInput, userId: string) {
         tags: input.tags ?? [],
         scelteAlLancio: input.scelteAlLancio ?? [],
         effetti,
+        skiruIr,
         atomiUsati: derivate.atomiUsati,
         statoCodifica: derivate.statoCodifica,
         salvataDa: userId,
@@ -433,6 +452,8 @@ export async function saveAdminWazaDraft(
 
   const effetti = input.effetti ?? [];
   validateEffettiOrThrow(effetti);
+  const skiruIr = normalizeSkiruIr(input.skiruIr ?? versione.skiruIr);
+  await validateSkiruIrOrThrow(skiruIr);
   const derivate = deriveFromEffetti(effetti);
   const tipo = input.tipo ?? anagrafica.tipo;
 
@@ -449,6 +470,7 @@ export async function saveAdminWazaDraft(
       tags: input.tags ?? [],
       scelteAlLancio: input.scelteAlLancio ?? [],
       effetti,
+      skiruIr,
       atomiUsati: derivate.atomiUsati,
       statoCodifica: derivate.statoCodifica,
       salvataIl: new Date(),
@@ -512,6 +534,8 @@ export async function validateAdminWazaVersion(wazaId: string, numero: number) {
   );
 
   const avvisi: WazaValidationIssue[] = [];
+  const skiruIr = normalizeSkiruIr(versione.skiruIr);
+  avvisi.push(...warnAttivaSenzaSkiruIr(anagrafica.tipo, skiruIr));
   if (effetti.length === 0) {
     avvisi.push({
       codice: "NESSUN_BLOCCO",
@@ -574,6 +598,7 @@ export async function duplicateAdminWaza(wazaId: string, userId: string) {
         tags: latest.tags,
         scelteAlLancio: latest.scelteAlLancio,
         effetti,
+        skiruIr: normalizeSkiruIr(latest.skiruIr),
         atomiUsati: derivate.atomiUsati,
         statoCodifica: derivate.statoCodifica,
         salvataDa: userId,
