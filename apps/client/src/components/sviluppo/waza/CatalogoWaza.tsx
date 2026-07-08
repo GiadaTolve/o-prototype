@@ -84,17 +84,129 @@ function ContatoriCodifica({ items }: { items: WazaCatalogItem[] }) {
     return tally;
   }, [items]);
 
-  return (
-    <p className="text-sm text-[var(--accent-violet-light)] border border-[var(--border-color)] rounded px-3 py-2 bg-[var(--background)]/40">
-      <span className="text-[var(--accent-gold)] font-display">{counts.automatica}</span> codificate
-      {" · "}
-      <span className="text-[var(--accent-gold)] font-display">{counts.ibrida}</span> ibride
-      {" · "}
-      <span className="text-[var(--accent-gold)] font-display">{counts.manuale}</span> manuali
-      {" · "}
-      <span className="text-[var(--accent-gold)] font-display">{counts.da_codificare}</span> da fare
-    </p>
+  const chip = (n: number, label: string) => (
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-[var(--border-color)] bg-[var(--background)]/40">
+      <span className="text-[var(--accent-gold)] font-display">{n}</span>
+      <span className="text-[var(--accent-violet-light)]">{label}</span>
+    </span>
   );
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {chip(counts.automatica, "codificate")}
+      {chip(counts.ibrida, "ibride")}
+      {chip(counts.manuale, "manuali")}
+      {chip(counts.da_codificare, "da fare")}
+    </div>
+  );
+}
+
+function WazaCard({
+  item,
+  busy,
+  onDuplicate,
+  onArchiveToggle,
+}: {
+  item: WazaCatalogItem;
+  busy: boolean;
+  onDuplicate: () => void;
+  onArchiveToggle: () => void;
+}) {
+  const codifica = WAZA_STATO_CODIFICA_META[item.statoCodifica];
+  const badge =
+    "text-[10px] px-1.5 py-0.5 rounded border border-[var(--border-color)] text-gray-400";
+
+  return (
+    <article className="rounded border border-[var(--border-color)] bg-[var(--panel-bg)]/50 p-3 space-y-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-display text-[var(--foreground)] truncate">{item.nomeItaliano}</div>
+          <div className="text-xs text-gray-500 truncate">
+            {item.nomeRomaji}
+            {item.kanji ? ` · ${item.kanji}` : ""}
+            {item.kanji && !item.kanjiVerificato && (
+              <span className="ml-1 text-[var(--accent-gold)]" title="Kanji non verificato">
+                「?」
+              </span>
+            )}
+          </div>
+        </div>
+        {item.tier && (
+          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded border border-[var(--accent-gold)]/40 text-[var(--accent-gold)]">
+            T{item.tier}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1">
+        <span className={badge}>{WAZA_CATEGORIA_LABELS[item.categoria]}</span>
+        {item.genitore && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--accent-violet)]/40 text-[var(--accent-violet-light)]">
+            {item.genitore}
+          </span>
+        )}
+        <span className={`${badge} capitalize`}>{item.tipo}</span>
+        <span className={badge}>CS {item.cs}</span>
+      </div>
+
+      <div className="flex flex-wrap gap-1">
+        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border border-[var(--accent-violet)]/40 text-[var(--accent-violet-light)]">
+          {WAZA_VERSIONE_STATO_LABELS[item.stato] ?? item.stato}
+        </span>
+        <span className={badge} title={codifica.label}>
+          {codifica.emoji} {codifica.label}
+        </span>
+      </div>
+
+      {item.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {item.tags.map((tag) => (
+            <span key={tag} className={badge}>
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <Link
+          href={`/sviluppo/waza/${item.id}`}
+          className="col-span-2 text-center text-xs px-3 py-2.5 rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)]"
+        >
+          Apri
+        </Link>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onDuplicate}
+          className="text-xs px-3 py-2.5 rounded border border-[var(--border-color)] text-gray-400 disabled:opacity-50"
+        >
+          Duplica
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onArchiveToggle}
+          className="text-xs px-3 py-2.5 rounded border border-[var(--border-color)] text-gray-400 disabled:opacity-50"
+        >
+          {item.archiviata ? "Ripristina" : "Archivia"}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function countActiveFilters(filters: Filters): number {
+  let n = 0;
+  if (filters.categoria) n += 1;
+  if (filters.genitore) n += 1;
+  if (filters.tipo) n += 1;
+  if (filters.tier) n += 1;
+  if (filters.atomo) n += 1;
+  if (filters.statoCodifica) n += 1;
+  if (filters.q.trim()) n += 1;
+  if (filters.archiviate) n += 1;
+  return n;
 }
 
 export function CatalogoWaza() {
@@ -106,6 +218,9 @@ export function CatalogoWaza() {
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
   const genitoriOptions = useMemo(() => {
     if (!filters.categoria || filters.categoria === "generica") return [];
@@ -227,7 +342,26 @@ export function CatalogoWaza() {
         vocabolari={vocabolari}
       />
 
-      <div className="rounded border border-[var(--border-color)] bg-[var(--background)]/40 p-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <button
+        type="button"
+        onClick={() => setShowFilters((o) => !o)}
+        className="md:hidden w-full flex items-center justify-between px-3 py-2.5 rounded border border-[var(--border-color)] text-sm text-[var(--accent-violet-light)]"
+      >
+        <span>
+          <FontAwesomeIcon icon={icons.search} className="w-3 h-3 mr-2" />
+          Filtri
+          {activeFilterCount > 0 && (
+            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full border border-[var(--accent-gold)]/50 text-[var(--accent-gold)]">
+              {activeFilterCount}
+            </span>
+          )}
+        </span>
+        <span className="text-xs text-gray-500">{showFilters ? "Nascondi" : "Mostra"}</span>
+      </button>
+
+      <div
+        className={`${showFilters ? "grid" : "hidden"} md:grid rounded border border-[var(--border-color)] bg-[var(--background)]/40 p-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3`}
+      >
         <label className="space-y-1">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Categoria</span>
           <select
@@ -354,7 +488,27 @@ export function CatalogoWaza() {
         </p>
       )}
 
-      <div className="rounded border border-[var(--border-color)] overflow-x-auto">
+      <div className="md:hidden space-y-2">
+        {loading ? (
+          <p className="text-center text-gray-500 text-sm py-8">Caricamento catalogo…</p>
+        ) : items.length === 0 ? (
+          <p className="text-center text-gray-500 text-sm py-8">
+            Nessuna waza corrisponde ai filtri.
+          </p>
+        ) : (
+          items.map((item) => (
+            <WazaCard
+              key={item.id}
+              item={item}
+              busy={busyId === item.id}
+              onDuplicate={() => void handleDuplicate(item)}
+              onArchiveToggle={() => void handleArchiveToggle(item)}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="hidden md:block rounded border border-[var(--border-color)] overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-black/30 text-[10px] uppercase tracking-wider text-gray-500">
             <tr>

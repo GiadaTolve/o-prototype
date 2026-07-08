@@ -1,0 +1,41 @@
+---
+description: Gestione e Sviluppo devono essere pienamente usabili da mobile (≥380 px)
+alwaysApply: true
+---
+
+# Mobile-first — sezioni Gestione e Sviluppo
+
+**Regola permanente (da C.0).** La direzione e i Fixer devono poter lavorare da
+telefono **a pieno titolo**: codificare interi blocchi e validare le waza
+altrui, non solo consultare.
+
+## Vincolo
+
+- Ogni componente delle sezioni **Gestione** (`/sviluppo` pannelli gestionali)
+  e **Sviluppo** (`/sviluppo`, Catalogo Waza, EditorWaza, ecc.) deve funzionare
+  e restare lavorabile da **380 px** di larghezza in su.
+- Vale anche per **tutto lo Sprint 2** e le consegne future.
+
+## Cosa significa in pratica
+
+1. **Niente tabelle a scorrimento orizzontale su mobile**: le righe diventano
+   card impilate (nome, badge, azioni).
+2. **Filtri** in pannello a scomparsa con contatore dei filtri attivi; contatori
+   di sintesi sempre visibili e compatti in testa.
+3. **Editor a colonne** → tab su mobile (es. «Modifica» / «Anteprima»), switch
+   fisso in alto.
+4. **Riordino** senza drag su touch: frecce su/giù sempre presenti (il drag,
+   se c'è, resta solo in aggiunta su desktop).
+5. **Liste lunghe** (es. 54 Skiru) → bottom-sheet con ricerca e gruppi
+   collassabili, mai una tendina nativa piena.
+6. **Barra azioni** primaria (Salva/Valida + stato sintetico) **sticky in
+   basso** quando la pagina è di editing.
+7. **Input**: `inputmode` corretto sui campi numerici (tastierino), target
+   touch **≥ 44 px**, select leggibili.
+8. Rispettare sempre la palette Dark Arcane e `prefers-reduced-motion`.
+
+## Definition of done
+
+Ogni PR/consegna che tocca Gestione o Sviluppo **include la verifica su
+viewport mobile 380–414 px** (screenshot o nota esplicita). Se un componente
+non è verificabile su mobile, va adattato prima del merge.
