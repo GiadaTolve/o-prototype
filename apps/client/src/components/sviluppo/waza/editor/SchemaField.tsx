@@ -9,15 +9,18 @@ import {
 } from "./effetti-schema";
 import { CampoValore } from "./CampoValore";
 import { EditorCondizione } from "./EditorCondizione";
+import { InfoHint } from "./InfoHint";
+import { FIELD_HELP_TEXT } from "./waza-editor-help";
 
 const VALORE_KEYS = new Set(["valore", "resistenza", "danno"]);
 
 function labelForProperty(key: string): string {
   const labels: Record<string, string> = {
     trigger: "Quando scatta",
-    bersaglio: "Su chi/dove",
-    durata: "Per quanto dura",
-    condizione: "Solo se… (condizione)",
+    bersaglio: "Su chi o dove",
+    valore: "Quanto",
+    durata: "Per quanto",
+    condizione: "Solo se",
     costo_extra: "Costo extra",
     nota_master: "Nota per il master",
     consistenza: "Consistenza",
@@ -37,6 +40,12 @@ function labelForProperty(key: string): string {
     testo: "Testo effetto",
     mostra_a: "Visibile a",
     filtro_waza: "Filtro waza (tag)",
+    tipo: "Tipo",
+    n: "Numero turni",
+    condizione_fine: "Condizione di fine",
+    forma: "Forma",
+    raggio_m: "Raggio (m)",
+    profondita_m: "Profondità (m)",
   };
   return labels[key] ?? key;
 }
@@ -46,6 +55,53 @@ const PLACEHOLDER_ESEMPI: Record<string, string> = {
   nota_master: "es. Ricorda al giocatore di dichiarare la Skiru al lancio.",
   condizione_fine: "es. il bersaglio esce dall'area",
 };
+
+function optionLabel(fieldKey: string, value: string): string {
+  const maps: Record<string, Record<string, string>> = {
+    trigger: {
+      AL_LANCIO: "Al lancio",
+      ALL_IMPATTO: "All'impatto",
+      QUANDO_SUBISCI_DANNO: "Quando subisci danno",
+      INIZIO_TURNO: "A inizio turno",
+      FINE_TURNO: "A fine turno",
+      A_COMANDO: "A comando",
+      PRE_COSTO: "Prima del costo",
+      PRE_LANCIO: "Prima del lancio",
+      QUANDO_SUBISCI_STATUS: "Quando subisci status",
+      A_SCADENZA: "A scadenza",
+      ENTRA_IN_ZONA: "Quando entra in zona",
+      SU_DISTRUZIONE: "Alla distruzione",
+      SU_MOVIMENTO: "Su movimento",
+    },
+    bersaglio: {
+      SE_STESSO: "Sé stesso",
+      BERSAGLIO_SINGOLO: "Un bersaglio",
+      AREA: "Area",
+      CONO: "Cono",
+      LINEA: "Linea",
+      PROPRIO_COSTRUTTO: "Proprio costrutto",
+      COSTRUTTO_NEMICO: "Costrutto nemico",
+      TORO: "Tōrō",
+      ZONA_TERRENO: "Zona terreno",
+      TUTTI_IN_AREA: "Tutti nell'area",
+    },
+    tipo: {
+      ISTANTANEA: "Istantanea",
+      TURNI: "Per turni",
+      PERSISTENTE: "Persistente",
+      FINO_A_CONDIZIONE: "Fino a condizione",
+      COMBATTIMENTO: "Per il combattimento",
+    },
+    forma: {
+      cerchio: "Cerchio",
+      cono: "Cono",
+      linea: "Linea",
+      sfera: "Sfera",
+      zona: "Zona",
+    },
+  };
+  return maps[fieldKey]?.[value] ?? value;
+}
 
 function DurataEditor({
   value,
@@ -74,7 +130,7 @@ function DurataEditor({
       >
         {enumOpts.map((opt) => (
           <option key={opt} value={opt}>
-            {opt}
+            {optionLabel("tipo", opt)}
           </option>
         ))}
       </select>
@@ -181,7 +237,7 @@ function AreaEditor({
       >
         {forme.map((f) => (
           <option key={f} value={f}>
-            {f}
+            {optionLabel("forma", f)}
           </option>
         ))}
       </select>
@@ -311,7 +367,7 @@ export function SchemaField({
         <option value="">—</option>
         {enumOpts.map((opt) => (
           <option key={opt} value={opt}>
-            {opt}
+            {optionLabel(fieldKey, opt)}
           </option>
         ))}
       </select>
@@ -416,8 +472,17 @@ export function SchemaField({
           const child = (nestedSchema.properties as Record<string, SchemaNode>)[k];
           return (
             <label key={k} className="block space-y-1">
-              <span className="text-[10px] uppercase tracking-wider text-gray-500">
-                {labelForProperty(k)}
+              <span className="flex items-center justify-between gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-gray-500">
+                  {labelForProperty(k)}
+                </span>
+                <InfoHint
+                  title={labelForProperty(k)}
+                  text={
+                    FIELD_HELP_TEXT[k] ?? "Compila questo campo solo se è rilevante per il blocco corrente."
+                  }
+                  className="-my-2"
+                />
               </span>
               <SchemaField
                 fieldKey={k}

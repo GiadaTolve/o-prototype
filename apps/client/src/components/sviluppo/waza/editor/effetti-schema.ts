@@ -27,15 +27,15 @@ export const BLOCCO_TIPO_LABELS: Record<BloccoTipo, string> = {
 };
 
 export const VALORE_TIPO_LABELS: Record<string, string> = {
-  FISSO: "Valore fisso",
-  TIER: "Tier waza",
-  TIER_DELTA: "Delta tier",
-  TIER_PER_STACK: "Tier per stack status",
-  SOMMA_BOOST: "Somma boost",
-  TIER_COLPO_SUBITO: "Tier colpo subito",
-  FORMULA: "Formula Skiru",
+  FISSO: "Numero fisso",
+  TIER: "Usa la forza della waza (tier)",
+  TIER_DELTA: "Un gradino più forte/debole (tier ±1)",
+  TIER_PER_STACK: "Tier per stack di status",
+  SOMMA_BOOST: "Somma dei bonus attivi",
+  TIER_COLPO_SUBITO: "Tier del colpo subito",
+  FORMULA: "Formula su Skiru",
   MOLT: "Moltiplicatore",
-  SCALA: "Scala a passi",
+  SCALA: "Scala a gradini",
 };
 
 export function resolveSchemaRef(ref: string): SchemaNode {

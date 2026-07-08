@@ -9,6 +9,8 @@ import {
   type SchemaNode,
 } from "./effetti-schema";
 import { SchemaField, labelForProperty } from "./SchemaField";
+import { InfoHint } from "./InfoHint";
+import { BLOCCO_INFO_TESTI, FIELD_HELP_TEXT } from "./waza-editor-help";
 
 const BLOCCO_ACCENT: Record<BloccoTipo, string> = {
   DANNO: "var(--accent-gold)",
@@ -84,6 +86,11 @@ export function CardBlocco({
           </p>
         </div>
         <div className="flex flex-wrap gap-1">
+          <InfoHint
+            title={`${BLOCCO_TIPO_LABELS[tipo] ?? tipo}`}
+            text={BLOCCO_INFO_TESTI[tipo]}
+            className="-my-2"
+          />
           <button
             type="button"
             disabled={disabled || index === 0}
@@ -122,10 +129,13 @@ export function CardBlocco({
       <div className="p-3 space-y-3">
         {fieldKeys.map((key) => {
           const propSchema = (schema.properties as Record<string, SchemaNode>)[key];
+          const fieldLabel = labelForProperty(key);
+          const fieldHelp = FIELD_HELP_TEXT[key] ?? "Compila questo campo in base all'effetto che vuoi ottenere.";
           return (
             <label key={key} className="block space-y-1">
-              <span className="text-[10px] uppercase tracking-wider text-gray-500">
-                {labelForProperty(key)}
+              <span className="flex items-center justify-between gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-gray-500">{fieldLabel}</span>
+                <InfoHint title={fieldLabel} text={fieldHelp} className="-my-2" />
               </span>
               <SchemaField
                 fieldKey={key}
