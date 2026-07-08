@@ -3,6 +3,7 @@
 import {
   PIXEL_ICON_SIZE,
   PIXEL_ICON_BASE,
+  PIXEL_ICON_DISPLAY_CLASS,
   PIXEL_ICON_RUOLI,
   PIXEL_ICON_ORDINI,
   getPixelIconUrlRuolo,
@@ -25,7 +26,7 @@ type Props = {
   className?: string;
 };
 
-/** Mostra le pixel-icon (20×20) accanto al nome. Ruoli + ordini. Capo-shinigami usa shinigami. */
+/** Mostra le pixel-icon (30×30) accanto al nome. Ruoli + ordini. Capo-shinigami usa shinigami. */
 export function PixelIcons({ pixelIcons, className = "" }: Props) {
   if (!pixelIcons) return null;
 
@@ -61,7 +62,7 @@ export function PixelIcons({ pixelIcons, className = "" }: Props) {
           <span
             key={`premio-${alt}-${i}`}
             title={alt}
-            className="inline-flex w-5 h-5 shrink-0 items-center justify-center border border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/10 rotate-45"
+            className={`inline-flex ${PIXEL_ICON_DISPLAY_CLASS} items-center justify-center border border-[var(--accent-gold)]/50 bg-[var(--accent-gold)]/10 rotate-45`}
           >
             <span className="-rotate-45 text-[9px] leading-none text-[var(--accent-gold)] font-display">
               ◆
@@ -75,7 +76,7 @@ export function PixelIcons({ pixelIcons, className = "" }: Props) {
             title={alt}
             width={PIXEL_ICON_SIZE}
             height={PIXEL_ICON_SIZE}
-            className="w-5 h-5 shrink-0 object-contain"
+            className={PIXEL_ICON_DISPLAY_CLASS}
           />
         ),
       )}

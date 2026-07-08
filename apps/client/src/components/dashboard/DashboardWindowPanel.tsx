@@ -10,7 +10,7 @@ import { SmsPanel } from "./sms/SmsPanel";
 import { FetchPanel } from "./fetch/FetchPanel";
 import { PixelIcons } from "./PixelIcons";
 import { formatNarrativeText } from "@/lib/narrative-parser";
-import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, type PixelIconRuolo, type PixelIconOrdine } from "./pixel-icons";
+import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, PIXEL_ICON_SIZE, PIXEL_ICON_DISPLAY_CLASS, type PixelIconRuolo, type PixelIconOrdine } from "./pixel-icons";
 import type { WindowId, CharacterSummary, Presente } from "./types";
 import { WINDOW_LABELS } from "./types";
 import { SchedaSkiruPage } from "./SchedaSkiruPage";
@@ -1613,11 +1613,11 @@ function RegistrazioneMessageBlock({ message }: { message: any }) {
         <span className="font-display font-bold text-[var(--accent-gold)]">{message.name}{message.surname ? ` ${message.surname}` : ""}</span>
         {message.pixelIcons?.ruolo?.map((r: string) => {
           const url = getPixelIconUrlRuolo(r as PixelIconRuolo);
-          return url ? <Image key={r} src={url} alt={r} width={14} height={14} className="object-contain" /> : null;
+          return url ? <Image key={r} src={url} alt={r} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} /> : null;
         })}
         {message.pixelIcons?.ordine?.map((o: string) => {
           const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
-          return url ? <img key={o} src={url} alt={o} width={14} height={14} className="object-contain" /> : null;
+          return url ? <img key={o} src={url} alt={o} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} /> : null;
         })}
       </div>
       <p className="text-sm text-gray-300 m-0 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />

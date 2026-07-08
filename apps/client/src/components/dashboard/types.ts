@@ -21,7 +21,7 @@ export type CharacterSummary = {
   avatar?: string | null;
   avatarUrl?: string;
   miniAvatar?: string | null;
-  /** Pixel-icon (20×20) per ruolo/ordine/premio — vedi GAME_LAYOUT_SPEC, pixel-icons.ts */
+  /** Pixel-icon (30×30) per ruolo/ordine/premio — vedi GAME_LAYOUT_SPEC, pixel-icons.ts */
   pixelIcons?: { ruolo?: string[]; ordine?: string[]; premioSpeciale?: string[] };
   stats?: { f: number; c: number; d: number; m: number; e: number };
   rem?: number;
@@ -81,7 +81,7 @@ export type Presente = {
   isMe?: boolean;
   /** Shadowban: visibile ma con colore diverso + icona occhio chiuso */
   isShadow?: boolean;
-  /** Pixel-icon (20×20) accanto al nome — GAME_LAYOUT_SPEC */
+  /** Pixel-icon (30×30) accanto al nome — GAME_LAYOUT_SPEC */
   pixelIcons?: { ruolo?: string[]; ordine?: string[]; premioSpeciale?: string[] };
   /** Circus (partychat): colore animale per badge presenti */
   anonymousColor?: string;

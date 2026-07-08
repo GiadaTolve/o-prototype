@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { api } from "@/lib/api";
 import { formatNarrativeText } from "@/lib/narrative-parser";
-import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
+import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, PIXEL_ICON_SIZE, PIXEL_ICON_DISPLAY_CLASS, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
 
 type Quest = {
   id: string;
@@ -416,9 +416,9 @@ function QuestMessageBlock({ message }: { message: QuestMessage }) {
                   key={`ruolo-${r}`}
                   src={url}
                   alt={r}
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 object-contain"
+                  width={PIXEL_ICON_SIZE}
+                  height={PIXEL_ICON_SIZE}
+                  className={PIXEL_ICON_DISPLAY_CLASS}
                 />
               ) : null;
             })}
@@ -429,9 +429,9 @@ function QuestMessageBlock({ message }: { message: QuestMessage }) {
                   key={`ordine-${o}`}
                   src={url}
                   alt={o}
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 object-contain"
+                  width={PIXEL_ICON_SIZE}
+                  height={PIXEL_ICON_SIZE}
+                  className={PIXEL_ICON_DISPLAY_CLASS}
                 />
               ) : null;
             })}

@@ -7,7 +7,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
 import { formatNarrativeText } from "@/lib/narrative-parser";
-import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
+import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, PIXEL_ICON_SIZE, PIXEL_ICON_DISPLAY_CLASS, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
 import { Skeleton, SkeletonList, SkeletonTable } from "@/components/ui/Skeleton";
 
 type Quest = {
@@ -1147,11 +1147,11 @@ function GiocataMessageBlock({ message }: { message: GiocataMessage }) {
           <div className="flex items-center gap-1 mr-2">
             {message.pixelIcons.ruolo?.map((r) => {
               const url = getPixelIconUrlRuolo(r as PixelIconRuolo);
-              return url ? <Image key={`ruolo-${r}`} src={url} alt={r} width={16} height={16} className="w-4 h-4 object-contain" /> : null;
+              return url ? <Image key={`ruolo-${r}`} src={url} alt={r} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} /> : null;
             })}
             {message.pixelIcons.ordine?.map((o) => {
               const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
-              return url ? <img key={`ordine-${o}`} src={url} alt={o} width={16} height={16} className="w-4 h-4 object-contain" /> : null;
+              return url ? <img key={`ordine-${o}`} src={url} alt={o} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} /> : null;
             })}
           </div>
         )}

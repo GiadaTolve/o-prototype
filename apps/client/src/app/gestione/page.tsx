@@ -10,6 +10,7 @@ import { GestioneRichiestePanel } from "@/components/gestione/GestioneRichiesteP
 import {
   PIXEL_ICON_RUOLI,
   PIXEL_ICON_SIZE,
+  PIXEL_ICON_DISPLAY_CLASS,
   getPixelIconUrlRuolo,
   labelForRuoloPixelIcon,
   type PixelIconRuolo,
@@ -326,7 +327,7 @@ function RuoloDisplay({ roleIcon }: { roleIcon: string }) {
         title={labelForRuoloPixelIcon(ruolo)}
         width={PIXEL_ICON_SIZE}
         height={PIXEL_ICON_SIZE}
-        className="w-4 h-4 shrink-0"
+        className={PIXEL_ICON_DISPLAY_CLASS}
       />
       <span>{labelForRuoloPixelIcon(ruolo)}</span>
     </span>

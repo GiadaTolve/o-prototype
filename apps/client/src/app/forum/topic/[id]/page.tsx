@@ -8,7 +8,7 @@ import Image from "next/image";
 import { parseBBCode } from "@/lib/bbcode-parser";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
-import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
+import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, PIXEL_ICON_SIZE, PIXEL_ICON_DISPLAY_CLASS, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
 
 type ForumTopic = {
   id: string;
@@ -250,7 +250,7 @@ export default function TopicPage() {
                     {pixelIcons.ruolo.map((r) => {
                       const url = getPixelIconUrlRuolo(r as PixelIconRuolo);
                       return url ? (
-                        <Image key={`ruolo-${r}`} src={url} alt={r} width={16} height={16} className="w-4 h-4 object-contain" />
+                        <Image key={`ruolo-${r}`} src={url} alt={r} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} />
                       ) : null;
                     })}
                   </div>
@@ -260,7 +260,7 @@ export default function TopicPage() {
                     {pixelIcons.ordine.map((o) => {
                       const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
                       return url ? (
-                        <img key={`ordine-${o}`} src={url} alt={o} width={16} height={16} className="w-4 h-4 object-contain" />
+                        <img key={`ordine-${o}`} src={url} alt={o} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} />
                       ) : null;
                     })}
                   </div>

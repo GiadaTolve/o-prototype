@@ -36,6 +36,8 @@ import { Skeleton, SkeletonList } from "@/components/ui/Skeleton";
 import {
   getPixelIconUrlRuolo,
   getPixelIconUrlOrdine,
+  PIXEL_ICON_SIZE,
+  PIXEL_ICON_DISPLAY_CLASS,
   type PixelIconRuolo,
   type PixelIconOrdine,
 } from "./pixel-icons";
@@ -2955,9 +2957,9 @@ function ChatMessageBlock({
                   key={`ruolo-${r}`}
                   src={url}
                   alt={r}
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 object-contain"
+                  width={PIXEL_ICON_SIZE}
+                  height={PIXEL_ICON_SIZE}
+                  className={PIXEL_ICON_DISPLAY_CLASS}
                 />
               ) : null;
             })}
@@ -2968,9 +2970,9 @@ function ChatMessageBlock({
                   key={`ordine-${o}`}
                   src={url}
                   alt={o}
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 object-contain"
+                  width={PIXEL_ICON_SIZE}
+                  height={PIXEL_ICON_SIZE}
+                  className={PIXEL_ICON_DISPLAY_CLASS}
                 />
               ) : null;
             })}
