@@ -45,6 +45,8 @@ type Props = {
   fetchSmsUnread: () => void;
   fetchNotificationsUnread: () => void;
   onCharUpdate?: () => Promise<void>;
+  onOpenGestione: () => void;
+  onOpenSviluppo: () => void;
 };
 
 export function DashboardMobileLayout({
@@ -75,6 +77,8 @@ export function DashboardMobileLayout({
   fetchSmsUnread,
   fetchNotificationsUnread,
   onCharUpdate,
+  onOpenGestione,
+  onOpenSviluppo,
 }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MobileTab>("mappa");
@@ -161,6 +165,16 @@ export function DashboardMobileLayout({
   const handleLogout = () => {
     localStorage.removeItem("token");
     router.push("/auth");
+  };
+
+  const handleOpenGestione = () => {
+    setActiveTab("mappa");
+    onOpenGestione();
+  };
+
+  const handleOpenSviluppo = () => {
+    setActiveTab("mappa");
+    onOpenSviluppo();
   };
 
   return (
@@ -287,6 +301,30 @@ export function DashboardMobileLayout({
 
         {activeTab === "altro" && (
           <div className="mobile-scroll-pane p-4 flex flex-col gap-4">
+          {(char?.canAccessGestione || char?.canAccessSviluppo) && (
+            <div className="grid grid-cols-2 gap-3">
+              {char?.canAccessGestione && (
+                <button
+                  type="button"
+                  onClick={handleOpenGestione}
+                  className="py-4 px-3 rounded-lg border border-[var(--accent-gold)]/45 bg-[var(--panel-bg)] flex flex-col items-center gap-2 hover:border-[var(--accent-gold)]/80 hover:bg-[color-mix(in_srgb,var(--panel-bg)_85%,black)] transition-colors"
+                >
+                  <FontAwesomeIcon icon={icons.gear} className="w-6 h-6 text-[var(--accent-gold)]" />
+                  <span className="text-xs text-[var(--accent-violet-light)]">Gestionale</span>
+                </button>
+              )}
+              {char?.canAccessSviluppo && (
+                <button
+                  type="button"
+                  onClick={handleOpenSviluppo}
+                  className="py-4 px-3 rounded-lg border border-[var(--accent-violet)]/45 bg-[var(--panel-bg)] flex flex-col items-center gap-2 hover:border-[var(--accent-violet)]/80 hover:bg-[color-mix(in_srgb,var(--panel-bg)_85%,black)] transition-colors"
+                >
+                  <FontAwesomeIcon icon={icons.pencil} className="w-6 h-6 text-[var(--accent-violet-light)]" />
+                  <span className="text-xs text-[var(--accent-violet-light)]">Sviluppo</span>
+                </button>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             {[
               { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },

@@ -7,6 +7,7 @@ import {
   VALORE_TIPO_LABELS,
   type SchemaNode,
 } from "./effetti-schema";
+import { InfoHint } from "./InfoHint";
 
 type CampoValoreProps = {
   value: Record<string, unknown> | undefined;
@@ -17,7 +18,7 @@ type CampoValoreProps = {
 
 function labelForKey(key: string): string {
   const labels: Record<string, string> = {
-    n: "Valore",
+    n: "Numero",
     x: "Moltiplicatore (×)",
     base: "Base di partenza",
     skiru: "Skiru di riferimento",
@@ -28,6 +29,20 @@ function labelForKey(key: string): string {
   };
   return labels[key] ?? key;
 }
+
+const TIPO_VALORE_INFO =
+  "Scegli come calcolare «Quanto». Usa la forza della waza (tier) quando vuoi il calcolo automatico (es. T2 = 8), usa numero fisso per decidere tu, oppure tier ±1 per un gradino più forte/debole.";
+
+const KEY_INFO: Record<string, string> = {
+  n: "Numero da usare nel calcolo di questo valore.",
+  x: "Moltiplicatore finale applicato al risultato (es. ×2).",
+  base: "Valore iniziale prima degli altri aggiustamenti.",
+  skiru: "Skiru usata nella formula di calcolo.",
+  per_punto: "Quanto aggiungi per ogni punto della Skiru scelta.",
+  status: "Status da usare come riferimento nel calcolo.",
+  passi: "Progressione a gradini separati da virgola (es. 1,2,4).",
+  cap: "Limite massimo oltre cui il valore non può salire.",
+};
 
 const VALORE_PLACEHOLDER: Record<string, string> = {
   skiru: "es. kensei",
@@ -155,7 +170,10 @@ export function CampoValore({ value, onChange, disabled, tierFlatDamage }: Campo
   return (
     <div className="space-y-2 rounded border border-[var(--border-color)]/70 bg-black/20 p-3">
       <label className="block space-y-1">
-        <span className="text-[10px] uppercase tracking-wider text-gray-500">Tipo valore</span>
+        <span className="flex items-center justify-between gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Come calcolare quanto</span>
+          <InfoHint title="Come calcolare quanto" text={TIPO_VALORE_INFO} className="-my-2" />
+        </span>
         <select
           value={tipo}
           disabled={disabled}
@@ -181,8 +199,9 @@ export function CampoValore({ value, onChange, disabled, tierFlatDamage }: Campo
 
       {keys.map((key) => (
         <label key={key} className="block space-y-1">
-          <span className="text-[10px] uppercase tracking-wider text-gray-500">
-            {labelForKey(key)}
+          <span className="flex items-center justify-between gap-1">
+            <span className="text-[10px] uppercase tracking-wider text-gray-500">{labelForKey(key)}</span>
+            {KEY_INFO[key] ? <InfoHint title={labelForKey(key)} text={KEY_INFO[key]} className="-my-2" /> : null}
           </span>
           <ValoreScalarField
             schemaKey={key}

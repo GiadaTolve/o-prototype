@@ -13,6 +13,7 @@ import {
 import { ATOMO_DESCRIZIONI } from "./waza-blocco-render";
 import { CardBlocco } from "./CardBlocco";
 import { BottomSheet } from "./BottomSheet";
+import { ATOMI_IN_ARRIVO } from "./waza-editor-help";
 
 type VocabMap = Record<string, string[]>;
 
@@ -115,6 +116,18 @@ export function SezioneBlocchi({
                     </span>
                   </button>
                 ))}
+                <div className="my-1 border-t border-[var(--border-color)]/60" />
+                {ATOMI_IN_ARRIVO.map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    disabled
+                    className="block w-full text-left px-3 py-2 opacity-50 cursor-not-allowed"
+                  >
+                    <span className="block text-xs text-gray-400">{item.label}</span>
+                    <span className="block text-[10px] text-gray-500 leading-snug">{item.text}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -172,6 +185,20 @@ export function SezioneBlocchi({
                 </span>
               </button>
             ))}
+            <div className="pt-1">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">In arrivo</p>
+              {ATOMI_IN_ARRIVO.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  disabled
+                  className="block w-full text-left px-3 py-3 rounded border border-[var(--border-color)]/60 opacity-50 cursor-not-allowed mb-2"
+                >
+                  <span className="block text-sm text-gray-300">{item.label}</span>
+                  <span className="block text-[11px] text-gray-500 leading-snug mt-0.5">{item.text}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </BottomSheet>

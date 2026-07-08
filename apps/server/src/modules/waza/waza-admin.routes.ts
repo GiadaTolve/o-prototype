@@ -58,6 +58,16 @@ const saveDraftBody = t.Intersect([
 ]);
 
 function handleWazaAdminError(e: unknown, set: { status?: number | string }) {
+  if (e instanceof Error) {
+    const msg = e.message.toLowerCase();
+    if (msg.includes("column") && msg.includes("does not exist")) {
+      set.status = 503;
+      return {
+        error:
+          "Database Waza non aggiornato. Esegui db:push in produzione (schema waza_versioni) e riprova.",
+      };
+    }
+  }
   if (e instanceof WazaAdminHttpError) {
     set.status = e.status;
     return { error: e.message, ...(e.payload ?? {}) };

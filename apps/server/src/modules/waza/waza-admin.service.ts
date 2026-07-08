@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm";
 import { db } from "../../plugins/db";
 import { vocabolari, waza, wazaVersioni } from "../../db/schema";
-import { validateEffettiSchema } from "../../../../../schemas/effetti-validator";
+import { validateEffettiSchema } from "./effetti-validator";
 import {
   computeAtomiUsati,
   computeStatoCodifica,

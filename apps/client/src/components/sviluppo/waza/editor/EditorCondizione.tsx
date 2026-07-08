@@ -9,6 +9,7 @@ import {
   valoriPerSoggetto,
   type CondizioneSoggettoId,
 } from "./condizione-constants";
+import { InfoHint } from "./InfoHint";
 
 type EditorCondizioneProps = {
   value: string | undefined;
@@ -43,7 +44,14 @@ export function EditorCondizione({
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] uppercase tracking-wider text-gray-500">Condizione (opzionale)</p>
+      <div className="flex items-center justify-between gap-1">
+        <p className="text-[10px] uppercase tracking-wider text-gray-500">Solo se (opzionale)</p>
+        <InfoHint
+          title="Solo se"
+          text="Serve a far scattare l’effetto solo in certi casi. La costruisci con tre menu: soggetto, confronto e valore."
+          className="-my-2"
+        />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         <select
           disabled={disabled}
