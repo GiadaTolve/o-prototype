@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   PIXEL_ICON_SIZE,
   PIXEL_ICON_BASE,
@@ -69,14 +68,14 @@ export function PixelIcons({ pixelIcons, className = "" }: Props) {
             </span>
           </span>
         ) : (
-          <Image
+          <img
             key={`${alt}-${i}`}
             src={src}
             alt=""
             title={alt}
             width={PIXEL_ICON_SIZE}
             height={PIXEL_ICON_SIZE}
-            className="w-5 h-5 shrink-0"
+            className="w-5 h-5 shrink-0 object-contain"
           />
         ),
       )}

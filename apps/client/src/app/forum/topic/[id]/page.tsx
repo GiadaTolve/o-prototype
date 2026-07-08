@@ -260,7 +260,7 @@ export default function TopicPage() {
                     {pixelIcons.ordine.map((o) => {
                       const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
                       return url ? (
-                        <Image key={`ordine-${o}`} src={url} alt={o} width={16} height={16} className="w-4 h-4 object-contain" />
+                        <img key={`ordine-${o}`} src={url} alt={o} width={16} height={16} className="w-4 h-4 object-contain" />
                       ) : null;
                     })}
                   </div>

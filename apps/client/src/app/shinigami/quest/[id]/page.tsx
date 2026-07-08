@@ -425,7 +425,7 @@ function QuestMessageBlock({ message }: { message: QuestMessage }) {
             {message.pixelIcons.ordine?.map((o) => {
               const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
               return url ? (
-                <Image
+                <img
                   key={`ordine-${o}`}
                   src={url}
                   alt={o}

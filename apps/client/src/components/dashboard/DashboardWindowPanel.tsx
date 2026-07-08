@@ -1617,7 +1617,7 @@ function RegistrazioneMessageBlock({ message }: { message: any }) {
         })}
         {message.pixelIcons?.ordine?.map((o: string) => {
           const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
-          return url ? <Image key={o} src={url} alt={o} width={14} height={14} className="object-contain" /> : null;
+          return url ? <img key={o} src={url} alt={o} width={14} height={14} className="object-contain" /> : null;
         })}
       </div>
       <p className="text-sm text-gray-300 m-0 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />

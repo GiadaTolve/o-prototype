@@ -139,7 +139,7 @@ export function DashboardMobileLayout({
     }
   }, [activeTab]);
 
-  const avatarSrc = (char?.avatarUrl ?? char?.avatar ?? char?.miniAvatar) as string | undefined;
+  const avatarSrc = (char?.miniAvatar ?? char?.avatarUrl ?? char?.avatar) as string | undefined;
   const nome = (char?.name ?? "Nome PG") as string;
   const cognome = (char?.surname ?? "") as string;
   const skiruStats = resolveCharacterComputed(char?.computed);

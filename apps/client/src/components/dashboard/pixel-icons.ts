@@ -53,6 +53,9 @@ export function optionLabelForRuoloPixelIcon(ruolo: PixelIconRuolo): string {
 
 export const PIXEL_ICON_ORDINI: PixelIconOrdine[] = ["mugen-tai", "chisen-tai"];
 
+/** Bump quando cambiano gli asset ordine (cache bust browser / Next Image). */
+const PIXEL_ICON_ORDINE_ASSET_REV = "20260708";
+
 /** Mapping ruolo → file. Capo-shinigami usa shinigami (fino a asset dedicato). */
 const RUOLO_TO_FILE: Record<PixelIconRuolo, string> = {
   admin: "proprietario",
@@ -82,7 +85,7 @@ export function getPixelIconUrlRuolo(ruolo: PixelIconRuolo): string {
 
 /** Restituisce il path per ordine (20×20 accanto al nome). */
 export function getPixelIconUrlOrdine(ordine: PixelIconOrdine): string {
-  return `${PIXEL_ICON_BASE}/${ordine}.png`;
+  return `${PIXEL_ICON_BASE}/${ordine}.png?v=${PIXEL_ICON_ORDINE_ASSET_REV}`;
 }
 
 /** Etichetta tooltip per premio speciale / milestone Jiga. */
