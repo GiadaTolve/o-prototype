@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { getTierCsCost, getTierValue, isWazaTier } from "@domain/combat/tier";
 import {
@@ -11,6 +11,8 @@ import {
 } from "./waza-admin-ui";
 import { SezioneBlocchi } from "./editor/SezioneBlocchi";
 import { PannelloValidazione } from "./editor/PannelloValidazione";
+import { PannelloRenderMeccanico } from "./editor/PannelloRenderMeccanico";
+import { renderBloccoMeccanico } from "./editor/waza-blocco-render";
 import { SelettoreSkiruIr } from "./editor/SelettoreSkiruIr";
 import { WazaApiError, wazaApi } from "./editor/waza-api";
 import {
@@ -145,6 +147,31 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
   const [versione, setVersione] = useState<WazaVersione | null>(null);
   const [form, setForm] = useState<EditorForm | null>(null);
   const [vocabolari, setVocabolari] = useState<VocabolarioItem[]>([]);
+
+  const [tab, setTab] = useState<"modifica" | "anteprima">("modifica");
+  const [anteprimaDirty, setAnteprimaDirty] = useState(false);
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const effettiKey = JSON.stringify(form?.effetti ?? []);
+  const firstEffettiRun = useRef(true);
+  const validazioneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (firstEffettiRun.current) {
+      firstEffettiRun.current = false;
+      return;
+    }
+    if (tabRef.current !== "anteprima") setAnteprimaDirty(true);
+  }, [effettiKey]);
+
+  const showAnteprima = () => {
+    setTab("anteprima");
+    setAnteprimaDirty(false);
+  };
+
+  const scrollToValidazione = () => {
+    validazioneRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   const readOnly = versione?.stato !== "bozza";
   const vocabMap = useMemo(() => buildVocabMap(vocabolari), [vocabolari]);
@@ -345,10 +372,15 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
   }
 
   const inputClass =
-    "w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+    "w-full px-3 py-2 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+
+  const errCount = validationErrori.length;
+  const avvCount = validationAvvisi.length;
+  const righeMeccaniche = form.effetti.map((b) => renderBloccoMeccanico(b, tierFlatDamage));
+  const ultimaRiga = righeMeccaniche[righeMeccaniche.length - 1] ?? null;
 
   return (
-    <div className="space-y-4 animate__animated animate__fadeIn pb-28">
+    <div className="space-y-4 animate__animated animate__fadeIn pb-28 md:pb-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link
@@ -368,24 +400,61 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
             {WAZA_VERSIONE_STATO_LABELS[versione.stato] ?? versione.stato}
           </span>
           <span className="text-xs text-gray-500">v{versione.numero}</span>
+          {/* Su mobile Salva/Valida vivono nella barra sticky in basso */}
+          <div className="hidden md:flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={readOnly || saving}
+              onClick={() => void handleSalva()}
+              className="text-xs px-3 py-1.5 rounded border border-[var(--accent-gold)]/60 text-[var(--accent-gold)] disabled:opacity-50"
+            >
+              {saving ? "Salvataggio…" : "Salva"}
+            </button>
+            <button
+              type="button"
+              disabled={readOnly || validating}
+              onClick={() => void handleValida()}
+              className="text-xs px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] disabled:opacity-50"
+            >
+              {validating ? "Validazione…" : "Valida"}
+            </button>
+            <DisabledTooltipButton label="Pubblica" tooltip="Sprint 4" />
+            <DisabledTooltipButton label="Prova" tooltip="Sprint 3" />
+          </div>
+        </div>
+      </div>
+
+      {/* Switch tab (solo mobile), fisso in alto */}
+      <div className="md:hidden sticky top-0 z-20 -mx-1 px-1 py-2 bg-[var(--background)]/95 backdrop-blur">
+        <div className="grid grid-cols-2 gap-1 rounded border border-[var(--border-color)] p-1">
           <button
             type="button"
-            disabled={readOnly || saving}
-            onClick={() => void handleSalva()}
-            className="text-xs px-3 py-1.5 rounded border border-[var(--accent-gold)]/60 text-[var(--accent-gold)] disabled:opacity-50"
+            onClick={() => setTab("modifica")}
+            className={`min-h-[40px] rounded text-sm ${
+              tab === "modifica"
+                ? "bg-[var(--panel-bg)] text-[var(--accent-gold)] border border-[var(--accent-gold)]/40"
+                : "text-gray-400"
+            }`}
           >
-            {saving ? "Salvataggio…" : "Salva"}
+            Modifica
           </button>
           <button
             type="button"
-            disabled={readOnly || validating}
-            onClick={() => void handleValida()}
-            className="text-xs px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] disabled:opacity-50"
+            onClick={showAnteprima}
+            className={`relative min-h-[40px] rounded text-sm ${
+              tab === "anteprima"
+                ? "bg-[var(--panel-bg)] text-[var(--accent-violet-light)] border border-[var(--accent-violet)]/40"
+                : "text-gray-400"
+            }`}
           >
-            {validating ? "Validazione…" : "Valida"}
+            Anteprima
+            {form.effetti.length > 0 && (
+              <span className="ml-1.5 text-[10px] text-gray-500">({form.effetti.length})</span>
+            )}
+            {anteprimaDirty && tab !== "anteprima" && (
+              <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-[var(--accent-gold)]" />
+            )}
           </button>
-          <DisabledTooltipButton label="Pubblica" tooltip="Sprint 4" />
-          <DisabledTooltipButton label="Prova" tooltip="Sprint 3" />
         </div>
       </div>
 
@@ -396,6 +465,8 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
         </p>
       )}
 
+      {/* ===== Tab MODIFICA (mobile) / colonna scheda (desktop) ===== */}
+      <div className={tab === "anteprima" ? "hidden md:block space-y-4" : "space-y-4"}>
       <section className="rounded border border-[var(--border-color)] bg-[var(--background)]/30 p-4 space-y-4">
         <h2 className="text-sm font-display text-[var(--accent-gold)]">Anagrafica</h2>
 
@@ -617,7 +688,118 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
         vocabolari={vocabMap}
       />
 
-      <PannelloValidazione errori={validationErrori} avvisi={validationAvvisi} info={info} />
+      {/* Anteprima compatta dell'ultima riga renderizzata (mobile): evita di
+          rimbalzare al tab Anteprima a ogni campo compilato. */}
+      {ultimaRiga && (
+        <button
+          type="button"
+          onClick={showAnteprima}
+          className="md:hidden w-full text-left rounded border border-[var(--accent-violet)]/30 bg-[var(--panel-bg)]/40 px-3 py-2"
+        >
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-gray-500">
+              Come si legge — ultima riga
+            </span>
+            <span className="text-[10px] text-[var(--accent-gold)]">vedi tutto →</span>
+          </span>
+          <span className="block text-sm text-[var(--accent-violet-light)]/90 leading-snug mt-1">
+            {ultimaRiga}
+          </span>
+        </button>
+      )}
+      </div>
+
+      {/* ===== Tab ANTEPRIMA (mobile) / colonna anteprima (desktop) ===== */}
+      <div className={tab === "modifica" ? "hidden md:block space-y-4" : "space-y-4"}>
+        {/* Scheda riassuntiva: solo mobile (su desktop la scheda è il form) */}
+        <section className="md:hidden rounded border border-[var(--border-color)] bg-[var(--background)]/30 p-4 space-y-2">
+          <h2 className="text-sm font-display text-[var(--accent-gold)]">Scheda</h2>
+          <p className="text-lg font-display text-[var(--foreground)]">
+            {form.nomeItaliano || "—"}
+          </p>
+          <p className="text-xs text-gray-500">
+            {form.nomeRomaji}
+            {form.kanji ? ` · ${form.kanji}` : ""}
+          </p>
+          <div className="flex flex-wrap gap-1 pt-1">
+            <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--border-color)] text-gray-400">
+              {WAZA_CATEGORIA_LABELS[form.categoria]}
+            </span>
+            {form.genitore && (
+              <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--accent-violet)]/40 text-[var(--accent-violet-light)]">
+                {form.genitore}
+              </span>
+            )}
+            <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--border-color)] text-gray-400 capitalize">
+              {form.tipo}
+            </span>
+            {form.tier != null && (
+              <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--accent-gold)]/40 text-[var(--accent-gold)]">
+                T{form.tier}
+                {tierFlatDamage != null ? ` · danno ${tierFlatDamage}` : ""}
+              </span>
+            )}
+            <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--border-color)] text-gray-400">
+              CS {form.cs}
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--border-color)] text-gray-400">
+              {form.skiruIr.length} Skiru IR
+            </span>
+          </div>
+          {form.descrizione && (
+            <p className="text-xs text-[var(--accent-violet-light)]/80 leading-relaxed pt-1 whitespace-pre-wrap">
+              {form.descrizione}
+            </p>
+          )}
+        </section>
+
+        <PannelloRenderMeccanico effetti={form.effetti} tierFlatDamage={tierFlatDamage} />
+
+        {form.effetti.length === 0 && (
+          <p className="md:hidden text-xs text-gray-500 border border-dashed border-[var(--border-color)] rounded px-3 py-6 text-center">
+            Nessun blocco ancora. Torna su «Modifica» e aggiungi un effetto per vedere qui la
+            lettura meccanica.
+          </p>
+        )}
+      </div>
+
+      <div ref={validazioneRef}>
+        <PannelloValidazione errori={validationErrori} avvisi={validationAvvisi} info={info} />
+      </div>
+
+      {/* ===== Barra azioni sticky (mobile) ===== */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-[var(--border-color)] bg-[var(--background)]/95 backdrop-blur px-3 py-2 flex items-center gap-2">
+        <button
+          type="button"
+          disabled={readOnly || saving}
+          onClick={() => void handleSalva()}
+          className="flex-1 min-h-[44px] rounded border border-[var(--accent-gold)]/60 text-[var(--accent-gold)] text-sm disabled:opacity-50"
+        >
+          {saving ? "Salvataggio…" : "Salva"}
+        </button>
+        <button
+          type="button"
+          disabled={readOnly || validating}
+          onClick={() => void handleValida()}
+          className="flex-1 min-h-[44px] rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-sm disabled:opacity-50"
+        >
+          {validating ? "Validazione…" : "Valida"}
+        </button>
+        <button
+          type="button"
+          onClick={scrollToValidazione}
+          aria-label="Vai al pannello di validazione"
+          className={`min-h-[44px] px-3 rounded border text-xs whitespace-nowrap ${
+            errCount > 0
+              ? "border-red-400/50 text-red-300"
+              : avvCount > 0
+                ? "border-[var(--accent-gold)]/50 text-[var(--accent-gold)]"
+                : "border-[var(--border-color)] text-gray-400"
+          }`}
+        >
+          {errCount} err · {avvCount} avv
+        </button>
+      </div>
     </div>
   );
 }

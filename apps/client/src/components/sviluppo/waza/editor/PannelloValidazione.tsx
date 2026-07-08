@@ -12,7 +12,7 @@ export function PannelloValidazione({ errori, avvisi, info }: PannelloValidazion
   const hasContent = errori.length > 0 || avvisi.length > 0 || Boolean(info);
 
   return (
-    <aside className="sticky bottom-0 z-10 rounded border border-[var(--border-color)] bg-[var(--background)]/95 backdrop-blur-sm p-3 space-y-2 shadow-[var(--shadow-violet)]">
+    <aside className="md:sticky md:bottom-0 z-10 rounded border border-[var(--border-color)] bg-[var(--background)]/95 backdrop-blur-sm p-3 space-y-2 shadow-[var(--shadow-violet)]">
       <h3 className="text-xs font-display uppercase tracking-wider text-[var(--accent-violet-light)]">
         Validazione
       </h3>

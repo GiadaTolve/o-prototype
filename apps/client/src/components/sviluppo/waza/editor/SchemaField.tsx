@@ -62,7 +62,7 @@ function DurataEditor({
   const current = value ?? (createDefaultFromSchema(durataSchema) as Record<string, unknown>);
   const tipo = String(current.tipo ?? "ISTANTANEA");
   const inputClass =
-    "w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -119,7 +119,7 @@ function CostoExtraEditor({
   const hasHp = value && "hp" in value;
   const mode = hasHp ? "hp" : hasCs ? "cs" : "none";
   const inputClass =
-    "w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -169,7 +169,7 @@ function AreaEditor({
   const formaProp = (areaSchema.properties as Record<string, SchemaNode>).forma;
   const forme = getEnumOptions(formaProp) ?? [];
   const inputClass =
-    "w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -245,7 +245,7 @@ export function SchemaField({
 }: SchemaFieldProps) {
   const resolved = resolveSchemaNode(propSchema);
   const inputClass =
-    "w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
 
   if (fieldKey === "condizione") {
     return (

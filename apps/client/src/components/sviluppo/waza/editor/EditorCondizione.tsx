@@ -39,7 +39,7 @@ export function EditorCondizione({
   };
 
   const selectClass =
-    "w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
 
   return (
     <div className="space-y-2">

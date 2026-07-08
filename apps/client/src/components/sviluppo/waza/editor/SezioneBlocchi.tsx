@@ -12,7 +12,7 @@ import {
 } from "./effetti-schema";
 import { ATOMO_DESCRIZIONI } from "./waza-blocco-render";
 import { CardBlocco } from "./CardBlocco";
-import { PannelloRenderMeccanico } from "./PannelloRenderMeccanico";
+import { BottomSheet } from "./BottomSheet";
 
 type VocabMap = Record<string, string[]>;
 
@@ -32,15 +32,18 @@ export function SezioneBlocchi({
   vocabolari,
 }: SezioneBlocchiProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const addBlocco = (tipo: BloccoTipo) => {
     onChange([...effetti, createDefaultBlocco(tipo)]);
     setMenuOpen(false);
+    setSheetOpen(false);
   };
 
   const addModello = (modello: BloccoModello) => {
     onChange([...effetti, createBloccoDaModello(modello)]);
     setMenuOpen(false);
+    setSheetOpen(false);
   };
 
   const updateAt = (index: number, next: Record<string, unknown>) => {
@@ -71,7 +74,9 @@ export function SezioneBlocchi({
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-display text-[var(--accent-gold)]">Blocchi effetto</h2>
-        <div className="flex flex-wrap items-center gap-2">
+
+        {/* Desktop: modelli inline + dropdown atomi */}
+        <div className="hidden md:flex flex-wrap items-center gap-2">
           {BLOCCO_MODELLI.map((modello) => (
             <button
               key={modello.id}
@@ -114,7 +119,62 @@ export function SezioneBlocchi({
             )}
           </div>
         </div>
+
+        {/* Mobile: un unico bottone che apre il bottom-sheet (modelli + atomi) */}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setSheetOpen(true)}
+          className="md:hidden text-sm px-3 min-h-[44px] rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] disabled:opacity-50"
+        >
+          + Aggiungi effetto
+        </button>
       </div>
+
+      <BottomSheet
+        open={sheetOpen && !disabled}
+        onClose={() => setSheetOpen(false)}
+        title="Aggiungi blocco"
+      >
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Modelli rapidi</p>
+            {BLOCCO_MODELLI.map((modello) => (
+              <button
+                key={modello.id}
+                type="button"
+                onClick={() => addModello(modello.id)}
+                className="block w-full text-left px-3 py-3 rounded border border-[var(--accent-violet)]/40 hover:border-[var(--accent-gold)]/60"
+              >
+                <span className="block text-sm text-[var(--accent-violet-light)]">
+                  {modello.label}
+                </span>
+                <span className="block text-[11px] text-gray-500 leading-snug mt-0.5">
+                  {modello.descrizione}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Atomi</p>
+            {BLOCCO_TIPI.map((tipo) => (
+              <button
+                key={tipo}
+                type="button"
+                onClick={() => addBlocco(tipo)}
+                className="block w-full text-left px-3 py-3 rounded border border-[var(--border-color)] hover:bg-black/30"
+              >
+                <span className="block text-sm text-[var(--accent-violet-light)]">
+                  {BLOCCO_TIPO_LABELS[tipo]}
+                </span>
+                <span className="block text-[11px] text-gray-500 leading-snug mt-0.5">
+                  {ATOMO_DESCRIZIONI[tipo]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </BottomSheet>
 
       {effetti.length === 0 ? (
         <p className="text-xs text-gray-500 border border-dashed border-[var(--border-color)] rounded px-3 py-6 text-center">
@@ -141,8 +201,6 @@ export function SezioneBlocchi({
           ))}
         </div>
       )}
-
-      <PannelloRenderMeccanico effetti={effetti} tierFlatDamage={tierFlatDamage} />
     </section>
   );
 }

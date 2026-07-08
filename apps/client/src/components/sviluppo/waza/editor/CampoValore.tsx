@@ -50,7 +50,7 @@ function ValoreScalarField({
   const enumOpts =
     Array.isArray(propSchema.enum) ? (propSchema.enum as string[]) : null;
   const inputClass =
-    "w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
 
   if (enumOpts) {
     return (
@@ -160,7 +160,7 @@ export function CampoValore({ value, onChange, disabled, tierFlatDamage }: Campo
           value={tipo}
           disabled={disabled}
           onChange={(e) => setTipo(e.target.value)}
-          className="w-full px-2 py-1.5 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
+          className="w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
         >
           {branches.map((b) => {
             const t = getValoreTipoFromBranch(b);
