@@ -7,7 +7,7 @@ import {
   resolveWazaCatalogFamily,
   type WazaCatalogFamily,
 } from "./waza-catalog-family";
-import { MADOSHO_BY_ID, resolveMadoshoIdFromPoolId, type MadoshoId } from "./madosho";
+import { resolveMadoshoIdFromPoolId, type MadoshoId } from "./madosho";
 import { isStyleId, STYLE_LABELS } from "./style-hexagon";
 import { resolveWazaStyleId } from "./waza-grouping";
 
@@ -80,6 +80,10 @@ export type LegacySyncPayload = {
   contentHash: string;
 };
 
+// Famiglie senza equivalente nel nuovo modello catalogo:
+// - "ordine": struttura di appartenenza, non una categoria di waza.
+// - "oni-no-mori": famiglia riservata ai pool di premio, struttura da progettare
+//   (categoria definita ma vuota; i 7 record inventati sono stati cancellati dalla direzione).
 const UNMAPPABLE_FAMILIES = new Set<WazaCatalogFamily>(["ordine", "oni-no-mori"]);
 
 export function parseLegacyWazaName(name: string): ParsedWazaNames {
@@ -104,10 +108,22 @@ export function parseLegacyWazaName(name: string): ParsedWazaNames {
   };
 }
 
+/**
+ * Madoshō → genitore canonico, identico ai valori in `vocabolari` (categoria
+ * `genitore_madosho`). Evita disallineamenti di label (es. "Rin'gai / Janjae"
+ * vs "Rin'gai/Janjae"). Komonoire volutamente ASSENTE: Madoshō in rework,
+ * esclusa dal sync finché il design non è completo.
+ */
+const MADOSHO_GENITORE_BY_ID: Partial<Record<MadoshoId, (typeof SYNC_GENITORI_MADOSHO)[number]>> = {
+  "ringai-janjae": "Rin'gai/Janjae",
+  gokaon: "Gōkaon",
+  nakigara: "Nakigara",
+  hataori: "Hataori",
+  ikiryo: "Ikiryō",
+};
+
 function madoshoGenitoreFromId(id: MadoshoId): string | null {
-  const label = MADOSHO_BY_ID[id]?.name ?? null;
-  if (!label) return null;
-  return (SYNC_GENITORI_MADOSHO as readonly string[]).includes(label) ? label : null;
+  return MADOSHO_GENITORE_BY_ID[id] ?? null;
 }
 
 export function mapLegacyWazaTaxonomy(source: LegacyWazaSource): LegacyTaxonomyMap {

@@ -32,13 +32,31 @@ import { listAdminWaza } from "../apps/server/src/modules/waza/waza-catalog.serv
 
 const execute = process.argv.includes("--execute");
 
+/**
+ * Madoshō / famiglie ESCLUSE per scelta di design: NON sono anomalie di mapping.
+ * Vanno sincronizzate quando il rispettivo design sarà completo.
+ */
+const ESCLUSIONI = ["komonoire"]; // Madoshō in rework, da sincronizzare a rework completato
+
 type UnmappableRow = {
   poolId: string;
   skillId: string | null;
   name: string;
   family: string;
   reason: string;
+  esclusaDa?: string;
 };
+
+/** Ritorna l'id di esclusione (es. "komonoire") se la waza è esclusa per scelta. */
+function esclusaDaId(source: { poolId: string; madoshoId?: string | null }): string | null {
+  const mid = (source.madoshoId ?? "").trim().toLowerCase();
+  if (mid && ESCLUSIONI.includes(mid)) return mid;
+  const pool = source.poolId.trim().toLowerCase();
+  for (const ex of ESCLUSIONI) {
+    if (pool === ex || pool.startsWith(`${ex}-`)) return ex;
+  }
+  return null;
+}
 
 async function resolveSyncUserId(): Promise<string> {
   const fromEnv = process.env.WAZA_SYNC_USER_ID?.trim();
@@ -85,6 +103,7 @@ async function main() {
   let updated = 0;
   let skipped = 0;
   const unmappable: UnmappableRow[] = [];
+  const escluse: UnmappableRow[] = [];
 
   for (const row of legacyRows) {
     const poolId = row.poolId?.trim();
@@ -104,13 +123,20 @@ async function main() {
 
     const taxonomy = mapLegacyWazaTaxonomy(source);
     if (!taxonomy.mappable) {
-      unmappable.push({
+      const ex = esclusaDaId(source);
+      const info: UnmappableRow = {
         poolId,
         skillId: row.skillId,
         name: row.name,
         family: taxonomy.family,
-        reason: taxonomy.reason,
-      });
+        reason: ex ? `Esclusa per scelta (${ex}, in rework)` : taxonomy.reason,
+      };
+      if (ex) {
+        info.esclusaDa = ex;
+        escluse.push(info);
+      } else {
+        unmappable.push(info);
+      }
       continue;
     }
 
@@ -243,14 +269,29 @@ async function main() {
   console.log(`  Create:      ${created}`);
   console.log(`  Aggiornate:  ${updated}`);
   console.log(`  Saltate:     ${skipped} (già codificate/validate o invariate)`);
-  console.log(`  Non mappabili: ${unmappable.length}`);
+  console.log(`  Escluse (scelta):        ${escluse.length}`);
+  console.log(`  Non mappabili (anomalie): ${unmappable.length}`);
+
+  if (escluse.length > 0) {
+    const counts = new Map<string, number>();
+    for (const row of escluse) {
+      const key = row.esclusaDa ?? "?";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    console.log("\n── Escluse per scelta (in rework, non anomalie) ──");
+    for (const [id, n] of counts) {
+      console.log(`  ${n} escluse (${id}, in rework)`);
+    }
+  }
 
   if (unmappable.length > 0) {
-    console.log("\n── Da assegnare a mano ──");
+    console.log("\n── Da assegnare a mano (anomalie vere) ──");
     for (const row of unmappable) {
       console.log(`  • [${row.family}] ${row.poolId} — ${row.name}`);
       console.log(`    ${row.reason}`);
     }
+  } else {
+    console.log("\n✓ Nessuna anomalia vera di mapping.");
   }
 }
 

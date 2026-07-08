@@ -10,7 +10,7 @@ import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
 import { GestioneTaxonomyPanel } from "@/components/gestione/GestioneTaxonomyPanel";
 import { MarketCatalogManagement } from "@/components/gestione/MarketCatalogManagement";
 import { api } from "@/lib/api";
-import { canAccessWazaAuthoring } from "@/lib/waza-authoring-access";
+import { canManageWaza } from "@/lib/waza-authoring-access";
 
 export default function SviluppoPage() {
   const router = useRouter();
@@ -38,11 +38,11 @@ export default function SviluppoPage() {
     api
       .get("/characters/me")
       .then((char) => {
-        const data = char as Parameters<typeof canAccessWazaAuthoring>[0] & {
+        const data = char as Parameters<typeof canManageWaza>[0] & {
           canAccessSviluppo?: boolean;
         };
         setCanAccess(Boolean(data?.canAccessSviluppo));
-        setCanAuthoring(canAccessWazaAuthoring(data));
+        setCanAuthoring(canManageWaza(data));
       })
       .catch(() => {
         setCanAccess(false);

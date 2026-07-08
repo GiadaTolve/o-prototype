@@ -5,7 +5,7 @@ import { SignJWT } from "jose";
 import { Elysia } from "elysia";
 import { eq } from "drizzle-orm";
 import { db } from "../../plugins/db";
-import { users, waza } from "../../db/schema";
+import { users, characters, waza } from "../../db/schema";
 import { JWT_SECRET } from "../../config";
 import { wazaAdminRoutes } from "./waza-admin.routes";
 import { deleteAdminWazaRecords } from "./waza-admin.service";
@@ -15,7 +15,36 @@ config({ path: resolve(import.meta.dir, "../../../../../.env") });
 const app = new Elysia().use(wazaAdminRoutes);
 
 let authToken = "";
+let fixerToken = "";
+let shinigamiToken = "";
 const createdWazaIds: string[] = [];
+const seededUserIds: string[] = [];
+
+async function signFor(id: string, role: string) {
+  return new SignJWT({ id, sub: id, role })
+    .setProtectedHeader({ alg: "HS256" })
+    .sign(new TextEncoder().encode(JWT_SECRET));
+}
+
+/** Crea un utente PLAYER + personaggio con il pixel-icon staff indicato. */
+async function seedStaffUser(roleIcon: string) {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const [user] = await db
+    .insert(users)
+    .values({
+      email: `test-${roleIcon}-${suffix}@waza.test`,
+      passwordHash: "x",
+      role: "PLAYER",
+    })
+    .returning({ id: users.id });
+  seededUserIds.push(user.id);
+  await db.insert(characters).values({
+    userId: user.id,
+    name: `Test ${roleIcon}`,
+    uiMetadata: { roleIcon },
+  });
+  return signFor(user.id, "PLAYER");
+}
 
 const validEffetti = [
   {
@@ -41,17 +70,21 @@ const validCreateBody = {
   effetti: validEffetti,
 };
 
-async function api(method: string, path: string, body?: unknown) {
+async function apiAs(token: string, method: string, path: string, body?: unknown) {
   return app.handle(
     new Request(`http://localhost${path}`, {
       method,
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: body != null ? JSON.stringify(body) : undefined,
     }),
   );
+}
+
+async function api(method: string, path: string, body?: unknown) {
+  return apiAs(authToken, method, path, body);
 }
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -67,17 +100,17 @@ beforeAll(async () => {
     throw new Error("Serve almeno un utente ADMIN nel database per i test delle rotte waza.");
   }
 
-  authToken = await new SignJWT({
-    id: admin.id,
-    sub: admin.id,
-    role: "ADMIN",
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .sign(new TextEncoder().encode(JWT_SECRET));
+  authToken = await signFor(admin.id, "ADMIN");
+  fixerToken = await seedStaffUser("fixer");
+  shinigamiToken = await seedStaffUser("shinigami");
 });
 
 afterAll(async () => {
   await deleteAdminWazaRecords(createdWazaIds);
+  for (const id of seededUserIds) {
+    await db.delete(characters).where(eq(characters.userId, id));
+    await db.delete(users).where(eq(users.id, id));
+  }
 });
 
 describe("rotte /admin/waza", () => {
@@ -318,5 +351,37 @@ describe("rotte /admin/waza", () => {
     for (const slug of slugs) {
       expect(slugSet.has(slug)).toBe(true);
     }
+  });
+});
+
+describe("permessi ruoli /admin/waza", () => {
+  it("un Fixer crea e salva una bozza con successo", async () => {
+    const createRes = await apiAs(fixerToken, "POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: "Kaji Fixer Bozza",
+      nomeItaliano: "Bozza del Fixer",
+    });
+    expect(createRes.status).toBe(200);
+    const created = await readJson<{ waza: { id: string } }>(createRes);
+    createdWazaIds.push(created.waza.id);
+
+    const saveRes = await apiAs(fixerToken, "PUT", `/admin/waza/${created.waza.id}/versioni/1`, {
+      ...validCreateBody,
+      nomeRomaji: "Kaji Fixer Bozza",
+      nomeItaliano: "Bozza del Fixer (agg.)",
+    });
+    expect(saveRes.status).toBe(200);
+  });
+
+  it("uno Shinigami riceve 403 su GET e POST", async () => {
+    const getRes = await apiAs(shinigamiToken, "GET", "/admin/waza?archiviata=all");
+    expect(getRes.status).toBe(403);
+
+    const postRes = await apiAs(shinigamiToken, "POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: "Kaji Shinigami Vietato",
+      nomeItaliano: "Vietato allo Shinigami",
+    });
+    expect(postRes.status).toBe(403);
   });
 });

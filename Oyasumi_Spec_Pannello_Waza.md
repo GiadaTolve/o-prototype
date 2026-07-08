@@ -226,11 +226,19 @@ Risposta: le **righe di log del motore vero**, pipeline esplicita:
 
 ## 8. Permessi
 
-| Ruolo | Può |
-|---|---|
-| `gestione` | tutto |
-| `proponente` (master) | creare bozze, modificare le proprie bozze, usare sandbox. NON: validare, pubblicare, archiviare, toccare i vocabolari |
-| giocatori | nessun accesso al pannello; vedono le waza pubblicate nella loro scheda (fuori perimetro) |
+Matrice definitiva. Non esiste il ruolo «proponente»: l'addetto alle waza è il **Fixer**. I ruoli staff sono i pixel-icon `uiMetadata.roleIcon` (più l'account `ADMIN`).
+
+| Azione | Proprietario (`admin`) | Moderatore (`moderatore`) | Fixer (`fixer`) | Shinigami / Capo Shinigami |
+|---|:---:|:---:|:---:|:---:|
+| Catalogo: vedere, creare, salvare bozze, validare, duplicare, archiviare | SÌ | SÌ | SÌ | NO |
+| Pubblicare (Sprint 4) | SÌ | SÌ | NO | NO |
+
+- **Gestire** (tutte le rotte attuali `/admin/waza`) = accesso Sviluppo → `userCanManageWaza` (account ADMIN oppure `roleIcon` ∈ {admin, moderatore, fixer}).
+- **Pubblicare** (rotta dello Sprint 4, ancora da implementare) = accesso Gestione → `userCanPublishWaza` (account ADMIN oppure `roleIcon` ∈ {admin, moderatore}).
+- **Shinigami / Capo Shinigami** e account **MASTER**: né voce di menu né API (403 su GET/POST).
+- **Giocatori:** nessun accesso al pannello; vedono le waza pubblicate nella loro scheda (fuori perimetro).
+
+Helper: `apps/server/src/lib/waza-access.ts` (server) e `apps/client/src/lib/waza-authoring-access.ts` (`canManageWaza`, `canPublishWaza`).
 
 ---
 
@@ -254,7 +262,7 @@ L'import NON tenta di parsare gli effetti dal testo: porta solo l'anagrafica. La
 
 **Sprint 3 — anteprima + sandbox:** renderEffetti condiviso, colonna destra completa, /sandbox col motore in-memory.
 
-**Sprint 4 — governance:** workflow stati completo, versioning con changelog, congelamento tier, permessi proponente, duplica, archiviazione, vocabolari editabili.
+**Sprint 4 — governance:** workflow stati completo, versioning con changelog, congelamento tier, rotta di pubblicazione con `userCanPublishWaza` (solo Proprietario/Moderatore), duplica, archiviazione, vocabolari editabili.
 
 ---
 

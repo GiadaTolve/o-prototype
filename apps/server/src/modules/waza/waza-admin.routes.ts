@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
-import { userHasGestioneAccess } from "../../lib/gestione-access";
+import { userCanManageWaza } from "../../lib/waza-access";
 import {
   archiveAdminWaza,
   createAdminWaza,
@@ -15,15 +15,13 @@ import {
   WazaAdminHttpError,
 } from "./waza-admin.service";
 
-function hasStaffRole(role: string | undefined): boolean {
-  const r = (role ?? "").toUpperCase();
-  return r === "ADMIN" || r === "MASTER";
-}
-
+/**
+ * Gestione catalogo waza: Proprietario, Moderatore, Fixer (+ account ADMIN).
+ * Shinigami / Capo Shinigami e account MASTER ricevono 403.
+ */
 async function canAccessWazaAdmin(user: { id: string; role?: string } | null): Promise<boolean> {
   if (!user) return false;
-  if (hasStaffRole(user.role)) return true;
-  return userHasGestioneAccess(user.id, user.role);
+  return userCanManageWaza(user.id, user.role);
 }
 
 const versionBody = t.Object({
@@ -75,7 +73,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .get("/vocabolari", async ({ user, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           const items = await listAdminWazaVocabolari();
@@ -87,7 +85,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .get("/", async ({ user, query, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           const archiviata =
@@ -118,7 +116,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .get("/:id", async ({ user, params, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           return await getAdminWazaDetail(params.id);
@@ -129,7 +127,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .get("/:id/versioni/:n", async ({ user, params, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           const numero = Number(params.n);
@@ -147,7 +145,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
         async ({ user, body, set }) => {
           if (!(await canAccessWazaAdmin(user))) {
             set.status = 403;
-            return { error: "Accesso riservato alla Gestione." };
+            return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
           }
           try {
             return await createAdminWaza(body, user!.id);
@@ -160,7 +158,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .post("/:id/duplica", async ({ user, params, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           return await duplicateAdminWaza(params.id, user!.id);
@@ -173,7 +171,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
         async ({ user, params, body, set }) => {
           if (!(await canAccessWazaAdmin(user))) {
             set.status = 403;
-            return { error: "Accesso riservato alla Gestione." };
+            return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
           }
           try {
             const numero = Number(params.n);
@@ -194,7 +192,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .post("/:id/versioni/:n/valida", async ({ user, params, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           const numero = Number(params.n);
@@ -214,7 +212,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .post("/:id/archivia", async ({ user, params, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           return { waza: await archiveAdminWaza(params.id) };
@@ -225,7 +223,7 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
       .post("/:id/ripristina", async ({ user, params, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;
-          return { error: "Accesso riservato alla Gestione." };
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
         }
         try {
           return { waza: await restoreAdminWaza(params.id) };

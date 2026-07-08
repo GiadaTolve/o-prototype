@@ -309,69 +309,6 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "effect": "Attiva · [Energetica][Emanazione] · Tier base 3 · CS 3 · 1/4. Esplosione elementale in tutte le direzioni, raggio 5 m; danno = tier a ogni bersaglio nell'area (te escluso)."
   },
   {
-    "name": "Sentiero Perduto",
-    "rank": null,
-    "styleId": null,
-    "isPassive": true,
-    "description": "Chi entra nel Mori senza invito sente la foresta spostarsi di mezzo passo: non è smarrimento, è rifiuto.",
-    "poolId": "onimori-sentiero-perduto",
-    "effect": "Passiva · CS 0. Entro zone Onimori (dichiarate dal Master), +1,5 m al Movimento fuori combattimento e percezione vaga di presenze entro 10 m (direzione, non identità)."
-  },
-  {
-    "name": "Nebbia Rossa",
-    "rank": "T2",
-    "styleId": null,
-    "isPassive": false,
-    "description": "La umidità del sottobosco si tinge di ferro: una nebbia bassa che non nasconde, ma affatica chi la respira troppo a lungo.",
-    "poolId": "onimori-nebbia-rossa",
-    "effect": "Attiva · [Emanazione][Gassosa] · Tier base 2 · CS 2 · 1/4. Nebbia in raggio 6 m per 2 turni; chi la attraversa subisce danno = tier (una volta per turno) e [Rallentato] per 1 turno."
-  },
-  {
-    "name": "Artiglio dello Yokai",
-    "rank": "T2",
-    "styleId": null,
-    "isPassive": false,
-    "description": "Per un istante le unghie non sono carne: sono artigli troppo lunghi, troppo freddi, troppo affamati.",
-    "poolId": "onimori-artiglio-yokai",
-    "effect": "Attiva · [Contatto][Energetica] · Tier base 2 · CS 2 · 1/4. Colpo a [Contatto] (danno = tier). In zona Onimori, +1 tier se il bersaglio non ti ha ancora colpito in questo combattimento."
-  },
-  {
-    "name": "Eco del Bosco",
-    "rank": "T2",
-    "styleId": null,
-    "isPassive": false,
-    "description": "Il Mori ripete i suoni con ritardo maligno: il colpo arriva due volte, la seconda dal lato sbagliato.",
-    "poolId": "onimori-echo-bosco",
-    "effect": "Attiva · [Propagazione][Sonoro] · Tier base 2 · CS 2 · 1/4. Onda sonora in cerchio 4 m; danno = tier. Se il bersaglio è già [Rallentato], applica anche 1 stack di [Vertigini]."
-  },
-  {
-    "name": "Maschera dell'Oni",
-    "rank": "T2",
-    "styleId": null,
-    "isPassive": false,
-    "description": "Un volto di legno scuro copre il viso: non protegge, intimidisce — e per qualche istante il corpo dietro sembra più grande del vero.",
-    "poolId": "onimori-maschera-oni",
-    "effect": "Attiva · [Potenziamento][Nessuna] · CS 2 · 1/4. Per 2 turni, +1 tier alle waza a [Contatto] e +1 all'Indice difensivo. A fine durata, −1 CS (stanchezza)."
-  },
-  {
-    "name": "Maledizione delle Radici",
-    "rank": "T2",
-    "styleId": null,
-    "isPassive": false,
-    "description": "Il terreno del Mori non è suolo: è memoria. Le radici afferrano chi vi poggia troppo a lungo.",
-    "poolId": "onimori-maledizione-radici",
-    "effect": "Attiva · [Emanazione][Solido] · Tier base 3 · CS 3 · 1/4. Raggio 4 m; danno = tier e [Rallentato] per 2 turni a chi non supera il confronto d'Indice."
-  },
-  {
-    "name": "Ruggito di Confine",
-    "rank": "T2",
-    "styleId": null,
-    "isPassive": false,
-    "description": "Non è un urlo di paura: è il confine stesso che risponde, dicendo a ciò che non appartiene al Mori di tornare indietro.",
-    "poolId": "onimori-ruggito-confine",
-    "effect": "Attiva · [Propagazione Conica][Sonoro] · Tier base 3 · CS 3 · 1/4. Cono 8 m; danno = tier e sbalzo 3 m indietro. In zona Onimori, i bersagli sbalzati oltre il bordo dichiarato della zona subiscono +1 tier aggiuntivo."
-  },
-  {
     "name": "Tōrō (灯籠) — Lanterna Incisa",
     "rank": null,
     "styleId": "toka",

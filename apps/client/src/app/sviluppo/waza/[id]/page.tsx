@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { canAccessWazaAuthoring } from "@/lib/waza-authoring-access";
+import { canManageWaza } from "@/lib/waza-authoring-access";
 import { EditorWaza } from "@/components/sviluppo/waza/EditorWaza";
 
 export default function SviluppoWazaEditorPage() {
@@ -23,7 +23,7 @@ export default function SviluppoWazaEditorPage() {
     api
       .get("/characters/me")
       .then((char) => {
-        setAllowed(canAccessWazaAuthoring(char as Parameters<typeof canAccessWazaAuthoring>[0]));
+        setAllowed(canManageWaza(char as Parameters<typeof canManageWaza>[0]));
       })
       .catch(() => setAllowed(false))
       .finally(() => setLoading(false));
