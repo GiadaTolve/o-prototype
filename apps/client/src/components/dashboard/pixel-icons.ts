@@ -1,18 +1,18 @@
 /**
  * Pixel-icon — specifica GAME_LAYOUT_SPEC.
  *
- * Icone 30×30 px che decorano il nome del possessore (ruoli, ordine, premio speciale).
+ * Icone 25×25 px che decorano il nome del possessore (ruoli, ordine, premio speciale).
  * Visibili ovunque sia visibile il nome (Mini-Profilo, Lista Presenti, Scheda, chat).
  * Asset in /pixel-icons/*.webp
  *
  * icon = normali icone UI (Font Awesome) per pulsanti/widget.
  */
 
-export const PIXEL_ICON_SIZE = 30;
+export const PIXEL_ICON_SIZE = 25;
 export const PIXEL_ICON_BASE = "/pixel-icons";
 
-/** Classi display per pixel-icon (30×30). */
-export const PIXEL_ICON_DISPLAY_CLASS = "w-[30px] h-[30px] shrink-0 object-contain";
+/** Classi display per pixel-icon (25×25). */
+export const PIXEL_ICON_DISPLAY_CLASS = "w-[25px] h-[25px] shrink-0 object-contain";
 
 /** Ruolo staff: admin, moderatore, fixer (dev), capo shinigami, shinigami */
 export type PixelIconRuolo = "admin" | "moderatore" | "fixer" | "capo-shinigami" | "shinigami";
@@ -86,7 +86,7 @@ export function getPixelIconUrlRuolo(ruolo: PixelIconRuolo): string {
   return `${PIXEL_ICON_BASE}/${file}.webp`;
 }
 
-/** Restituisce il path per ordine (30×30 accanto al nome). */
+/** Restituisce il path per ordine (25×25 accanto al nome). */
 export function getPixelIconUrlOrdine(ordine: PixelIconOrdine): string {
   return `${PIXEL_ICON_BASE}/${ordine}.png?v=${PIXEL_ICON_ORDINE_ASSET_REV}`;
 }

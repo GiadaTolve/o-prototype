@@ -26,7 +26,7 @@ type Props = {
   className?: string;
 };
 
-/** Mostra le pixel-icon (30×30) accanto al nome. Ruoli + ordini. Capo-shinigami usa shinigami. */
+/** Mostra le pixel-icon (25×25) accanto al nome. Ruoli + ordini. Capo-shinigami usa shinigami. */
 export function PixelIcons({ pixelIcons, className = "" }: Props) {
   if (!pixelIcons) return null;
 
