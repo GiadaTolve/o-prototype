@@ -2,12 +2,17 @@
 
 import { useState } from "react";
 import {
+  BLOCCO_MODELLI,
   BLOCCO_TIPI,
   BLOCCO_TIPO_LABELS,
+  createBloccoDaModello,
   createDefaultBlocco,
+  type BloccoModello,
   type BloccoTipo,
 } from "./effetti-schema";
+import { ATOMO_DESCRIZIONI } from "./waza-blocco-render";
 import { CardBlocco } from "./CardBlocco";
+import { PannelloRenderMeccanico } from "./PannelloRenderMeccanico";
 
 type VocabMap = Record<string, string[]>;
 
@@ -30,6 +35,11 @@ export function SezioneBlocchi({
 
   const addBlocco = (tipo: BloccoTipo) => {
     onChange([...effetti, createDefaultBlocco(tipo)]);
+    setMenuOpen(false);
+  };
+
+  const addModello = (modello: BloccoModello) => {
+    onChange([...effetti, createBloccoDaModello(modello)]);
     setMenuOpen(false);
   };
 
@@ -59,37 +69,57 @@ export function SezioneBlocchi({
 
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-display text-[var(--accent-gold)]">Blocchi effetto</h2>
-        <div className="relative">
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => setMenuOpen((o) => !o)}
-            className="text-xs px-3 py-1.5 rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] disabled:opacity-50"
-          >
-            + Aggiungi effetto
-          </button>
-          {menuOpen && !disabled && (
-            <div className="absolute right-0 z-20 mt-1 min-w-[220px] rounded border border-[var(--border-color)] bg-[var(--panel-bg)] shadow-lg py-1">
-              {BLOCCO_TIPI.map((tipo) => (
-                <button
-                  key={tipo}
-                  type="button"
-                  onClick={() => addBlocco(tipo)}
-                  className="block w-full text-left px-3 py-2 text-xs text-[var(--accent-violet-light)] hover:bg-black/30 hover:text-[var(--accent-gold)]"
-                >
-                  {BLOCCO_TIPO_LABELS[tipo]}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          {BLOCCO_MODELLI.map((modello) => (
+            <button
+              key={modello.id}
+              type="button"
+              disabled={disabled}
+              title={modello.descrizione}
+              onClick={() => addModello(modello.id)}
+              className="text-[11px] px-2.5 py-1.5 rounded border border-[var(--accent-violet)]/40 text-[var(--accent-violet-light)] hover:border-[var(--accent-gold)]/60 hover:text-[var(--accent-gold)] disabled:opacity-50"
+            >
+              {modello.label}
+            </button>
+          ))}
+          <div className="relative">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => setMenuOpen((o) => !o)}
+              className="text-xs px-3 py-1.5 rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] disabled:opacity-50"
+            >
+              + Aggiungi effetto
+            </button>
+            {menuOpen && !disabled && (
+              <div className="absolute right-0 z-20 mt-1 w-[300px] rounded border border-[var(--border-color)] bg-[var(--panel-bg)] shadow-lg py-1">
+                {BLOCCO_TIPI.map((tipo) => (
+                  <button
+                    key={tipo}
+                    type="button"
+                    onClick={() => addBlocco(tipo)}
+                    className="block w-full text-left px-3 py-2 hover:bg-black/30 group"
+                  >
+                    <span className="block text-xs text-[var(--accent-violet-light)] group-hover:text-[var(--accent-gold)]">
+                      {BLOCCO_TIPO_LABELS[tipo]}
+                    </span>
+                    <span className="block text-[10px] text-gray-500 leading-snug">
+                      {ATOMO_DESCRIZIONI[tipo]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {effetti.length === 0 ? (
         <p className="text-xs text-gray-500 border border-dashed border-[var(--border-color)] rounded px-3 py-6 text-center">
-          Nessun blocco. Aggiungi un effetto per iniziare la codifica.
+          Nessun blocco. Usa un modello rapido qui sopra o «+ Aggiungi effetto» per iniziare la
+          codifica.
         </p>
       ) : (
         <div className="space-y-3">
@@ -111,6 +141,8 @@ export function SezioneBlocchi({
           ))}
         </div>
       )}
+
+      <PannelloRenderMeccanico effetti={effetti} tierFlatDamage={tierFlatDamage} />
     </section>
   );
 }

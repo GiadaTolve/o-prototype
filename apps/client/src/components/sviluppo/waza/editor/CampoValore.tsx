@@ -18,16 +18,21 @@ type CampoValoreProps = {
 function labelForKey(key: string): string {
   const labels: Record<string, string> = {
     n: "Valore",
-    x: "Moltiplicatore",
-    base: "Base",
-    skiru: "Skiru",
-    per_punto: "Per punto",
-    status: "Status",
+    x: "Moltiplicatore (×)",
+    base: "Base di partenza",
+    skiru: "Skiru di riferimento",
+    per_punto: "Aggiunta per punto Skiru",
+    status: "Status di riferimento",
     passi: "Passi (separati da virgola)",
-    cap: "Cap",
+    cap: "Tetto massimo (cap)",
   };
   return labels[key] ?? key;
 }
+
+const VALORE_PLACEHOLDER: Record<string, string> = {
+  skiru: "es. kensei",
+  status: "es. Incendiato",
+};
 
 function ValoreScalarField({
   schemaKey,
@@ -124,6 +129,7 @@ function ValoreScalarField({
       disabled={disabled}
       value={String(value ?? "")}
       onChange={(e) => onChange(e.target.value)}
+      placeholder={VALORE_PLACEHOLDER[schemaKey] ?? "es. …"}
       className={inputClass}
     />
   );

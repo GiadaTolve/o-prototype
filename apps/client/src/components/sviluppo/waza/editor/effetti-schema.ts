@@ -129,11 +129,77 @@ export function createDefaultFromSchema(schema: SchemaNode): unknown {
   return "";
 }
 
+/** Bersaglio precompilato per tipo di atomo (default sensato alla creazione). */
+const BERSAGLIO_DEFAULT_PER_TIPO: Partial<Record<BloccoTipo, string>> = {
+  DANNO: "BERSAGLIO_SINGOLO",
+  MOD_DANNO: "SE_STESSO",
+  BUFF_SKIRU: "SE_STESSO",
+  APPLICA_STATUS: "BERSAGLIO_SINGOLO",
+  EVOCA_COSTRUTTO: "SE_STESSO",
+};
+
 export function createDefaultBlocco(tipo: BloccoTipo): Record<string, unknown> {
   const schema = getBloccoSchemaByTipo(tipo);
   if (!schema) return { tipo };
   const value = createDefaultFromSchema(schema);
-  return typeof value === "object" && value != null ? (value as Record<string, unknown>) : { tipo };
+  const blocco =
+    typeof value === "object" && value != null
+      ? (value as Record<string, unknown>)
+      : { tipo };
+
+  // Default sensati: trigger al lancio, durata istantanea, bersaglio per tipo.
+  if ("trigger" in blocco) blocco.trigger = "AL_LANCIO";
+  if ("durata" in blocco) blocco.durata = { tipo: "ISTANTANEA" };
+  const bersaglio = BERSAGLIO_DEFAULT_PER_TIPO[tipo];
+  if (bersaglio && "bersaglio" in blocco) blocco.bersaglio = bersaglio;
+
+  return blocco;
+}
+
+export type BloccoModello = "danno-semplice" | "potenziamento-durata" | "effetto-master";
+
+export const BLOCCO_MODELLI: {
+  id: BloccoModello;
+  label: string;
+  descrizione: string;
+}[] = [
+  {
+    id: "danno-semplice",
+    label: "Danno semplice",
+    descrizione: "Danno pari al tier, a un bersaglio singolo",
+  },
+  {
+    id: "potenziamento-durata",
+    label: "Potenziamento con durata",
+    descrizione: "Buff +2 di una Skiru su di te per 2 turni",
+  },
+  {
+    id: "effetto-master",
+    label: "Effetto per il master",
+    descrizione: "Testo libero, non eseguito dal motore",
+  },
+];
+
+/** Crea un blocco già precompilato col caso d'uso più comune. */
+export function createBloccoDaModello(modello: BloccoModello): Record<string, unknown> {
+  switch (modello) {
+    case "danno-semplice": {
+      const b = createDefaultBlocco("DANNO");
+      b.valore = { tipo: "TIER" };
+      return b;
+    }
+    case "potenziamento-durata": {
+      // I potenziamenti Skiru sono valori FISSI (boost base canonico +2), mai tier-delta.
+      const b = createDefaultBlocco("BUFF_SKIRU");
+      b.durata = { tipo: "TURNI", n: 2 };
+      b.valore = { tipo: "FISSO", n: 2 };
+      return b;
+    }
+    case "effetto-master":
+      return createDefaultBlocco("MANUALE");
+    default:
+      return createDefaultBlocco("MANUALE");
+  }
 }
 
 export function createDefaultValore(tipo: string): Record<string, unknown> {

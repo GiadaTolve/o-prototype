@@ -14,20 +14,20 @@ const VALORE_KEYS = new Set(["valore", "resistenza", "danno"]);
 
 function labelForProperty(key: string): string {
   const labels: Record<string, string> = {
-    trigger: "Trigger",
-    bersaglio: "Bersaglio",
-    durata: "Durata",
-    condizione: "Condizione",
+    trigger: "Quando scatta",
+    bersaglio: "Su chi/dove",
+    durata: "Per quanto dura",
+    condizione: "Solo se… (condizione)",
     costo_extra: "Costo extra",
-    nota_master: "Nota Master",
+    nota_master: "Nota per il master",
     consistenza: "Consistenza",
-    area: "Area",
-    ripetizioni: "Ripetizioni",
+    area: "Forma e misure area",
+    ripetizioni: "Quante volte colpisce",
     skiru: "Skiru",
     conta_junkan: "Conta nel pool Junkan",
-    status: "Status",
+    status: "Status applicato",
     stack: "Stack",
-    taglia: "Taglia",
+    taglia: "Taglia costrutto",
     gittata_controllo_m: "Gittata controllo (m)",
     movimento_m: "Movimento (m)",
     attacchi_per_turno: "Attacchi per turno",
@@ -36,10 +36,16 @@ function labelForProperty(key: string): string {
     conta_mei: "Conta nei Mei",
     testo: "Testo effetto",
     mostra_a: "Visibile a",
-    filtro_waza: "Filtro waza",
+    filtro_waza: "Filtro waza (tag)",
   };
   return labels[key] ?? key;
 }
+
+const PLACEHOLDER_ESEMPI: Record<string, string> = {
+  testo: "es. Il Tōrō può disintegrarsi in mille lucciole di cenere.",
+  nota_master: "es. Ricorda al giocatore di dichiarare la Skiru al lancio.",
+  condizione_fine: "es. il bersaglio esce dall'area",
+};
 
 function DurataEditor({
   value,
@@ -92,7 +98,7 @@ function DurataEditor({
           disabled={disabled}
           value={String(current.condizione_fine ?? "")}
           onChange={(e) => onChange({ ...current, condizione_fine: e.target.value })}
-          placeholder="Condizione di fine"
+          placeholder="es. il bersaglio esce dall'area"
           className={inputClass}
         />
       )}
@@ -373,6 +379,7 @@ export function SchemaField({
         value={String(value ?? "")}
         onChange={(e) => onChange(e.target.value)}
         rows={fieldKey === "testo" ? 4 : 2}
+        placeholder={PLACEHOLDER_ESEMPI[fieldKey]}
         className={`${inputClass} min-h-[4rem]`}
       />
     );
@@ -434,6 +441,7 @@ export function SchemaField({
       disabled={disabled}
       value={String(value ?? "")}
       onChange={(e) => onChange(e.target.value)}
+      placeholder={PLACEHOLDER_ESEMPI[fieldKey] ?? "es. …"}
       className={inputClass}
     />
   );
