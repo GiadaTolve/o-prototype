@@ -3,6 +3,7 @@ FROM oven/bun:1
 WORKDIR /app
 
 COPY packages ./packages
+COPY schemas ./schemas
 COPY apps/server ./apps/server
 
 WORKDIR /app/apps/server
