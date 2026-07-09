@@ -184,6 +184,21 @@ export function createDefaultBlocco(tipo: BloccoTipo): Record<string, unknown> {
   const bersaglio = BERSAGLIO_DEFAULT_PER_TIPO[tipo];
   if (bersaglio && "bersaglio" in blocco) blocco.bersaglio = bersaglio;
 
+  if (tipo === "ZONA" && "durata" in blocco) {
+    blocco.durata = { tipo: "TURNI", n: 3 };
+  }
+
+  return blocco;
+}
+
+/** Effetto annidato in effetti_zona (quando_entra / a_inizio_turno). */
+export function createDefaultZonaInternoHook(
+  hook: "quando_entra" | "a_inizio_turno",
+): Record<string, unknown> {
+  const blocco = createDefaultBlocco("APPLICA_STATUS");
+  blocco.trigger = hook === "quando_entra" ? "ENTRA_IN_ZONA" : "INIZIO_TURNO";
+  blocco.bersaglio = "BERSAGLIO_SINGOLO";
+  blocco.durata = { tipo: "TURNI", n: 1 };
   return blocco;
 }
 

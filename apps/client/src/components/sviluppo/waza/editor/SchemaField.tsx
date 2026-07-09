@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   createDefaultFromSchema,
+  createDefaultZonaInternoHook,
   getEnumOptions,
   getSchemaPropertyKeys,
   resolveSchemaNode,
@@ -424,6 +426,185 @@ function EffettiCollateraliEditor({
   );
 }
 
+function EffettiZonaEditor({
+  value,
+  onChange,
+  disabled,
+  tierFlatDamage,
+  statusOptions,
+}: {
+  value: unknown;
+  onChange: (next: unknown) => void;
+  disabled?: boolean;
+  tierFlatDamage?: number | null;
+  statusOptions?: string[];
+}) {
+  const obj = (value as Record<string, unknown>) ?? {};
+
+  const hooks = [
+    { key: "quando_entra" as const, label: "Quando entra" },
+    { key: "a_inizio_turno" as const, label: "A inizio turno" },
+  ];
+
+  const setHookEnabled = (key: "quando_entra" | "a_inizio_turno", enabled: boolean) => {
+    const next = { ...obj };
+    if (enabled) {
+      next[key] = createDefaultZonaInternoHook(key);
+    } else {
+      delete next[key];
+    }
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-3">
+      {hooks.map(({ key, label }) => {
+        const enabled = Object.prototype.hasOwnProperty.call(obj, key);
+        return (
+          <div
+            key={key}
+            className="rounded border border-[var(--border-color)]/70 p-2 space-y-2 bg-black/20"
+          >
+            <label className="flex items-center gap-2 text-sm text-[var(--accent-violet-light)] min-h-[44px]">
+              <input
+                type="checkbox"
+                checked={enabled}
+                disabled={disabled}
+                onChange={(e) => setHookEnabled(key, e.target.checked)}
+                className="rounded border-[var(--border-color)]"
+              />
+              {label}
+            </label>
+            {enabled && (
+              <SchemaField
+                fieldKey={key}
+                propSchema={{ $ref: "#/$defs/bloccoZonaInterno" }}
+                value={obj[key]}
+                onChange={(v) => onChange({ ...obj, [key]: v })}
+                disabled={disabled}
+                tierFlatDamage={tierFlatDamage}
+                statusOptions={statusOptions}
+              />
+            )}
+          </div>
+        );
+      })}
+      {!hooks.some(({ key }) => Object.prototype.hasOwnProperty.call(obj, key)) && (
+        <p className="text-xs text-gray-500">
+          Attiva almeno un hook (ingresso o inizio turno) per definire cosa fa la zona.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function BloccoOneOfField({
+  branches,
+  value,
+  onChange,
+  disabled,
+  tierFlatDamage,
+  statusOptions,
+}: {
+  branches: SchemaNode[];
+  value: unknown;
+  onChange: (next: unknown) => void;
+  disabled?: boolean;
+  tierFlatDamage?: number | null;
+  statusOptions?: string[];
+}) {
+  const inputClass =
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+  const currentObj = (value as Record<string, unknown>) ?? {};
+  const selectedTipo = String(currentObj.tipo ?? "");
+  const selectedBranch =
+    branches.find((b) => {
+      const tipoConst = (b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const;
+      return tipoConst === selectedTipo;
+    }) ?? branches[0];
+  const selectedBranchProps = (selectedBranch.properties as Record<string, SchemaNode>) ?? {};
+  const selectedBranchKeys = getSchemaPropertyKeys(selectedBranch);
+  const selectedBranchTipo = String(selectedBranchProps.tipo?.const ?? "");
+
+  useEffect(() => {
+    const currentObj = (value as Record<string, unknown>) ?? {};
+    if (
+      typeof currentObj !== "object" ||
+      currentObj == null ||
+      typeof currentObj.tipo === "string" ||
+      Object.keys(currentObj).length === 0
+    ) {
+      return;
+    }
+    onChange({
+      ...(createDefaultFromSchema(selectedBranch) as Record<string, unknown>),
+      ...currentObj,
+      tipo: selectedBranchTipo,
+    });
+  }, [value, onChange, selectedBranch, selectedBranchTipo]);
+
+  return (
+    <div className="space-y-2 pl-2 border-l border-[var(--border-color)]/50">
+      <label className="block space-y-1">
+        <span className="text-[10px] uppercase tracking-wider text-gray-500">Tipo</span>
+        <select
+          disabled={disabled}
+          value={selectedTipo || selectedBranchTipo}
+          onChange={(e) => {
+            const next = branches.find((b) => {
+              const tipoConst = (b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const;
+              return String(tipoConst ?? "") === e.target.value;
+            });
+            onChange(
+              next ? (createDefaultFromSchema(next) as Record<string, unknown>) : { tipo: e.target.value },
+            );
+          }}
+          className={inputClass}
+        >
+          {branches.map((b) => {
+            const tipoConst = String(
+              ((b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const ?? ""),
+            );
+            return (
+              <option key={tipoConst} value={tipoConst}>
+                {tipoConst}
+              </option>
+            );
+          })}
+        </select>
+      </label>
+      {selectedBranchKeys.map((k) => {
+        const child = selectedBranchProps[k];
+        return (
+          <label key={k} className="block space-y-1">
+            <span className="flex items-center justify-between gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-gray-500">
+                {labelForProperty(k)}
+              </span>
+              <InfoHint
+                title={labelForProperty(k)}
+                text={
+                  FIELD_HELP_TEXT[k] ?? "Compila questo campo solo se è rilevante per il blocco corrente."
+                }
+                className="-my-2"
+              />
+            </span>
+            <SchemaField
+              fieldKey={k}
+              propSchema={child}
+              value={currentObj[k]}
+              onChange={(v) => onChange({ ...currentObj, tipo: selectedBranchTipo, [k]: v })}
+              disabled={disabled}
+              tierFlatDamage={tierFlatDamage}
+              statusOptions={statusOptions}
+            />
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 type SchemaFieldProps = {
   fieldKey: string;
   propSchema: SchemaNode;
@@ -501,80 +682,31 @@ export function SchemaField({
     );
   }
 
+  if (fieldKey === "effetti_zona") {
+    return (
+      <EffettiZonaEditor
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        tierFlatDamage={tierFlatDamage}
+        statusOptions={statusOptions}
+      />
+    );
+  }
+
   if (resolved.oneOf && Array.isArray(resolved.oneOf)) {
     const branches = (resolved.oneOf as SchemaNode[]).map((b) =>
       b.$ref ? resolveSchemaRef(String(b.$ref)) : b,
     );
-    const currentObj = (value as Record<string, unknown>) ?? {};
-    const selectedTipo = String(currentObj.tipo ?? "");
-    const selectedBranch =
-      branches.find((b) => {
-        const tipoConst = (b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const;
-        return tipoConst === selectedTipo;
-      }) ?? branches[0];
-    const selectedBranchProps = (selectedBranch.properties as Record<string, SchemaNode>) ?? {};
-    const selectedBranchKeys = getSchemaPropertyKeys(selectedBranch);
-    const selectedBranchTipo = String(selectedBranchProps.tipo?.const ?? "");
-
     return (
-      <div className="space-y-2 pl-2 border-l border-[var(--border-color)]/50">
-        <label className="block space-y-1">
-          <span className="text-[10px] uppercase tracking-wider text-gray-500">Tipo</span>
-          <select
-            disabled={disabled}
-            value={selectedTipo || selectedBranchTipo}
-            onChange={(e) => {
-              const next = branches.find((b) => {
-                const tipoConst = (b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const;
-                return String(tipoConst ?? "") === e.target.value;
-              });
-              onChange(
-                next ? (createDefaultFromSchema(next) as Record<string, unknown>) : { tipo: e.target.value },
-              );
-            }}
-            className={inputClass}
-          >
-            {branches.map((b) => {
-              const tipoConst = String(
-                ((b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const ?? ""),
-              );
-              return (
-                <option key={tipoConst} value={tipoConst}>
-                  {tipoConst}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-        {selectedBranchKeys.map((k) => {
-          const child = selectedBranchProps[k];
-          return (
-            <label key={k} className="block space-y-1">
-              <span className="flex items-center justify-between gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-gray-500">
-                  {labelForProperty(k)}
-                </span>
-                <InfoHint
-                  title={labelForProperty(k)}
-                  text={
-                    FIELD_HELP_TEXT[k] ?? "Compila questo campo solo se è rilevante per il blocco corrente."
-                  }
-                  className="-my-2"
-                />
-              </span>
-              <SchemaField
-                fieldKey={k}
-                propSchema={child}
-                value={currentObj[k]}
-                onChange={(v) => onChange({ ...currentObj, tipo: selectedBranchTipo, [k]: v })}
-                disabled={disabled}
-                tierFlatDamage={tierFlatDamage}
-                statusOptions={statusOptions}
-              />
-            </label>
-          );
-        })}
-      </div>
+      <BloccoOneOfField
+        branches={branches}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        tierFlatDamage={tierFlatDamage}
+        statusOptions={statusOptions}
+      />
     );
   }
 

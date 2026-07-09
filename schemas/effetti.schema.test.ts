@@ -308,6 +308,25 @@ describe("effetti.schema.json", () => {
     expect(validateEffettiSchema(payload).valid).toBe(true);
   });
 
+  it("ignora hook zona incompleti (senza tipo) in validazione", () => {
+    const payload = [
+      {
+        tipo: "ZONA",
+        trigger: "AL_LANCIO",
+        bersaglio: "ZONA_TERRENO",
+        durata: { tipo: "TURNI", n: 3 },
+        forma_zona: "cerchio",
+        raggio_zona_m: 4,
+        ancoraggio: "FISSA",
+        effetti_zona: {
+          quando_entra: { trigger: "ENTRA_IN_ZONA", bersaglio: "BERSAGLIO_SINGOLO" },
+        },
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
   it("rifiuta ZONA senza effetti_zona", () => {
     const payload = [
       {
