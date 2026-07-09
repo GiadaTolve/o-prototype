@@ -85,6 +85,10 @@ import {
 } from '@domain/progression';
 import { checkKeystoneForWaza, hasKeystoneOwned } from '@domain/progression/do-statutes';
 import {
+  isSkillVisibleInPlayerCatalog,
+  loadAuthoringPublishByLegacyId,
+} from '../waza/waza-published-filter';
+import {
   applyStatus,
   applyElementalStatus,
   removeStatus,
@@ -539,7 +543,7 @@ export class CharacterService {
    * Elenco skill disponibili per acquisto con stato owned/canPurchase.
    */
   async getAvailableSkillsForPurchase(characterId: string) {
-    const [allSkills, char, learned, styleCounts, ownedPoolIds] = await Promise.all([
+    const [allSkills, char, learned, styleCounts, ownedPoolIds, publishByLegacyId] = await Promise.all([
       db.query.skills.findMany({
         columns: {
           id: true,
@@ -579,6 +583,7 @@ export class CharacterService {
       }),
       this.countOwnedWazaByStyle(characterId),
       this.getOwnedWazaPoolIds(characterId),
+      loadAuthoringPublishByLegacyId(),
     ]);
     const ownedIds = new Set(learned.map((r) => r.skillId));
     const exp = char?.experienceSpendable ?? 0;
@@ -591,7 +596,9 @@ export class CharacterService {
       (char?.uiMetadata ?? {}) as StyleHexUiMeta,
     );
 
-    return allSkills.map((s) => {
+    return allSkills
+      .filter((s) => isSkillVisibleInPlayerCatalog(s.id, s.type, publishByLegacyId))
+      .map((s) => {
       const hasResources =
         !ownedIds.has(s.id) && (s.costExp ?? 0) <= exp && (s.costKeys ?? 0) <= keys;
       let canPurchase = hasResources;
