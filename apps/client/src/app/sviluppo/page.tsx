@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { GestioneWazaPanel } from "@/components/gestione/GestioneWazaPanel";
+import { CatalogoWaza } from "@/components/sviluppo/waza/CatalogoWaza";
 import { BestiarioManagement } from "@/components/gestione/BestiarioManagement";
 import { GestioneWazaCreatePanel } from "@/components/gestione/GestioneWazaCreatePanel";
 import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
@@ -18,6 +17,7 @@ export default function SviluppoPage() {
   const [canAccess, setCanAccess] = useState(false);
   const [canAuthoring, setCanAuthoring] = useState(false);
   const [activeTab, setActiveTab] = useState<
+    | "catalogo-waza"
     | "waza-generiche"
     | "waza-do"
     | "waza-madosho"
@@ -27,7 +27,16 @@ export default function SviluppoPage() {
     | "status"
     | "bestiario"
     | "market"
-  >("waza-generiche");
+  >("catalogo-waza");
+
+  const PlaceholderPanel = ({ title }: { title: string }) => (
+    <section className="rounded border border-[var(--border-color)] bg-[var(--panel-bg)]/40 p-6 animate__animated animate__fadeIn">
+      <h2 className="text-lg font-display text-[var(--accent-gold)]">{title}</h2>
+      <p className="text-sm text-[var(--accent-violet-light)] mt-2">
+        Sezione temporaneamente vuota: in futuro ospitera nuovi strumenti.
+      </p>
+    </section>
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -72,6 +81,7 @@ export default function SviluppoPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-1 border-b border-[var(--border-color)] mb-6 flex-wrap">
           {[
+            { id: "catalogo-waza" as const, label: "Catalogo Waza" },
             { id: "waza-generiche" as const, label: "Generiche" },
             { id: "waza-do" as const, label: "Dō" },
             { id: "waza-madosho" as const, label: "Madosho" },
@@ -95,27 +105,19 @@ export default function SviluppoPage() {
               {tab.label}
             </button>
           ))}
-          {canAuthoring && (
-            <Link
-              href="/sviluppo/waza"
-              className="px-4 py-2 text-xs uppercase tracking-wider font-display transition-colors border-b-2 text-gray-500 border-transparent hover:text-[var(--accent-gold)]"
-            >
-              Catalogo Waza
-            </Link>
-          )}
         </div>
 
         <div>
-          {activeTab === "waza-generiche" && (
-            <GestioneWazaPanel scope="generiche" title="Waza Generiche" />
-          )}
-          {activeTab === "waza-do" && <GestioneWazaPanel scope="do" title="Waza Dō" />}
-          {activeTab === "waza-madosho" && (
-            <GestioneWazaPanel scope="madosho" title="Waza Madosho" />
-          )}
-          {activeTab === "waza-premi" && (
-            <GestioneWazaPanel scope="premi" title="Waza Premi" />
-          )}
+          {activeTab === "catalogo-waza" &&
+            (canAuthoring ? (
+              <CatalogoWaza />
+            ) : (
+              <p className="text-sm text-gray-400">Accesso al Catalogo Waza non disponibile.</p>
+            ))}
+          {activeTab === "waza-generiche" && <PlaceholderPanel title="Generiche" />}
+          {activeTab === "waza-do" && <PlaceholderPanel title="Dō" />}
+          {activeTab === "waza-madosho" && <PlaceholderPanel title="Madoshō" />}
+          {activeTab === "waza-premi" && <PlaceholderPanel title="Premi" />}
           {activeTab === "waza-create" && (
             <div className="space-y-4 animate__animated animate__fadeIn">
               <div>
