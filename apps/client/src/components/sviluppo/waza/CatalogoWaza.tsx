@@ -49,10 +49,11 @@ type Filters = {
   atomo: string;
   statoCodifica: "" | keyof typeof WAZA_STATO_CODIFICA_META;
   q: string;
-  archiviate: boolean;
+  /** Vista catalogo: attive (default) o solo archiviate. */
+  vistaCatalogo: "attive" | "archiviate";
 };
 
-const FILTERS_STORAGE_KEY = "sviluppo:waza-catalog:filters:v1";
+const FILTERS_STORAGE_KEY = "sviluppo:waza-catalog:filters:v2";
 
 const EMPTY_FILTERS: Filters = {
   categoria: "",
@@ -62,7 +63,7 @@ const EMPTY_FILTERS: Filters = {
   atomo: "",
   statoCodifica: "",
   q: "",
-  archiviate: false,
+  vistaCatalogo: "attive",
 };
 
 function buildQuery(filters: Filters): string {
@@ -74,9 +75,22 @@ function buildQuery(filters: Filters): string {
   if (filters.atomo) params.set("atomo", filters.atomo);
   if (filters.statoCodifica) params.set("stato_codifica", filters.statoCodifica);
   if (filters.q.trim()) params.set("q", filters.q.trim());
-  params.set("archiviata", filters.archiviate ? "true" : "false");
+  params.set("archiviata", filters.vistaCatalogo === "archiviate" ? "true" : "false");
   const qs = params.toString();
   return qs ? `?${qs}` : "";
+}
+
+function emptyCatalogHint(filters: Filters, activeFilterCount: number): string {
+  if (filters.vistaCatalogo === "archiviate") {
+    if (activeFilterCount > 1) {
+      return "Nessuna waza archiviata corrisponde ai filtri attivi.";
+    }
+    return "Nessuna waza in archivio. Archivia una voce dalla vista Attive oppure torna al catalogo attivo.";
+  }
+  if (activeFilterCount > 0) {
+    return "Nessuna waza corrisponde ai filtri.";
+  }
+  return "Catalogo vuoto — esegui la sincronizzazione dal sistema legacy (bun scripts/sync-waza-from-legacy.ts --execute) oppure crea una nuova waza.";
 }
 
 function ContatoriCodifica({ items }: { items: WazaCatalogItem[] }) {
@@ -207,7 +221,7 @@ function countActiveFilters(filters: Filters): number {
   if (filters.atomo) n += 1;
   if (filters.statoCodifica) n += 1;
   if (filters.q.trim()) n += 1;
-  if (filters.archiviate) n += 1;
+  if (filters.vistaCatalogo === "archiviate") n += 1;
   return n;
 }
 
@@ -232,14 +246,18 @@ export function CatalogoWaza() {
         setFiltersHydrated(true);
         return;
       }
-      const parsed = JSON.parse(raw) as Partial<Filters>;
+      const parsed = JSON.parse(raw) as Partial<Filters> & { archiviate?: boolean };
+      const vistaCatalogo =
+        parsed.vistaCatalogo === "archiviate" || parsed.archiviate === true
+          ? "archiviate"
+          : "attive";
       setFilters({
         ...EMPTY_FILTERS,
         ...parsed,
         categoria: (parsed.categoria as Filters["categoria"]) ?? "",
         tipo: (parsed.tipo as Filters["tipo"]) ?? "",
         statoCodifica: (parsed.statoCodifica as Filters["statoCodifica"]) ?? "",
-        archiviate: parsed.archiviate === true,
+        vistaCatalogo,
       });
     } catch {
       // Se il payload salvato è invalido, ripartiamo da filtri vuoti.
@@ -366,11 +384,31 @@ export function CatalogoWaza() {
 
       <ContatoriCodifica items={items} />
 
+      <div className="flex flex-wrap gap-2">
+        {(
+          [
+            { id: "attive" as const, label: "Attive" },
+            { id: "archiviate" as const, label: "Archiviate" },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => updateFilter("vistaCatalogo", tab.id)}
+            className={`min-h-[44px] px-4 py-2 rounded border text-sm ${
+              filters.vistaCatalogo === tab.id
+                ? "border-[var(--accent-gold)]/60 text-[var(--accent-gold)] bg-[var(--accent-gold)]/10"
+                : "border-[var(--border-color)] text-[var(--accent-violet-light)]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {!loading && items.length === 0 && !message && (
         <p className="text-xs text-[var(--accent-violet-light)] border border-[var(--accent-gold)]/30 rounded px-3 py-2 bg-black/20">
-          Catalogo vuoto — esegui la sincronizzazione dal sistema legacy (
-          <code className="text-[var(--accent-gold)]">bun scripts/sync-waza-from-legacy.ts --execute</code>
-          ) oppure crea una nuova waza.
+          {emptyCatalogHint(filters, activeFilterCount)}
         </p>
       )}
 
@@ -519,15 +557,28 @@ export function CatalogoWaza() {
           />
         </label>
 
-        <label className="flex items-end gap-2 pb-2 text-sm text-[var(--accent-violet-light)]">
-          <input
-            type="checkbox"
-            checked={filters.archiviate}
-            onChange={(e) => updateFilter("archiviate", e.target.checked)}
-            className="rounded border-[var(--border-color)]"
-          />
-          Mostra archiviate
-        </label>
+        <div className="md:col-span-2 flex flex-wrap gap-2 items-end pb-1">
+          <span className="text-[10px] uppercase tracking-wider text-gray-500 w-full">Vista</span>
+          {(
+            [
+              { id: "attive" as const, label: "Attive" },
+              { id: "archiviate" as const, label: "Archiviate" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => updateFilter("vistaCatalogo", tab.id)}
+              className={`min-h-[44px] px-3 py-2 rounded border text-sm ${
+                filters.vistaCatalogo === tab.id
+                  ? "border-[var(--accent-gold)]/60 text-[var(--accent-gold)] bg-[var(--accent-gold)]/10"
+                  : "border-[var(--border-color)] text-[var(--accent-violet-light)]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {message && (
@@ -541,7 +592,7 @@ export function CatalogoWaza() {
           <p className="text-center text-gray-500 text-sm py-8">Caricamento catalogo…</p>
         ) : items.length === 0 ? (
           <p className="text-center text-gray-500 text-sm py-8">
-            Nessuna waza corrisponde ai filtri.
+            {emptyCatalogHint(filters, activeFilterCount)}
           </p>
         ) : (
           items.map((item) => (
@@ -582,7 +633,7 @@ export function CatalogoWaza() {
             ) : items.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-3 py-8 text-center text-gray-500">
-                  Nessuna waza corrisponde ai filtri.
+                  {emptyCatalogHint(filters, activeFilterCount)}
                 </td>
               </tr>
             ) : (
