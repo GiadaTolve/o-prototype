@@ -430,4 +430,50 @@ describe("permessi ruoli /admin/waza", () => {
     expect(body.errori).toEqual([]);
     expect(body.avvisi.some((a) => a.codice === "SKIRU_IR_MANCANTE")).toBe(true);
   });
+
+  it("POST /sandbox → log calcolo con tier e mitigazione", async () => {
+    const res = await api("POST", "/admin/waza/sandbox", {
+      effetti: [
+        {
+          tipo: "DANNO",
+          trigger: "AL_LANCIO",
+          bersaglio: "BERSAGLIO_SINGOLO",
+          durata: { tipo: "ISTANTANEA" },
+          valore: { tipo: "TIER" },
+        },
+      ],
+      tier: 2,
+      skiruIr: ["kensei", "seimitsu"],
+      contesto: {
+        lanciatore: {
+          skiru: { kensei: 3, seimitsu: 2 },
+          skiruIrFisica: "kensei",
+          skiruIrIncanalamento: "seimitsu",
+        },
+        bersaglio: { hp: 35, scudo: 0, itami: 2 },
+      },
+    });
+    expect(res.status).toBe(200);
+    const body = await readJson<{
+      righe: Array<{ text: string }>;
+      dannoFinaleHp: number;
+      hpBersaglioDopo: number;
+    }>(res);
+    expect(body.righe.length).toBeGreaterThan(0);
+    expect(body.righe.some((r) => r.text.includes("IR:"))).toBe(true);
+    expect(body.dannoFinaleHp).toBe(7);
+    expect(body.hpBersaglioDopo).toBe(28);
+  });
+
+  it("POST /sandbox senza permessi waza → 403", async () => {
+    const res = await apiAs(shinigamiToken, "POST", "/admin/waza/sandbox", {
+      effetti: [],
+      tier: 1,
+      contesto: {
+        lanciatore: { skiru: {} },
+        bersaglio: { hp: 10 },
+      },
+    });
+    expect(res.status).toBe(403);
+  });
 });

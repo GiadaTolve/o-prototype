@@ -10,6 +10,7 @@ import {
   listAdminWazaCatalog,
   listAdminWazaVocabolari,
   restoreAdminWaza,
+  runAdminWazaSandbox,
   saveAdminWazaDraft,
   validateAdminWazaVersion,
   WazaAdminHttpError,
@@ -241,5 +242,49 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
         } catch (e) {
           return handleWazaAdminError(e, set);
         }
-      }),
+      })
+      .post(
+        "/sandbox",
+        async ({ user, body, set }) => {
+          if (!(await canAccessWazaAdmin(user))) {
+            set.status = 403;
+            return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
+          }
+          try {
+            return await runAdminWazaSandbox(body);
+          } catch (e) {
+            return handleWazaAdminError(e, set);
+          }
+        },
+        {
+          body: t.Object({
+            effetti: t.Array(t.Record(t.String(), t.Unknown())),
+            tier: t.Optional(t.Nullable(t.Number())),
+            skiruIr: t.Optional(t.Array(t.String())),
+            contesto: t.Object({
+              lanciatore: t.Object({
+                skiru: t.Record(t.String(), t.Number()),
+                cs: t.Optional(t.Number()),
+                hp: t.Optional(t.Number()),
+                grado: t.Optional(t.String()),
+                stato: t.Optional(t.Record(t.String(), t.Unknown())),
+                skiruIrFisica: t.Optional(t.String()),
+                skiruIrIncanalamento: t.Optional(t.String()),
+              }),
+              bersaglio: t.Object({
+                hp: t.Number(),
+                scudo: t.Optional(t.Number()),
+                itami: t.Optional(t.Number()),
+                skiru: t.Optional(t.Record(t.String(), t.Number())),
+                status: t.Optional(t.Record(t.String(), t.Number())),
+              }),
+              opzioni: t.Optional(
+                t.Object({
+                  vinciConfrontoIndice: t.Optional(t.Boolean()),
+                }),
+              ),
+            }),
+          }),
+        },
+      ),
   );

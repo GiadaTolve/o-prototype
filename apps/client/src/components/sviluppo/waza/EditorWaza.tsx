@@ -13,6 +13,7 @@ import {
 import { SezioneBlocchi } from "./editor/SezioneBlocchi";
 import { PannelloValidazione } from "./editor/PannelloValidazione";
 import { PannelloRenderMeccanico } from "./editor/PannelloRenderMeccanico";
+import { PannelloSandbox } from "./editor/PannelloSandbox";
 import { renderBloccoMeccanico } from "./editor/waza-blocco-render";
 import { SelettoreSkiruIr } from "./editor/SelettoreSkiruIr";
 import { WazaApiError, wazaApi } from "./editor/waza-api";
@@ -151,6 +152,7 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
   const [vocabolari, setVocabolari] = useState<VocabolarioItem[]>([]);
 
   const [tab, setTab] = useState<"modifica" | "anteprima">("modifica");
+  const [sandboxOpen, setSandboxOpen] = useState(false);
   const [anteprimaDirty, setAnteprimaDirty] = useState(false);
   const tabRef = useRef(tab);
   tabRef.current = tab;
@@ -169,6 +171,12 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
   const showAnteprima = () => {
     setTab("anteprima");
     setAnteprimaDirty(false);
+  };
+
+  const openSandbox = () => {
+    setTab("anteprima");
+    setAnteprimaDirty(false);
+    setSandboxOpen(true);
   };
 
   const scrollToValidazione = () => {
@@ -426,7 +434,13 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
               {validating ? "Validazione…" : "Valida"}
             </button>
             <DisabledTooltipButton label="Pubblica" tooltip="Sprint 4" />
-            <DisabledTooltipButton label="Prova" tooltip="Sprint 3" />
+            <button
+              type="button"
+              onClick={openSandbox}
+              className="text-xs px-3 py-1.5 rounded border border-[var(--accent-gold)]/40 text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 transition-colors"
+            >
+              Prova
+            </button>
           </div>
         </div>
       </div>
@@ -766,6 +780,14 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
 
         <PannelloRenderMeccanico effetti={form.effetti} tierFlatDamage={tierFlatDamage} />
 
+        <PannelloSandbox
+          effetti={form.effetti}
+          tier={form.tier}
+          skiruIr={form.skiruIr}
+          collapsed={!sandboxOpen}
+          onToggle={() => setSandboxOpen((v) => !v)}
+        />
+
         {form.effetti.length === 0 && (
           <p className="md:hidden text-xs text-gray-500 border border-dashed border-[var(--border-color)] rounded px-3 py-6 text-center">
             Nessun blocco ancora. Torna su «Modifica» e aggiungi un effetto per vedere qui la
@@ -795,6 +817,13 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
           className="flex-1 min-h-[44px] rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-sm disabled:opacity-50"
         >
           {validating ? "Validazione…" : "Valida"}
+        </button>
+        <button
+          type="button"
+          onClick={openSandbox}
+          className="min-h-[44px] px-2 rounded border border-[var(--accent-gold)]/40 text-[var(--accent-gold)] text-xs shrink-0"
+        >
+          Prova
         </button>
         <button
           type="button"

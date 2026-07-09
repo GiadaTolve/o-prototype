@@ -10,6 +10,7 @@ import {
 import { db } from "../../plugins/db";
 import { vocabolari, waza, wazaVersioni } from "../../db/schema";
 import { validateEffettiSchema } from "./effetti-validator";
+import { runWazaSandbox, type WazaSandboxInput } from "@domain/combat/waza-sandbox";
 import {
   computeAtomiUsati,
   computeStatoCodifica,
@@ -640,6 +641,10 @@ export type VocabolarioItem = {
   valore: string;
   extra: Record<string, unknown> | null;
 };
+
+export async function runAdminWazaSandbox(input: WazaSandboxInput) {
+  return runWazaSandbox(input);
+}
 
 export async function listAdminWazaVocabolari(): Promise<VocabolarioItem[]> {
   const rows = await db.query.vocabolari.findMany({
