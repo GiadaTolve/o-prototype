@@ -136,11 +136,20 @@ function DisabledTooltipButton({
   );
 }
 
-export function EditorWaza({ wazaId }: { wazaId: string }) {
+export function EditorWaza({
+  wazaId,
+  canPublish = false,
+}: {
+  wazaId: string;
+  canPublish?: boolean;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [creatingDraft, setCreatingDraft] = useState(false);
+  const [changelog, setChangelog] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [validationErrori, setValidationErrori] = useState<ValidationIssue[]>([]);
@@ -184,6 +193,7 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
   };
 
   const readOnly = versione?.stato !== "bozza";
+  const tierFrozen = anagrafica?.versionePubblicataId != null;
   const vocabMap = useMemo(() => buildVocabMap(vocabolari), [vocabolari]);
   const tagOptions = useMemo(() => tagOptionsFromVocab(vocabMap), [vocabMap]);
 
@@ -365,6 +375,55 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
     }
   };
 
+  const handlePubblica = async () => {
+    if (!versione || versione.stato !== "validata" || !canPublish) return;
+    if (versione.numero > 1 && !changelog.trim()) {
+      setInfo("Inserisci il changelog obbligatorio prima di pubblicare.");
+      return;
+    }
+    setPublishing(true);
+    setInfo(null);
+    try {
+      const res = await wazaApi.post<{ waza: WazaAnagrafica; versione: WazaVersione }>(
+        `/admin/waza/${wazaId}/versioni/${versione.numero}/pubblica`,
+        { changelog: versione.numero > 1 ? changelog.trim() : null },
+      );
+      setAnagrafica(res.waza);
+      setVersione(res.versione);
+      setForm(versioneToForm(res.waza, res.versione));
+      setInfo(`Versione ${res.versione.numero} pubblicata.`);
+      setChangelog("");
+    } catch (e) {
+      setValidationErrori([
+        { messaggio: e instanceof Error ? e.message : "Errore pubblicazione" },
+      ]);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleNuovaBozza = async () => {
+    if (!anagrafica?.versionePubblicataId) return;
+    setCreatingDraft(true);
+    setInfo(null);
+    try {
+      const res = await wazaApi.post<{ versione: WazaVersione }>(
+        `/admin/waza/${wazaId}/versioni`,
+      );
+      setVersione(res.versione);
+      setForm(versioneToForm(anagrafica, res.versione));
+      setValidationErrori([]);
+      setValidationAvvisi([]);
+      setInfo(`Bozza v${res.versione.numero} creata dalla versione pubblicata.`);
+    } catch (e) {
+      setValidationErrori([
+        { messaggio: e instanceof Error ? e.message : "Errore creazione bozza" },
+      ]);
+    } finally {
+      setCreatingDraft(false);
+    }
+  };
+
   const toggleTag = (tag: string) => {
     if (!form) return;
     const has = form.tags.includes(tag);
@@ -433,7 +492,48 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
             >
               {validating ? "Validazione…" : "Valida"}
             </button>
-            <DisabledTooltipButton label="Pubblica" tooltip="Sprint 4" />
+            {canPublish && versione.stato === "validata" ? (
+              <>
+                {versione.numero > 1 && (
+                  <input
+                    type="text"
+                    value={changelog}
+                    onChange={(e) => setChangelog(e.target.value)}
+                    placeholder="Changelog obbligatorio"
+                    className="text-xs px-2 py-1.5 rounded border border-[var(--border-color)] bg-black/30 text-[var(--foreground)] max-w-[180px]"
+                  />
+                )}
+                <button
+                  type="button"
+                  disabled={publishing}
+                  onClick={() => void handlePubblica()}
+                  className="text-xs px-3 py-1.5 rounded border border-[var(--accent-gold)]/70 text-[var(--accent-gold)] disabled:opacity-50"
+                >
+                  {publishing ? "Pubblicazione…" : "Pubblica"}
+                </button>
+              </>
+            ) : (
+              <DisabledTooltipButton
+                label="Pubblica"
+                tooltip={
+                  !canPublish
+                    ? "Solo Proprietario/Moderatore"
+                    : versione.stato !== "validata"
+                      ? "Valida prima di pubblicare"
+                      : "Pubblica"
+                }
+              />
+            )}
+            {readOnly && anagrafica.versionePubblicataId && (
+              <button
+                type="button"
+                disabled={creatingDraft}
+                onClick={() => void handleNuovaBozza()}
+                className="text-xs px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] disabled:opacity-50"
+              >
+                {creatingDraft ? "Creazione…" : "Nuova bozza"}
+              </button>
+            )}
             <button
               type="button"
               onClick={openSandbox}
@@ -481,8 +581,8 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
 
       {readOnly && (
         <p className="text-xs text-[var(--accent-gold)] border border-[var(--accent-gold)]/30 rounded px-3 py-2 bg-black/20">
-          Questa versione non è in bozza: i campi sono in sola lettura. Per modificare, crea una nuova
-          bozza (Sprint 4).
+          Questa versione non è in bozza: i campi sono in sola lettura. Per modificare, usa «Nuova
+          bozza» (copia dalla versione pubblicata).
         </p>
       )}
 
@@ -594,7 +694,8 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
             <span className="text-[10px] uppercase tracking-wider text-gray-500">Tier</span>
             <div className="flex items-center gap-2">
               <select
-                disabled={readOnly}
+                disabled={readOnly || tierFrozen}
+                title={tierFrozen ? "Tier congelato alla pubblicazione" : undefined}
                 value={form.tier ?? ""}
                 onChange={(e) => handleTierChange(e.target.value)}
                 className={inputClass}
@@ -609,6 +710,11 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
               {tierFlatDamage != null && (
                 <span className="text-xs text-[var(--accent-violet-light)] whitespace-nowrap">
                   → danno {tierFlatDamage}
+                </span>
+              )}
+              {tierFrozen && (
+                <span className="text-[10px] text-gray-500" title="Tier congelato alla pubblicazione">
+                  congelato
                 </span>
               )}
             </div>

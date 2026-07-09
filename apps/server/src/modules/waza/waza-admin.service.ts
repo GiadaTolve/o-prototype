@@ -451,6 +451,14 @@ export async function saveAdminWazaDraft(
   const anagrafica = await db.query.waza.findFirst({ where: eq(waza.id, wazaId) });
   if (!anagrafica) throw new WazaAdminHttpError("Waza non trovata.", 404);
 
+  if (
+    anagrafica.versionePubblicataId != null &&
+    input.tier !== undefined &&
+    input.tier !== anagrafica.tier
+  ) {
+    throw new WazaAdminHttpError("Tier congelato alla pubblicazione.", 409);
+  }
+
   const effetti = input.effetti ?? [];
   validateEffettiOrThrow(effetti);
   const skiruIr = normalizeSkiruIr(input.skiruIr ?? versione.skiruIr);
@@ -608,6 +616,102 @@ export async function duplicateAdminWaza(wazaId: string, userId: string) {
 
     return { waza: createdWaza, versione };
   });
+}
+
+export async function publishAdminWazaVersion(
+  wazaId: string,
+  numero: number,
+  changelog: string | null | undefined,
+) {
+  const { waza: anagrafica, versione } = await getAdminWazaVersione(wazaId, numero);
+  if (versione.stato !== "validata") {
+    throw new WazaAdminHttpError("Solo le versioni validate possono essere pubblicate.", 409);
+  }
+
+  if (versione.kanji?.trim() && !versione.kanjiVerificato) {
+    throw new WazaAdminHttpError(
+      "Kanji presente ma non verificato: impossibile pubblicare.",
+      422,
+    );
+  }
+
+  const changelogNorm = changelog?.trim() ?? "";
+  if (numero > 1 && !changelogNorm) {
+    throw new WazaAdminHttpError("Changelog obbligatorio dalla versione 2.", 422);
+  }
+
+  return db.transaction(async (tx) => {
+    if (anagrafica.versionePubblicataId) {
+      await tx
+        .update(wazaVersioni)
+        .set({ stato: "superata" })
+        .where(and(eq(wazaVersioni.wazaId, wazaId), eq(wazaVersioni.stato, "pubblicata")));
+    }
+
+    const [pubblicata] = await tx
+      .update(wazaVersioni)
+      .set({
+        stato: "pubblicata",
+        changelog: changelogNorm || versione.changelog,
+        salvataIl: new Date(),
+      })
+      .where(eq(wazaVersioni.id, versione.id))
+      .returning();
+
+    const [updatedWaza] = await tx
+      .update(waza)
+      .set({ versionePubblicataId: pubblicata.id })
+      .where(eq(waza.id, wazaId))
+      .returning();
+
+    return { waza: updatedWaza, versione: pubblicata };
+  });
+}
+
+export async function createAdminWazaDraftFromPublished(wazaId: string, userId: string) {
+  const detail = await getAdminWazaDetail(wazaId);
+  if (!detail.versionePubblicata) {
+    throw new WazaAdminHttpError("Nessuna versione pubblicata da cui partire.", 409);
+  }
+
+  const openDraft = detail.versioni.find((v) => v.stato === "bozza");
+  if (openDraft) {
+    throw new WazaAdminHttpError(
+      `Esiste già una bozza aperta (v${openDraft.numero}).`,
+      409,
+    );
+  }
+
+  const pub = detail.versionePubblicata;
+  const nextNum = (detail.versioni[0]?.numero ?? pub.numero) + 1;
+  const effetti = Array.isArray(pub.effetti) ? pub.effetti : [];
+  const derivate = deriveFromEffetti(effetti);
+
+  const [versione] = await db
+    .insert(wazaVersioni)
+    .values({
+      wazaId,
+      numero: nextNum,
+      stato: "bozza",
+      nomeRomaji: pub.nomeRomaji,
+      nomeItaliano: pub.nomeItaliano,
+      kanji: pub.kanji,
+      kanjiVerificato: pub.kanjiVerificato,
+      descrizione: pub.descrizione,
+      cs: pub.cs,
+      tempoQuarti: pub.tempoQuarti,
+      tags: pub.tags,
+      scelteAlLancio: pub.scelteAlLancio,
+      effetti,
+      skiruIr: normalizeSkiruIr(pub.skiruIr),
+      atomiUsati: derivate.atomiUsati,
+      statoCodifica: derivate.statoCodifica,
+      changelog: null,
+      salvataDa: userId,
+    })
+    .returning();
+
+  return { versione };
 }
 
 export async function archiveAdminWaza(wazaId: string) {

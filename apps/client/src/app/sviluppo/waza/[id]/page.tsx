@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { canManageWaza } from "@/lib/waza-authoring-access";
+import { canManageWaza, canPublishWaza } from "@/lib/waza-authoring-access";
 import { EditorWaza } from "@/components/sviluppo/waza/EditorWaza";
 
 export default function SviluppoWazaEditorPage() {
@@ -13,6 +13,7 @@ export default function SviluppoWazaEditorPage() {
   const wazaId = String(params.id ?? "");
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
+  const [canPublish, setCanPublish] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -23,7 +24,9 @@ export default function SviluppoWazaEditorPage() {
     api
       .get("/characters/me")
       .then((char) => {
-        setAllowed(canManageWaza(char as Parameters<typeof canManageWaza>[0]));
+        const data = char as Parameters<typeof canManageWaza>[0];
+        setAllowed(canManageWaza(data));
+        setCanPublish(canPublishWaza(data));
       })
       .catch(() => setAllowed(false))
       .finally(() => setLoading(false));
@@ -55,7 +58,7 @@ export default function SviluppoWazaEditorPage() {
   return (
     <div className="min-h-screen bg-[var(--panel-bg)] p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
-        <EditorWaza wazaId={wazaId} />
+        <EditorWaza wazaId={wazaId} canPublish={canPublish} />
       </div>
     </div>
   );

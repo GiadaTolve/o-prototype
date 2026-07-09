@@ -1,14 +1,16 @@
 import { Elysia, t } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
-import { userCanManageWaza } from "../../lib/waza-access";
+import { userCanManageWaza, userCanPublishWaza } from "../../lib/waza-access";
 import {
   archiveAdminWaza,
   createAdminWaza,
+  createAdminWazaDraftFromPublished,
   duplicateAdminWaza,
   getAdminWazaDetail,
   getAdminWazaVersione,
   listAdminWazaCatalog,
   listAdminWazaVocabolari,
+  publishAdminWazaVersion,
   restoreAdminWaza,
   runAdminWazaSandbox,
   saveAdminWazaDraft,
@@ -23,6 +25,11 @@ import {
 async function canAccessWazaAdmin(user: { id: string; role?: string } | null): Promise<boolean> {
   if (!user) return false;
   return userCanManageWaza(user.id, user.role);
+}
+
+async function canPublishWazaAdmin(user: { id: string; role?: string } | null): Promise<boolean> {
+  if (!user) return false;
+  return userCanPublishWaza(user.id, user.role);
 }
 
 const versionBody = t.Object({
@@ -217,6 +224,44 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
             set.status = 422;
           }
           return result;
+        } catch (e) {
+          return handleWazaAdminError(e, set);
+        }
+      })
+      .post(
+        "/:id/versioni/:n/pubblica",
+        async ({ user, params, body, set }) => {
+          if (!(await canPublishWazaAdmin(user))) {
+            set.status = 403;
+            return {
+              error: "Pubblicazione riservata a Proprietario e Moderatore.",
+            };
+          }
+          try {
+            const numero = Number(params.n);
+            if (!Number.isInteger(numero) || numero < 1) {
+              set.status = 400;
+              return { error: "Numero versione non valido." };
+            }
+            return await publishAdminWazaVersion(params.id, numero, body.changelog);
+          } catch (e) {
+            return handleWazaAdminError(e, set);
+          }
+        },
+        {
+          params: t.Object({ id: t.String(), n: t.String() }),
+          body: t.Object({
+            changelog: t.Optional(t.Nullable(t.String())),
+          }),
+        },
+      )
+      .post("/:id/versioni", async ({ user, params, set }) => {
+        if (!(await canAccessWazaAdmin(user))) {
+          set.status = 403;
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
+        }
+        try {
+          return await createAdminWazaDraftFromPublished(params.id, user!.id);
         } catch (e) {
           return handleWazaAdminError(e, set);
         }

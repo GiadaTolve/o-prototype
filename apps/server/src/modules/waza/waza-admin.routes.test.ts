@@ -16,6 +16,7 @@ const app = new Elysia().use(wazaAdminRoutes);
 
 let authToken = "";
 let fixerToken = "";
+let moderatoreToken = "";
 let shinigamiToken = "";
 const createdWazaIds: string[] = [];
 const seededUserIds: string[] = [];
@@ -102,6 +103,7 @@ beforeAll(async () => {
 
   authToken = await signFor(admin.id, "ADMIN");
   fixerToken = await seedStaffUser("fixer");
+  moderatoreToken = await seedStaffUser("moderatore");
   shinigamiToken = await seedStaffUser("shinigami");
 });
 
@@ -475,5 +477,91 @@ describe("permessi ruoli /admin/waza", () => {
       },
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("governance /admin/waza", () => {
+  async function createValidataWaza(suffix: string) {
+    const createRes = await api("POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: `Gov ${suffix}`,
+      nomeItaliano: `Gov ${suffix}`,
+    });
+    const created = await readJson<{ waza: { id: string } }>(createRes);
+    createdWazaIds.push(created.waza.id);
+    const validaRes = await api("POST", `/admin/waza/${created.waza.id}/versioni/1/valida`);
+    expect(validaRes.status).toBe(200);
+    return created.waza.id;
+  }
+
+  it("pubblica versione validata → stato pubblicata + versione_pubblicata_id", async () => {
+    const wazaId = await createValidataWaza("Pubblica");
+    const pubRes = await api("POST", `/admin/waza/${wazaId}/versioni/1/pubblica`, {
+      changelog: null,
+    });
+    expect(pubRes.status).toBe(200);
+    const body = await readJson<{
+      waza: { versionePubblicataId: string | null };
+      versione: { stato: string };
+    }>(pubRes);
+    expect(body.versione.stato).toBe("pubblicata");
+    expect(body.waza.versionePubblicataId).toBeTruthy();
+  });
+
+  it("Fixer non può pubblicare → 403", async () => {
+    const wazaId = await createValidataWaza("FixerNoPub");
+    const pubRes = await apiAs(fixerToken, "POST", `/admin/waza/${wazaId}/versioni/1/pubblica`, {});
+    expect(pubRes.status).toBe(403);
+  });
+
+  it("Moderatore può pubblicare → 200", async () => {
+    const wazaId = await createValidataWaza("ModPub");
+    const pubRes = await apiAs(moderatoreToken, "POST", `/admin/waza/${wazaId}/versioni/1/pubblica`, {});
+    expect(pubRes.status).toBe(200);
+  });
+
+  it("tier congelato dopo pubblicazione → 409 su modifica tier", async () => {
+    const wazaId = await createValidataWaza("TierFreeze");
+    await api("POST", `/admin/waza/${wazaId}/versioni/1/pubblica`, {});
+    const draftRes = await api("POST", `/admin/waza/${wazaId}/versioni`);
+    expect(draftRes.status).toBe(200);
+    const draft = await readJson<{ versione: { numero: number } }>(draftRes);
+    const saveRes = await api("PUT", `/admin/waza/${wazaId}/versioni/${draft.versione.numero}`, {
+      ...validCreateBody,
+      tier: 3,
+    });
+    expect(saveRes.status).toBe(409);
+  });
+
+  it("nuova bozza da pubblicata + changelog obbligatorio da v2", async () => {
+    const wazaId = await createValidataWaza("Changelog");
+    await api("POST", `/admin/waza/${wazaId}/versioni/1/pubblica`, {});
+
+    const draftRes = await api("POST", `/admin/waza/${wazaId}/versioni`);
+    expect(draftRes.status).toBe(200);
+    const draft = await readJson<{ versione: { numero: number; stato: string } }>(draftRes);
+    expect(draft.versione.stato).toBe("bozza");
+    expect(draft.versione.numero).toBe(2);
+
+    await api("POST", `/admin/waza/${wazaId}/versioni/${draft.versione.numero}/valida`);
+    const noChangelog = await api(
+      "POST",
+      `/admin/waza/${wazaId}/versioni/${draft.versione.numero}/pubblica`,
+      { changelog: "" },
+    );
+    expect(noChangelog.status).toBe(422);
+
+    const ok = await api(
+      "POST",
+      `/admin/waza/${wazaId}/versioni/${draft.versione.numero}/pubblica`,
+      { changelog: "Bilanciamento danno tier." },
+    );
+    expect(ok.status).toBe(200);
+    const detail = await api("GET", `/admin/waza/${wazaId}`);
+    const detailBody = await readJson<{
+      versioni: Array<{ numero: number; stato: string }>;
+    }>(detail);
+    expect(detailBody.versioni.find((v) => v.numero === 1)?.stato).toBe("superata");
+    expect(detailBody.versioni.find((v) => v.numero === 2)?.stato).toBe("pubblicata");
   });
 });
