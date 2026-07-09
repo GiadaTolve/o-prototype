@@ -23,15 +23,19 @@ export const BLOCCO_INFO_TESTI: Record<BloccoTipo, string> = {
     "Crea una protezione con resistenza propria: il danno passa prima da qui e solo dopo sugli HP, finché lo scudo non si rompe. Puoi aggiungere mitigazione extra. Esempi: Tōki, Shoheki, Datsui-Tate.",
   ZONA:
     "Crea un'area persistente sul campo (fissa o in movimento) con effetti quando qualcuno entra o a inizio turno. Puoi indicare immunità (es. l'analista). Esempi: Jiban, Yōki no Iki, Rōei.",
+  MOD_CS:
+    "Agisce sulle CS come risorsa: drena, fa recuperare, deposita o blocca la rigenerazione per alcuni turni. Esempi: Bōgai, Chikuden, Balsamo dell'Anima.",
+  MOD_TRAIETTORIA:
+    "Cambia il percorso del colpo: devia, rimbalza, sospende, sdoppia, penetra, ancora o spinge. Esempi: Tazuna, Wakeito, Fukitobashi, Kantsū.",
+  MANIPOLA_STATUS:
+    "Sposta, trasmuta o consuma status già presenti su un bersaglio. Esempi: Hada-Yuzuri, Tenka, Kunō-Baku.",
+  DIFFERITO:
+    "Prepara ora e rilascia dopo: definisci una finestra di turni e uno o più rilasci (impatto, comando, scadenza) che contengono altri blocchi. Esempi: Fuin no Hi, Maikomi, Tameru.",
   MANUALE:
     "Scrivi a parole cosa succede, e lo gestisce il master. Si usa quando l'effetto è troppo particolare per i blocchi normali. Non è una scorciatoia di serie B: certe waza è giusto che restino così. Esempio: «ricrea l'oggetto distrutto il turno scorso».",
 };
 
 export const ATOMI_IN_ARRIVO: ReadonlyArray<{ label: string; text: string }> = [
-  { label: "MANIPOLA_STATUS (in arrivo)", text: "Sposta o consuma status già presenti…" },
-  { label: "MOD_CS (in arrivo)", text: "Tocca le CS come risorsa…" },
-  { label: "MOD_TRAIETTORIA (in arrivo)", text: "Cambia il percorso di un colpo…" },
-  { label: "DIFFERITO (in arrivo)", text: "Prepari qualcosa ora che scatta dopo…" },
 ];
 
 export const FIELD_HELP_TEXT: Record<string, string> = {
@@ -71,7 +75,8 @@ export const FIELD_HELP_TEXT: Record<string, string> = {
   da_tag: "Valore di partenza da sostituire (es. Contatto, Solido, Liquido).",
   a_tag: "Nuovo valore dopo la trasformazione.",
   oggetto: "Indica se la trasformazione colpisce la tua waza o un costrutto.",
-  effetti_collaterali: "Nota opzionale su effetti secondari (es. aumenta gittata, cambia traiettoria).",
+  effetti_collaterali:
+    "Lista di effetti secondari strutturati: scegli tipo (gittata/raggio/durata) e valore con lo stesso sistema «Quanto» (anche Formula su Skiru).",
   forma_zona: "Forma dell'area persistente (cerchio, cono, linea, ecc.).",
   raggio_zona_m: "Raggio/estensione della zona in metri.",
   ancoraggio: "La zona resta fissa o segue analista/costrutto.",
@@ -81,5 +86,16 @@ export const FIELD_HELP_TEXT: Record<string, string> = {
   immunita: "Chi ignora gli effetti della zona (es. analista, alleati).",
   resistenza_scudo: "Quanta resistenza ha lo scudo prima di rompersi.",
   mitigazione_extra: "Riduzione/addizione extra al danno assorbito dallo scudo.",
+  operazione: "Azione principale del blocco (es. drena, devia, trasferisci).",
+  quantita: "Quanto vale l'effetto su CS/status, con lo stesso sistema «Quanto».",
+  durata_blocco_turni: "Se blocchi la rigenerazione CS, per quanti turni resta attivo.",
+  direzione: "Direzione/verso della deviazione o spinta.",
+  status_da: "Status di origine da trasferire/consumare/rimuovere.",
+  status_a: "Status di destinazione nella trasmutazione.",
+  finestra_turni: "Numero di turni entro cui il rilascio differito può attivarsi.",
+  rilasci: "Elenco dei rilasci differiti (impatto/comando/scadenza) con i blocchi da eseguire.",
+  modo: "Quando si attiva questo rilascio.",
+  blocchi: "Blocchi da eseguire al rilascio.",
+  waza_slug: "Slug della waza di riferimento (tipo valore RIFERIMENTO).",
 };
 

@@ -5,6 +5,7 @@ import {
   getEnumOptions,
   getSchemaPropertyKeys,
   resolveSchemaNode,
+  resolveSchemaRef,
   type SchemaNode,
 } from "./effetti-schema";
 import { CampoValore } from "./CampoValore";
@@ -12,7 +13,7 @@ import { EditorCondizione } from "./EditorCondizione";
 import { InfoHint } from "./InfoHint";
 import { FIELD_HELP_TEXT } from "./waza-editor-help";
 
-const VALORE_KEYS = new Set(["valore", "resistenza", "danno"]);
+const VALORE_KEYS = new Set(["valore", "resistenza", "danno", "quantita"]);
 
 function labelForProperty(key: string): string {
   const labels: Record<string, string> = {
@@ -63,6 +64,19 @@ function labelForProperty(key: string): string {
     quando_entra: "Quando entra",
     a_inizio_turno: "A inizio turno",
     immunita: "Immunità",
+    quantita: "Quantità",
+    durata_blocco_turni: "Durata blocco rigenerazione (turni)",
+    direzione: "Direzione",
+    status_da: "Status da",
+    status_a: "Status a",
+    finestra_turni: "Finestra (turni)",
+    rilasci: "Rilasci",
+    modo: "Modo rilascio",
+    blocchi: "Blocchi",
+    impatto: "Rilascio a impatto",
+    a_comando: "Rilascio a comando",
+    scadenza: "Rilascio a scadenza",
+    waza_slug: "Waza riferimento",
     tipo: "Tipo",
     n: "Numero turni",
     condizione_fine: "Condizione di fine",
@@ -125,6 +139,21 @@ function optionLabel(fieldKey: string, value: string): string {
     operazione: {
       SCRIVI: "Scrivi",
       LEGGI: "Leggi",
+      DRENA: "Drena",
+      RECUPERA: "Recupera",
+      DEPOSITA: "Deposita",
+      BLOCCA_RIGEN: "Blocca rigenerazione",
+      DEVIA: "Devia",
+      RIMBALZA: "Rimbalza",
+      SOSPENDI: "Sospendi",
+      SDOPPIA: "Sdoppia",
+      PENETRA: "Penetra",
+      ANCORA: "Àncora",
+      SPINGI: "Spingi",
+      TRASFERISCI: "Trasferisci",
+      TRASMUTA: "Trasmuta",
+      CONSUMA: "Consuma",
+      RIMUOVI: "Rimuovi",
     },
     dimensione: {
       categoria: "Categoria",
@@ -138,6 +167,11 @@ function optionLabel(fieldKey: string, value: string): string {
       FISSA: "Fissa",
       SEGUE_ANALISTA: "Segue l'analista",
       SEGUE_COSTRUTTO: "Segue un costrutto",
+    },
+    modo: {
+      IMPATTO: "Impatto",
+      A_COMANDO: "A comando",
+      SCADENZA: "Scadenza",
     },
   };
   return maps[fieldKey]?.[value] ?? value;
@@ -318,6 +352,78 @@ function AreaEditor({
   );
 }
 
+function EffettiCollateraliEditor({
+  value,
+  onChange,
+  disabled,
+  tierFlatDamage,
+}: {
+  value: unknown;
+  onChange: (next: unknown) => void;
+  disabled?: boolean;
+  tierFlatDamage?: number | null;
+}) {
+  const rows = Array.isArray(value) ? (value as Array<Record<string, unknown>>) : [];
+  const tipi = [
+    { id: "MOD_GITTATA", label: "Modifica gittata" },
+    { id: "MOD_RAGGIO", label: "Modifica raggio" },
+    { id: "MOD_DURATA", label: "Modifica durata" },
+  ];
+  const inputClass =
+    "w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm";
+
+  const patchRow = (index: number, next: Record<string, unknown>) => {
+    const copy = [...rows];
+    copy[index] = next;
+    onChange(copy);
+  };
+
+  return (
+    <div className="space-y-2">
+      {rows.map((row, idx) => (
+        <div key={idx} className="rounded border border-[var(--border-color)]/70 p-2 space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-center">
+            <select
+              disabled={disabled}
+              value={String(row.tipo ?? "MOD_GITTATA")}
+              onChange={(e) => patchRow(idx, { ...row, tipo: e.target.value })}
+              className={inputClass}
+            >
+              {tipi.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(rows.filter((_, i) => i !== idx))}
+              className="text-xs px-3 py-1.5 rounded border border-[var(--border-color)] text-red-300 disabled:opacity-50"
+            >
+              Rimuovi
+            </button>
+          </div>
+          <CampoValore
+            value={(row.valore as Record<string, unknown>) ?? { tipo: "TIER" }}
+            onChange={(v) => patchRow(idx, { ...row, valore: v })}
+            disabled={disabled}
+            tierFlatDamage={tierFlatDamage}
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onChange([...rows, { tipo: "MOD_GITTATA", valore: { tipo: "TIER" } }])}
+        className="text-xs px-3 py-1.5 rounded border border-[var(--accent-violet)]/40 text-[var(--accent-violet-light)] disabled:opacity-50"
+      >
+        + Aggiungi effetto collaterale
+      </button>
+    </div>
+  );
+}
+
 type SchemaFieldProps = {
   fieldKey: string;
   propSchema: SchemaNode;
@@ -391,6 +497,94 @@ export function SchemaField({
         value={(value as Record<string, unknown>) ?? undefined}
         onChange={(v) => onChange(v)}
         disabled={disabled}
+      />
+    );
+  }
+
+  if (resolved.oneOf && Array.isArray(resolved.oneOf)) {
+    const branches = (resolved.oneOf as SchemaNode[]).map((b) =>
+      b.$ref ? resolveSchemaRef(String(b.$ref)) : b,
+    );
+    const currentObj = (value as Record<string, unknown>) ?? {};
+    const selectedTipo = String(currentObj.tipo ?? "");
+    const selectedBranch =
+      branches.find((b) => {
+        const tipoConst = (b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const;
+        return tipoConst === selectedTipo;
+      }) ?? branches[0];
+    const selectedBranchProps = (selectedBranch.properties as Record<string, SchemaNode>) ?? {};
+    const selectedBranchKeys = getSchemaPropertyKeys(selectedBranch);
+    const selectedBranchTipo = String(selectedBranchProps.tipo?.const ?? "");
+
+    return (
+      <div className="space-y-2 pl-2 border-l border-[var(--border-color)]/50">
+        <label className="block space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Tipo</span>
+          <select
+            disabled={disabled}
+            value={selectedTipo || selectedBranchTipo}
+            onChange={(e) => {
+              const next = branches.find((b) => {
+                const tipoConst = (b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const;
+                return String(tipoConst ?? "") === e.target.value;
+              });
+              onChange(
+                next ? (createDefaultFromSchema(next) as Record<string, unknown>) : { tipo: e.target.value },
+              );
+            }}
+            className={inputClass}
+          >
+            {branches.map((b) => {
+              const tipoConst = String(
+                ((b.properties as Record<string, SchemaNode> | undefined)?.tipo?.const ?? ""),
+              );
+              return (
+                <option key={tipoConst} value={tipoConst}>
+                  {tipoConst}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+        {selectedBranchKeys.map((k) => {
+          const child = selectedBranchProps[k];
+          return (
+            <label key={k} className="block space-y-1">
+              <span className="flex items-center justify-between gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-gray-500">
+                  {labelForProperty(k)}
+                </span>
+                <InfoHint
+                  title={labelForProperty(k)}
+                  text={
+                    FIELD_HELP_TEXT[k] ?? "Compila questo campo solo se è rilevante per il blocco corrente."
+                  }
+                  className="-my-2"
+                />
+              </span>
+              <SchemaField
+                fieldKey={k}
+                propSchema={child}
+                value={currentObj[k]}
+                onChange={(v) => onChange({ ...currentObj, tipo: selectedBranchTipo, [k]: v })}
+                disabled={disabled}
+                tierFlatDamage={tierFlatDamage}
+                statusOptions={statusOptions}
+              />
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (fieldKey === "effetti_collaterali") {
+    return (
+      <EffettiCollateraliEditor
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        tierFlatDamage={tierFlatDamage}
       />
     );
   }

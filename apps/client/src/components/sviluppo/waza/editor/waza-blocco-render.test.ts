@@ -28,6 +28,12 @@ describe("waza-blocco-render — valore", () => {
       "2 +1 per ogni punto di kensei",
     );
   });
+
+  test("RIFERIMENTO", () => {
+    expect(renderValore({ tipo: "RIFERIMENTO", waza_slug: "fuin-no-hi" })).toBe(
+      "riferimento a fuin-no-hi",
+    );
+  });
 });
 
 describe("waza-blocco-render — condizione", () => {
@@ -158,9 +164,12 @@ describe("waza-blocco-render — blocchi completi", () => {
       da_tag: "contatto",
       a_tag: "proiettile",
       oggetto: "WAZA_PROPRIA",
+      effetti_collaterali: [
+        { tipo: "MOD_GITTATA", valore: { tipo: "FORMULA", base: 8, skiru: "Seimitsu", per_punto: 1 } },
+      ],
     });
     expect(frase).toBe(
-      "Trasforma la categoria della tua waza da contatto a proiettile.",
+      "Trasforma la categoria della tua waza da contatto a proiettile (effetti collaterali: gittata pari a 8 +1 per ogni punto di Seimitsu).",
     );
   });
 
@@ -203,6 +212,57 @@ describe("waza-blocco-render — blocchi completi", () => {
     );
   });
 
+  test("MOD_CS in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "MOD_CS",
+      trigger: "AL_LANCIO",
+      bersaglio: "BERSAGLIO_SINGOLO",
+      durata: { tipo: "ISTANTANEA" },
+      operazione: "DRENA",
+      quantita: { tipo: "FISSO", n: 2 },
+    });
+    expect(frase).toBe("Drena 2 CS a un bersaglio singolo.");
+  });
+
+  test("MOD_TRAIETTORIA in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "MOD_TRAIETTORIA",
+      trigger: "ALL_IMPATTO",
+      bersaglio: "BERSAGLIO_SINGOLO",
+      durata: { tipo: "ISTANTANEA" },
+      operazione: "DEVIA",
+      valore: { tipo: "TIER_DELTA", n: 1 },
+      direzione: "verso sinistra",
+    });
+    expect(frase).toBe("All'impatto: cambia traiettoria: devia di +1 tier (verso sinistra).");
+  });
+
+  test("MANIPOLA_STATUS in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "MANIPOLA_STATUS",
+      trigger: "AL_LANCIO",
+      bersaglio: "BERSAGLIO_SINGOLO",
+      durata: { tipo: "ISTANTANEA" },
+      operazione: "TRASMUTA",
+      status_da: "Incendiato",
+      status_a: "Fulminato",
+      quantita: { tipo: "FISSO", n: 1 },
+    });
+    expect(frase).toBe("Trasmuta Incendiato in Fulminato di 1 a un bersaglio singolo.");
+  });
+
+  test("DIFFERITO in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "DIFFERITO",
+      trigger: "AL_LANCIO",
+      bersaglio: "BERSAGLIO_SINGOLO",
+      durata: { tipo: "TURNI", n: 2 },
+      finestra_turni: 2,
+      rilasci: { a_comando: { tipo: "MANUALE", testo: "rilascio" } },
+    });
+    expect(frase).toBe("Prepara un effetto differito (finestra 2 turni), rilasci: a comando per 2 turni.");
+  });
+
   test("trigger non-lancio genera prefisso", () => {
     const frase = renderBloccoMeccanico({
       tipo: "DANNO",
@@ -231,6 +291,10 @@ describe("waza-blocco-render — descrizioni atomi", () => {
     expect(ATOMO_DESCRIZIONI.TRASFORMA_TAG).toContain("categoria");
     expect(ATOMO_DESCRIZIONI.SCUDO).toContain("assorbe");
     expect(ATOMO_DESCRIZIONI.ZONA).toContain("area");
+    expect(ATOMO_DESCRIZIONI.MOD_CS).toContain("CS");
+    expect(ATOMO_DESCRIZIONI.MOD_TRAIETTORIA).toContain("percorso");
+    expect(ATOMO_DESCRIZIONI.MANIPOLA_STATUS).toContain("status");
+    expect(ATOMO_DESCRIZIONI.DIFFERITO).toContain("rilascia");
     for (const desc of Object.values(ATOMO_DESCRIZIONI)) {
       expect(desc.length).toBeGreaterThan(0);
     }

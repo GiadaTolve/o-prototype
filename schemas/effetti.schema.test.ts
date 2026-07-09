@@ -211,6 +211,9 @@ describe("effetti.schema.json", () => {
         da_tag: "contatto",
         a_tag: "proiettile",
         oggetto: "WAZA_PROPRIA",
+        effetti_collaterali: [
+          { tipo: "MOD_GITTATA", valore: { tipo: "FORMULA", base: 8, skiru: "Seimitsu", per_punto: 1 } },
+        ],
       },
     ];
 
@@ -227,6 +230,24 @@ describe("effetti.schema.json", () => {
         dimensione: "categoria",
         da_tag: "contatto",
         oggetto: "WAZA_PROPRIA",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("rifiuta TRASFORMA_TAG con effetti_collaterali non strutturati", () => {
+    const payload = [
+      {
+        tipo: "TRASFORMA_TAG",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "ISTANTANEA" },
+        dimensione: "categoria",
+        da_tag: "contatto",
+        a_tag: "proiettile",
+        oggetto: "WAZA_PROPRIA",
+        effetti_collaterali: "aumenta gittata",
       },
     ];
 
@@ -300,6 +321,124 @@ describe("effetti.schema.json", () => {
       },
     ];
 
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta MOD_CS valido", () => {
+    const payload = [
+      {
+        tipo: "MOD_CS",
+        trigger: "AL_LANCIO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "ISTANTANEA" },
+        operazione: "DRENA",
+        quantita: { tipo: "FISSO", n: 2 },
+      },
+    ];
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta MOD_CS senza quantita", () => {
+    const payload = [
+      {
+        tipo: "MOD_CS",
+        trigger: "AL_LANCIO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "ISTANTANEA" },
+        operazione: "DRENA",
+      },
+    ];
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta MOD_TRAIETTORIA valido", () => {
+    const payload = [
+      {
+        tipo: "MOD_TRAIETTORIA",
+        trigger: "ALL_IMPATTO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "ISTANTANEA" },
+        operazione: "DEVIA",
+        valore: { tipo: "TIER_DELTA", n: 1 },
+      },
+    ];
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta MOD_TRAIETTORIA senza operazione", () => {
+    const payload = [
+      {
+        tipo: "MOD_TRAIETTORIA",
+        trigger: "ALL_IMPATTO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "ISTANTANEA" },
+      },
+    ];
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta MANIPOLA_STATUS valido", () => {
+    const payload = [
+      {
+        tipo: "MANIPOLA_STATUS",
+        trigger: "AL_LANCIO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "ISTANTANEA" },
+        operazione: "TRASMUTA",
+        status_da: "Incendiato",
+        status_a: "Fulminato",
+        quantita: { tipo: "FISSO", n: 1 },
+      },
+    ];
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta MANIPOLA_STATUS senza status_da", () => {
+    const payload = [
+      {
+        tipo: "MANIPOLA_STATUS",
+        trigger: "AL_LANCIO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "ISTANTANEA" },
+        operazione: "RIMUOVI",
+      },
+    ];
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta DIFFERITO valido con riferimento", () => {
+    const payload = [
+      {
+        tipo: "DIFFERITO",
+        trigger: "AL_LANCIO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "TURNI", n: 2 },
+        finestra_turni: 2,
+        rilasci: {
+          a_comando: {
+            tipo: "DANNO",
+            trigger: "A_COMANDO",
+            bersaglio: "BERSAGLIO_SINGOLO",
+            durata: { tipo: "ISTANTANEA" },
+            valore: { tipo: "RIFERIMENTO", waza_slug: "fuin-no-hi" },
+          },
+        },
+      },
+    ];
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta DIFFERITO senza rilasci", () => {
+    const payload = [
+      {
+        tipo: "DIFFERITO",
+        trigger: "AL_LANCIO",
+        bersaglio: "BERSAGLIO_SINGOLO",
+        durata: { tipo: "TURNI", n: 2 },
+        finestra_turni: 2,
+        rilasci: {},
+      },
+    ];
     expect(validateEffettiSchema(payload).valid).toBe(false);
   });
 });

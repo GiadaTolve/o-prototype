@@ -25,6 +25,10 @@ export const ATOMO_DESCRIZIONI: Record<BloccoTipo, string> = {
   TRASFORMA_TAG: "cambia categoria o consistenza di waza e costrutti",
   SCUDO: "crea una protezione che assorbe danni prima degli HP",
   ZONA: "crea un'area persistente con effetti a ingresso o turno",
+  MOD_CS: "agisce sulle CS: drena, recupera, deposita o blocca rigenerazione",
+  MOD_TRAIETTORIA: "cambia il percorso del colpo (devia/rimbalza/sdoppia...)",
+  MANIPOLA_STATUS: "sposta, trasmuta o consuma status già presenti",
+  DIFFERITO: "prepara ora e rilascia dopo uno o più blocchi",
   MANUALE: "testo libero per il master, non eseguito dal motore",
 };
 
@@ -118,6 +122,10 @@ export function renderValore(value: unknown, tierFlatDamage?: number | null): st
       const cap = num(v.cap);
       const passiTxt = passi.length > 0 ? passi.join(", ") : "…";
       return `a scala (${passiTxt})${cap != null ? ` fino a ${cap}` : ""}`;
+    }
+    case "RIFERIMENTO": {
+      const slug = str(v.waza_slug);
+      return slug ? `riferimento a ${slug}` : "riferimento waza…";
     }
     default:
       return "un valore…";
@@ -224,6 +232,25 @@ function triggerPrefix(blocco: Blocco): string {
   return frase ? `${capitalize(frase)}: ` : "";
 }
 
+function renderEffettiCollaterali(blocco: Blocco, tierFlatDamage?: number | null): string {
+  const effects = Array.isArray(blocco.effetti_collaterali)
+    ? (blocco.effetti_collaterali as Blocco[])
+    : [];
+  if (effects.length === 0) return "";
+
+  const rows = effects
+    .map((row) => {
+      const tipo = String(row.tipo ?? "");
+      const valoreTxt = renderValore(row.valore, tierFlatDamage);
+      if (tipo === "MOD_GITTATA") return `gittata ${pariA(valoreTxt)}`;
+      if (tipo === "MOD_RAGGIO") return `raggio ${pariA(valoreTxt)}`;
+      if (tipo === "MOD_DURATA") return `durata ${pariA(valoreTxt)}`;
+      return null;
+    })
+    .filter((v): v is string => Boolean(v));
+  return rows.length > 0 ? ` (effetti collaterali: ${rows.join("; ")})` : "";
+}
+
 function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
   const tipo = String(blocco.tipo ?? "") as BloccoTipo;
   switch (tipo) {
@@ -319,7 +346,6 @@ function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
       const from = str(blocco.da_tag);
       const to = str(blocco.a_tag);
       const oggetto = str(blocco.oggetto);
-      const effetti = str(blocco.effetti_collaterali);
       const oggettoTxt =
         oggetto === "WAZA_PROPRIA"
           ? "della tua waza"
@@ -327,7 +353,7 @@ function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
             ? "del costrutto"
             : "dell'oggetto";
       const base = `trasforma ${dimensione === "consistenza" ? "la consistenza" : "la categoria"} ${oggettoTxt} da ${from ?? "…"} a ${to ?? "…"}`;
-      const extra = effetti ? ` (effetti collaterali: ${effetti})` : "";
+      const extra = renderEffettiCollaterali(blocco, tierFlatDamage);
       return `${base}${extra}${suffix(blocco)}`;
     }
     case "SCUDO": {
@@ -359,6 +385,59 @@ function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
             : "fissa";
       const immunitaTxt = immunita.length > 0 ? `, immuni: ${immunita.join(", ")}` : "";
       return `crea una zona ${forma ?? "…"}${raggio != null ? ` (raggio ${raggio} m)` : ""}, ancoraggio ${ancoraggioTxt}, effetti ${hooksTxt}${immunitaTxt}${suffix(
+        blocco,
+      )}`;
+    }
+    case "MOD_CS": {
+      const op = str(blocco.operazione);
+      const q = renderValore(blocco.quantita, tierFlatDamage);
+      const turni = num(blocco.durata_blocco_turni);
+      const baseOp =
+        op === "DRENA"
+          ? `drena ${q} CS`
+          : op === "RECUPERA"
+            ? `fa recuperare ${q} CS`
+            : op === "DEPOSITA"
+              ? `deposita ${q} CS`
+              : op === "BLOCCA_RIGEN"
+                ? `blocca la rigenerazione CS${turni != null ? ` per ${turni} turni` : ""}`
+                : "modifica le CS";
+      return `${baseOp} ${BERSAGLIO_FRASI[String(blocco.bersaglio ?? "")] ?? "su un bersaglio…"}${suffix(blocco)}`;
+    }
+    case "MOD_TRAIETTORIA": {
+      const op = str(blocco.operazione)?.toLowerCase();
+      const valore = blocco.valore ? ` di ${renderValore(blocco.valore, tierFlatDamage)}` : "";
+      const dir = str(blocco.direzione);
+      const dirTxt = dir ? ` (${dir})` : "";
+      return `${op ? `cambia traiettoria: ${op}` : "cambia traiettoria"}${valore}${dirTxt}${suffix(blocco)}`;
+    }
+    case "MANIPOLA_STATUS": {
+      const op = str(blocco.operazione);
+      const da = str(blocco.status_da) ?? "…";
+      const a = str(blocco.status_a);
+      const q = blocco.quantita ? ` di ${renderValore(blocco.quantita, tierFlatDamage)}` : "";
+      const testoOp =
+        op === "TRASFERISCI"
+          ? `trasferisce ${da}`
+          : op === "TRASMUTA"
+            ? `trasmuta ${da}${a ? ` in ${a}` : ""}`
+            : op === "CONSUMA"
+              ? `consuma ${da}`
+              : op === "RIMUOVI"
+                ? `rimuove ${da}`
+                : `manipola ${da}`;
+      return `${testoOp}${q} ${BERSAGLIO_FRASI[String(blocco.bersaglio ?? "")] ?? "su un bersaglio…"}${suffix(blocco)}`;
+    }
+    case "DIFFERITO": {
+      const finestra = num(blocco.finestra_turni);
+      const rilasciObj =
+        blocco.rilasci && typeof blocco.rilasci === "object" ? (blocco.rilasci as Blocco) : null;
+      const modi: string[] = [];
+      if (rilasciObj?.impatto) modi.push("impatto");
+      if (rilasciObj?.a_comando) modi.push("a comando");
+      if (rilasciObj?.scadenza) modi.push("scadenza");
+      const releaseTxt = modi.length > 0 ? modi.join(", ") : "nessun rilascio";
+      return `prepara un effetto differito (finestra ${finestra ?? "…"} turni), rilasci: ${releaseTxt}${suffix(
         blocco,
       )}`;
     }

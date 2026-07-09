@@ -26,6 +26,7 @@ function labelForKey(key: string): string {
     status: "Status di riferimento",
     passi: "Passi (separati da virgola)",
     cap: "Tetto massimo (cap)",
+    waza_slug: "Waza di riferimento (slug)",
   };
   return labels[key] ?? key;
 }
@@ -42,11 +43,13 @@ const KEY_INFO: Record<string, string> = {
   status: "Status da usare come riferimento nel calcolo.",
   passi: "Progressione a gradini separati da virgola (es. 1,2,4).",
   cap: "Limite massimo oltre cui il valore non può salire.",
+  waza_slug: "Slug della waza da referenziare in questo valore.",
 };
 
 const VALORE_PLACEHOLDER: Record<string, string> = {
   skiru: "es. kensei",
   status: "es. Incendiato",
+  waza_slug: "es. fuin-no-hi",
 };
 
 function ValoreScalarField({

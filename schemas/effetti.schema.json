@@ -344,6 +344,23 @@
         "cap"
       ]
     },
+    "valoreRiferimento": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "RIFERIMENTO"
+        },
+        "waza_slug": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "tipo",
+        "waza_slug"
+      ]
+    },
     "valore": {
       "type": "object",
       "oneOf": [
@@ -373,7 +390,31 @@
         },
         {
           "$ref": "#/$defs/valoreScala"
+        },
+        {
+          "$ref": "#/$defs/valoreRiferimento"
         }
+      ]
+    },
+    "effettoCollaterale": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "MOD_GITTATA",
+            "MOD_RAGGIO",
+            "MOD_DURATA"
+          ]
+        },
+        "valore": {
+          "$ref": "#/$defs/valore"
+        }
+      },
+      "required": [
+        "tipo",
+        "valore"
       ]
     },
     "condizioneCanonica": {
@@ -982,8 +1023,11 @@
           ]
         },
         "effetti_collaterali": {
-          "type": "string",
-          "minLength": 1
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effettoCollaterale"
+          },
+          "default": []
         }
       },
       "required": [
@@ -1149,6 +1193,124 @@
         "effetti_zona"
       ]
     },
+    "bloccoModCs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": { "const": "MOD_CS" },
+        "trigger": { "$ref": "#/$defs/triggerEnum" },
+        "bersaglio": { "$ref": "#/$defs/bersaglioEnum" },
+        "durata": { "$ref": "#/$defs/durata" },
+        "condizione": { "$ref": "#/$defs/condizioneCanonica" },
+        "costo_extra": { "$ref": "#/$defs/costoExtra" },
+        "nota_master": { "type": "string" },
+        "operazione": {
+          "type": "string",
+          "enum": ["DRENA", "RECUPERA", "DEPOSITA", "BLOCCA_RIGEN"]
+        },
+        "quantita": { "$ref": "#/$defs/valore" },
+        "durata_blocco_turni": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": ["tipo", "trigger", "bersaglio", "durata", "operazione", "quantita"]
+    },
+    "bloccoModTraiettoria": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": { "const": "MOD_TRAIETTORIA" },
+        "trigger": { "$ref": "#/$defs/triggerEnum" },
+        "bersaglio": { "$ref": "#/$defs/bersaglioEnum" },
+        "durata": { "$ref": "#/$defs/durata" },
+        "condizione": { "$ref": "#/$defs/condizioneCanonica" },
+        "costo_extra": { "$ref": "#/$defs/costoExtra" },
+        "nota_master": { "type": "string" },
+        "operazione": {
+          "type": "string",
+          "enum": ["DEVIA", "RIMBALZA", "SOSPENDI", "SDOPPIA", "PENETRA", "ANCORA", "SPINGI"]
+        },
+        "valore": { "$ref": "#/$defs/valore" },
+        "direzione": { "type": "string", "minLength": 1 }
+      },
+      "required": ["tipo", "trigger", "bersaglio", "durata", "operazione"]
+    },
+    "bloccoManipolaStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": { "const": "MANIPOLA_STATUS" },
+        "trigger": { "$ref": "#/$defs/triggerEnum" },
+        "bersaglio": { "$ref": "#/$defs/bersaglioEnum" },
+        "durata": { "$ref": "#/$defs/durata" },
+        "condizione": { "$ref": "#/$defs/condizioneCanonica" },
+        "costo_extra": { "$ref": "#/$defs/costoExtra" },
+        "nota_master": { "type": "string" },
+        "operazione": {
+          "type": "string",
+          "enum": ["TRASFERISCI", "TRASMUTA", "CONSUMA", "RIMUOVI"]
+        },
+        "status_da": { "type": "string", "minLength": 1 },
+        "status_a": { "type": "string", "minLength": 1 },
+        "quantita": { "$ref": "#/$defs/valore" }
+      },
+      "required": ["tipo", "trigger", "bersaglio", "durata", "operazione", "status_da"]
+    },
+    "bloccoDifferito": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": { "const": "DIFFERITO" },
+        "trigger": { "$ref": "#/$defs/triggerEnum" },
+        "bersaglio": { "$ref": "#/$defs/bersaglioEnum" },
+        "durata": { "$ref": "#/$defs/durata" },
+        "condizione": { "$ref": "#/$defs/condizioneCanonica" },
+        "costo_extra": { "$ref": "#/$defs/costoExtra" },
+        "nota_master": { "type": "string" },
+        "finestra_turni": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rilasci": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "impatto": {
+              "$ref": "#/$defs/bloccoDifferitoInterno"
+            },
+            "a_comando": {
+              "$ref": "#/$defs/bloccoDifferitoInterno"
+            },
+            "scadenza": {
+              "$ref": "#/$defs/bloccoDifferitoInterno"
+            }
+          }
+        }
+      },
+      "required": ["tipo", "trigger", "bersaglio", "durata", "finestra_turni", "rilasci"]
+    },
+    "bloccoDifferitoInterno": {
+      "type": "object",
+      "oneOf": [
+        { "$ref": "#/$defs/bloccoDanno" },
+        { "$ref": "#/$defs/bloccoModDanno" },
+        { "$ref": "#/$defs/bloccoBuffSkiru" },
+        { "$ref": "#/$defs/bloccoApplicaStatus" },
+        { "$ref": "#/$defs/bloccoEvocaCostrutto" },
+        { "$ref": "#/$defs/bloccoModCosto" },
+        { "$ref": "#/$defs/bloccoStatoPersonale" },
+        { "$ref": "#/$defs/bloccoModResistenza" },
+        { "$ref": "#/$defs/bloccoTrasformaTag" },
+        { "$ref": "#/$defs/bloccoScudo" },
+        { "$ref": "#/$defs/bloccoZona" },
+        { "$ref": "#/$defs/bloccoModCs" },
+        { "$ref": "#/$defs/bloccoModTraiettoria" },
+        { "$ref": "#/$defs/bloccoManipolaStatus" },
+        { "$ref": "#/$defs/bloccoManuale" }
+      ]
+    },
     "bloccoEffetto": {
       "type": "object",
       "oneOf": [
@@ -1184,6 +1346,18 @@
         },
         {
           "$ref": "#/$defs/bloccoZona"
+        },
+        {
+          "$ref": "#/$defs/bloccoModCs"
+        },
+        {
+          "$ref": "#/$defs/bloccoModTraiettoria"
+        },
+        {
+          "$ref": "#/$defs/bloccoManipolaStatus"
+        },
+        {
+          "$ref": "#/$defs/bloccoDifferito"
         },
         {
           "$ref": "#/$defs/bloccoManuale"

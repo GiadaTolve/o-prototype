@@ -24,6 +24,10 @@ const BLOCCO_ACCENT: Record<BloccoTipo, string> = {
   TRASFORMA_TAG: "var(--accent-gold)",
   SCUDO: "var(--accent-violet-light)",
   ZONA: "var(--accent-violet)",
+  MOD_CS: "var(--accent-gold)",
+  MOD_TRAIETTORIA: "var(--accent-violet-light)",
+  MANIPOLA_STATUS: "var(--accent-violet)",
+  DIFFERITO: "var(--accent-gold)",
   MANUALE: "var(--accent-violet)",
 };
 

@@ -18,6 +18,10 @@ export const BLOCCO_TIPI = [
   "TRASFORMA_TAG",
   "SCUDO",
   "ZONA",
+  "MOD_CS",
+  "MOD_TRAIETTORIA",
+  "MANIPOLA_STATUS",
+  "DIFFERITO",
   "MANUALE",
 ] as const;
 
@@ -35,6 +39,10 @@ export const BLOCCO_TIPO_LABELS: Record<BloccoTipo, string> = {
   TRASFORMA_TAG: "Trasforma tag",
   SCUDO: "Scudo",
   ZONA: "Zona",
+  MOD_CS: "Modifica CS",
+  MOD_TRAIETTORIA: "Modifica traiettoria",
+  MANIPOLA_STATUS: "Manipola status",
+  DIFFERITO: "Differito",
   MANUALE: "Manuale (Master)",
 };
 
@@ -48,6 +56,7 @@ export const VALORE_TIPO_LABELS: Record<string, string> = {
   FORMULA: "Formula su Skiru",
   MOLT: "Moltiplicatore",
   SCALA: "Scala a gradini",
+  RIFERIMENTO: "Riferimento a un'altra waza",
 };
 
 export function resolveSchemaRef(ref: string): SchemaNode {
@@ -154,6 +163,10 @@ const BERSAGLIO_DEFAULT_PER_TIPO: Partial<Record<BloccoTipo, string>> = {
   TRASFORMA_TAG: "SE_STESSO",
   SCUDO: "SE_STESSO",
   ZONA: "ZONA_TERRENO",
+  MOD_CS: "BERSAGLIO_SINGOLO",
+  MOD_TRAIETTORIA: "BERSAGLIO_SINGOLO",
+  MANIPOLA_STATUS: "BERSAGLIO_SINGOLO",
+  DIFFERITO: "BERSAGLIO_SINGOLO",
 };
 
 export function createDefaultBlocco(tipo: BloccoTipo): Record<string, unknown> {
