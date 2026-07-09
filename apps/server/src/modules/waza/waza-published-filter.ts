@@ -4,6 +4,24 @@ import { waza, wazaVersioni } from "../../db/schema";
 
 export type AuthoringPublishByLegacyId = ReadonlyMap<string, boolean>;
 
+export type WazaVersionStatoSummary = { stato: string };
+
+/** True se esiste almeno una versione con stato effettivo «pubblicata». */
+export function wazaHasPublishedVersion(
+  versioni: ReadonlyArray<WazaVersionStatoSummary>,
+): boolean {
+  return versioni.some((v) => v.stato === "pubblicata");
+}
+
+/** Lookup DB: ignora versione_pubblicata_id se punta a bozza/validata. */
+export async function wazaHasPublishedVersionByWazaId(wazaId: string): Promise<boolean> {
+  const row = await db.query.wazaVersioni.findFirst({
+    where: and(eq(wazaVersioni.wazaId, wazaId), eq(wazaVersioni.stato, "pubblicata")),
+    columns: { id: true },
+  });
+  return row != null;
+}
+
 /**
  * Per ogni skills.id collegato a waza.legacy_id, indica se esiste almeno una
  * waza_versioni con stato = 'pubblicata' (non basta versione_pubblicata_id valorizzato).

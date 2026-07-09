@@ -8,7 +8,7 @@ import {
 import { SOKAIJU_GATE_SKIRU_ID } from './sokaiju-index'
 import type { SkiruSheet, SkiruValidationResult } from './types'
 
-/** Affinità elementali sotto Gojū — mutuamente esclusive (max 1 attiva). */
+/** Affinità elementali (ramo Jin dedicato in arrivo) — id riservati per combat/legacy. */
 export const GOJU_ELEMENTAL_SKIRU_IDS = [
   'goju-fuoco',
   'goju-fulmine',
@@ -16,6 +16,10 @@ export const GOJU_ELEMENTAL_SKIRU_IDS = [
   'goju-gravita',
   'goju-aria',
 ] as const
+
+export function isGojuElementalSkiruId(skiruId: string): skiruId is (typeof GOJU_ELEMENTAL_SKIRU_IDS)[number] {
+  return (GOJU_ELEMENTAL_SKIRU_IDS as readonly string[]).includes(skiruId)
+}
 
 /** Classi sociali Shakai Kaikyū — mutuamente esclusive (max 1 attiva, gate 1 pt). */
 export const SHAKAI_KAIKYU_CLASS_SKIRU_IDS = [
@@ -129,11 +133,12 @@ export function validateSkiruSheet(sheet: SkiruSheet): SkiruValidationResult {
       errors.push(`Skiru «${id}»: punti negativi non ammessi.`)
       continue
     }
-    const maxPoints = getSkiruMaxPoints(id)
+    const maxPoints = isGojuElementalSkiruId(id) ? 1 : getSkiruMaxPoints(id)
     if (points > maxPoints) {
       errors.push(`Skiru «${id}»: massimo ${maxPoints} punti.`)
       continue
     }
+    if (isGojuElementalSkiruId(id)) continue
     const def = getSkiruDef(id)
     if (!def) {
       errors.push(`Skiru «${id}»: id sconosciuto.`)
@@ -184,6 +189,11 @@ export function normalizeSkiruSheet(sheet: SkiruSheet): SkiruSheet {
   const out: Record<string, number> = {}
   for (const [id, points] of Object.entries(sheet)) {
     if (!Number.isFinite(points) || points <= 0) continue
+    if (isGojuElementalSkiruId(id)) {
+      const capped = Math.min(1, Math.max(0, Math.round(points)))
+      if (capped > 0) out[id] = capped
+      continue
+    }
     const def = getSkiruDef(id)
     if (!def) continue
     const capped = Math.min(getSkiruMaxPoints(id), Math.max(0, Math.round(points)))

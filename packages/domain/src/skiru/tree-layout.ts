@@ -113,29 +113,6 @@ function buildSokaijuTreeNodes(): SkiruTreeNodeDef[] {
     })
   })
 
-  const gojuSubs = [
-    { id: 'goju-fuoco', label: 'Fuoco', labelJa: '火', description: 'Affinità Fuoco · [Incendiato].' },
-    { id: 'goju-fulmine', label: 'Fulmine', labelJa: '雷', description: 'Affinità Fulmine · [Sovraccarico].' },
-    { id: 'goju-acqua', label: 'Acqua', labelJa: '水', description: 'Affinità Acqua · [Torpore].' },
-    { id: 'goju-gravita', label: 'Gravità', labelJa: '重力', description: 'Affinità Gravità · [Appesantimento].' },
-    { id: 'goju-aria', label: 'Aria', labelJa: '風', description: 'Affinità Aria · [Vertigini].' },
-  ]
-  gojuSubs.forEach((sub, i) => {
-    nodes.push({
-      id: sub.id,
-      skiruId: sub.id,
-      label: sub.label,
-      labelJa: sub.labelJa,
-      description: sub.description,
-      kind: 'subskill',
-      domain: 'jin',
-      branchId: 'sokaiju',
-      col: 1,
-      row: 3 + i,
-      parentNodeId: 'goju',
-    })
-  })
-
   return nodes
 }
 
@@ -571,7 +548,7 @@ export const SKIRU_TREE_SECTIONS: readonly SkiruTreeSectionDef[] = [
     title: 'Jin',
     titleJa: '人',
     domainDescription: 'Lo spirito: fra volontà e identità.',
-    cols: 3,
+    cols: 4,
     rows: 2,
     nodes: [
       {
@@ -625,6 +602,20 @@ export const SKIRU_TREE_SECTIONS: readonly SkiruTreeSectionDef[] = [
         domain: 'jin',
         branchId: 'shinka-no-nagare',
         col: 2,
+        row: 1,
+        parentNodeId: 'branch-shinka-no-nagare',
+      },
+      {
+        id: 'sochu-kokan',
+        skiruId: 'sochu-kokan',
+        label: 'Incanalamento Diretto',
+        labelJa: '素中交換',
+        description:
+          'La maestria nel proiettare la Jigo-Ka senza alcun tramite — né lama, né arma, né corpo. L\'Ego prende forma nello spazio da sé. Governa l\'Indice delle waza prive di consistenza fisica o medium, le pure emanazioni psichiche.',
+        kind: 'skill',
+        domain: 'jin',
+        branchId: 'shinka-no-nagare',
+        col: 3,
         row: 1,
         parentNodeId: 'branch-shinka-no-nagare',
       },

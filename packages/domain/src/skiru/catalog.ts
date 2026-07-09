@@ -447,6 +447,17 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
       'La capacità di far fluire l\'Ego nel corpo stesso, potenziando tecniche fisiche, impatti e controllo del movimento.',
     kind: 'standard',
   },
+  {
+    id: 'sochu-kokan',
+    name: 'Incanalamento Diretto',
+    nameRomaji: 'Sochū Kōkan',
+    nameJa: '素中交換',
+    domain: 'jin',
+    branchId: 'shinka-no-nagare',
+    description:
+      'La maestria nel proiettare la Jigo-Ka senza alcun tramite — né lama, né arma, né corpo. L\'Ego prende forma nello spazio da sé. Governa l\'Indice delle waza prive di consistenza fisica o medium, le pure emanazioni psichiche.',
+    kind: 'standard',
+  },
 
   // ─── Jin · Sōkaiju (11 nodi doppio volto + affinità Gojū) ───
   ...buildSokaijuCatalogEntries(),

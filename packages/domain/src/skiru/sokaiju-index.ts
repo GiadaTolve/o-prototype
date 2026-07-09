@@ -1,4 +1,5 @@
 import type { SkiruDef, SkiruDerivedDriver, SokaijuFaceDef } from './types'
+import type { WazaCategoriaPapabile } from './waza-categoria-papabile'
 
 export type { SokaijuFaceDef }
 
@@ -22,6 +23,8 @@ export interface SokaijuAnchorDef {
   /** Formula meccanica (motore). */
   derivedFormula: string
   drivesDerived?: SkiruDerivedDriver[]
+  /** Categoria waza papabile per IR (assente su Tenkan e affinità Gojū). */
+  wazaCategoriaPapabile?: WazaCategoriaPapabile
 }
 
 export const SOKAIJU_INTRO_LORE: readonly string[] = [
@@ -94,6 +97,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     gameplayHint: 'Potenziarlo serve a: creare più costrutti nello stesso momento, e farli più grandi.',
     derivedFormula: 'Costrutti attivi max = 1 + rank. Taglia massima dichiarabile +1 grado ogni 2 rank.',
     drivesDerived: ['maxConstructs'],
+    wazaCategoriaPapabile: 'Raggio',
   },
   {
     anchor: 3,
@@ -120,6 +124,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'Potenziarlo serve a: dare al tuo elemento e allo status che infligge (bruciare, sovraccaricare, intorpidire…) più mordente.',
     derivedFormula: 'Waza [Elementale] a segno con affinità attiva → status elementale per 3 turni (auto).',
     drivesDerived: ['elementalStatus'],
+    wazaCategoriaPapabile: 'Proiettile',
   },
   {
     anchor: 4,
@@ -145,6 +150,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     gameplayHint: 'Potenziarlo serve a: rendere più forti le tue cure e i tuoi potenziamenti.',
     derivedFormula: 'Cure e buff che applichi: +rank al valore di cura o al bonus del buff.',
     drivesDerived: ['supportPower'],
+    wazaCategoriaPapabile: 'Potenziamento',
   },
   {
     anchor: 5,
@@ -170,6 +176,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     gameplayHint: 'Potenziarlo serve a: rendere più forti i tuoi contrattacchi — le risposte a chi ti colpisce.',
     derivedFormula: 'Contrattacchi e risposte reattive: +rank danno (oltre al floor Kongen).',
     drivesDerived: ['counterBonus'],
+    wazaCategoriaPapabile: 'Contatto',
   },
   {
     anchor: 6,
@@ -195,6 +202,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     gameplayHint: 'Potenziarlo serve a: agire prima degli altri quando siete alla pari — essere più svelto sullo scatto.',
     derivedFormula: 'A parità di IR: agisce/risolve prima chi ha rank più alto → poi [Energetiche] → attaccante.',
     drivesDerived: ['initiativeTiebreak'],
+    wazaCategoriaPapabile: 'Emanazione a Distanza',
   },
   {
     anchor: 7,
@@ -221,6 +229,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'Potenziarlo serve a: far durare più a lungo i tuoi effetti (status, potenziamenti, costrutti).',
     derivedFormula: 'Effetti a tempo che applichi: +floor(rank / 2) turni di durata.',
     drivesDerived: ['effectDuration'],
+    wazaCategoriaPapabile: 'Emanazione',
   },
   {
     anchor: 8,
@@ -246,6 +255,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     gameplayHint: 'Potenziarlo serve a: rendere più pesanti gli status emotivi che infliggi (paura, ira…).',
     derivedFormula: 'Status emotivi che applichi: +floor(rank / 2) stack.',
     drivesDerived: ['emotionalPower'],
+    wazaCategoriaPapabile: 'Propagazione',
   },
   {
     anchor: 9,
@@ -272,6 +282,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'Potenziarlo serve a: fare più male con ogni singolo colpo. È la tua potenza di base, quella che alza tutto.',
     derivedFormula: 'Floor danno su ogni waza: +round(rank × 1,5).',
     drivesDerived: ['damageFloor'],
+    wazaCategoriaPapabile: 'Costrutti',
   },
   {
     anchor: 10,
@@ -298,6 +309,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     derivedFormula:
       'Colpo a sorpresa (bersaglio non poteva percepire): bypass schivata reattiva se rank > Chōkaku bersaglio.',
     drivesDerived: ['surprise'],
+    wazaCategoriaPapabile: 'Propagazione Conica',
   },
   {
     anchor: 11,
@@ -323,89 +335,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     gameplayHint: 'Potenziarlo serve a: rendere i tuoi costrutti più resistenti, più difficili da distruggere.',
     derivedFormula: 'Resistenza costrutto = (rank + tier waza) × moltiplicatore taglia.',
     drivesDerived: ['constructResistance'],
-  },
-] as const
-
-const GOJU_ELEMENTAL_ENTRIES: readonly SkiruDef[] = [
-  {
-    id: 'goju-fuoco',
-    name: 'Fuoco',
-    nameRomaji: 'Ka',
-    nameJa: '火',
-    domain: 'jin',
-    branchId: 'sokaiju',
-    description: 'Lascia il bersaglio Incendiato: continua a bruciare nel tempo.',
-    derivedFormula: 'Waza [Elementale] a segno → [Incendiato] per 3 turni.',
-    kind: 'standard',
-    parentSkiruId: 'goju',
-    minParentPoints: 1,
-    maxPoints: 1,
-    expPurchasable: false,
-    sokaijuAnchor: 3,
-  },
-  {
-    id: 'goju-fulmine',
-    name: 'Fulmine',
-    nameRomaji: 'Kaminari',
-    nameJa: '雷',
-    domain: 'jin',
-    branchId: 'sokaiju',
-    description: 'Lascia il bersaglio Sovraccarico: la sua energia si ingorga e si ritorce contro di lui.',
-    derivedFormula: 'Waza [Elementale] a segno → [Sovraccarico] per 3 turni.',
-    kind: 'standard',
-    parentSkiruId: 'goju',
-    minParentPoints: 1,
-    maxPoints: 1,
-    expPurchasable: false,
-    sokaijuAnchor: 3,
-  },
-  {
-    id: 'goju-acqua',
-    name: 'Acqua',
-    nameRomaji: 'Mizu',
-    nameJa: '水',
-    domain: 'jin',
-    branchId: 'sokaiju',
-    description: 'Lascia il bersaglio Intorpidito (Torpore): movimenti più lenti e pesanti.',
-    derivedFormula: 'Waza [Elementale] a segno → [Torpore] per 3 turni.',
-    kind: 'standard',
-    parentSkiruId: 'goju',
-    minParentPoints: 1,
-    maxPoints: 1,
-    expPurchasable: false,
-    sokaijuAnchor: 3,
-  },
-  {
-    id: 'goju-gravita',
-    name: 'Gravità',
-    nameRomaji: 'Jūryoku',
-    nameJa: '重力',
-    domain: 'jin',
-    branchId: 'sokaiju',
-    description: 'Lascia il bersaglio Appesantito: schiacciato verso il basso, fatica a muoversi.',
-    derivedFormula: 'Waza [Elementale] a segno → [Appesantimento] per 3 turni.',
-    kind: 'standard',
-    parentSkiruId: 'goju',
-    minParentPoints: 1,
-    maxPoints: 1,
-    expPurchasable: false,
-    sokaijuAnchor: 3,
-  },
-  {
-    id: 'goju-aria',
-    name: 'Aria',
-    nameRomaji: 'Kaze',
-    nameJa: '風',
-    domain: 'jin',
-    branchId: 'sokaiju',
-    description: 'Lascia il bersaglio con le Vertigini: perde equilibrio e orientamento.',
-    derivedFormula: 'Waza [Elementale] a segno → [Vertigini] per 3 turni.',
-    kind: 'standard',
-    parentSkiruId: 'goju',
-    minParentPoints: 1,
-    maxPoints: 1,
-    expPurchasable: false,
-    sokaijuAnchor: 3,
+    wazaCategoriaPapabile: 'Scudo',
   },
 ] as const
 
@@ -444,12 +374,13 @@ function anchorToSkiruDef(anchor: SokaijuAnchorDef): SkiruDef {
     sokaijuAnchor: anchor.anchor,
     sokaijuMeiju: anchor.meiju,
     sokaijuShiju: anchor.shiju,
+    wazaCategoriaPapabile: anchor.wazaCategoriaPapabile,
   }
 }
 
-/** Voci catalogo Sōkaiju (11 nodi doppio volto + 5 affinità elementali Gojū). */
+/** Voci catalogo Sōkaiju (11 nodi doppio volto). Le affinità elementali vivranno in un ramo Jin dedicato. */
 export function buildSokaijuCatalogEntries(): SkiruDef[] {
-  return [...SOKAIJU_ANCHORS.map(anchorToSkiruDef), ...GOJU_ELEMENTAL_ENTRIES]
+  return SOKAIJU_ANCHORS.map(anchorToSkiruDef)
 }
 
 export function getSokaijuAnchorDef(anchor: number): SokaijuAnchorDef | undefined {

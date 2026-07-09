@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { isSkillVisibleInPlayerCatalog } from "./waza-published-filter";
+import {
+  isSkillVisibleInPlayerCatalog,
+  wazaHasPublishedVersion,
+} from "./waza-published-filter";
 
 describe("waza-published-filter", () => {
   it("skill WAZA senza authoring nel catalogo è nascosta", () => {
@@ -26,5 +29,30 @@ describe("waza-published-filter", () => {
   it("skill non-WAZA ignora il filtro", () => {
     const map = new Map<string, boolean>([["skill-1", false]]);
     expect(isSkillVisibleInPlayerCatalog("skill-1", "SKIRU", map)).toBe(true);
+  });
+});
+
+describe("wazaHasPublishedVersion", () => {
+  it("false se solo bozza/validata", () => {
+    expect(
+      wazaHasPublishedVersion([
+        { stato: "bozza" },
+        { stato: "validata" },
+      ]),
+    ).toBe(false);
+  });
+
+  it("true se almeno una versione è pubblicata", () => {
+    expect(
+      wazaHasPublishedVersion([
+        { stato: "superata" },
+        { stato: "pubblicata" },
+        { stato: "bozza" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("false con puntatore sporco simulato (solo bozza, nessuna pubblicata)", () => {
+    expect(wazaHasPublishedVersion([{ stato: "bozza" }])).toBe(false);
   });
 });

@@ -29,6 +29,7 @@ import {
   validateSkiruIrSlugs,
   warnAttivaSenzaSkiruIr,
 } from "./waza-skiru-ir";
+import { wazaHasPublishedVersionByWazaId } from "./waza-published-filter";
 
 export class WazaAdminHttpError extends Error {
   constructor(
@@ -451,11 +452,8 @@ export async function saveAdminWazaDraft(
   const anagrafica = await db.query.waza.findFirst({ where: eq(waza.id, wazaId) });
   if (!anagrafica) throw new WazaAdminHttpError("Waza non trovata.", 404);
 
-  if (
-    anagrafica.versionePubblicataId != null &&
-    input.tier !== undefined &&
-    input.tier !== anagrafica.tier
-  ) {
+  const tierPublished = await wazaHasPublishedVersionByWazaId(wazaId);
+  if (tierPublished && input.tier !== undefined && input.tier !== anagrafica.tier) {
     throw new WazaAdminHttpError("Tier congelato alla pubblicazione.", 409);
   }
 

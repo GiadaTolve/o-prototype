@@ -156,6 +156,9 @@ export function EditorWaza({
   const [validationAvvisi, setValidationAvvisi] = useState<ValidationIssue[]>([]);
 
   const [anagrafica, setAnagrafica] = useState<WazaAnagrafica | null>(null);
+  const [versionSummaries, setVersionSummaries] = useState<
+    Array<{ numero: number; stato: WazaVersione["stato"] }>
+  >([]);
   const [versione, setVersione] = useState<WazaVersione | null>(null);
   const [form, setForm] = useState<EditorForm | null>(null);
   const [vocabolari, setVocabolari] = useState<VocabolarioItem[]>([]);
@@ -193,7 +196,7 @@ export function EditorWaza({
   };
 
   const readOnly = versione?.stato !== "bozza";
-  const tierFrozen = anagrafica?.versionePubblicataId != null;
+  const tierFrozen = versionSummaries.some((v) => v.stato === "pubblicata");
   const vocabMap = useMemo(() => buildVocabMap(vocabolari), [vocabolari]);
   const tagOptions = useMemo(() => tagOptionsFromVocab(vocabMap), [vocabMap]);
 
@@ -222,6 +225,7 @@ export function EditorWaza({
       ]);
 
       const versioni = detail.versioni ?? [];
+      setVersionSummaries(versioni);
       const targetNum =
         versioni.find((v) => v.stato === "bozza")?.numero ?? versioni[0]?.numero ?? 1;
 
@@ -390,6 +394,15 @@ export function EditorWaza({
       );
       setAnagrafica(res.waza);
       setVersione(res.versione);
+      setVersionSummaries((prev) =>
+        prev.map((v) =>
+          v.numero === res.versione.numero
+            ? { numero: v.numero, stato: res.versione.stato }
+            : v.stato === "pubblicata"
+              ? { numero: v.numero, stato: "superata" }
+              : v,
+        ),
+      );
       setForm(versioneToForm(res.waza, res.versione));
       setInfo(`Versione ${res.versione.numero} pubblicata.`);
       setChangelog("");
@@ -411,6 +424,10 @@ export function EditorWaza({
         `/admin/waza/${wazaId}/versioni`,
       );
       setVersione(res.versione);
+      setVersionSummaries((prev) => [
+        ...prev,
+        { numero: res.versione.numero, stato: res.versione.stato },
+      ]);
       setForm(versioneToForm(anagrafica, res.versione));
       setValidationErrori([]);
       setValidationAvvisi([]);

@@ -5,7 +5,7 @@ import { SignJWT } from "jose";
 import { Elysia } from "elysia";
 import { eq } from "drizzle-orm";
 import { db } from "../../plugins/db";
-import { users, characters, waza } from "../../db/schema";
+import { users, characters, waza, wazaVersioni } from "../../db/schema";
 import { JWT_SECRET } from "../../config";
 import { wazaAdminRoutes } from "./waza-admin.routes";
 import { deleteAdminWazaRecords } from "./waza-admin.service";
@@ -531,6 +531,36 @@ describe("governance /admin/waza", () => {
       tier: 3,
     });
     expect(saveRes.status).toBe(409);
+  });
+
+  it("tier non congelato con puntatore sporco (bozza, nessuna pubblicata) → 200", async () => {
+    const createRes = await api("POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: "Puntatore Sporco",
+      nomeItaliano: "Puntatore Sporco",
+    });
+    expect(createRes.status).toBe(200);
+    const created = await readJson<{ waza: { id: string } }>(createRes);
+    createdWazaIds.push(created.waza.id);
+
+    const versione = await db.query.wazaVersioni.findFirst({
+      where: eq(wazaVersioni.wazaId, created.waza.id),
+      columns: { id: true },
+    });
+    expect(versione?.id).toBeTruthy();
+
+    await db
+      .update(waza)
+      .set({ versionePubblicataId: versione!.id })
+      .where(eq(waza.id, created.waza.id));
+
+    const saveRes = await api("PUT", `/admin/waza/${created.waza.id}/versioni/1`, {
+      ...validCreateBody,
+      tier: 3,
+    });
+    expect(saveRes.status).toBe(200);
+    const body = await readJson<{ waza: { tier: number | null } }>(saveRes);
+    expect(body.waza.tier).toBe(3);
   });
 
   it("nuova bozza da pubblicata + changelog obbligatorio da v2", async () => {

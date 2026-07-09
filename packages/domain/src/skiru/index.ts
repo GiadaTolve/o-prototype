@@ -1,4 +1,5 @@
 export * from './types'
+export * from './waza-categoria-papabile'
 export * from './catalog'
 export * from './progression'
 export * from './derived-stats'

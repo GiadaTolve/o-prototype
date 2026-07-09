@@ -23,6 +23,9 @@ try {
         label: skiru.name,
         ...(skiru.nameRomaji ? { labelRomaji: skiru.nameRomaji } : {}),
         ...(skiru.parentSkiruId ? { parent: skiru.parentSkiruId } : {}),
+        ...(skiru.wazaCategoriaPapabile
+          ? { categoria_waza: skiru.wazaCategoriaPapabile }
+          : {}),
       };
       await tx`
         INSERT INTO vocabolari (categoria, valore, extra, attivo)

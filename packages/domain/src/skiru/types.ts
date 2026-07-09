@@ -1,3 +1,5 @@
+import type { WazaCategoriaPapabile } from './waza-categoria-papabile'
+
 /** Dominio cosmologico Skiru (UltimateManual). */
 export type SkiruDomain = 'ten' | 'chi' | 'jin'
 
@@ -71,6 +73,8 @@ export interface SkiruDef {
   sokaijuMeiju?: SokaijuFaceDef
   /** Sōkaiju: volto Shiju (Morte) — stessa Skiru del volto Meiju. */
   sokaijuShiju?: SokaijuFaceDef
+  /** Sōkaiju (e altre): categoria waza papabile per calcolo IR al lancio. */
+  wazaCategoriaPapabile?: WazaCategoriaPapabile
 }
 
 /** Mappa skiruId → punti investiti (0–10). */
