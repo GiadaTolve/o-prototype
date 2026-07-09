@@ -49,6 +49,20 @@ function labelForProperty(key: string): string {
     consuma: "Consuma alla lettura",
     delta_resistenza: "Delta resistenza",
     filtro_consistenza: "Filtro consistenza",
+    dimensione: "Dimensione",
+    da_tag: "Da",
+    a_tag: "A",
+    oggetto: "Oggetto",
+    effetti_collaterali: "Effetti collaterali",
+    resistenza_scudo: "Resistenza scudo",
+    mitigazione_extra: "Mitigazione extra",
+    forma_zona: "Forma zona",
+    raggio_zona_m: "Raggio zona (m)",
+    ancoraggio: "Ancoraggio",
+    effetti_zona: "Effetti zona",
+    quando_entra: "Quando entra",
+    a_inizio_turno: "A inizio turno",
+    immunita: "Immunità",
     tipo: "Tipo",
     n: "Numero turni",
     condizione_fine: "Condizione di fine",
@@ -111,6 +125,19 @@ function optionLabel(fieldKey: string, value: string): string {
     operazione: {
       SCRIVI: "Scrivi",
       LEGGI: "Leggi",
+    },
+    dimensione: {
+      categoria: "Categoria",
+      consistenza: "Consistenza",
+    },
+    oggetto: {
+      WAZA_PROPRIA: "Waza propria",
+      COSTRUTTO: "Costrutto",
+    },
+    ancoraggio: {
+      FISSA: "Fissa",
+      SEGUE_ANALISTA: "Segue l'analista",
+      SEGUE_COSTRUTTO: "Segue un costrutto",
     },
   };
   return maps[fieldKey]?.[value] ?? value;

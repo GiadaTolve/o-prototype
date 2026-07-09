@@ -17,17 +17,20 @@ export const BLOCCO_INFO_TESTI: Record<BloccoTipo, string> = {
     "Scrive o legge un valore sul personaggio, con scadenza in turni. Utile per ricordare e consumare stati personali come elemento residuo o batterie. Esempi: Nokuribi, Chikuden.",
   MOD_RESISTENZA:
     "Alza o abbassa la resistenza tua o di un costrutto, anche filtrando per consistenza. Esempi: Kōchiku, Junnō.",
+  TRASFORMA_TAG:
+    "Cambia categoria o consistenza di una waza o di un costrutto (es. Contatto -> Proiettile). Puoi aggiungere effetti collaterali come variazioni di gittata. Esempi: Michishirube, Genso-Ka, Yugami, Someito.",
+  SCUDO:
+    "Crea una protezione con resistenza propria: il danno passa prima da qui e solo dopo sugli HP, finché lo scudo non si rompe. Puoi aggiungere mitigazione extra. Esempi: Tōki, Shoheki, Datsui-Tate.",
+  ZONA:
+    "Crea un'area persistente sul campo (fissa o in movimento) con effetti quando qualcuno entra o a inizio turno. Puoi indicare immunità (es. l'analista). Esempi: Jiban, Yōki no Iki, Rōei.",
   MANUALE:
     "Scrivi a parole cosa succede, e lo gestisce il master. Si usa quando l'effetto è troppo particolare per i blocchi normali. Non è una scorciatoia di serie B: certe waza è giusto che restino così. Esempio: «ricrea l'oggetto distrutto il turno scorso».",
 };
 
 export const ATOMI_IN_ARRIVO: ReadonlyArray<{ label: string; text: string }> = [
   { label: "MANIPOLA_STATUS (in arrivo)", text: "Sposta o consuma status già presenti…" },
-  { label: "SCUDO (in arrivo)", text: "Crea una protezione che assorbe il danno…" },
   { label: "MOD_CS (in arrivo)", text: "Tocca le CS come risorsa…" },
-  { label: "TRASFORMA_TAG (in arrivo)", text: "Cambia la natura di una waza o costrutto…" },
   { label: "MOD_TRAIETTORIA (in arrivo)", text: "Cambia il percorso di un colpo…" },
-  { label: "ZONA (in arrivo)", text: "Crea un'area che resta sul campo…" },
   { label: "DIFFERITO (in arrivo)", text: "Prepari qualcosa ora che scatta dopo…" },
 ];
 
@@ -64,5 +67,19 @@ export const FIELD_HELP_TEXT: Record<string, string> = {
   consuma: "Se attivo, quando leggi il valore lo consumi/rimuovi.",
   delta_resistenza: "Quanto alzare o abbassare la resistenza (negativo = riduzione, positivo = aumento).",
   filtro_consistenza: "Filtro opzionale sulla consistenza del costrutto da colpire.",
+  dimensione: "Scegli se trasformare la categoria della waza o la consistenza del costrutto.",
+  da_tag: "Valore di partenza da sostituire (es. Contatto, Solido, Liquido).",
+  a_tag: "Nuovo valore dopo la trasformazione.",
+  oggetto: "Indica se la trasformazione colpisce la tua waza o un costrutto.",
+  effetti_collaterali: "Nota opzionale su effetti secondari (es. aumenta gittata, cambia traiettoria).",
+  forma_zona: "Forma dell'area persistente (cerchio, cono, linea, ecc.).",
+  raggio_zona_m: "Raggio/estensione della zona in metri.",
+  ancoraggio: "La zona resta fissa o segue analista/costrutto.",
+  effetti_zona: "Blocchi interni della zona: cosa succede quando si entra o a inizio turno.",
+  quando_entra: "Blocco effetto che scatta quando qualcuno entra nella zona.",
+  a_inizio_turno: "Blocco effetto che scatta a inizio turno finché la zona resta attiva.",
+  immunita: "Chi ignora gli effetti della zona (es. analista, alleati).",
+  resistenza_scudo: "Quanta resistenza ha lo scudo prima di rompersi.",
+  mitigazione_extra: "Riduzione/addizione extra al danno assorbito dallo scudo.",
 };
 

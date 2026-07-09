@@ -199,4 +199,107 @@ describe("effetti.schema.json", () => {
 
     expect(validateEffettiSchema(payload).valid).toBe(false);
   });
+
+  it("accetta TRASFORMA_TAG valido", () => {
+    const payload = [
+      {
+        tipo: "TRASFORMA_TAG",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "ISTANTANEA" },
+        dimensione: "categoria",
+        da_tag: "contatto",
+        a_tag: "proiettile",
+        oggetto: "WAZA_PROPRIA",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta TRASFORMA_TAG senza campo obbligatorio", () => {
+    const payload = [
+      {
+        tipo: "TRASFORMA_TAG",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "ISTANTANEA" },
+        dimensione: "categoria",
+        da_tag: "contatto",
+        oggetto: "WAZA_PROPRIA",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta SCUDO valido", () => {
+    const payload = [
+      {
+        tipo: "SCUDO",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "TURNI", n: 2 },
+        resistenza_scudo: { tipo: "TIER" },
+        mitigazione_extra: 1,
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta SCUDO senza resistenza", () => {
+    const payload = [
+      {
+        tipo: "SCUDO",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "TURNI", n: 2 },
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta ZONA valida con annidamento a un livello", () => {
+    const payload = [
+      {
+        tipo: "ZONA",
+        trigger: "AL_LANCIO",
+        bersaglio: "ZONA_TERRENO",
+        durata: { tipo: "TURNI", n: 3 },
+        forma_zona: "cerchio",
+        raggio_zona_m: 4,
+        ancoraggio: "FISSA",
+        effetti_zona: {
+          quando_entra: {
+            tipo: "APPLICA_STATUS",
+            trigger: "ENTRA_IN_ZONA",
+            bersaglio: "BERSAGLIO_SINGOLO",
+            durata: { tipo: "TURNI", n: 1 },
+            status: "Bruciatura",
+          },
+        },
+        immunita: ["analista"],
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta ZONA senza effetti_zona", () => {
+    const payload = [
+      {
+        tipo: "ZONA",
+        trigger: "AL_LANCIO",
+        bersaglio: "ZONA_TERRENO",
+        durata: { tipo: "TURNI", n: 3 },
+        forma_zona: "cerchio",
+        raggio_zona_m: 4,
+        ancoraggio: "FISSA",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
 });

@@ -21,6 +21,9 @@ const BLOCCO_ACCENT: Record<BloccoTipo, string> = {
   MOD_COSTO: "var(--accent-gold)",
   STATO_PERSONALE: "var(--accent-violet-light)",
   MOD_RESISTENZA: "var(--accent-violet)",
+  TRASFORMA_TAG: "var(--accent-gold)",
+  SCUDO: "var(--accent-violet-light)",
+  ZONA: "var(--accent-violet)",
   MANUALE: "var(--accent-violet)",
 };
 

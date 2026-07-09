@@ -22,6 +22,9 @@ export const ATOMO_DESCRIZIONI: Record<BloccoTipo, string> = {
   MOD_COSTO: "modifica il costo in CS di certe waza",
   STATO_PERSONALE: "scrive o legge uno stato personale",
   MOD_RESISTENZA: "modifica la resistenza propria o di un costrutto",
+  TRASFORMA_TAG: "cambia categoria o consistenza di waza e costrutti",
+  SCUDO: "crea una protezione che assorbe danni prima degli HP",
+  ZONA: "crea un'area persistente con effetti a ingresso o turno",
   MANUALE: "testo libero per il master, non eseguito dal motore",
 };
 
@@ -308,6 +311,54 @@ function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
       const bersaglio = BERSAGLIO_FRASI[String(blocco.bersaglio ?? "")] ?? "su un bersaglio…";
       const filtroTxt = filtro ? ` (solo consistenza ${filtro})` : "";
       return `modifica la resistenza di ${delta == null ? "…" : signed(delta)} ${bersaglio}${filtroTxt}${suffix(
+        blocco,
+      )}`;
+    }
+    case "TRASFORMA_TAG": {
+      const dimensione = str(blocco.dimensione);
+      const from = str(blocco.da_tag);
+      const to = str(blocco.a_tag);
+      const oggetto = str(blocco.oggetto);
+      const effetti = str(blocco.effetti_collaterali);
+      const oggettoTxt =
+        oggetto === "WAZA_PROPRIA"
+          ? "della tua waza"
+          : oggetto === "COSTRUTTO"
+            ? "del costrutto"
+            : "dell'oggetto";
+      const base = `trasforma ${dimensione === "consistenza" ? "la consistenza" : "la categoria"} ${oggettoTxt} da ${from ?? "…"} a ${to ?? "…"}`;
+      const extra = effetti ? ` (effetti collaterali: ${effetti})` : "";
+      return `${base}${extra}${suffix(blocco)}`;
+    }
+    case "SCUDO": {
+      const res = blocco.resistenza_scudo
+        ? renderValore(blocco.resistenza_scudo, tierFlatDamage)
+        : "…";
+      const mitigazione = num(blocco.mitigazione_extra);
+      const mitigTxt = mitigazione != null ? `, mitigazione extra ${signed(mitigazione)}` : "";
+      return `crea uno scudo con resistenza ${res}${mitigTxt}${suffix(blocco)}`;
+    }
+    case "ZONA": {
+      const forma = str(blocco.forma_zona);
+      const raggio = num(blocco.raggio_zona_m);
+      const ancoraggio = str(blocco.ancoraggio);
+      const immunita = Array.isArray(blocco.immunita) ? (blocco.immunita as string[]) : [];
+      const effetti =
+        blocco.effetti_zona && typeof blocco.effetti_zona === "object"
+          ? (blocco.effetti_zona as Blocco)
+          : null;
+      const hooks: string[] = [];
+      if (effetti?.quando_entra) hooks.push("quando entra");
+      if (effetti?.a_inizio_turno) hooks.push("a inizio turno");
+      const hooksTxt = hooks.length > 0 ? hooks.join(" + ") : "senza effetti interni";
+      const ancoraggioTxt =
+        ancoraggio === "SEGUE_ANALISTA"
+          ? "segue l'analista"
+          : ancoraggio === "SEGUE_COSTRUTTO"
+            ? "segue un costrutto"
+            : "fissa";
+      const immunitaTxt = immunita.length > 0 ? `, immuni: ${immunita.join(", ")}` : "";
+      return `crea una zona ${forma ?? "…"}${raggio != null ? ` (raggio ${raggio} m)` : ""}, ancoraggio ${ancoraggioTxt}, effetti ${hooksTxt}${immunitaTxt}${suffix(
         blocco,
       )}`;
     }

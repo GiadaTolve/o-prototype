@@ -148,6 +148,61 @@ describe("waza-blocco-render — blocchi completi", () => {
     );
   });
 
+  test("TRASFORMA_TAG in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "TRASFORMA_TAG",
+      trigger: "AL_LANCIO",
+      bersaglio: "SE_STESSO",
+      durata: { tipo: "ISTANTANEA" },
+      dimensione: "categoria",
+      da_tag: "contatto",
+      a_tag: "proiettile",
+      oggetto: "WAZA_PROPRIA",
+    });
+    expect(frase).toBe(
+      "Trasforma la categoria della tua waza da contatto a proiettile.",
+    );
+  });
+
+  test("SCUDO in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "SCUDO",
+      trigger: "AL_LANCIO",
+      bersaglio: "SE_STESSO",
+      durata: { tipo: "TURNI", n: 2 },
+      resistenza_scudo: { tipo: "TIER" },
+      mitigazione_extra: 1,
+    });
+    expect(frase).toBe(
+      "Crea uno scudo con resistenza il tier della waza, mitigazione extra +1 per 2 turni.",
+    );
+  });
+
+  test("ZONA in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "ZONA",
+      trigger: "AL_LANCIO",
+      bersaglio: "ZONA_TERRENO",
+      durata: { tipo: "TURNI", n: 3 },
+      forma_zona: "cerchio",
+      raggio_zona_m: 4,
+      ancoraggio: "FISSA",
+      effetti_zona: {
+        quando_entra: {
+          tipo: "APPLICA_STATUS",
+          trigger: "ENTRA_IN_ZONA",
+          bersaglio: "BERSAGLIO_SINGOLO",
+          durata: { tipo: "TURNI", n: 1 },
+          status: "Bruciatura",
+        },
+      },
+      immunita: ["analista"],
+    });
+    expect(frase).toBe(
+      "Crea una zona cerchio (raggio 4 m), ancoraggio fissa, effetti quando entra, immuni: analista per 3 turni.",
+    );
+  });
+
   test("trigger non-lancio genera prefisso", () => {
     const frase = renderBloccoMeccanico({
       tipo: "DANNO",
@@ -173,6 +228,9 @@ describe("waza-blocco-render — descrizioni atomi", () => {
     expect(ATOMO_DESCRIZIONI.MOD_COSTO).toContain("costo");
     expect(ATOMO_DESCRIZIONI.STATO_PERSONALE).toContain("stato personale");
     expect(ATOMO_DESCRIZIONI.MOD_RESISTENZA).toContain("resistenza");
+    expect(ATOMO_DESCRIZIONI.TRASFORMA_TAG).toContain("categoria");
+    expect(ATOMO_DESCRIZIONI.SCUDO).toContain("assorbe");
+    expect(ATOMO_DESCRIZIONI.ZONA).toContain("area");
     for (const desc of Object.values(ATOMO_DESCRIZIONI)) {
       expect(desc.length).toBeGreaterThan(0);
     }

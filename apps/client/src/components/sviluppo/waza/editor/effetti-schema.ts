@@ -15,6 +15,9 @@ export const BLOCCO_TIPI = [
   "MOD_COSTO",
   "STATO_PERSONALE",
   "MOD_RESISTENZA",
+  "TRASFORMA_TAG",
+  "SCUDO",
+  "ZONA",
   "MANUALE",
 ] as const;
 
@@ -29,6 +32,9 @@ export const BLOCCO_TIPO_LABELS: Record<BloccoTipo, string> = {
   MOD_COSTO: "Modifica costo CS",
   STATO_PERSONALE: "Stato personale",
   MOD_RESISTENZA: "Modifica resistenza",
+  TRASFORMA_TAG: "Trasforma tag",
+  SCUDO: "Scudo",
+  ZONA: "Zona",
   MANUALE: "Manuale (Master)",
 };
 
@@ -145,6 +151,9 @@ const BERSAGLIO_DEFAULT_PER_TIPO: Partial<Record<BloccoTipo, string>> = {
   MOD_COSTO: "SE_STESSO",
   STATO_PERSONALE: "SE_STESSO",
   MOD_RESISTENZA: "SE_STESSO",
+  TRASFORMA_TAG: "SE_STESSO",
+  SCUDO: "SE_STESSO",
+  ZONA: "ZONA_TERRENO",
 };
 
 export function createDefaultBlocco(tipo: BloccoTipo): Record<string, unknown> {
