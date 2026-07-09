@@ -346,12 +346,6 @@ export function CatalogoWaza() {
           >
             ← Torna Indietro
           </button>
-          <Link
-            href="/sviluppo"
-            className="px-3 py-1.5 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:text-[var(--accent-gold)]"
-          >
-            Sviluppo
-          </Link>
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
