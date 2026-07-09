@@ -11,6 +11,12 @@ export const BLOCCO_INFO_TESTI: Record<BloccoTipo, string> = {
     "Mette addosso a qualcuno uno stato: incendiato, avvelenato, stordito. Scegli lo status e quante volte si accumula (se non dici niente, è 1). Esempio: Incendiato a chi entra nella nube.",
   EVOCA_COSTRUTTO:
     "Crea qualcosa sul campo: un'arma animata, una colonna, un globo. Ha una sua resistenza, una durata, e a volte si muove o attacca. Esempio: la lanterna fluttuante che ti segue per 3 turni.",
+  MOD_COSTO:
+    "Cambia quante CS costa lanciare certe waza: puoi fare uno sconto (con minimo) o un sovrapprezzo. Esempi: Shōka, Kioku-Mei.",
+  STATO_PERSONALE:
+    "Scrive o legge un valore sul personaggio, con scadenza in turni. Utile per ricordare e consumare stati personali come elemento residuo o batterie. Esempi: Nokuribi, Chikuden.",
+  MOD_RESISTENZA:
+    "Alza o abbassa la resistenza tua o di un costrutto, anche filtrando per consistenza. Esempi: Kōchiku, Junnō.",
   MANUALE:
     "Scrivi a parole cosa succede, e lo gestisce il master. Si usa quando l'effetto è troppo particolare per i blocchi normali. Non è una scorciatoia di serie B: certe waza è giusto che restino così. Esempio: «ricrea l'oggetto distrutto il turno scorso».",
 };
@@ -18,13 +24,10 @@ export const BLOCCO_INFO_TESTI: Record<BloccoTipo, string> = {
 export const ATOMI_IN_ARRIVO: ReadonlyArray<{ label: string; text: string }> = [
   { label: "MANIPOLA_STATUS (in arrivo)", text: "Sposta o consuma status già presenti…" },
   { label: "SCUDO (in arrivo)", text: "Crea una protezione che assorbe il danno…" },
-  { label: "MOD_RESISTENZA (in arrivo)", text: "Alza o abbassa la resistenza…" },
-  { label: "MOD_COSTO (in arrivo)", text: "Cambia quante CS costa lanciare certe waza…" },
   { label: "MOD_CS (in arrivo)", text: "Tocca le CS come risorsa…" },
   { label: "TRASFORMA_TAG (in arrivo)", text: "Cambia la natura di una waza o costrutto…" },
   { label: "MOD_TRAIETTORIA (in arrivo)", text: "Cambia il percorso di un colpo…" },
   { label: "ZONA (in arrivo)", text: "Crea un'area che resta sul campo…" },
-  { label: "STATO_PERSONALE (in arrivo)", text: "Fa ricordare qualcosa al personaggio…" },
   { label: "DIFFERITO (in arrivo)", text: "Prepari qualcosa ora che scatta dopo…" },
 ];
 
@@ -51,5 +54,15 @@ export const FIELD_HELP_TEXT: Record<string, string> = {
   testo: "Testo libero gestito dal master: usalo per effetti particolari non codificabili con gli altri blocchi.",
   mostra_a: "Per il blocco manuale: decide chi vede il testo (solo master o tutti).",
   comportamento: "Modo in cui il costrutto si comporta dopo l’evocazione.",
+  delta_cs: "Variazione in CS applicata al costo della waza (negativo = sconto, positivo = sovrapprezzo).",
+  minimo_cs: "Costo minimo in CS dopo lo sconto, per evitare che scenda troppo.",
+  filtro_waza: "Filtro opzionale: limita l'effetto alle waza di una famiglia o che rispettano una condizione.",
+  famiglia: "Famiglia waza su cui applicare il filtro (es. shoka, kioku-mei).",
+  operazione: "Scegli se scrivere un valore nello stato personale o leggerlo.",
+  chiave: "Nome della variabile personale da usare (es. elemento_residuo, batteria).",
+  scadenza_turni: "Numero di turni dopo cui il valore personale scade.",
+  consuma: "Se attivo, quando leggi il valore lo consumi/rimuovi.",
+  delta_resistenza: "Quanto alzare o abbassare la resistenza (negativo = riduzione, positivo = aumento).",
+  filtro_consistenza: "Filtro opzionale sulla consistenza del costrutto da colpire.",
 };
 

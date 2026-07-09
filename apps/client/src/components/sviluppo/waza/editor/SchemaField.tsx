@@ -40,6 +40,15 @@ function labelForProperty(key: string): string {
     testo: "Testo effetto",
     mostra_a: "Visibile a",
     filtro_waza: "Filtro waza (tag)",
+    delta_cs: "Delta CS",
+    minimo_cs: "Minimo CS",
+    famiglia: "Famiglia waza",
+    operazione: "Operazione",
+    chiave: "Chiave",
+    scadenza_turni: "Scadenza (turni)",
+    consuma: "Consuma alla lettura",
+    delta_resistenza: "Delta resistenza",
+    filtro_consistenza: "Filtro consistenza",
     tipo: "Tipo",
     n: "Numero turni",
     condizione_fine: "Condizione di fine",
@@ -98,6 +107,10 @@ function optionLabel(fieldKey: string, value: string): string {
       linea: "Linea",
       sfera: "Sfera",
       zona: "Zona",
+    },
+    operazione: {
+      SCRIVI: "Scrivi",
+      LEGGI: "Leggi",
     },
   };
   return maps[fieldKey]?.[value] ?? value;

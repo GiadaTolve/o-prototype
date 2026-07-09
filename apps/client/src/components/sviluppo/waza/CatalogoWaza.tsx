@@ -52,6 +52,8 @@ type Filters = {
   archiviate: boolean;
 };
 
+const FILTERS_STORAGE_KEY = "sviluppo:waza-catalog:filters:v1";
+
 const EMPTY_FILTERS: Filters = {
   categoria: "",
   genitore: "",
@@ -212,6 +214,7 @@ function countActiveFilters(filters: Filters): number {
 export function CatalogoWaza() {
   const router = useRouter();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
   const [items, setItems] = useState<WazaCatalogItem[]>([]);
   const [vocabolari, setVocabolari] = useState<VocabolarioItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,6 +224,35 @@ export function CatalogoWaza() {
   const [showFilters, setShowFilters] = useState(false);
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+      if (!raw) {
+        setFiltersHydrated(true);
+        return;
+      }
+      const parsed = JSON.parse(raw) as Partial<Filters>;
+      setFilters({
+        ...EMPTY_FILTERS,
+        ...parsed,
+        categoria: (parsed.categoria as Filters["categoria"]) ?? "",
+        tipo: (parsed.tipo as Filters["tipo"]) ?? "",
+        statoCodifica: (parsed.statoCodifica as Filters["statoCodifica"]) ?? "",
+        archiviate: parsed.archiviate === true,
+      });
+    } catch {
+      // Se il payload salvato è invalido, ripartiamo da filtri vuoti.
+      setFilters(EMPTY_FILTERS);
+    } finally {
+      setFiltersHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!filtersHydrated) return;
+    window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters, filtersHydrated]);
 
   const genitoriOptions = useMemo(() => {
     if (!filters.categoria || filters.categoria === "generica") return [];
@@ -257,6 +289,11 @@ export function CatalogoWaza() {
       if (key === "categoria") next.genitore = "";
       return next;
     });
+  };
+
+  const resetFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    window.localStorage.removeItem(FILTERS_STORAGE_KEY);
   };
 
   const handleDuplicate = async (item: WazaCatalogItem) => {
@@ -358,6 +395,16 @@ export function CatalogoWaza() {
         </span>
         <span className="text-xs text-gray-500">{showFilters ? "Nascondi" : "Mostra"}</span>
       </button>
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="text-xs px-3 py-1.5 rounded border border-[var(--border-color)] text-gray-400 hover:text-[var(--accent-gold)]"
+        >
+          Reset filtri
+        </button>
+      </div>
 
       <div
         className={`${showFilters ? "grid" : "hidden"} md:grid rounded border border-[var(--border-color)] bg-[var(--background)]/40 p-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3`}

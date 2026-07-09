@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://oyasumi.local/schemas/effetti.schema.json",
-  "title": "Oyasumi - Schema effetti Waza (Sprint 1)",
-  "description": "Lista blocchi effetto supportati nello Sprint 1: DANNO, MOD_DANNO, BUFF_SKIRU, APPLICA_STATUS, EVOCA_COSTRUTTO, MANUALE.",
+  "title": "Oyasumi - Schema effetti Waza (Sprint 2)",
+  "description": "Lista blocchi effetto supportati nello Sprint 2 (ondata 1): DANNO, MOD_DANNO, BUFF_SKIRU, APPLICA_STATUS, EVOCA_COSTRUTTO, MOD_COSTO, STATO_PERSONALE, MOD_RESISTENZA, MANUALE.",
   "type": "array",
   "default": [],
   "items": {
@@ -171,6 +171,27 @@
       "required": [
         "forma"
       ]
+    },
+    "filtroWaza": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "famiglia": {
+          "type": "string",
+          "minLength": 1
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        }
+      }
     },
     "valoreFisso": {
       "type": "object",
@@ -755,6 +776,159 @@
         "testo"
       ]
     },
+    "bloccoModCosto": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "MOD_COSTO"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "delta_cs": {
+          "type": "integer"
+        },
+        "minimo_cs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filtro_waza": {
+          "$ref": "#/$defs/filtroWaza"
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "delta_cs"
+      ]
+    },
+    "bloccoStatoPersonale": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "STATO_PERSONALE"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "operazione": {
+          "type": "string",
+          "enum": [
+            "SCRIVI",
+            "LEGGI"
+          ]
+        },
+        "chiave": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valore": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "scadenza_turni": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "consuma": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "operazione",
+        "chiave"
+      ]
+    },
+    "bloccoModResistenza": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "MOD_RESISTENZA"
+        },
+        "trigger": {
+          "$ref": "#/$defs/triggerEnum"
+        },
+        "bersaglio": {
+          "$ref": "#/$defs/bersaglioEnum"
+        },
+        "durata": {
+          "$ref": "#/$defs/durata"
+        },
+        "condizione": {
+          "$ref": "#/$defs/condizioneCanonica"
+        },
+        "costo_extra": {
+          "$ref": "#/$defs/costoExtra"
+        },
+        "nota_master": {
+          "type": "string"
+        },
+        "delta_resistenza": {
+          "type": "integer"
+        },
+        "filtro_consistenza": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "tipo",
+        "trigger",
+        "bersaglio",
+        "durata",
+        "delta_resistenza"
+      ]
+    },
     "bloccoEffetto": {
       "type": "object",
       "oneOf": [
@@ -772,6 +946,15 @@
         },
         {
           "$ref": "#/$defs/bloccoEvocaCostrutto"
+        },
+        {
+          "$ref": "#/$defs/bloccoModCosto"
+        },
+        {
+          "$ref": "#/$defs/bloccoStatoPersonale"
+        },
+        {
+          "$ref": "#/$defs/bloccoModResistenza"
         },
         {
           "$ref": "#/$defs/bloccoManuale"

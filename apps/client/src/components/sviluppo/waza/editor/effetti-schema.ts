@@ -12,6 +12,9 @@ export const BLOCCO_TIPI = [
   "BUFF_SKIRU",
   "APPLICA_STATUS",
   "EVOCA_COSTRUTTO",
+  "MOD_COSTO",
+  "STATO_PERSONALE",
+  "MOD_RESISTENZA",
   "MANUALE",
 ] as const;
 
@@ -23,6 +26,9 @@ export const BLOCCO_TIPO_LABELS: Record<BloccoTipo, string> = {
   BUFF_SKIRU: "Buff Skiru",
   APPLICA_STATUS: "Applica status",
   EVOCA_COSTRUTTO: "Evoca costrutto",
+  MOD_COSTO: "Modifica costo CS",
+  STATO_PERSONALE: "Stato personale",
+  MOD_RESISTENZA: "Modifica resistenza",
   MANUALE: "Manuale (Master)",
 };
 
@@ -136,6 +142,9 @@ const BERSAGLIO_DEFAULT_PER_TIPO: Partial<Record<BloccoTipo, string>> = {
   BUFF_SKIRU: "SE_STESSO",
   APPLICA_STATUS: "BERSAGLIO_SINGOLO",
   EVOCA_COSTRUTTO: "SE_STESSO",
+  MOD_COSTO: "SE_STESSO",
+  STATO_PERSONALE: "SE_STESSO",
+  MOD_RESISTENZA: "SE_STESSO",
 };
 
 export function createDefaultBlocco(tipo: BloccoTipo): Record<string, unknown> {

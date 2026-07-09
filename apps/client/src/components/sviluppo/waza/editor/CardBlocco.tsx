@@ -18,6 +18,9 @@ const BLOCCO_ACCENT: Record<BloccoTipo, string> = {
   BUFF_SKIRU: "var(--accent-violet-light)",
   APPLICA_STATUS: "var(--accent-violet)",
   EVOCA_COSTRUTTO: "var(--accent-violet-light)",
+  MOD_COSTO: "var(--accent-gold)",
+  STATO_PERSONALE: "var(--accent-violet-light)",
+  MOD_RESISTENZA: "var(--accent-violet)",
   MANUALE: "var(--accent-violet)",
 };
 
@@ -59,6 +62,7 @@ export function CardBlocco({
     if (key === "skiru") return vocabolari.skiru;
     if (key === "status") return vocabolari.status;
     if (key === "consistenza") return vocabolari.consistenza;
+    if (key === "filtro_consistenza") return vocabolari.consistenza;
     return undefined;
   };
 

@@ -19,6 +19,9 @@ export const ATOMO_DESCRIZIONI: Record<BloccoTipo, string> = {
   BUFF_SKIRU: "potenzia (o riduce) una Skiru",
   APPLICA_STATUS: "applica uno status al bersaglio",
   EVOCA_COSTRUTTO: "evoca un costrutto controllabile",
+  MOD_COSTO: "modifica il costo in CS di certe waza",
+  STATO_PERSONALE: "scrive o legge uno stato personale",
+  MOD_RESISTENZA: "modifica la resistenza propria o di un costrutto",
   MANUALE: "testo libero per il master, non eseguito dal motore",
 };
 
@@ -251,6 +254,55 @@ function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
       const comp = str(blocco.comportamento);
       const compTxt = comp ? `, comportamento ${comp.toLowerCase().replace(/_/g, " ")}` : "";
       return `evoca un costrutto ${taglia ?? "…"}${consistenza ? ` di ${consistenza}` : ""}${danno}${compTxt}${suffix(
+        blocco,
+      )}`;
+    }
+    case "MOD_COSTO": {
+      const delta = num(blocco.delta_cs);
+      const minimo = num(blocco.minimo_cs);
+      const filtro =
+        blocco.filtro_waza && typeof blocco.filtro_waza === "object"
+          ? (blocco.filtro_waza as Blocco)
+          : null;
+      const famiglia = str(filtro?.famiglia);
+      const cond = renderCondizione(filtro?.condizione);
+      const scope = [
+        famiglia ? `famiglia ${famiglia}` : "",
+        cond ? cond.replace(/^se\s+/, "") : "",
+      ]
+        .filter(Boolean)
+        .join(" e ");
+      const scopeTxt = scope ? ` (${scope})` : "";
+      const base = `modifica il costo CS di ${delta == null ? "…" : signed(delta)}${scopeTxt}`;
+      const minimoTxt = minimo != null ? ` con minimo ${minimo} CS` : "";
+      return `${base}${minimoTxt}${suffix(blocco)}`;
+    }
+    case "STATO_PERSONALE": {
+      const op = String(blocco.operazione ?? "");
+      const chiave = str(blocco.chiave) ?? "…";
+      const scadenza = num(blocco.scadenza_turni);
+      const consuma = Boolean(blocco.consuma);
+      if (op === "SCRIVI") {
+        const valoreRaw = blocco.valore;
+        const valore =
+          typeof valoreRaw === "string"
+            ? `“${valoreRaw}”`
+            : typeof valoreRaw === "number" || typeof valoreRaw === "boolean"
+              ? String(valoreRaw)
+              : "…";
+        const exp = scadenza != null ? ` per ${scadenza} turni` : "";
+        return `scrive nello stato personale ${chiave} = ${valore}${exp}${suffix(blocco)}`;
+      }
+      const exp = scadenza != null ? ` (valido entro ${scadenza} turni)` : "";
+      const consumeTxt = consuma ? " e lo consuma" : "";
+      return `legge dallo stato personale ${chiave}${exp}${consumeTxt}${suffix(blocco)}`;
+    }
+    case "MOD_RESISTENZA": {
+      const delta = num(blocco.delta_resistenza);
+      const filtro = str(blocco.filtro_consistenza);
+      const bersaglio = BERSAGLIO_FRASI[String(blocco.bersaglio ?? "")] ?? "su un bersaglio…";
+      const filtroTxt = filtro ? ` (solo consistenza ${filtro})` : "";
+      return `modifica la resistenza di ${delta == null ? "…" : signed(delta)} ${bersaglio}${filtroTxt}${suffix(
         blocco,
       )}`;
     }

@@ -81,4 +81,92 @@ describe("effetti.schema.json", () => {
 
     expect(validateEffettiSchema(payload).valid).toBe(true);
   });
+
+  it("accetta MOD_COSTO valido", () => {
+    const payload = [
+      {
+        tipo: "MOD_COSTO",
+        trigger: "PRE_COSTO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "TURNI", n: 2 },
+        delta_cs: -1,
+        minimo_cs: 1,
+        filtro_waza: { famiglia: "shoka" },
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta MOD_COSTO senza delta_cs", () => {
+    const payload = [
+      {
+        tipo: "MOD_COSTO",
+        trigger: "PRE_COSTO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "ISTANTANEA" },
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta STATO_PERSONALE valido", () => {
+    const payload = [
+      {
+        tipo: "STATO_PERSONALE",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "TURNI", n: 2 },
+        operazione: "SCRIVI",
+        chiave: "elemento_residuo",
+        valore: "fuoco",
+        scadenza_turni: 2,
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta STATO_PERSONALE senza chiave", () => {
+    const payload = [
+      {
+        tipo: "STATO_PERSONALE",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "ISTANTANEA" },
+        operazione: "LEGGI",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("accetta MOD_RESISTENZA valido", () => {
+    const payload = [
+      {
+        tipo: "MOD_RESISTENZA",
+        trigger: "AL_LANCIO",
+        bersaglio: "PROPRIO_COSTRUTTO",
+        durata: { tipo: "TURNI", n: 3 },
+        delta_resistenza: 2,
+        filtro_consistenza: "metallico",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta MOD_RESISTENZA senza delta_resistenza", () => {
+    const payload = [
+      {
+        tipo: "MOD_RESISTENZA",
+        trigger: "AL_LANCIO",
+        bersaglio: "PROPRIO_COSTRUTTO",
+        durata: { tipo: "ISTANTANEA" },
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
 });

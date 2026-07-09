@@ -85,6 +85,51 @@ describe("waza-blocco-render — blocchi completi", () => {
     expect(frase).toBe("Nota per il master (non eseguita dal motore): «Il Tōrō si spegne.».");
   });
 
+  test("MOD_COSTO in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "MOD_COSTO",
+      trigger: "PRE_COSTO",
+      bersaglio: "SE_STESSO",
+      durata: { tipo: "TURNI", n: 2 },
+      delta_cs: -1,
+      minimo_cs: 1,
+      filtro_waza: { famiglia: "shoka" },
+    });
+    expect(frase).toBe(
+      "Prima di pagare il costo: modifica il costo CS di −1 (famiglia shoka) con minimo 1 CS per 2 turni.",
+    );
+  });
+
+  test("STATO_PERSONALE SCRIVI in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "STATO_PERSONALE",
+      trigger: "AL_LANCIO",
+      bersaglio: "SE_STESSO",
+      durata: { tipo: "ISTANTANEA" },
+      operazione: "SCRIVI",
+      chiave: "elemento_residuo",
+      valore: "fuoco",
+      scadenza_turni: 2,
+    });
+    expect(frase).toBe(
+      "Scrive nello stato personale elemento_residuo = “fuoco” per 2 turni.",
+    );
+  });
+
+  test("MOD_RESISTENZA in italiano piano", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "MOD_RESISTENZA",
+      trigger: "AL_LANCIO",
+      bersaglio: "PROPRIO_COSTRUTTO",
+      durata: { tipo: "TURNI", n: 3 },
+      delta_resistenza: 2,
+      filtro_consistenza: "metallico",
+    });
+    expect(frase).toBe(
+      "Modifica la resistenza di +2 sul tuo costrutto (solo consistenza metallico) per 3 turni.",
+    );
+  });
+
   test("trigger non-lancio genera prefisso", () => {
     const frase = renderBloccoMeccanico({
       tipo: "DANNO",
@@ -107,6 +152,9 @@ describe("waza-blocco-render — descrizioni atomi", () => {
   test("ogni atomo ha una descrizione in italiano piano", () => {
     expect(ATOMO_DESCRIZIONI.DANNO).toBe("la waza infligge danno");
     expect(ATOMO_DESCRIZIONI.MANUALE).toContain("non eseguito dal motore");
+    expect(ATOMO_DESCRIZIONI.MOD_COSTO).toContain("costo");
+    expect(ATOMO_DESCRIZIONI.STATO_PERSONALE).toContain("stato personale");
+    expect(ATOMO_DESCRIZIONI.MOD_RESISTENZA).toContain("resistenza");
     for (const desc of Object.values(ATOMO_DESCRIZIONI)) {
       expect(desc.length).toBeGreaterThan(0);
     }
