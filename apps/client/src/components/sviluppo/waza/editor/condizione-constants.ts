@@ -1,5 +1,6 @@
 export type CondizioneSoggettoId =
   | "toro.batteria"
+  | "toro.lanciata"
   | "stack(status)"
   | "grado_pg"
   | "cs_correnti"
@@ -15,6 +16,7 @@ export type CondizioneSoggetto = {
 
 export const CONDIZIONE_SOGGETTI: CondizioneSoggetto[] = [
   { id: "toro.batteria", label: "Tōrō — Batteria", tipo: "bool" },
+  { id: "toro.lanciata", label: "Lanciata dal Tōrō", tipo: "bool" },
   { id: "stack(status)", label: "Stack di uno status", tipo: "number" },
   { id: "grado_pg", label: "Grado del PG", tipo: "enum" },
   { id: "cs_correnti", label: "CS correnti", tipo: "number" },

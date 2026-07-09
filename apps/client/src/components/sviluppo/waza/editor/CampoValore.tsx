@@ -154,6 +154,13 @@ export function CampoValore({ value, onChange, disabled, tierFlatDamage }: Campo
   const current = value ?? { tipo: "TIER" };
   const tipo = String(current.tipo ?? "");
   const branches = getValoreBranches();
+  const COMMON_VALUE_TYPES = ["TIER", "FISSO", "TIER_DELTA"] as const;
+  const commonBranches = branches.filter((b) =>
+    COMMON_VALUE_TYPES.includes(getValoreTipoFromBranch(b) as (typeof COMMON_VALUE_TYPES)[number]),
+  );
+  const specialBranches = branches.filter(
+    (b) => !COMMON_VALUE_TYPES.includes(getValoreTipoFromBranch(b) as (typeof COMMON_VALUE_TYPES)[number]),
+  );
 
   const branch = branches.find((b) => getValoreTipoFromBranch(b) === tipo) ?? branches[0];
   const props = (branch.properties as Record<string, SchemaNode> | undefined) ?? {};
@@ -180,14 +187,28 @@ export function CampoValore({ value, onChange, disabled, tierFlatDamage }: Campo
           onChange={(e) => setTipo(e.target.value)}
           className="w-full px-2 py-1.5 min-h-[44px] md:min-h-0 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
         >
-          {branches.map((b) => {
-            const t = getValoreTipoFromBranch(b);
-            return (
-              <option key={t} value={t}>
-                {VALORE_TIPO_LABELS[t] ?? t}
-              </option>
-            );
-          })}
+          <optgroup label="I più usati">
+            {commonBranches.map((b) => {
+              const t = getValoreTipoFromBranch(b);
+              return (
+                <option key={t} value={t}>
+                  {VALORE_TIPO_LABELS[t] ?? t}
+                </option>
+              );
+            })}
+          </optgroup>
+          {specialBranches.length > 0 && (
+            <optgroup label="Casi particolari">
+              {specialBranches.map((b) => {
+                const t = getValoreTipoFromBranch(b);
+                return (
+                  <option key={t} value={t}>
+                    {VALORE_TIPO_LABELS[t] ?? t}
+                  </option>
+                );
+              })}
+            </optgroup>
+          )}
         </select>
       </label>
 

@@ -360,7 +360,7 @@ export function DashboardCenter({
               onClick={goRoot}
               className="text-sm text-gray-400 hover:text-[var(--accent-gold)]"
             >
-              ← Mappa
+              ← Torna alla Mappa
             </button>
           </div>
           <div

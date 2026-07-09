@@ -46,6 +46,16 @@ describe("condizione", () => {
       statusNome: "Incendiato",
     });
   });
+
+  test("build e parse toro.lanciata", () => {
+    const raw = buildCondizioneCanonica("toro.lanciata", "==", "true");
+    expect(raw).toBe("toro.lanciata == true");
+    expect(parseCondizioneCanonica(raw)).toMatchObject({
+      soggettoId: "toro.lanciata",
+      operatore: "==",
+      valore: "true",
+    });
+  });
 });
 
 describe("waza-editor-utils", () => {

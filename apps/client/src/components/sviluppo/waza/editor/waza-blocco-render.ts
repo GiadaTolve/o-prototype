@@ -172,6 +172,11 @@ export function renderCondizione(raw: unknown): string {
       ? "se il Tōrō ha la Batteria attiva"
       : "se il Tōrō non ha la Batteria";
   }
+  if (parsed.soggettoId === "toro.lanciata") {
+    return parsed.valore === "true"
+      ? "se lanciata dal Tōrō"
+      : "se non lanciata dal Tōrō";
+  }
   if (parsed.soggettoId === "stack(status)" && parsed.statusNome) {
     return `se ci sono ${parsed.operatore} ${parsed.valore} stack di ${parsed.statusNome}`;
   }
@@ -273,8 +278,8 @@ function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
         .filter(Boolean)
         .join(" e ");
       const scopeTxt = scope ? ` (${scope})` : "";
-      const base = `modifica il costo CS di ${delta == null ? "…" : signed(delta)}${scopeTxt}`;
-      const minimoTxt = minimo != null ? ` con minimo ${minimo} CS` : "";
+      const base = `modifica il costo di ${delta == null ? "…" : `${signed(delta)} CS`}${scopeTxt}`;
+      const minimoTxt = minimo != null ? `, minimo ${minimo}` : "";
       return `${base}${minimoTxt}${suffix(blocco)}`;
     }
     case "STATO_PERSONALE": {

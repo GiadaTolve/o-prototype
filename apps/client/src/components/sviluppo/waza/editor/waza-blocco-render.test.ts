@@ -39,6 +39,9 @@ describe("waza-blocco-render — condizione", () => {
       "se ci sono >= 3 stack di Incendiato",
     );
   });
+  test("lanciata dal Tōrō", () => {
+    expect(renderCondizione("toro.lanciata == true")).toBe("se lanciata dal Tōrō");
+  });
 });
 
 describe("waza-blocco-render — blocchi completi", () => {
@@ -96,7 +99,22 @@ describe("waza-blocco-render — blocchi completi", () => {
       filtro_waza: { famiglia: "shoka" },
     });
     expect(frase).toBe(
-      "Prima di pagare il costo: modifica il costo CS di −1 (famiglia shoka) con minimo 1 CS per 2 turni.",
+      "Prima di pagare il costo: modifica il costo di −1 CS (famiglia shoka), minimo 1 per 2 turni.",
+    );
+  });
+
+  test("MOD_COSTO con condizione lanciata dal Tōrō", () => {
+    const frase = renderBloccoMeccanico({
+      tipo: "MOD_COSTO",
+      trigger: "AL_LANCIO",
+      bersaglio: "SE_STESSO",
+      durata: { tipo: "ISTANTANEA" },
+      delta_cs: -1,
+      minimo_cs: 1,
+      condizione: "toro.lanciata == true",
+    });
+    expect(frase).toBe(
+      "Modifica il costo di −1 CS, minimo 1 se lanciata dal Tōrō.",
     );
   });
 

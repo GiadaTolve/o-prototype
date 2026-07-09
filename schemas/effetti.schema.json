@@ -802,7 +802,12 @@
           "type": "string"
         },
         "delta_cs": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": -10,
+          "maximum": 10,
+          "not": {
+            "const": 0
+          }
         },
         "minimo_cs": {
           "type": "integer",

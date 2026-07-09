@@ -403,6 +403,23 @@ export function SchemaField({
   }
 
   if (resolved.type === "integer" || resolved.type === "number") {
+    if (fieldKey === "delta_cs" || fieldKey === "delta_resistenza") {
+      return (
+        <select
+          disabled={disabled}
+          value={value == null ? "" : String(value)}
+          onChange={(e) => onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+          className={inputClass}
+        >
+          <option value="">—</option>
+          {[-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+            <option key={n} value={n}>
+              {n > 0 ? `+${n}` : n}
+            </option>
+          ))}
+        </select>
+      );
+    }
     return (
       <select
         disabled={disabled}

@@ -98,6 +98,22 @@ describe("effetti.schema.json", () => {
     expect(validateEffettiSchema(payload).valid).toBe(true);
   });
 
+  it("accetta MOD_COSTO con sconto e condizione Tōrō", () => {
+    const payload = [
+      {
+        tipo: "MOD_COSTO",
+        trigger: "PRE_COSTO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "ISTANTANEA" },
+        delta_cs: -1,
+        minimo_cs: 1,
+        condizione: "toro.lanciata == true",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
   it("rifiuta MOD_COSTO senza delta_cs", () => {
     const payload = [
       {
@@ -105,6 +121,20 @@ describe("effetti.schema.json", () => {
         trigger: "PRE_COSTO",
         bersaglio: "SE_STESSO",
         durata: { tipo: "ISTANTANEA" },
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
+  it("rifiuta MOD_COSTO con delta_cs fuori range", () => {
+    const payload = [
+      {
+        tipo: "MOD_COSTO",
+        trigger: "PRE_COSTO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "ISTANTANEA" },
+        delta_cs: -11,
       },
     ];
 

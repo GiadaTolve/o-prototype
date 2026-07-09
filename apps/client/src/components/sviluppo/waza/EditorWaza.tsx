@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getTierCsCost, getTierValue, isWazaTier } from "@domain/combat/tier";
 import {
   vocabolarioGenitoreKey,
@@ -135,6 +136,7 @@ function DisabledTooltipButton({
 }
 
 export function EditorWaza({ wazaId }: { wazaId: string }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -284,6 +286,11 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
       setVersione(res.versione);
       setForm(versioneToForm(res.waza, res.versione));
       setInfo("Bozza salvata.");
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        router.back();
+      } else {
+        router.push("/sviluppo/waza");
+      }
     } catch (e) {
       if (e instanceof WazaApiError) {
         const errori = translateValidationIssues(
@@ -387,7 +394,7 @@ export function EditorWaza({ wazaId }: { wazaId: string }) {
             href="/sviluppo/waza"
             className="text-[10px] text-gray-500 hover:text-[var(--accent-gold)]"
           >
-            ← Catalogo Waza
+            ← Torna Indietro
           </Link>
           <h1 className="text-xl font-display text-[var(--accent-gold)] mt-1">
             {form.nomeItaliano || "Editor waza"}

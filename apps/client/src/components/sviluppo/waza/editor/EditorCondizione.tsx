@@ -25,10 +25,10 @@ export function EditorCondizione({
   statusOptions = [],
 }: EditorCondizioneProps) {
   const parsed = useMemo(() => parseCondizioneCanonica(value), [value]);
-  const soggetto =
-    CONDIZIONE_SOGGETTI.find((s) => s.id === parsed.soggettoId) ?? CONDIZIONE_SOGGETTI[0];
-  const operatori = operatoriPerSoggetto(soggetto);
-  const valori = valoriPerSoggetto(soggetto);
+  const soggetto = CONDIZIONE_SOGGETTI.find((s) => s.id === parsed.soggettoId) ?? null;
+  const soggettoId = parsed.soggettoId || "";
+  const operatori = soggetto ? operatoriPerSoggetto(soggetto) : [];
+  const valori = soggetto ? valoriPerSoggetto(soggetto) : [];
 
   const emit = (
     soggettoId: CondizioneSoggettoId,
@@ -55,8 +55,12 @@ export function EditorCondizione({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         <select
           disabled={disabled}
-          value={parsed.soggettoId || soggetto.id}
+          value={soggettoId}
           onChange={(e) => {
+            if (!e.target.value) {
+              onChange("");
+              return;
+            }
             const nextSoggetto = CONDIZIONE_SOGGETTI.find((s) => s.id === e.target.value)!;
             const ops = operatoriPerSoggetto(nextSoggetto);
             const vals = valoriPerSoggetto(nextSoggetto);
@@ -64,6 +68,7 @@ export function EditorCondizione({
           }}
           className={selectClass}
         >
+          <option value="">—</option>
           {CONDIZIONE_SOGGETTI.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}
@@ -72,13 +77,13 @@ export function EditorCondizione({
         </select>
 
         <select
-          disabled={disabled}
-          value={parsed.operatore || operatori[0]}
+          value={parsed.operatore || operatori[0] || ""}
+          disabled={disabled || !soggetto}
           onChange={(e) =>
             emit(
-              (parsed.soggettoId || soggetto.id) as CondizioneSoggettoId,
+              soggettoId as CondizioneSoggettoId,
               e.target.value,
-              parsed.valore || valori[0],
+              parsed.valore || valori[0] || "",
               parsed.statusNome,
             )
           }
@@ -92,12 +97,12 @@ export function EditorCondizione({
         </select>
 
         <select
-          disabled={disabled}
-          value={parsed.valore || valori[0]}
+          value={parsed.valore || valori[0] || ""}
+          disabled={disabled || !soggetto}
           onChange={(e) =>
             emit(
-              (parsed.soggettoId || soggetto.id) as CondizioneSoggettoId,
-              parsed.operatore || operatori[0],
+              soggettoId as CondizioneSoggettoId,
+              parsed.operatore || operatori[0] || "",
               e.target.value,
               parsed.statusNome,
             )
@@ -112,7 +117,7 @@ export function EditorCondizione({
         </select>
       </div>
 
-      {(parsed.soggettoId === "stack(status)" || soggetto.id === "stack(status)") && (
+      {(parsed.soggettoId === "stack(status)" || soggetto?.id === "stack(status)") && (
         <label className="block space-y-1">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Status</span>
           <select
@@ -121,8 +126,8 @@ export function EditorCondizione({
             onChange={(e) =>
               emit(
                 "stack(status)",
-                parsed.operatore || operatori[0],
-                parsed.valore || valori[0],
+                parsed.operatore || operatori[0] || "==",
+                parsed.valore || valori[0] || "1",
                 e.target.value,
               )
             }
