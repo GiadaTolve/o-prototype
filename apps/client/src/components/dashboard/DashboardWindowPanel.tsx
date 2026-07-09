@@ -26,6 +26,7 @@ import { MercatoPanel } from "./mercato/MercatoPanel";
 import { resolveCharacterComputed, formatMovementMeters } from "./character-computed";
 import { getMadoshoDef } from "@domain/progression/madosho";
 import { resolveLevelFromExp, presentiNameClass } from "@/lib/leveling";
+import { resolveProfiloSaveEndpoint } from "@/lib/character-profilo-save";
 
 const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   scheda: icons.user,
@@ -1283,7 +1284,17 @@ function SkiruDomainRadarChart({
 }
 
 // Pagina Modifica
-function SchedaModificaPage({ char, characterId, onCharUpdate }: { char: any; characterId?: string; onCharUpdate?: () => void }) {
+function SchedaModificaPage({
+  char,
+  characterId,
+  isRemoteCharacter,
+  onCharUpdate,
+}: {
+  char: any;
+  characterId?: string;
+  isRemoteCharacter: boolean;
+  onCharUpdate?: () => void;
+}) {
   const [avatar, setAvatar] = useState(char.avatarUrl ?? char.avatar ?? "");
   const [miniAvatar, setMiniAvatar] = useState(char.miniAvatar ?? "");
   const [surname, setSurname] = useState(char.surname ?? "");
@@ -1291,8 +1302,6 @@ function SchedaModificaPage({ char, characterId, onCharUpdate }: { char: any; ch
   const [bannerPg, setBannerPg] = useState((char as any)?.bannerPg ?? "");
   const [bio, setBio] = useState(char.bio ?? "");
   const [saving, setSaving] = useState(false);
-
-  const isEditingOther = characterId && characterId !== char?.id;
 
   useEffect(() => {
     setAvatar(char.avatarUrl ?? char.avatar ?? "");
@@ -1306,7 +1315,7 @@ function SchedaModificaPage({ char, characterId, onCharUpdate }: { char: any; ch
   const handleSave = async () => {
     setSaving(true);
     try {
-      const url = isEditingOther ? `/characters/${characterId}/profilo` : "/characters/me/profilo";
+      const url = resolveProfiloSaveEndpoint(isRemoteCharacter, characterId);
       await api.put(url, {
         avatar,
         miniAvatar,
@@ -2520,7 +2529,14 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
           {activeSection === "professione" && !isRemoteCharacter && socialClassState?.socialClass && (
             <SchedaProfessionePage state={socialClassState} char={displayChar ?? undefined} onUpdate={loadSocialClassState} />
           )}
-          {activeSection === "modifica" && (!isRemoteCharacter || visibility.canEdit) && <SchedaModificaPage char={displayChar} characterId={characterId || displayChar.id} onCharUpdate={handleCharUpdate} />}
+          {activeSection === "modifica" && (!isRemoteCharacter || visibility.canEdit) && (
+            <SchedaModificaPage
+              char={displayChar}
+              characterId={viewingCharacterId || displayChar.id}
+              isRemoteCharacter={isRemoteCharacter}
+              onCharUpdate={handleCharUpdate}
+            />
+          )}
           {activeSection === "background" && <SchedaBackgroundPage char={displayChar} />}
           {activeSection === "inventario" && <SchedaInventarioPage characterId={characterId || displayChar.id} />}
           {activeSection === "waza" && isRemoteCharacter && (
