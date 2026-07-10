@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { icons } from "@/lib/icons";
 import { logoutPresence } from "@/lib/presence-logout";
 
 const PUBLIC_LINKS = [
