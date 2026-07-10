@@ -282,7 +282,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'Potenziarlo serve a: fare più male con ogni singolo colpo. È la tua potenza di base, quella che alza tutto.',
     derivedFormula: 'Floor danno su ogni waza: +round(rank × 1,5).',
     drivesDerived: ['damageFloor'],
-    wazaCategoriaPapabile: 'Costrutti',
+    wazaCategoriaPapabile: 'Costrutto',
   },
   {
     anchor: 10,

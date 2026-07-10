@@ -8,7 +8,7 @@ export const WAZA_CATEGORIA_PAPABILI = [
   'Emanazione a Distanza',
   'Contatto',
   'Potenziamento',
-  'Costrutti',
+  'Costrutto',
   'Scudo',
 ] as const
 

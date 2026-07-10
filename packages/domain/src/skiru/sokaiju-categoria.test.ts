@@ -11,7 +11,7 @@ const EXPECTED_CATEGORIA_BY_ID: Record<string, string | undefined> = {
   kashin: 'Emanazione a Distanza',
   shodo: 'Emanazione',
   eiga: 'Propagazione',
-  kongen: 'Costrutti',
+  kongen: 'Costrutto',
   hikan: 'Propagazione Conica',
   genkai: 'Scudo',
 }
