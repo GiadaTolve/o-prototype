@@ -22,7 +22,11 @@ import {
   type ValidationIssue,
 } from "./editor/waza-editor-utils";
 
-type VocabolarioItem = { categoria: string; valore: string };
+type VocabolarioItem = {
+  categoria: string;
+  valore: string;
+  extra?: Record<string, unknown> | null;
+};
 
 type WazaAnagrafica = {
   id: string;
@@ -84,7 +88,7 @@ function buildVocabMap(items: VocabolarioItem[]): Record<string, string[]> {
 }
 
 function tagOptionsFromVocab(vocabMap: Record<string, string[]>): string[] {
-  const keys = ["tag", "tags", "tipologia"];
+  const keys = ["consistenza", "categoria", "tipologia", "tag", "tags"];
   const out = new Set<string>();
   for (const k of keys) {
     for (const v of vocabMap[k] ?? []) out.add(v);
@@ -198,6 +202,10 @@ export function EditorWaza({
   const readOnly = versione?.stato !== "bozza";
   const tierFrozen = versionSummaries.some((v) => v.stato === "pubblicata");
   const vocabMap = useMemo(() => buildVocabMap(vocabolari), [vocabolari]);
+  const skiruVocab = useMemo(
+    () => vocabolari.filter((v) => v.categoria === "skiru"),
+    [vocabolari],
+  );
   const tagOptions = useMemo(() => tagOptionsFromVocab(vocabMap), [vocabMap]);
 
   const genitoriOptions = useMemo(() => {
@@ -784,12 +792,16 @@ export function EditorWaza({
           disabled={readOnly}
           required={form.tipo === "attiva"}
           allowedSlugs={vocabMap.skiru ?? []}
+          skiruVocab={skiruVocab}
         />
 
         <div className="space-y-2">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Tags</span>
           {tagOptions.length === 0 ? (
-            <p className="text-xs text-gray-500">Nessun tag nei vocabolari — aggiungili in Sprint 4.</p>
+            <p className="text-xs text-gray-500">
+              Nessun tag nei vocabolari — esegui{" "}
+              <code className="text-[10px]">bun run seed-vocabolari-waza-tags</code> sul server.
+            </p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {tagOptions.map((tag) => {

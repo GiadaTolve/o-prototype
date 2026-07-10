@@ -15,21 +15,28 @@ export function normalizeSkiruIr(input: string[] | undefined | null): string[] {
   return [...unique].sort((a, b) => a.localeCompare(b));
 }
 
-let cachedSkiruSlugs: Set<string> | null = null;
+let cachedSkiruSlugs: Set<string> | null = null
+let cachedSkiruSlugsAt = 0
+const SKIRU_VOCAB_CACHE_MS = 60_000
 
 export async function loadActiveSkiruSlugs(): Promise<Set<string>> {
-  if (cachedSkiruSlugs) return cachedSkiruSlugs;
+  const now = Date.now()
+  if (cachedSkiruSlugs && now - cachedSkiruSlugsAt < SKIRU_VOCAB_CACHE_MS) {
+    return cachedSkiruSlugs
+  }
   const rows = await db.query.vocabolari.findMany({
     where: and(eq(vocabolari.categoria, "skiru"), eq(vocabolari.attivo, true)),
     columns: { valore: true },
-  });
-  cachedSkiruSlugs = new Set(rows.map((row) => row.valore.toLowerCase()));
-  return cachedSkiruSlugs;
+  })
+  cachedSkiruSlugs = new Set(rows.map((row) => row.valore.toLowerCase()))
+  cachedSkiruSlugsAt = now
+  return cachedSkiruSlugs
 }
 
 /** Invalida la cache (utile nei test). */
 export function resetSkiruVocabCache(): void {
-  cachedSkiruSlugs = null;
+  cachedSkiruSlugs = null
+  cachedSkiruSlugsAt = 0
 }
 
 export function validateSkiruIrSlugs(

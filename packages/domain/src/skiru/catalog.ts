@@ -570,3 +570,6 @@ export function listSkiruByBranch(branchId: string): SkiruDef[] {
 export function getSkiruBranch(branchId: string): SkiruBranchDef | undefined {
   return SKIRU_BRANCHES.find((b) => b.id === branchId)
 }
+
+export { mergeCatalogWithSkiruVocab, skiruDefFromVocab } from './vocab-fallback'
+export type { SkiruVocabExtra } from './vocab-fallback'

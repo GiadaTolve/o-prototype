@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import {
   getSkiruDef,
+  mergeCatalogWithSkiruVocab,
   SKIRU_BRANCHES,
-  SKIRU_CATALOG,
   type SkiruDef,
 } from "@domain/skiru/catalog";
 import { BottomSheet } from "./BottomSheet";
@@ -32,10 +32,10 @@ function domainLabelFor(domain: string): string {
 }
 
 /** Albero per-branch (mantiene la nidificazione Tōsō) usato dal bottom-sheet mobile. */
-function buildSkiruTree(allowed: Set<string>): SkiruBranchNode[] {
+function buildSkiruTree(allowed: Set<string>, catalog: SkiruDef[]): SkiruBranchNode[] {
   const nodes: SkiruBranchNode[] = [];
   for (const branch of SKIRU_BRANCHES) {
-    const inBranch = SKIRU_CATALOG.filter((s) => s.branchId === branch.id && allowed.has(s.id));
+    const inBranch = catalog.filter((s) => s.branchId === branch.id && allowed.has(s.id));
     if (inBranch.length === 0) continue;
 
     const items: SkiruTreeItem[] = [];
@@ -73,11 +73,11 @@ function matchesQuery(skiru: SkiruDef, q: string): boolean {
   return hay.includes(q);
 }
 
-function buildSkiruGroups(allowed: Set<string>): SkiruGroup[] {
+function buildSkiruGroups(allowed: Set<string>, catalog: SkiruDef[]): SkiruGroup[] {
   const groups: SkiruGroup[] = [];
 
   for (const branch of SKIRU_BRANCHES) {
-    const inBranch = SKIRU_CATALOG.filter(
+    const inBranch = catalog.filter(
       (s) => s.branchId === branch.id && allowed.has(s.id),
     );
     if (inBranch.length === 0) continue;
@@ -127,16 +127,27 @@ export function SelettoreSkiruIr({
   disabled,
   required,
   allowedSlugs,
+  skiruVocab = [],
 }: {
   value: string[];
   onChange: (next: string[]) => void;
   disabled?: boolean;
   required?: boolean;
   allowedSlugs: string[];
+  skiruVocab?: Array<{ valore: string; extra?: Record<string, unknown> | null }>;
 }) {
   const allowed = useMemo(() => new Set(allowedSlugs), [allowedSlugs]);
-  const groups = useMemo(() => buildSkiruGroups(allowed), [allowed]);
-  const tree = useMemo(() => buildSkiruTree(allowed), [allowed]);
+  const effectiveCatalog = useMemo(
+    () => mergeCatalogWithSkiruVocab(allowedSlugs, skiruVocab),
+    [allowedSlugs, skiruVocab],
+  );
+  const catalogById = useMemo(
+    () => new Map(effectiveCatalog.map((s) => [s.id, s])),
+    [effectiveCatalog],
+  );
+  const resolveSkiru = (slug: string) => catalogById.get(slug) ?? getSkiruDef(slug);
+  const groups = useMemo(() => buildSkiruGroups(allowed, effectiveCatalog), [allowed, effectiveCatalog]);
+  const tree = useMemo(() => buildSkiruTree(allowed, effectiveCatalog), [allowed, effectiveCatalog]);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -207,7 +218,7 @@ export function SelettoreSkiruIr({
       {value.length > 0 && (
         <div className="md:hidden flex flex-wrap gap-1">
           {value.map((slug) => {
-            const def = getSkiruDef(slug);
+            const def = resolveSkiru(slug);
             return (
               <span
                 key={slug}
