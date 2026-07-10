@@ -10,6 +10,7 @@ import { charactersController } from './modules/characters/characters.controller
 import { healthRoutes } from './health/health.routes'
 import { realtimeRoutes } from './modules/realtime/ws.routes'
 import { presenceRoutes } from './modules/realtime/presence.routes'
+import { startPresenceCleanup } from './modules/realtime/presence.store'
 import { chatRoutes } from './modules/chat/chat.routes'
 import { anonymousChatRoutes } from './modules/anonymous-chat/anonymous-chat.routes'
 import { smsRoutes } from './modules/sms/sms.routes'
@@ -112,7 +113,8 @@ const app = new Elysia()
       console.log(`📧 Email attive via ${email.provider} (staff → ${email.notifyTo})`)
     }
     
-    // Avvia il scheduler del Daily Tick
+    // Avvia pulizia sessioni Presenti scadute (>4h inattività)
+    startPresenceCleanup()
     if (process.env.ENABLE_DAILY_TICK_SCHEDULER !== 'false') {
       startDailyTickScheduler()
       console.log('📅 Daily Tick Scheduler avviato')

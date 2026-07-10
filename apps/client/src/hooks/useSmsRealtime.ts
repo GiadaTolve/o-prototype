@@ -6,6 +6,8 @@ import { dispatchInventoryUpdated } from "@/lib/inventory-events";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
 const NOTIFICATION_SOUND = "/musica/notifications/message.one.mp3";
+const WS_PING_INTERVAL_MS = 30_000;
+const WS_RECONNECT_DELAY_MS = 3_000;
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -64,116 +66,148 @@ export function useSmsRealtime(options: {
   }, [onNewMessage, onUnreadUpdate, onFetchResponso, myCharacterId]);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setConnected(false);
-      return;
-    }
+    let disposed = false;
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let pingTimer: ReturnType<typeof setInterval> | null = null;
 
-    const url = `${WS_BASE}/ws?token=${encodeURIComponent(token)}`;
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setConnected(true);
-      // Quando la connessione si apre, il server invia un messaggio "welcome" con myCharacterId
-      // Aspettiamo quel messaggio prima di considerare la connessione pronta
-    };
-
-    ws.onmessage = async (ev) => {
-      try {
-        const data = JSON.parse(ev.data as string) as {
-          type: string;
-          id?: string;
-          senderId?: string;
-          recipientId?: string;
-          content?: string;
-          createdAt?: string;
-          me?: { id: string; name: string };
-          fetchId?: string;
-          fetchTitle?: string;
-          comment?: string;
-          characterId?: string;
-        };
-        if (data.type === "inventory_updated" && typeof data.characterId === "string") {
-          dispatchInventoryUpdated(data.characterId);
-          return;
-        }
-        if (data.type === "welcome" && data.me?.id) {
-          myCharacterIdRef.current = data.me.id;
-        }
-        if (
-          data.type === "fetch_responso" &&
-          typeof data.fetchId === "string" &&
-          typeof data.fetchTitle === "string"
-        ) {
-          // Deduplicazione: evita notifiche ripetute per la stessa fetch (es. riconnessione, multi-tab)
-          const key = `fetch_responso_${data.fetchId}`;
-          const last = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(key) : null;
-          const now = Date.now();
-          if (last && now - parseInt(last, 10) < 60000) return; // già notificato negli ultimi 60s
-          if (typeof sessionStorage !== "undefined") sessionStorage.setItem(key, String(now));
-          onFetchResponsoRef.current?.({
-            fetchId: data.fetchId,
-            fetchTitle: data.fetchTitle,
-            comment: typeof data.comment === "string" ? data.comment : null,
-          });
-          playNotificationSound();
-        }
-        if (data.type === "sms_message" && data.id && data.senderId && data.recipientId && data.content && data.createdAt) {
-          const msg = {
-            id: data.id,
-            senderId: data.senderId,
-            recipientId: data.recipientId,
-            content: data.content,
-            createdAt: data.createdAt,
-          };
-          // Riproduci suono solo se il messaggio è ricevuto (non inviato da me)
-          let myId = myCharacterIdRef.current;
-          // Se myId non è disponibile, prova a ottenerlo da /characters/me (fallback sincrono)
-          if (!myId) {
-            try {
-              const currentToken = getToken();
-              if (currentToken) {
-                // Usa fetch sincrono per ottenere myId il prima possibile
-                const char = await fetch(`${API_BASE}/characters/me`, {
-                  headers: { Authorization: `Bearer ${currentToken}` },
-                }).then((r) => r.json()).catch(() => null) as { id?: string } | null;
-                if (char?.id) {
-                  myId = char.id;
-                  myCharacterIdRef.current = char.id;
-                }
-              }
-            } catch {
-              // ignore
-            }
-          }
-          // Riproduci suono se il messaggio è per me (recipientId === myId) e non l'ho inviato io
-          if (myId && msg.recipientId === myId && msg.senderId !== myId) {
-            console.debug("[SMS] Playing notification sound - message received", { myId, senderId: msg.senderId, recipientId: msg.recipientId });
-            playNotificationSound();
-          } else if (!myId) {
-            console.debug("[SMS] Cannot play sound - myCharacterId not available yet", { senderId: msg.senderId, recipientId: msg.recipientId });
-          }
-          onNewMessageRef.current?.(msg);
-          onUnreadUpdateRef.current?.();
-        }
-      } catch {
-        // ignore parse errors
+    const clearTimers = () => {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      if (pingTimer) {
+        clearInterval(pingTimer);
+        pingTimer = null;
       }
     };
 
-    ws.onclose = () => {
-      setConnected(false);
-      wsRef.current = null;
+    const connect = () => {
+      if (disposed) return;
+      const token = getToken();
+      if (!token) {
+        setConnected(false);
+        return;
+      }
+
+      const url = `${WS_BASE}/ws?token=${encodeURIComponent(token)}`;
+      ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setConnected(true);
+        clearTimers();
+        pingTimer = setInterval(() => {
+          if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "ping" }));
+          }
+        }, WS_PING_INTERVAL_MS);
+      };
+
+      ws.onmessage = async (ev) => {
+        try {
+          const data = JSON.parse(ev.data as string) as {
+            type: string;
+            id?: string;
+            senderId?: string;
+            recipientId?: string;
+            content?: string;
+            createdAt?: string;
+            me?: { id: string; name: string };
+            fetchId?: string;
+            fetchTitle?: string;
+            comment?: string;
+            characterId?: string;
+          };
+          if (data.type === "pong") return;
+          if (data.type === "inventory_updated" && typeof data.characterId === "string") {
+            dispatchInventoryUpdated(data.characterId);
+            return;
+          }
+          if (data.type === "welcome" && data.me?.id) {
+            myCharacterIdRef.current = data.me.id;
+          }
+          if (
+            data.type === "fetch_responso" &&
+            typeof data.fetchId === "string" &&
+            typeof data.fetchTitle === "string"
+          ) {
+            // Deduplicazione: evita notifiche ripetute per la stessa fetch (es. riconnessione, multi-tab)
+            const key = `fetch_responso_${data.fetchId}`;
+            const last = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(key) : null;
+            const now = Date.now();
+            if (last && now - parseInt(last, 10) < 60000) return; // già notificato negli ultimi 60s
+            if (typeof sessionStorage !== "undefined") sessionStorage.setItem(key, String(now));
+            onFetchResponsoRef.current?.({
+              fetchId: data.fetchId,
+              fetchTitle: data.fetchTitle,
+              comment: typeof data.comment === "string" ? data.comment : null,
+            });
+            playNotificationSound();
+          }
+          if (data.type === "sms_message" && data.id && data.senderId && data.recipientId && data.content && data.createdAt) {
+            const msg = {
+              id: data.id,
+              senderId: data.senderId,
+              recipientId: data.recipientId,
+              content: data.content,
+              createdAt: data.createdAt,
+            };
+            // Riproduci suono solo se il messaggio è ricevuto (non inviato da me)
+            let myId = myCharacterIdRef.current;
+            // Se myId non è disponibile, prova a ottenerlo da /characters/me (fallback sincrono)
+            if (!myId) {
+              try {
+                const currentToken = getToken();
+                if (currentToken) {
+                  // Usa fetch sincrono per ottenere myId il prima possibile
+                  const char = await fetch(`${API_BASE}/characters/me`, {
+                    headers: { Authorization: `Bearer ${currentToken}` },
+                  }).then((r) => r.json()).catch(() => null) as { id?: string } | null;
+                  if (char?.id) {
+                    myId = char.id;
+                    myCharacterIdRef.current = char.id;
+                  }
+                }
+              } catch {
+                // ignore
+              }
+            }
+            // Riproduci suono se il messaggio è per me (recipientId === myId) e non l'ho inviato io
+            if (myId && msg.recipientId === myId && msg.senderId !== myId) {
+              console.debug("[SMS] Playing notification sound - message received", { myId, senderId: msg.senderId, recipientId: msg.recipientId });
+              playNotificationSound();
+            } else if (!myId) {
+              console.debug("[SMS] Cannot play sound - myCharacterId not available yet", { senderId: msg.senderId, recipientId: msg.recipientId });
+            }
+            onNewMessageRef.current?.(msg);
+            onUnreadUpdateRef.current?.();
+          }
+        } catch {
+          // ignore parse errors
+        }
+      };
+
+      ws.onclose = () => {
+        setConnected(false);
+        wsRef.current = null;
+        clearTimers();
+        if (!disposed && getToken()) {
+          reconnectTimer = setTimeout(connect, WS_RECONNECT_DELAY_MS);
+        }
+      };
+
+      ws.onerror = () => {
+        setConnected(false);
+      };
     };
 
-    ws.onerror = () => {
-      setConnected(false);
-    };
+    connect();
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
+      disposed = true;
+      clearTimers();
+      if (ws?.readyState === WebSocket.OPEN) {
         ws.close();
       }
       wsRef.current = null;

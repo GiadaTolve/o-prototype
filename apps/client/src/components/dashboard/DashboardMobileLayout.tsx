@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { logoutPresence } from "@/lib/presence-logout";
 import { SmsPanel } from "./sms/SmsPanel";
 import { FetchPanel } from "./fetch/FetchPanel";
 import { useRouter } from "next/navigation";
@@ -162,7 +162,8 @@ export function DashboardMobileLayout({
     window.dispatchEvent(new CustomEvent("openHousingChat", { detail: { roomId: housingChatRoomId } }));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutPresence();
     localStorage.removeItem("token");
     router.push("/auth");
   };

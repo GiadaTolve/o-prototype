@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { icons } from "@/lib/icons";
+import { logoutPresence } from "@/lib/presence-logout";
 
 const PUBLIC_LINKS = [
   { href: "/guida", label: "Guida" },
@@ -46,7 +46,8 @@ export function DashboardHeader({
 }: Props) {
   const router = useRouter();
 
-  const logout = () => {
+  const logout = async () => {
+    await logoutPresence();
     localStorage.removeItem("token");
     router.push("/auth");
   };

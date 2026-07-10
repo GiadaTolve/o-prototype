@@ -1,7 +1,13 @@
 /**
  * Store in-memory per presenza real-time per room (chat location).
  * Ogni ws è in al più una room; join sovrascrive la precedente.
+ *
+ * La lista "Presenti" resta fino a logout esplicito o ~4h senza heartbeat
+ * (non si rimuove alla chiusura WS: proxy/load balancer possono chiudere idle ~10 min).
  */
+
+/** Inattività massima prima di uscire dalla lista Presenti (4 ore). */
+export const PRESENCE_INACTIVITY_MS = 4 * 60 * 60 * 1000;
 
 export type PresenceUser = {
   wsId: string;
@@ -14,12 +20,14 @@ export type PresenceUser = {
   anonymousColor?: string;
 };
 
+type OnlineSession = PresenceUser & { lastSeenAt: number };
+
 /** roomId -> wsId -> user */
 const byRoom = new Map<string, Map<string, PresenceUser>>();
 /** wsId -> roomId (per leave on close) */
 const wsToRoom = new Map<string, string>();
-/** characterId -> user (indipendente dalla room) */
-const allOnlineByCharacter = new Map<string, PresenceUser>();
+/** characterId -> sessione online (indipendente dalla room) */
+const allOnlineByCharacter = new Map<string, OnlineSession>();
 /** wsId -> characterId (per cleanup su close) */
 const wsToCharacter = new Map<string, string>();
 /** characterId -> wsId attivi (più tab / riconnessioni) */
@@ -84,6 +92,7 @@ export function hasActiveConnection(characterId: string): boolean {
  * Chiamato quando si apre la connessione WS.
  */
 export function markOnline(wsId: string, user: { userId: string; characterId: string; name: string; isShadow?: boolean }): void {
+  const now = Date.now();
   const presenceUser: PresenceUser = { ...user, wsId };
   wsToCharacter.set(wsId, user.characterId);
   let set = wsIdsByCharacter.get(user.characterId);
@@ -92,11 +101,25 @@ export function markOnline(wsId: string, user: { userId: string; characterId: st
     wsIdsByCharacter.set(user.characterId, set);
   }
   set.add(wsId);
-  allOnlineByCharacter.set(user.characterId, presenceUser);
+  const prev = allOnlineByCharacter.get(user.characterId);
+  allOnlineByCharacter.set(user.characterId, {
+    ...presenceUser,
+    lastSeenAt: now,
+    isShadow: user.isShadow ?? prev?.isShadow,
+  });
+}
+
+/** Aggiorna lastSeenAt (heartbeat WS/HTTP). */
+export function touchOnline(characterId: string): void {
+  const entry = allOnlineByCharacter.get(characterId);
+  if (entry) {
+    entry.lastSeenAt = Date.now();
+    return;
+  }
 }
 
 /**
- * Rimuove un utente dallo stato "online".
+ * Rimuove il tracking WS; la sessione resta in lista finché non scade lastSeenAt o logout.
  * Chiamato quando la connessione WS viene chiusa.
  */
 export function markOffline(wsId: string): void {
@@ -107,14 +130,42 @@ export function markOffline(wsId: string): void {
   set?.delete(wsId);
   if (!set || set.size === 0) {
     wsIdsByCharacter.delete(charId);
-    allOnlineByCharacter.delete(charId);
     return;
   }
   const current = allOnlineByCharacter.get(charId);
   if (current?.wsId === wsId) {
     const nextWsId = set.values().next().value as string;
-    allOnlineByCharacter.set(charId, { ...current, wsId: nextWsId });
+    allOnlineByCharacter.set(charId, { ...current, wsId: nextWsId, lastSeenAt: Date.now() });
   }
+}
+
+/** Logout esplicito: rimuove subito dalla lista Presenti. */
+export function forceOffline(characterId: string): void {
+  allOnlineByCharacter.delete(characterId);
+  const set = wsIdsByCharacter.get(characterId);
+  if (set) {
+    for (const wsId of set) {
+      wsToCharacter.delete(wsId);
+    }
+    wsIdsByCharacter.delete(characterId);
+  }
+}
+
+function pruneExpiredSessions(): void {
+  const cutoff = Date.now() - PRESENCE_INACTIVITY_MS;
+  for (const [charId, entry] of allOnlineByCharacter) {
+    if (entry.lastSeenAt < cutoff) {
+      allOnlineByCharacter.delete(charId);
+    }
+  }
+}
+
+/** Pulizia periodica sessioni scadute (>4h senza heartbeat). */
+let cleanupStarted = false;
+export function startPresenceCleanup(): void {
+  if (cleanupStarted) return;
+  cleanupStarted = true;
+  setInterval(pruneExpiredSessions, 5 * 60 * 1000);
 }
 
 /**
@@ -122,6 +173,6 @@ export function markOffline(wsId: string): void {
  * Utile per la "Lista Presenti" globale.
  */
 export function getAllOnlineUsers(): PresenceUser[] {
-  // Ritorna tutti i personaggi che hanno almeno un WS aperto, anche se non in una room
-  return Array.from(allOnlineByCharacter.values());
+  pruneExpiredSessions();
+  return Array.from(allOnlineByCharacter.values()).map(({ lastSeenAt: _lastSeenAt, ...user }) => user);
 }

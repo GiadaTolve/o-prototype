@@ -289,6 +289,16 @@ export const realtimeRoutes = new Elysia()
       const user = wsSessions.get(ws.id);
       if (!user) return;
 
+      if (msg.type === "ping") {
+        presence.touchOnline(user.characterId);
+        try {
+          ws.send(JSON.stringify({ type: "pong" }));
+        } catch (_) {}
+        return;
+      }
+
+      presence.touchOnline(user.characterId);
+
       if (msg.type === "join" && typeof msg.zone === "string") {
         const roomId = msg.zone as string;
         if (!isValidRoom(roomId)) return;

@@ -11,8 +11,11 @@ export const presenceRoutes = new Elysia({ prefix: '/presence' })
   .guard({ isAuthenticated: true }, (app) =>
     app
       // Endpoint HTTP per ottenere tutti gli utenti online
-      .get('/all', async ({ set }) => {
+      .get('/all', async ({ user, set }) => {
         try {
+          if (user?.characterId) {
+            presence.touchOnline(user.characterId);
+          }
           const allUsers = presence.getAllOnlineUsers()
           // Assicuriamoci di restituire sempre un array
           if (!Array.isArray(allUsers)) {
@@ -51,5 +54,14 @@ export const presenceRoutes = new Elysia({ prefix: '/presence' })
           // Restituiamo un array vuoto invece di un errore per evitare problemi nel frontend
           return []
         }
+      })
+      // Logout esplicito: rimuove subito dalla lista Presenti
+      .post('/logout', ({ user, set }) => {
+        if (!user?.characterId) {
+          set.status = 400
+          return { ok: false }
+        }
+        presence.forceOffline(user.characterId)
+        return { ok: true }
       })
   )
