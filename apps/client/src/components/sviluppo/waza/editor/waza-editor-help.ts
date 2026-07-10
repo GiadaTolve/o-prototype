@@ -51,5 +51,8 @@ export const FIELD_HELP_TEXT: Record<string, string> = {
   testo: "Testo libero gestito dal master: usalo per effetti particolari non codificabili con gli altri blocchi.",
   mostra_a: "Per il blocco manuale: decide chi vede il testo (solo master o tutti).",
   comportamento: "Modo in cui il costrutto si comporta dopo l’evocazione.",
+  proprieta: "Proprietà speciali: Batteria, Personale, Tōrō.",
+  toro_da_arma: "Se Tōrō: danno e taglia ereditati dall’arma impugnata (valore assoluto).",
+  mei: "Sigillo Mei interno — solo per waza Genzai-dō; conta nel limite globale Gosa (2 + Seimitsu).",
 };
 

@@ -247,10 +247,11 @@ function renderCorpo(blocco: Blocco, tierFlatDamage?: number | null): string {
     case "EVOCA_COSTRUTTO": {
       const taglia = str(blocco.taglia);
       const consistenza = str(blocco.consistenza);
-      const danno = blocco.danno ? `, danno ${renderValore(blocco.danno, tierFlatDamage)}` : "";
+      const props = Array.isArray(blocco.proprieta) ? (blocco.proprieta as string[]).join(", ") : "";
+      const propsTxt = props ? ` [${props}]` : "";
       const comp = str(blocco.comportamento);
       const compTxt = comp ? `, comportamento ${comp.toLowerCase().replace(/_/g, " ")}` : "";
-      return `evoca un costrutto ${taglia ?? "…"}${consistenza ? ` di ${consistenza}` : ""}${danno}${compTxt}${suffix(
+      return `evoca un costrutto ${taglia ?? "…"}${consistenza ? ` di ${consistenza}` : ""}${propsTxt} (resistenza da Kongen)${compTxt}${suffix(
         blocco,
       )}`;
     }

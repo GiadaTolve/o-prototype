@@ -53,21 +53,29 @@ export const CONSTRUCT_SIZES: Record<ConstructSizeId, ConstructSizeDef> = {
 }
 
 /**
- * Resistenza costrutto/scudo = (Genkai + valore tier waza) × moltiplicatore taglia.
- * Genkai = punti Skiru Genkai, il Regno (Malkut) del creatore.
+ * Resistenza costrutto = ⌊(rank Kongen + numero tier waza) × moltiplicatore taglia⌋.
+ * Kongen = nodo Sōkaiju Costrutti (ex-Gugenka). Genkai governa gli Scudi, non i costrutti.
  */
 export function calculateConstructResistance(
-  genkai: number,
+  kongenRank: number,
   wazaTier: WazaTier | number,
   size: ConstructSizeId = 'media',
 ): number {
   const tier = typeof wazaTier === 'number' && isWazaTier(wazaTier) ? wazaTier : 1
-  const tierValue = getTierValue(tier)
   const mult = CONSTRUCT_SIZES[size]?.resistanceMult ?? 1
-  return Math.floor((Math.max(0, genkai) + tierValue) * mult)
+  return Math.floor((Math.max(0, Math.floor(kongenRank)) + tier) * mult)
 }
 
-/** @deprecated Usare calculateConstructResistance con punti Genkai */
+/**
+ * Resistenza Scudo energetico = valore tier (T1=4 … T5=23).
+ * Genkai (nodo Scudo) — da collegare in fase Scudo dedicata.
+ */
+export function calculateShieldResistanceFromTier(wazaTier: WazaTier | number): number {
+  const tier = typeof wazaTier === 'number' && isWazaTier(wazaTier) ? wazaTier : 1
+  return getTierValue(tier)
+}
+
+/** @deprecated Usare calculateConstructResistance con rank Kongen */
 export const calculateConstructResistanceFromGugenka = calculateConstructResistance
 
 /** Assorbimento danno da Scudo/Costrutto (Resistenza sottratta per prima). */

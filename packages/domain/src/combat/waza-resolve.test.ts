@@ -18,6 +18,7 @@ import { resolveJunkanPotenziamentoCapacity } from '../styles/naikan/junkan'
 describe('waza-resolve', () => {
   const sheet = {
     seimitsu: 4,
+    kongen: 3,
     genkai: 5,
     fudoshin: 3,
     kansatsu: 6,
@@ -32,16 +33,16 @@ describe('waza-resolve', () => {
     expect(v?.lines[0]).toMatchObject({ value: '12 m' })
   })
 
-  it('Resistenza costrutto: (Genkai + tier value) × taglia', () => {
-    expect(resolveConstructResistanceFromSheet(sheet, 3, 'media')).toBe(17)
-    expect(resolveConstructResistanceFromSheet(sheet, 3, 'grande')).toBe(25)
+  it('Resistenza costrutto: (Kongen rank + numero tier) × taglia', () => {
+    expect(resolveConstructResistanceFromSheet(sheet, 3, 'media')).toBe(6)
+    expect(resolveConstructResistanceFromSheet(sheet, 3, 'grande')).toBe(9)
     const v = resolveWazaPersonalValues('ukabu-toro-lanterna-fluttuante', {
       sheet,
       wazaTier: 2,
       isConstructWaza: true,
       constructSize: 'media',
     })
-    expect(v?.lines[0]?.value).toBe('13')
+    expect(v?.lines[0]?.value).toBe('5')
   })
 
   it('Ubaiito: Skiru mentali e IR max (regola A)', () => {

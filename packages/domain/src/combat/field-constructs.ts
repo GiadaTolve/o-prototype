@@ -1,18 +1,20 @@
 /**
  * Costrutti persistenti sul campo —
- * Entità separate dal PG; resistenza da Genkai + tier × taglia.
+ * Resistenza da rank Kongen + numero tier × taglia.
  */
 
 import {
   calculateConstructResistance,
   absorbDamageWithResistance,
   CONSTRUCT_SIZES,
+  CONSTRUCT_SIZE_IDS,
   type ConstructSizeId,
 } from './constructs'
-import { CONSTRUCT_SIZE_IDS, type ConstructSizeId } from './constructs'
 import { calculateMaxActiveConstructs, calculateConstructMaxSizeRankBonus } from '../skiru/sokaiju-combat'
+import { getSkiruPoints } from '../skiru/progression'
 import type { SkiruSheet } from '../skiru/types'
 import { isWazaTier, type WazaTier } from './tier'
+import { isWithinGosaConstructLimit } from '../styles/genzai/gosa-construct-limit'
 
 export type FieldConstruct = {
   id: string
@@ -20,8 +22,8 @@ export type FieldConstruct = {
   label: string
   size: ConstructSizeId
   wazaTier: WazaTier
-  /** Punti Genkai del creatore al momento della creazione. */
-  genkai: number
+  /** Rank Kongen del creatore al momento della creazione. */
+  kongenRank: number
   maxResistance: number
   remainingResistance: number
   /** Stazionario: nessun IR proprio. */
@@ -34,20 +36,20 @@ export function createFieldConstruct(input: {
   creatorCharacterId: string
   label: string
   wazaTier: WazaTier | number
-  genkai: number
+  kongenRank: number
   size?: ConstructSizeId
   stationary?: boolean
 }): FieldConstruct {
   const tier = typeof input.wazaTier === 'number' && isWazaTier(input.wazaTier) ? input.wazaTier : 1
   const size = input.size ?? 'media'
-  const maxResistance = calculateConstructResistance(input.genkai, tier, size)
+  const maxResistance = calculateConstructResistance(input.kongenRank, tier, size)
   return {
     id: input.id,
     creatorCharacterId: input.creatorCharacterId,
     label: input.label.trim() || 'Costrutto',
     size,
     wazaTier: tier,
-    genkai: Math.max(0, Math.floor(input.genkai)),
+    kongenRank: Math.max(0, Math.floor(input.kongenRank)),
     maxResistance,
     remainingResistance: maxResistance,
     stationary: input.stationary ?? true,
@@ -94,9 +96,16 @@ export function isConstructSizeId(value: string): value is ConstructSizeId {
   return value in CONSTRUCT_SIZES
 }
 
-/** Chikō: cap al numero di costrutti attivi sul campo per creatore. */
-export function canPlaceFieldConstruct(activeCount: number, creatorSheet: SkiruSheet): boolean {
-  return activeCount < calculateMaxActiveConstructs(creatorSheet)
+/** Chikō + limite Gosa (2 + Seimitsu): entrambi devono consentire un nuovo costrutto. */
+export function canPlaceFieldConstruct(
+  activeCount: number,
+  creatorSheet: SkiruSheet,
+  options?: { enforceGosaLimit?: boolean },
+): boolean {
+  if (activeCount >= calculateMaxActiveConstructs(creatorSheet)) return false
+  if (options?.enforceGosaLimit === false) return true
+  const seimitsu = getSkiruPoints(creatorSheet, 'seimitsu')
+  return isWithinGosaConstructLimit(activeCount, seimitsu)
 }
 
 /** Taglia massima dichiarabile: Media + floor(Chikō/2) gradi (Piccola→Enorme). */

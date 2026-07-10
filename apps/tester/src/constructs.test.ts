@@ -8,9 +8,10 @@ import {
 } from '../../../packages/domain/src/combat/index.ts'
 
 describe => {
-  it('calcola resistenza (Genkai + valore tier) × taglia', () => {
-    expect(calculateConstructResistance(5, 3, 'media')).toBe(17)
-    expect(calculateConstructResistance(5, 3, 'grande')).toBe(25)
+  it('calcola resistenza (Kongen rank + numero tier) × taglia', () => {
+    expect(calculateConstructResistance(3, 2, 'grande')).toBe(7)
+    expect(calculateConstructResistance(5, 3, 'media')).toBe(8)
+    expect(calculateConstructResistance(5, 3, 'grande')).toBe(12)
   })
 
   it('assorbe danno fino alla resistenza', () => {
@@ -25,9 +26,9 @@ describe => {
       targetSheet: { itami: 10 },
       skipItamiMitigation: true,
     })
-    expect(breakdown.shieldAbsorbed).toBe(12)
-    expect(breakdown.afterShield).toBe(0)
-    expect(breakdown.hpDamage).toBe(0)
+    expect(breakdown.shieldAbsorbed).toBe(7)
+    expect(breakdown.afterShield).toBe(5)
+    expect(breakdown.hpDamage).toBe(5)
     expect(breakdown.mitigationPercent).toBe(0)
   })
 

@@ -3,7 +3,7 @@
  * Registry per poolId — non parsing fragile del testo effetto.
  */
 import { computeIndicativeActionIr } from './resolution'
-import { CONSTRUCT_SIZES, type ConstructSizeId } from './constructs'
+import { CONSTRUCT_SIZES, calculateConstructResistance, type ConstructSizeId } from './constructs'
 import { getTierValue, isWazaTier, type WazaTier } from './tier'
 import {
   calculateMitigationPercentFromSkiru,
@@ -11,8 +11,8 @@ import {
   SKIRU_ID_ITAMI,
   SKIRU_ID_UNDO,
 } from '../skiru/derived-stats'
-import { resolveGenkaiPointsFromSheet } from '../skiru/genkai'
 import { getSkiruPoints } from '../skiru/progression'
+import { getSokaijuRank } from '../skiru/sokaiju-combat'
 import type { SkiruSheet } from '../skiru/types'
 import {
   JUNKAN_POTENZIAMENTO_BASE,
@@ -102,10 +102,8 @@ export function resolveConstructResistanceFromSheet(
   wazaTier: WazaTier,
   size: ConstructSizeId = 'media',
 ): number {
-  const genkai = resolveGenkaiPointsFromSheet(sheet)
-  const tierValue = getTierValue(wazaTier)
-  const mult = CONSTRUCT_SIZES[size]?.resistanceMult ?? 1
-  return Math.floor((Math.max(0, genkai) + tierValue) * mult)
+  const kongenRank = getSokaijuRank(sheet, 'kongen')
+  return calculateConstructResistance(kongenRank, wazaTier, size)
 }
 
 export function resolveMentalSkiruIndex(
@@ -205,14 +203,13 @@ function constructResistanceLine(ctx: WazaResolveContext): WazaResolvedLine | nu
   const tier = ctx.wazaTier
   if (!tier || !isWazaTier(tier)) return null
   const size = ctx.constructSize ?? 'media'
-  const genkai = resolveGenkaiPointsFromSheet(ctx.sheet)
-  const tierValue = getTierValue(tier)
+  const kongenRank = getSokaijuRank(ctx.sheet, 'kongen')
   const mult = CONSTRUCT_SIZES[size].resistanceMult
   const resistance = resolveConstructResistanceFromSheet(ctx.sheet, tier, size)
   return {
     label: `Resistenza (${CONSTRUCT_SIZES[size].label})`,
     value: String(resistance),
-    hint: `(${genkai} Genkai + ${tierValue} tier) × ${mult}`,
+    hint: `(Kongen ${kongenRank} + tier ${tier}) × ${mult}`,
   }
 }
 

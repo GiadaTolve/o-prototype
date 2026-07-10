@@ -16,7 +16,7 @@ describe => {
       creatorCharacterId: 'pg',
       label: 'Muraglia',
       wazaTier: 3,
-      genkai: 5,
+      kongenRank: 5,
       size: 'media',
     })
     expect(c.maxResistance).toBe(8)
@@ -30,7 +30,7 @@ describe => {
       creatorCharacterId: 'pg',
       label: 'Scudo',
       wazaTier: 2,
-      genkai: 4,
+      kongenRank: 4,
       size: 'piccola',
     })
     const hit = applyDamageToFieldConstruct(c, 10)
