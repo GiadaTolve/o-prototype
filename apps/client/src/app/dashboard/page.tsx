@@ -22,6 +22,7 @@ import { useWebPush } from "@/hooks/useWebPush";
 import { api } from "@/lib/api";
 import { isCharacterMeFound, characterMeToSummary } from "@/lib/character-me";
 import { toast } from "@/components/ui/Toast";
+import { LevelUpOverlay } from "@/components/dashboard/LevelUpOverlay";
 import { logoutPresence } from "@/lib/presence-logout";
 import type { LevelUpWsPayload } from "@/hooks/useRealtime";
 
