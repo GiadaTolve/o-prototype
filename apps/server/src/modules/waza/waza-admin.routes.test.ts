@@ -189,6 +189,33 @@ describe("rotte /admin/waza", () => {
     expect(saveRes.status).toBe(409);
   });
 
+  it("riapri-bozza su versione validata → bozza modificabile", async () => {
+    const createRes = await api("POST", "/admin/waza", {
+      ...validCreateBody,
+      nomeRomaji: "Kaji Riapri Bozza",
+      nomeItaliano: "Riapri Bozza",
+    });
+    const created = await readJson<{ waza: { id: string } }>(createRes);
+    createdWazaIds.push(created.waza.id);
+
+    const validaRes = await api("POST", `/admin/waza/${created.waza.id}/versioni/1/valida`);
+    expect(validaRes.status).toBe(200);
+
+    const reopenRes = await api(
+      "POST",
+      `/admin/waza/${created.waza.id}/versioni/1/riapri-bozza`,
+    );
+    expect(reopenRes.status).toBe(200);
+    const reopened = await readJson<{ versione: { stato: string } }>(reopenRes);
+    expect(reopened.versione.stato).toBe("bozza");
+
+    const saveRes = await api("PUT", `/admin/waza/${created.waza.id}/versioni/1`, {
+      ...validCreateBody,
+      nomeItaliano: "Riapri Bozza (modificata)",
+    });
+    expect(saveRes.status).toBe(200);
+  });
+
   it("generica con genitore → 422", async () => {
     const createRes = await api("POST", "/admin/waza", {
       ...validCreateBody,

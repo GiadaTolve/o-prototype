@@ -562,6 +562,38 @@ export async function validateAdminWazaVersion(wazaId: string, numero: number) {
   return { errori, avvisi, versione };
 }
 
+/** Riporta una versione validata (non ancora pubblicata) in bozza per modificarla. */
+export async function reopenAdminWazaVersion(
+  wazaId: string,
+  numero: number,
+  userId: string,
+) {
+  const { versione } = await getAdminWazaVersione(wazaId, numero);
+  if (versione.stato !== "validata") {
+    throw new WazaAdminHttpError(
+      "Solo le versioni validate possono essere riaperte in bozza.",
+      409,
+    );
+  }
+
+  const detail = await getAdminWazaDetail(wazaId);
+  const openDraft = detail.versioni.find((v) => v.stato === "bozza");
+  if (openDraft) {
+    throw new WazaAdminHttpError(
+      `Esiste già una bozza aperta (v${openDraft.numero}).`,
+      409,
+    );
+  }
+
+  const [bozza] = await db
+    .update(wazaVersioni)
+    .set({ stato: "bozza", salvataDa: userId, salvataIl: new Date() })
+    .where(and(eq(wazaVersioni.wazaId, wazaId), eq(wazaVersioni.numero, numero)))
+    .returning();
+
+  return { versione: bozza };
+}
+
 export async function duplicateAdminWaza(wazaId: string, userId: string) {
   const source = await db.query.waza.findFirst({ where: eq(waza.id, wazaId) });
   if (!source) throw new WazaAdminHttpError("Waza non trovata.", 404);

@@ -153,6 +153,7 @@ export function EditorWaza({
   const [validating, setValidating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [creatingDraft, setCreatingDraft] = useState(false);
+  const [reopeningDraft, setReopeningDraft] = useState(false);
   const [changelog, setChangelog] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -200,6 +201,11 @@ export function EditorWaza({
   };
 
   const readOnly = versione?.stato !== "bozza";
+  const canReopenAsDraft = versione?.stato === "validata";
+  const canCreateNewDraft =
+    readOnly &&
+    Boolean(anagrafica?.versionePubblicataId) &&
+    (versione?.stato === "pubblicata" || versione?.stato === "superata");
   const tierFrozen = versionSummaries.some((v) => v.stato === "pubblicata");
   const vocabMap = useMemo(() => buildVocabMap(vocabolari), [vocabolari]);
   const skiruVocab = useMemo(
@@ -423,6 +429,34 @@ export function EditorWaza({
     }
   };
 
+  const handleRiapriBozza = async () => {
+    if (!versione || versione.stato !== "validata") return;
+    if (!confirm("Riportare questa versione in bozza per modificarla?")) return;
+    setReopeningDraft(true);
+    setInfo(null);
+    try {
+      const res = await wazaApi.post<{ versione: WazaVersione }>(
+        `/admin/waza/${wazaId}/versioni/${versione.numero}/riapri-bozza`,
+      );
+      setVersione(res.versione);
+      setVersionSummaries((prev) =>
+        prev.map((v) =>
+          v.numero === res.versione.numero ? { ...v, stato: res.versione.stato } : v,
+        ),
+      );
+      if (anagrafica) setForm(versioneToForm(anagrafica, res.versione));
+      setValidationErrori([]);
+      setValidationAvvisi([]);
+      setInfo("Versione riaperta in bozza: puoi modificarla e validare di nuovo.");
+    } catch (e) {
+      setValidationErrori([
+        { messaggio: e instanceof Error ? e.message : "Errore riapertura bozza" },
+      ]);
+    } finally {
+      setReopeningDraft(false);
+    }
+  };
+
   const handleNuovaBozza = async () => {
     if (!anagrafica?.versionePubblicataId) return;
     setCreatingDraft(true);
@@ -549,7 +583,17 @@ export function EditorWaza({
                 }
               />
             )}
-            {readOnly && anagrafica.versionePubblicataId && (
+            {canReopenAsDraft && (
+              <button
+                type="button"
+                disabled={reopeningDraft}
+                onClick={() => void handleRiapriBozza()}
+                className="text-xs px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] disabled:opacity-50"
+              >
+                {reopeningDraft ? "Riapertura…" : "Bozza"}
+              </button>
+            )}
+            {canCreateNewDraft && (
               <button
                 type="button"
                 disabled={creatingDraft}
@@ -606,8 +650,9 @@ export function EditorWaza({
 
       {readOnly && (
         <p className="text-xs text-[var(--accent-gold)] border border-[var(--accent-gold)]/30 rounded px-3 py-2 bg-black/20">
-          Questa versione non è in bozza: i campi sono in sola lettura. Per modificare, usa «Nuova
-          bozza» (copia dalla versione pubblicata).
+          {canReopenAsDraft
+            ? "Questa versione è validata: i campi sono in sola lettura. Usa «Bozza» per modificarla di nuovo, poi Salva e Valida."
+            : "Questa versione non è in bozza: i campi sono in sola lettura. Per una nuova revisione, usa «Nuova bozza» (copia dalla versione pubblicata)."}
         </p>
       )}
 
@@ -937,22 +982,35 @@ export function EditorWaza({
 
       {/* ===== Barra azioni sticky (mobile) ===== */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-[var(--border-color)] bg-[var(--background)]/95 backdrop-blur px-3 py-2 flex items-center gap-2">
-        <button
-          type="button"
-          disabled={readOnly || saving}
-          onClick={() => void handleSalva()}
-          className="flex-1 min-h-[44px] rounded border border-[var(--accent-gold)]/60 text-[var(--accent-gold)] text-sm disabled:opacity-50"
-        >
-          {saving ? "Salvataggio…" : "Salva"}
-        </button>
-        <button
-          type="button"
-          disabled={readOnly || validating}
-          onClick={() => void handleValida()}
-          className="flex-1 min-h-[44px] rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-sm disabled:opacity-50"
-        >
-          {validating ? "Validazione…" : "Valida"}
-        </button>
+        {canReopenAsDraft ? (
+          <button
+            type="button"
+            disabled={reopeningDraft}
+            onClick={() => void handleRiapriBozza()}
+            className="flex-1 min-h-[44px] rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-sm disabled:opacity-50"
+          >
+            {reopeningDraft ? "Riapertura…" : "Bozza"}
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={readOnly || saving}
+              onClick={() => void handleSalva()}
+              className="flex-1 min-h-[44px] rounded border border-[var(--accent-gold)]/60 text-[var(--accent-gold)] text-sm disabled:opacity-50"
+            >
+              {saving ? "Salvataggio…" : "Salva"}
+            </button>
+            <button
+              type="button"
+              disabled={readOnly || validating}
+              onClick={() => void handleValida()}
+              className="flex-1 min-h-[44px] rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-sm disabled:opacity-50"
+            >
+              {validating ? "Validazione…" : "Valida"}
+            </button>
+          </>
+        )}
         <button
           type="button"
           onClick={openSandbox}

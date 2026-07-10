@@ -11,6 +11,7 @@ import {
   listAdminWazaCatalog,
   listAdminWazaVocabolari,
   publishAdminWazaVersion,
+  reopenAdminWazaVersion,
   restoreAdminWaza,
   runAdminWazaSandbox,
   saveAdminWazaDraft,
@@ -224,6 +225,22 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
             set.status = 422;
           }
           return result;
+        } catch (e) {
+          return handleWazaAdminError(e, set);
+        }
+      })
+      .post("/:id/versioni/:n/riapri-bozza", async ({ user, params, set }) => {
+        if (!(await canAccessWazaAdmin(user))) {
+          set.status = 403;
+          return { error: "Accesso riservato allo staff waza (Proprietario, Moderatore, Fixer)." };
+        }
+        try {
+          const numero = Number(params.n);
+          if (!Number.isInteger(numero) || numero < 1) {
+            set.status = 400;
+            return { error: "Numero versione non valido." };
+          }
+          return await reopenAdminWazaVersion(params.id, numero, user!.id);
         } catch (e) {
           return handleWazaAdminError(e, set);
         }
