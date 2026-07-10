@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { calculateMovementMetersPerQuarterFromSkiru } from '../skiru/derived-stats'
 import { calculateConstructResistance } from './constructs'
+import { getTierValue } from './tier'
 import {
   deriveConstructProfile,
   shouldDissolvePersonalConstruct,
@@ -29,7 +31,11 @@ describe('deriveConstructProfile', () => {
     expect(p.mei).toBeNull()
   })
 
-  it('movimento Media ×0,75', () => {
+  it('movimento Media: base Undō 8 m × 0,75 = 6 m', () => {
+    const sheet = { kongen: 3, undo: 4, seimitsu: 4 }
+    const movimentoBase = calculateMovementMetersPerQuarterFromSkiru(sheet)
+    expect(movimentoBase).toBe(8)
+
     const p = deriveConstructProfile({
       wazaTier: 2,
       taglia: 'Media',
@@ -38,20 +44,34 @@ describe('deriveConstructProfile', () => {
     })
     expect(p.resistenza).toBe(5)
     expect(p.movimento_m).toBe(6)
+    expect(p.movimento_m).toBe(Math.floor(movimentoBase * 0.75))
   })
 
-  it('Tōrō eredita danno assoluto arma', () => {
-    const p = deriveConstructProfile({
+  it('Tōrō: danno = valore arma (5), non tier 2 (8)', () => {
+    const sheet = { kongen: 3, undo: 4, seimitsu: 4 }
+    const tier2Valore = getTierValue(2)
+
+    const toro = deriveConstructProfile({
       wazaTier: 2,
       taglia: 'Grande',
       proprieta: ['TORO'],
       toro_da_arma: true,
-      armaSorgente: { dannoBase: 8, taglia: 'piccola' },
+      armaSorgente: { dannoBase: 5, taglia: 'piccola' },
       creator: { sheet },
     })
-    expect(p.danno).toBe(8)
-    expect(p.taglia_effettiva).toBe('piccola')
-    expect(p.flags.bersagliabile_manipolazione_altrui).toBe(false)
+    const senzaToro = deriveConstructProfile({
+      wazaTier: 2,
+      taglia: 'Grande',
+      danno: { tipo: 'TIER' },
+      creator: { sheet },
+    })
+
+    expect(toro.danno).toBe(5)
+    expect(toro.danno).not.toBe(tier2Valore)
+    expect(toro.taglia_effettiva).toBe('piccola')
+    expect(toro.resistenza).toBe(2)
+    expect(senzaToro.danno).toBe(8)
+    expect(toro.flags.bersagliabile_manipolazione_altrui).toBe(false)
   })
 
   it('Mei solo Genzai-dō', () => {
