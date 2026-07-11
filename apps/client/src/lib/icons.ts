@@ -55,6 +55,7 @@ import {
   faFire,
   faCodeBranch,
   faPager,
+  faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 
 export const icons = {
@@ -117,4 +118,5 @@ export const icons = {
   gear: faGear,
   pencil: faPencil,
   fire: faFire,
+  shield: faShieldHalved,
 } as const;
