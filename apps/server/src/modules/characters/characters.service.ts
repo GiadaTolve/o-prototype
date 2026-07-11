@@ -48,7 +48,7 @@ import {
   SKIRU_MAX_POINTS,
   calculateSkiruDerivedStats,
   calculateSkiruDomainIndices,
-  resolveGenkaiPointsFromSheet,
+  getSokaijuRank,
   calculateMaxActiveConstructs,
   type SkiruSheet,
 } from '@domain/skiru';
@@ -1648,7 +1648,7 @@ export class CharacterService {
           label: r.label,
           size: r.size,
           wazaTier: r.wazaTier as FieldConstruct['wazaTier'],
-          genkai: r.genkai,
+          kongenRank: r.kongenRank,
           maxResistance: r.maxResistance,
           remainingResistance: r.remainingResistance,
           stationary: r.stationary,
@@ -1687,7 +1687,7 @@ export class CharacterService {
       throw new Error(`Limite costrutti attivi (Chikō): massimo ${max} sul campo.`);
     }
 
-    const genkaiPoints = resolveGenkaiPointsFromSheet(skiruSheet);
+    const kongenRank = getSokaijuRank(skiruSheet, 'kongen');
 
     const size = input.size && isConstructSizeId(input.size) ? input.size : 'media';
     if (!isConstructSizeAllowedForCreator(size, skiruSheet)) {
@@ -1701,7 +1701,7 @@ export class CharacterService {
       creatorCharacterId: characterId,
       label: input.label,
       wazaTier: input.wazaTier,
-      genkai: genkaiPoints,
+      kongenRank,
       size,
       stationary: input.stationary,
     });
@@ -1712,7 +1712,7 @@ export class CharacterService {
       label: built.label,
       size: built.size,
       wazaTier: built.wazaTier,
-      genkai: built.genkai,
+      kongenRank: built.kongenRank,
       maxResistance: built.maxResistance,
       remainingResistance: built.remainingResistance,
       stationary: built.stationary,
@@ -1756,7 +1756,7 @@ export class CharacterService {
       label: row.label,
       size: row.size,
       wazaTier: row.wazaTier as FieldConstruct['wazaTier'],
-      genkai: row.genkai,
+      kongenRank: row.kongenRank,
       maxResistance: row.maxResistance,
       remainingResistance: row.remainingResistance,
       stationary: row.stationary,

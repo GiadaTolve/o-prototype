@@ -97,5 +97,8 @@ export const FIELD_HELP_TEXT: Record<string, string> = {
   modo: "Quando si attiva questo rilascio.",
   blocchi: "Blocchi da eseguire al rilascio.",
   waza_slug: "Slug della waza di riferimento (tipo valore RIFERIMENTO).",
+  proprieta: "Proprietà speciali: Batteria, Personale, Tōrō.",
+  toro_da_arma: "Se Tōrō: danno e taglia ereditati dall’arma impugnata (valore assoluto).",
+  mei: "Sigillo Mei interno — solo per waza Genzai-dō; conta nel limite globale Gosa (2 + Seimitsu).",
 };
 

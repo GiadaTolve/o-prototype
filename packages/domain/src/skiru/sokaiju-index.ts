@@ -280,8 +280,8 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'La mole di Jigo-Ka che scorre in te. È il nodo che misura quanto sei "pieno" di potere: non riguarda una singola tecnica, ma dà peso a tutto ciò che fai. Più profonda è la sorgente, più forte è ogni tuo colpo. Nel suo lato oscuro, Senkaku, quella potenza si indurisce in pura furia bellica: più devastante, ma cieca.',
     gameplayHint:
       'Potenziarlo serve a: fare più male con ogni singolo colpo. È la tua potenza di base, quella che alza tutto.',
-    derivedFormula: 'Floor danno su ogni waza: +round(rank × 1,5).',
-    drivesDerived: ['damageFloor'],
+    derivedFormula: 'Floor danno su ogni waza: +round(rank × 1,5). Resistenza costrutti: (rank Kongen + numero tier) × mult taglia.',
+    drivesDerived: ['damageFloor', 'constructResistance'],
     wazaCategoriaPapabile: 'Costrutto',
   },
   {
@@ -332,9 +332,9 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     },
     loreBody:
       'Dare corpo solido alle cose. È il punto in cui la Jigo-Ka, giunta a terra, si fa materia che regge: quanto sono robusti i costrutti che pianti nel mondo dipende da qui. Nel suo lato oscuro, Sōmei, ogni cosa reale proietta la sua ombra gemella, e il mondo raddoppia nel buio.',
-    gameplayHint: 'Potenziarlo serve a: rendere i tuoi costrutti più resistenti, più difficili da distruggere.',
-    derivedFormula: 'Resistenza costrutto = (rank + tier waza) × moltiplicatore taglia.',
-    drivesDerived: ['constructResistance'],
+    gameplayHint: 'Potenziarlo serve a: rendere più resistenti gli Scudi energetici (non i costrutti — quelli dipendono da Kongen).',
+    derivedFormula: 'Scudo energetico: Resistenza = valore tier (T1=4 … T5=23).',
+    drivesDerived: [],
     wazaCategoriaPapabile: 'Scudo',
   },
 ] as const

@@ -199,11 +199,11 @@ export function formatSokaijuAnchorLiveValue(
     case 'eiga':
       return `rank ${rank} · +${s.eigaEmotionalStackBonus} stack emotivi`
     case 'kongen':
-      return `rank ${rank} · +${s.kongenDamageFloor} danno base`
+      return `rank ${rank} · +${s.kongenDamageFloor} danno base · res. costrutti (Kongen + tier × taglia)`
     case 'hikan':
       return `rank ${rank} · sorpresa vs Chōkaku`
     case 'genkai':
-      return `rank ${rank} · res. costrutti (genkai + tier × taglia)`
+      return `rank ${rank} · nodo Scudo (non costrutti)`
     default:
       return `rank ${rank}`
   }

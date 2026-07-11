@@ -891,6 +891,8 @@ export function EditorWaza({
         disabled={readOnly}
         tierFlatDamage={tierFlatDamage}
         vocabolari={vocabMap}
+        wazaTier={form.tier}
+        genitore={form.genitore}
       />
 
       {/* Anteprima compatta dell'ultima riga renderizzata (mobile): evita di
