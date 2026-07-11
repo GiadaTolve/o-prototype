@@ -1,6 +1,6 @@
 /**
  * Compila catalogo waza Itō-dō sul database locale (DATABASE_URL).
- * NON usare --neon senza esplicita richiesta.
+ * Per Neon: bun run scripts/compile-ito-waza.ts --neon
  */
 import { config } from "dotenv";
 import { resolve } from "path";
@@ -26,18 +26,17 @@ async function main() {
   if (!raw) {
     throw new Error(useNeon ? "NEON_DATABASE_URL mancante" : "DATABASE_URL mancante");
   }
-  if (useNeon) {
-    console.error("⚠ Abort: usa solo locale. Rimuovi --neon.");
-    process.exit(1);
-  }
-  const neon = process.env.NEON_DATABASE_URL;
-  if (neon && raw === neon) {
-    console.error("⚠ Abort: DATABASE_URL coincide con NEON_DATABASE_URL");
-    process.exit(1);
+  if (!useNeon) {
+    const neon = process.env.NEON_DATABASE_URL;
+    if (neon && raw === neon) {
+      console.error("⚠ Abort: DATABASE_URL coincide con NEON_DATABASE_URL. Usa --neon.");
+      process.exit(1);
+    }
   }
   const u = new URL(raw);
   u.searchParams.delete("options");
   const sql = postgres(u.toString());
+  const target = useNeon ? "Neon" : "locale";
 
   try {
     for (const entry of ITO_CATALOG) {
@@ -103,7 +102,7 @@ async function main() {
       );
     }
 
-    console.log(`\nOK ${ITO_CATALOG.length} waza Itō-dō → DB locale`);
+    console.log(`\nOK ${ITO_CATALOG.length} waza Itō-dō → DB ${target}`);
     const notes = allItoImplementazioneNotes();
     if (notes.length) {
       console.log("\nNote implementazione:");

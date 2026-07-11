@@ -9,12 +9,19 @@
  *
  * Esegui da apps/server (idempotente):
  *   bun run seed-vocabolari-soggetto-condizione
+ *   bun run seed-vocabolari-soggetto-condizione -- --neon
  */
 import postgres from "postgres";
 import { config } from "dotenv";
 import { resolve } from "path";
 
 config({ path: resolve(import.meta.dir, "../../../.env") });
+
+const useNeon = process.argv.includes("--neon");
+const raw = useNeon ? process.env.NEON_DATABASE_URL : process.env.DATABASE_URL;
+if (!raw) {
+  throw new Error(useNeon ? "NEON_DATABASE_URL mancante" : "DATABASE_URL mancante");
+}
 
 type SoggettoCondizioneRow = {
   valore: string;
@@ -94,7 +101,10 @@ const SOGGETTI: SoggettoCondizioneRow[] = [
   },
 ];
 
-const sql = postgres(process.env.DATABASE_URL!);
+const u = new URL(raw);
+u.searchParams.delete("options");
+const sql = postgres(u.toString());
+const target = useNeon ? "Neon" : "locale";
 
 try {
   await sql.begin(async (tx) => {
@@ -108,7 +118,7 @@ try {
       `;
     }
   });
-  console.log(`✓ Vocabolario soggetto_condizione: ${SOGGETTI.length} soggetti generici.`);
+  console.log(`✓ Vocabolario soggetto_condizione (${target}): ${SOGGETTI.length} soggetti generici.`);
   console.log("  Stili Gōkaon/Rin'gai/Nakigara: usare stack(status) + slug status (pressione, macchiato, emorragia).");
 } finally {
   await sql.end();

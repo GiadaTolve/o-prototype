@@ -44,11 +44,13 @@
         "seed-vocabolari-skiru": "bun run scripts/seed-vocabolari-skiru.ts",
         "seed-vocabolari-waza-tags": "bun run scripts/seed-vocabolari-waza-tags.ts",
         "seed-vocabolari-status": "bun run scripts/seed-vocabolari-status.ts",
+        "seed-vocabolari-soggetto-condizione": "bun run scripts/seed-vocabolari-soggetto-condizione.ts",
         "compile-toka-waza": "bun run scripts/compile-toka-waza.ts",
         "toka-test-demo": "bun run scripts/toka-test-demo.ts",
         "compile-gokaon-waza": "bun run scripts/compile-gokaon-waza.ts",
         "compile-ringai-waza": "bun run scripts/compile-ringai-waza.ts",
         "compile-ito-waza": "bun run scripts/compile-ito-waza.ts",
+        "compile-catalogs-neon": "bun run seed-vocabolari-status -- --neon && bun run seed-vocabolari-soggetto-condizione -- --neon && bun run compile-gokaon-waza -- --neon && bun run compile-ringai-waza -- --neon && bun run compile-toka-waza -- --neon && bun run compile-ito-waza -- --neon",
         "test:waza-admin": "bun test src/modules/waza/waza-admin.routes.test.ts"
     },
     "dependencies": {
