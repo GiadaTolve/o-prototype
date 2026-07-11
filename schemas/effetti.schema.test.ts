@@ -447,6 +447,74 @@ describe("effetti.schema.json", () => {
     expect(validateEffettiSchema(payload).valid).toBe(true);
   });
 
+  it("accetta EVOCA_COSTRUTTO valido senza resistenza/danno espliciti", () => {
+    const payload = [
+      {
+        tipo: "EVOCA_COSTRUTTO",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "TURNI", n: 3 },
+        taglia: "Media",
+        consistenza: "Solido",
+        comportamento: "COMANDATO",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("accetta EVOCA_COSTRUTTO con resistenza tier esplicita", () => {
+    const payload = [
+      {
+        tipo: "EVOCA_COSTRUTTO",
+        trigger: "ALL_IMPATTO",
+        bersaglio: "ZONA_TERRENO",
+        durata: { tipo: "PERSISTENTE" },
+        taglia: "Piccola",
+        consistenza: "Solido",
+        comportamento: "STATICO",
+        resistenza: { tipo: "TIER" },
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("normalizza EVOCA_COSTRUTTO con placeholder DERIVATA (legacy editor)", () => {
+    const payload = [
+      {
+        tipo: "EVOCA_COSTRUTTO",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "TURNI", n: 3 },
+        taglia: "Media",
+        consistenza: "Solido",
+        comportamento: "COMANDATO",
+        resistenza: "DERIVATA",
+        danno: "DERIVATA",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(true);
+  });
+
+  it("rifiuta EVOCA_COSTRUTTO con resistenza stringa non valida", () => {
+    const payload = [
+      {
+        tipo: "EVOCA_COSTRUTTO",
+        trigger: "AL_LANCIO",
+        bersaglio: "SE_STESSO",
+        durata: { tipo: "TURNI", n: 3 },
+        taglia: "Media",
+        consistenza: "Solido",
+        comportamento: "COMANDATO",
+        resistenza: "invalido",
+      },
+    ];
+
+    expect(validateEffettiSchema(payload).valid).toBe(false);
+  });
+
   it("rifiuta DIFFERITO senza rilasci", () => {
     const payload = [
       {

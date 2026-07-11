@@ -3,6 +3,7 @@ import {
   buildCondizioneCanonica,
   parseCondizioneCanonica,
 } from "./condizione-constants";
+import { validateEffettiSchema } from "../../../../../../../schemas/effetti-validator";
 import { createDefaultBlocco, getBloccoSchemaByTipo } from "./effetti-schema";
 import { bloccoIndexFromPath, translateAjvError } from "./waza-editor-utils";
 
@@ -14,6 +15,14 @@ describe("effetti-schema", () => {
     expect(blocco.bersaglio).toBeTruthy();
     expect(blocco.durata).toBeTruthy();
     expect(blocco.valore).toBeTruthy();
+  });
+
+  test("createDefaultBlocco EVOCA_COSTRUTTO passa lo schema", () => {
+    const blocco = createDefaultBlocco("EVOCA_COSTRUTTO");
+    expect(blocco.tipo).toBe("EVOCA_COSTRUTTO");
+    expect(blocco.resistenza).toBeUndefined();
+    expect(blocco.danno).toBeUndefined();
+    expect(validateEffettiSchema([blocco]).valid).toBe(true);
   });
 
   test("createDefaultBlocco MANUALE richiede solo testo", () => {

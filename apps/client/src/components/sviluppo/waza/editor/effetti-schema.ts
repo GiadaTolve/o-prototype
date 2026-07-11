@@ -191,8 +191,7 @@ export function createDefaultBlocco(tipo: BloccoTipo): Record<string, unknown> {
   if (tipo === "EVOCA_COSTRUTTO") {
     blocco.proprieta = [];
     blocco.toro_da_arma = true;
-    blocco.resistenza = "DERIVATA";
-    blocco.danno = "DERIVATA";
+    // resistenza/danno omessi = derivati da Kongen/tier in runtime (AnteprimaCostrutto)
     blocco.comportamento = "COMANDATO";
     blocco.taglia = "Media";
     blocco.consistenza = "Solido";
