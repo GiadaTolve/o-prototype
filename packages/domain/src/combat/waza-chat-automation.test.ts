@@ -160,7 +160,7 @@ describe('waza chat automation', () => {
       actorCharacterId: 'a',
     })
     expect(r.effects.some((e) => e.kind === 'giurisdizione_activated')).toBe(true)
-    expect(r.csDelta).toBe(-4)
+    expect(r.csDelta).toBe(-3)
     expect(r.meta.itoGiurisdizione?.category).toBe('proiettile')
 
     const claim = processWazaChatAutomation({

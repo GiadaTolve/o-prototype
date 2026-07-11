@@ -1,7 +1,7 @@
-/** Mugen-Shihai (夢幻支配) — Dominazione Onirica · Itō-dō. */
+/** Musō Shihai (夢想支配) — Dominazione Onirica · Itō-dō. */
 
 export const MUGEN_SHIHAI_DURATION_TURNS = 4
-export const MUGEN_SHIHAI_CS_COST = 8
+export const MUGEN_SHIHAI_CS_COST = 4
 export const MUGEN_SHIHAI_BREAK_DAMAGE = 12
 
 export type ItoMugenShihaiState = {

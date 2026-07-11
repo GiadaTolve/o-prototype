@@ -22,6 +22,8 @@ export type StatusId =
   | 'sigillato'
   | 'macchiato'
   | 'rallentato'
+  | 'pressione'
+  | 'tensione'
 
 export type ElementId = 'fuoco' | 'fulmine' | 'acqua' | 'gravita' | 'aria'
 

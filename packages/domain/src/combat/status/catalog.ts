@@ -298,6 +298,30 @@ export const STATUS_DEFINITIONS: Record<StatusId, StatusDefinition> = {
       movementPenaltyMeters: 2,
     },
   },
+  pressione: {
+    id: 'pressione',
+    tag: 'Pressione',
+    label: 'Pressione',
+    kind: 'atypical',
+    description:
+      'Gōkaon (圧): contatore stile; max 12; non decade in combattimento; perso a fine combattimento.',
+    defaultStacks: 1,
+    maxStacks: 12,
+    decaysOnEndOfTurn: false,
+    modifiers: {},
+  },
+  tensione: {
+    id: 'tensione',
+    tag: 'Tensione',
+    label: 'Tensione',
+    kind: 'atypical',
+    description:
+      'Itō-dō (緊張): fili attivi sul campo; max 8; soglia Cedimento = 2 + Fudōshin; overflow → Emorragia (motore dedicato).',
+    defaultStacks: 1,
+    maxStacks: 8,
+    decaysOnEndOfTurn: false,
+    modifiers: {},
+  },
 }
 
 export const ELEMENTAL_STATUS_BY_ELEMENT: Record<
@@ -332,6 +356,10 @@ const TAG_ALIASES: Record<string, StatusId> = {
   'sigillato (portafortuna)': 'sigillato',
   macchiato: 'macchiato',
   rallentato: 'rallentato',
+  pressione: 'pressione',
+  'pressione (圧)': 'pressione',
+  tensione: 'tensione',
+  'tensione (緊張)': 'tensione',
 }
 
 function normalizeTag(raw: string): string {

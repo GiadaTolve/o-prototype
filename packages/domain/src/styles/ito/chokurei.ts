@@ -2,7 +2,7 @@
 
 import { extractWazaTaxonomyFromText } from '../../combat/waza-taxonomy'
 
-export const CHOKUREI_CS_COST = 6
+export const CHOKUREI_CS_COST = 3
 export const CHOKUREI_DECRETO_TURNS = 2
 
 export type DecretoEffectKind =

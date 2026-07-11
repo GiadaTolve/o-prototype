@@ -3,7 +3,7 @@
 import { extractWazaTaxonomyFromText } from '../../combat/waza-taxonomy'
 
 export const GIURISDICTION_DURATION_TURNS = 3
-export const GIURISDICTION_CS_COST = 4
+export const GIURISDICTION_CS_COST = 3
 export const GIURISDICTION_CLAIM_CS_COST = 2
 export const GIURISDICTION_RANGE_METERS = 8
 

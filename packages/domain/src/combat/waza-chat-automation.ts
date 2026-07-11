@@ -598,7 +598,7 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
     meta = activateMugenShihai(meta)
     csDelta -= MUGEN_SHIHAI_CS_COST
     effects.push({ kind: 'mugen_shihai_activated' })
-    log.push(`Mugen-Shihai: Dominazione Onirica (${MUGEN_SHIHAI_CS_COST} CS)`)
+    log.push(`Musō Shihai: Dominazione Onirica (${MUGEN_SHIHAI_CS_COST} CS)`)
   }
 
   if (hasDominioBreakTag(input.content) && readMugenShihaiState(meta)) {

@@ -14,6 +14,8 @@ export type SandboxLanciatore = {
   hp?: number
   grado?: string
   stato?: Readonly<Record<string, unknown>>
+  /** Stack status attivi sul lanciatore (per condizioni stack(status)). */
+  status?: Readonly<Record<string, number>>
   /** Skiru fisica scelta per l'IR (slug o nome). */
   skiruIrFisica?: string
   /** Skiru incanalamento scelta per l'IR (slug o nome). */
@@ -235,8 +237,9 @@ export function evaluateSandboxCondizione(
     return Number.isFinite(target) ? compareNumeric(hp, parsed.operatore, target) : false
   }
   if (parsed.soggettoId === 'stack(status)' && parsed.statusNome) {
-    const stacks = bersaglio.status ?? {}
-    const current = Number(stacks[parsed.statusNome] ?? 0)
+    const fromLanciatore = Number(lanciatore.status?.[parsed.statusNome] ?? 0)
+    const fromBersaglio = Number(bersaglio.status?.[parsed.statusNome] ?? 0)
+    const current = fromLanciatore > 0 ? fromLanciatore : fromBersaglio
     const target = Number(parsed.valore)
     return Number.isFinite(target) ? compareNumeric(current, parsed.operatore, target) : false
   }

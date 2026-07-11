@@ -50,7 +50,7 @@ export type DoMechanicsUiMeta = {
   itoGiurisdizione?: import('./ito/giurisdizione').ItoGiurisdizioneState | null
   /** Chokurei · Decreto Itō */
   itoDecreto?: import('./ito/chokurei').ItoDecretoState | null
-  /** Mugen-Shihai · dominio onirico */
+  /** Musō Shihai · dominio onirico */
   itoMugenShihai?: import('./ito/mugen-shihai').ItoMugenShihaiState | null
   /** Rakuen · Eden Genzai */
   genzaiEden?: import('./genzai/rakuen').GenzaiEdenState | null
