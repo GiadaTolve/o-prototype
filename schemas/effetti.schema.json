@@ -750,8 +750,40 @@
             "STATICO"
           ]
         },
+        "proprieta": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "BATTERIA",
+              "PERSONALE",
+              "TORO"
+            ]
+          },
+          "default": [],
+          "uniqueItems": true
+        },
+        "toro_da_arma": {
+          "type": "boolean",
+          "default": true
+        },
+        "mei": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "etichetta": {
+              "type": "string",
+              "minLength": 1
+            },
+            "inviolabile": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
         "conta_mei": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Deprecato — usare mei su waza Genzai-dō"
         }
       },
       "required": [
@@ -761,8 +793,6 @@
         "durata",
         "taglia",
         "consistenza",
-        "resistenza",
-        "danno",
         "comportamento"
       ]
     },

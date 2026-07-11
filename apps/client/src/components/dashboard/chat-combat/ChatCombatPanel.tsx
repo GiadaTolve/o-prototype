@@ -251,7 +251,7 @@ export function ChatCombatPanel({
   const [hpAmount, setHpAmount] = useState(3);
   const [damageHitTier, setDamageHitTier] = useState<number | null>(3);
   const [constructs, setConstructs] = useState<
-    Array<{ id: string; label: string; wazaTier: number; genkai: number; remainingResistance: number; maxResistance: number }>
+    Array<{ id: string; label: string; wazaTier: number; kongenRank: number; remainingResistance: number; maxResistance: number }>
   >([]);
   const [masterTargetStatus, setMasterTargetStatus] = useState<
     Array<{ id: string; tag: string; stacks: number }>
@@ -691,7 +691,7 @@ export function ChatCombatPanel({
               {constructs.map((c) => (
                 <li key={c.id} className="text-[9px] text-gray-400 flex justify-between gap-1">
                   <span>
-                    {c.label} G{c.genkai} T{c.wazaTier} · {c.remainingResistance}/{c.maxResistance}
+                    {c.label} K{c.kongenRank} T{c.wazaTier} · {c.remainingResistance}/{c.maxResistance}
                   </span>
                   <button
                     type="button"

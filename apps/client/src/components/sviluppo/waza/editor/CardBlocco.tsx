@@ -11,6 +11,21 @@ import {
 import { SchemaField, labelForProperty } from "./SchemaField";
 import { InfoHint } from "./InfoHint";
 import { BLOCCO_INFO_TESTI, FIELD_HELP_TEXT } from "./waza-editor-help";
+import { AnteprimaCostrutto } from "./AnteprimaCostrutto";
+import {
+  EditorMeiCostrutto,
+  EditorProprietaCostrutto,
+} from "./EditorProprietaCostrutto";
+import type { ConstructProprietaId } from "@domain/combat/construct-profile";
+
+const EVOCA_CUSTOM_KEYS = new Set([
+  "proprieta",
+  "toro_da_arma",
+  "mei",
+  "conta_mei",
+  "resistenza",
+  "danno",
+]);
 
 const BLOCCO_ACCENT: Record<BloccoTipo, string> = {
   DANNO: "var(--accent-gold)",
@@ -45,6 +60,8 @@ type CardBloccoProps = {
   disabled?: boolean;
   tierFlatDamage?: number | null;
   vocabolari: VocabMap;
+  wazaTier?: number | null;
+  genitore?: string | null;
 };
 
 export function CardBlocco({
@@ -59,6 +76,8 @@ export function CardBlocco({
   disabled,
   tierFlatDamage,
   vocabolari,
+  wazaTier,
+  genitore,
 }: CardBloccoProps) {
   const tipo = String(blocco.tipo ?? "") as BloccoTipo;
   const schema = useMemo(() => getBloccoSchemaByTipo(tipo), [tipo]);
@@ -138,7 +157,27 @@ export function CardBlocco({
       </header>
 
       <div className="p-3 space-y-3">
-        {fieldKeys.map((key) => {
+        {tipo === "EVOCA_COSTRUTTO" && (
+          <>
+            <EditorProprietaCostrutto
+              value={(Array.isArray(blocco.proprieta) ? blocco.proprieta : []) as ConstructProprietaId[]}
+              toroDaArma={blocco.toro_da_arma !== false}
+              disabled={disabled}
+              onChange={(proprieta) => patchField("proprieta", proprieta)}
+              onToroDaArmaChange={(v) => patchField("toro_da_arma", v)}
+            />
+            {genitore && /genzai/i.test(genitore) && (
+              <EditorMeiCostrutto
+                value={blocco.mei as { etichetta?: string; inviolabile?: boolean } | undefined}
+                disabled={disabled}
+                onChange={(mei) => patchField("mei", mei)}
+              />
+            )}
+          </>
+        )}
+        {fieldKeys
+          .filter((key) => !(tipo === "EVOCA_COSTRUTTO" && EVOCA_CUSTOM_KEYS.has(key)))
+          .map((key) => {
           const propSchema = (schema.properties as Record<string, SchemaNode>)[key];
           const fieldLabel = labelForProperty(key);
           const fieldHelp = FIELD_HELP_TEXT[key] ?? "Compila questo campo in base all'effetto che vuoi ottenere.";
@@ -161,6 +200,9 @@ export function CardBlocco({
             </label>
           );
         })}
+        {tipo === "EVOCA_COSTRUTTO" && (
+          <AnteprimaCostrutto blocco={blocco} wazaTier={wazaTier ?? null} genitore={genitore ?? null} />
+        )}
       </div>
     </article>
   );

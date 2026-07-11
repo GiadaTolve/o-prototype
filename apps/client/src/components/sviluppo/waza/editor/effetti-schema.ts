@@ -188,6 +188,17 @@ export function createDefaultBlocco(tipo: BloccoTipo): Record<string, unknown> {
     blocco.durata = { tipo: "TURNI", n: 3 };
   }
 
+  if (tipo === "EVOCA_COSTRUTTO") {
+    blocco.proprieta = [];
+    blocco.toro_da_arma = true;
+    blocco.resistenza = "DERIVATA";
+    blocco.danno = "DERIVATA";
+    blocco.comportamento = "COMANDATO";
+    blocco.taglia = "Media";
+    blocco.consistenza = "Solido";
+    if ("durata" in blocco) blocco.durata = { tipo: "TURNI", n: 3 };
+  }
+
   return blocco;
 }
 

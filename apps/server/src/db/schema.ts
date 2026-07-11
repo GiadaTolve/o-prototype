@@ -213,7 +213,7 @@ export const fieldConstructs = pgTable('field_constructs', {
   label: text('label').notNull().default('Costrutto'),
   size: text('size').$type<'piccola' | 'media' | 'grande' | 'enorme'>().default('media').notNull(),
   wazaTier: integer('waza_tier').notNull().default(1),
-  genkai: integer('genkai').notNull().default(0),
+  kongenRank: integer('kongen_rank').notNull().default(0),
   maxResistance: integer('max_resistance').notNull(),
   remainingResistance: integer('remaining_resistance').notNull(),
   stationary: boolean('stationary').default(true).notNull(),

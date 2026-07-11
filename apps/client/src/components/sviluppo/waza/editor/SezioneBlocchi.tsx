@@ -23,6 +23,8 @@ type SezioneBlocchiProps = {
   disabled?: boolean;
   tierFlatDamage?: number | null;
   vocabolari: VocabMap;
+  wazaTier?: number | null;
+  genitore?: string | null;
 };
 
 export function SezioneBlocchi({
@@ -31,6 +33,8 @@ export function SezioneBlocchi({
   disabled,
   tierFlatDamage,
   vocabolari,
+  wazaTier,
+  genitore,
 }: SezioneBlocchiProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -230,6 +234,8 @@ export function SezioneBlocchi({
               disabled={disabled}
               tierFlatDamage={tierFlatDamage}
               vocabolari={vocabolari}
+              wazaTier={wazaTier}
+              genitore={genitore}
             />
           ))}
         </div>
