@@ -29,10 +29,6 @@ import {
   isChronoQualifyingAction,
 } from '@domain/combat/tenkan-chat';
 import {
-  applySokaijuSupportValue,
-  checkHikanSurpriseBypass,
-} from '@domain/skiru/sokaiju-combat';
-import {
   canAffordSkiruRaise,
   expCostToRaiseSkiru,
   expCostForNextSkiruPoint,
@@ -41,6 +37,7 @@ import {
   getSkiruDef,
   getSkiruPoints,
   getSkiruParentUnlockMessage,
+  isSokaijuFaceSheetKey,
   legacyStatsToSkiruSheet,
   validateSkiruSheet,
   SHAKAI_KAIKYU_CLASS_SKIRU_IDS,
@@ -48,8 +45,10 @@ import {
   SKIRU_MAX_POINTS,
   calculateSkiruDerivedStats,
   calculateSkiruDomainIndices,
-  getSokaijuRank,
-  calculateMaxActiveConstructs,
+  SOKAIJU_ANCHORS,
+  SOKAIJU_GATE_SKIRU_ID,
+  getSokaijuAnchorBySkiruId,
+  sokaijuFaceSheetKey,
   type SkiruSheet,
 } from '@domain/skiru';
 import { buildCharacterPixelIcons } from '../../lib/character-pixel-icons'
@@ -108,6 +107,7 @@ import {
   canPlaceFieldConstruct,
   isConstructSizeAllowedForCreator,
   getMaxAllowedConstructSizeId,
+  DEFAULT_MAX_ACTIVE_CONSTRUCTS,
   type StatusContainer,
   type StatusId,
   type ElementId,
@@ -155,6 +155,7 @@ import {
   computeSkiruRiderFlatBonus,
   computeSkiruRiderDefenderIrPenalty,
   buildActionIndexFromDeclaredSkiru,
+  extractMechanicTagsFromEffect,
   wazaEffectDeclaresContact,
 } from '@domain/combat/waza-skiru-riders';
 import {
@@ -1291,15 +1292,6 @@ export class CharacterService {
     if (!bundle) throw new Error('Personaggio non trovato');
 
     let appliedDelta = delta;
-    if (appliedDelta > 0 && options?.supporterCharacterId) {
-      const supporterBundle = await this.getSkiruBundleForCharacter(options.supporterCharacterId);
-      if (supporterBundle) {
-        appliedDelta = applySokaijuSupportValue(
-          appliedDelta,
-          supporterBundle.skiruSheet as SkiruSheet,
-        );
-      }
-    }
 
     const hpMax = bundle.computed.hpMax ?? 0;
     const hpBefore = char.currentHp;
@@ -1411,6 +1403,7 @@ export class CharacterService {
       isReactiveCounter?: boolean
       flatBonus?: number
       contactHit?: boolean
+      wazaEffectText?: string | null
     } = {},
   ): Promise<{
     vitals: { hpCurrent: number; hpMax: number }
@@ -1456,6 +1449,7 @@ export class CharacterService {
       attackerSheet: attackerBundle.skiruSheet as SkiruSheet,
       targetSheet: victimBundle.skiruSheet as SkiruSheet,
       isReactiveCounter: options.isReactiveCounter,
+      wazaTags: extractMechanicTagsFromEffect(options.wazaEffectText),
       bonuses: {
         flatBonus: totalFlatBonus,
         damageMultiplier: offensive.damageMultiplier,
@@ -1472,7 +1466,7 @@ export class CharacterService {
     return { vitals, hpDamage: breakdown.hpDamage, breakdown };
   }
 
-  /** Confronto IR attaccante vs difensore con tie-break Kashin ed Energetiche. */
+  /** Confronto IR attaccante vs difensore; a parità IR vince chi ha speso meno quarti. */
   async resolveCombatConfrontationBetween(
     actorCharacterId: string,
     defenderCharacterId: string,
@@ -1683,16 +1677,13 @@ export class CharacterService {
       columns: { id: true },
     });
     if (!canPlaceFieldConstruct(activeConstructs.length, skiruSheet)) {
-      const max = calculateMaxActiveConstructs(skiruSheet);
-      throw new Error(`Limite costrutti attivi (Chikō): massimo ${max} sul campo.`);
+      throw new Error(`Limite costrutti attivi: massimo ${DEFAULT_MAX_ACTIVE_CONSTRUCTS} sul campo.`);
     }
-
-    const kongenRank = getSokaijuRank(skiruSheet, 'kongen');
 
     const size = input.size && isConstructSizeId(input.size) ? input.size : 'media';
     if (!isConstructSizeAllowedForCreator(size, skiruSheet)) {
       const maxSize = getMaxAllowedConstructSizeId(skiruSheet);
-      throw new Error(`Taglia costrutto non consentita (Chikō): massimo «${maxSize}».`);
+      throw new Error(`Taglia costrutto non consentita: massimo «${maxSize}».`);
     }
 
     const id = crypto.randomUUID();
@@ -1701,7 +1692,6 @@ export class CharacterService {
       creatorCharacterId: characterId,
       label: input.label,
       wazaTier: input.wazaTier,
-      kongenRank,
       size,
       stationary: input.stationary,
     });
@@ -2147,9 +2137,10 @@ export class CharacterService {
         const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(effect.wazaName));
         const effectText = entry?.effect ?? entry?.description ?? '';
 
+        const wazaTags = extractMechanicTagsFromEffect(effectText);
         const actorInput: ActionIndexInput = effect.skiruId
-          ? buildActionIndexFromDeclaredSkiru(actorSkiruSheet, effect.skiruId)
-          : buildIndicativeActionIndex(actorSkiruSheet);
+          ? { ...buildActionIndexFromDeclaredSkiru(actorSkiruSheet, effect.skiruId), wazaTags }
+          : { ...buildIndicativeActionIndex(actorSkiruSheet), wazaTags };
         const defenderBundle = await this.getSkiruBundleForCharacter(effect.victimCharacterId);
         const defenderSheet = (defenderBundle?.skiruSheet ?? {}) as SkiruSheet;
         const defenderInput = buildIndicativeActionIndex(defenderSheet);
@@ -2163,16 +2154,6 @@ export class CharacterService {
         );
 
         let landed = didOffensiveActionLand(confrontation);
-        if (
-          !landed &&
-          messageDeclaresSurpriseAttack(content) &&
-          checkHikanSurpriseBypass(actorSkiruSheet, defenderSheet, false)
-        ) {
-          landed = true;
-          automation.log.push(
-            `Hikan: sorpresa su ${effect.displayName} — schivata reattiva ignorata`,
-          );
-        }
 
         if (!landed) {
           automation.log.push(
@@ -2186,6 +2167,7 @@ export class CharacterService {
         await this.applyCombatTierDamage(effect.victimCharacterId, characterId, effect.tier, {
           flatBonus: launchFlatBonus,
           contactHit: wazaEffectDeclaresContact(effectText),
+          wazaEffectText: effectText,
         });
         automation.meta = noteDamageDealtToTarget(automation.meta, effect.victimCharacterId);
         automation.log.push(
@@ -2646,6 +2628,15 @@ export class CharacterService {
       const maxPoints = getSkiruMaxPoints(def.id);
       expCostNextByNode[def.id] = pts >= maxPoints ? null : expCostForNextSkiruPoint(pts);
     }
+    for (const anchor of SOKAIJU_ANCHORS) {
+      if (anchor.id === SOKAIJU_GATE_SKIRU_ID) continue;
+      for (const face of ['meiju', 'shiju'] as const) {
+        const key = sokaijuFaceSheetKey(anchor.id, face);
+        const pts = getSkiruPoints(skiruSheet, key);
+        expCostNextByNode[key] =
+          pts >= SKIRU_MAX_POINTS ? null : expCostForNextSkiruPoint(pts);
+      }
+    }
 
     const derivedStats = calculateSkiruDerivedStats(skiruSheet);
     const skiruDomains = calculateSkiruDomainIndices(skiruSheet);
@@ -2691,15 +2682,26 @@ export class CharacterService {
     });
     if (!character) throw new Error('Personaggio non trovato');
 
-    const def = getSkiruDef(skiruId);
-    if (!def) throw new Error(`Skiru «${skiruId}» non trovata nel catalogo.`);
+    const isFaceKey = isSokaijuFaceSheetKey(skiruId);
+    const def = isFaceKey ? undefined : getSkiruDef(skiruId);
+    if (!isFaceKey && !def) throw new Error(`Skiru «${skiruId}» non trovata nel catalogo.`);
     if ((SHAKAI_KAIKYU_CLASS_SKIRU_IDS as readonly string[]).includes(skiruId)) {
       throw new Error('La classe sociale si sceglie da POST /characters/me/social-class, non dall\'albero Skiru.');
     }
-    if (def.kind === 'milestone') throw new Error('Le milestone Jiga no Shihaisha non si acquistano con EXP.');
-    if (def.expPurchasable === false) {
+    if (!isFaceKey && def?.kind === 'milestone') {
+      throw new Error('Le milestone Jiga no Shihaisha non si acquistano con EXP.');
+    }
+    if (!isFaceKey && def?.expPurchasable === false) {
       throw new Error(`«${def.name}» non si acquista con EXP — inserimento narrativo in scheda.`);
     }
+
+    const nodeLabel = isFaceKey
+      ? (() => {
+          const anchor = getSokaijuAnchorBySkiruId(skiruId.split(':')[0] ?? '')
+          const face = skiruId.endsWith(':meiju') ? 'Vita' : 'Morte'
+          return anchor ? `${anchor.sectionTitle} · ${face}` : skiruId
+        })()
+      : def!.name;
 
     const baseStats: BaseStats = {
       strength: character.strength,
@@ -2716,10 +2718,10 @@ export class CharacterService {
 
     const current = getSkiruPoints(skiruSheet, skiruId);
     if (targetPoints <= current) {
-      throw new Error(`Il nodo «${def.name}» ha già ${current} punti.`);
+      throw new Error(`Il nodo «${nodeLabel}» ha già ${current} punti.`);
     }
-    if (targetPoints > SKIRU_MAX_POINTS) {
-      throw new Error(`Massimo ${SKIRU_MAX_POINTS} punti per nodo.`);
+    if (targetPoints > getSkiruMaxPoints(skiruId)) {
+      throw new Error(`Massimo ${getSkiruMaxPoints(skiruId)} punti per nodo.`);
     }
 
     const unlockMsg = getSkiruParentUnlockMessage(skiruSheet, skiruId);
@@ -2729,7 +2731,7 @@ export class CharacterService {
     if (!canAffordSkiruRaise(skiruSheet, skiruId, targetPoints, spendable)) {
       const cost = expCostToRaiseSkiru(current, targetPoints - current);
       throw new Error(
-        `EXP insufficienti: occorrono ${cost ?? '?'} EXP per portare «${def.name}» da ${current} a ${targetPoints} (disponibili: ${spendable}).`,
+        `EXP insufficienti: occorrono ${cost ?? '?'} EXP per portare «${nodeLabel}» da ${current} a ${targetPoints} (disponibili: ${spendable}).`,
       );
     }
 

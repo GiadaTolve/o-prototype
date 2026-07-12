@@ -1,11 +1,36 @@
 # OYASUMI — Spec d'implementazione: Sōkaiju + Lancio Waza in Chat
 
-> Documento per Cursor. Descrive (1) il ruolo meccanico di ogni nodo Sōkaiju, (2) come il giocatore lancia una waza in chat scegliendo la Skiru, (3) cosa il motore calcola/applica **da solo**.
-> Convenzione: ogni nodo ha rank **0–5**. Le formule usano gli `id` già presenti a catalogo.
+> Documento per Cursor. Descrive (1) l'organizzazione dell'appendice Sōkaiju, (2) il ruolo Meiju/Shiju per categoria, (3) il lancio waza in chat, (4) cosa il motore calcola/applica **da solo**.
+> Convenzione: rank **0–5** per volto (Vita/Morte) su ogni ancoraggio; coefficiente **+1,5% per punto**.
 
 ---
 
-## 1. Ruolo di ogni nodo Sōkaiju
+## 0. Appendice Skiru — organizzazione
+
+Il **Sōkaiju** è un'**appendice di Skiru a sé stante** (tab dedicata in scheda, ramo `sokaiju` nel dominio Jin). Non si mescola con Tōsō, Binshō, ecc.
+
+| Regola | Dettaglio |
+|--------|-----------|
+| **Tenkan** | Unica Skiru **accademica** — non si alza di livello con EXP. Apre il Terzo Occhio; in chat `[tenkan]` gestisce accumulo CS / Overheat. |
+| **Altri 10 ancoraggi** | Restano **legati a una categoria waza** (come oggi: Kongen → `[Costrutto]`, Gojū → `[Proiettile]`, …). |
+| **Doppio volto** | Ogni ancoraggio ha **Meiju (Vita)** e **Shiju (Morte)** con effetti meccanici distinti sulla **stessa categoria**. |
+| **Vita (Meiju)** | Ogni punto assegnato → **+1,5% IR** al lancio delle waza della categoria collegata. |
+| **Morte (Shiju)** | Ogni punto assegnato → **+1,5% Danno** delle waza della categoria collegata. |
+
+**Esempio Kongen** (`[Costrutto]`):
+
+- **Vita** (Sorgente / Kongen): ogni punto → +1,5% IR sul lancio waza `[Costrutto]`.
+- **Morte** (Corno di guerra / Senkaku): ogni punto → +1,5% Danno sulle waza `[Costrutto]`.
+
+**Scheda punti (fase transizione):** finché non c'è UI a due barre, il rank legacy sul nodo (`kongen: 3`) vale per **entrambi** i volti. Chiavi future: `kongen:meiju`, `kongen:shiju`.
+
+**Implementazione domain:** `packages/domain/src/skiru/sokaiju-face-effects.ts` — `calculateSokaijuMeijuIrMultiplier`, `calculateSokaijuShijuDamagePercentBonus`.
+
+**Mappa categoria ↔ ancoraggio:** invariata (`sokaiju-categoria.test.ts`).
+
+---
+
+## 1. Ruolo di ogni nodo Sōkaiju (legacy + migrazione)
 
 Legenda stato:
 - **WIRED** = già a motore.

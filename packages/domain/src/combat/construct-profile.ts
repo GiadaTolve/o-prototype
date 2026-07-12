@@ -12,7 +12,6 @@ import {
 } from './constructs'
 import { calculateMovementMetersPerQuarterFromSkiru } from '../skiru/derived-stats'
 import { getSkiruPoints } from '../skiru/progression'
-import { getSokaijuRank } from '../skiru/sokaiju-combat'
 import { getTierValue, isWazaTier, type WazaTier } from './tier'
 import { calculateGosaMaxSimultaneousConstructs } from '../styles/genzai/gosa-construct-limit'
 
@@ -145,15 +144,14 @@ export function deriveConstructProfile(input: DeriveConstructInput): DerivedCons
       ? input.armaSorgente.taglia
       : normalizeSize(String(input.taglia))
 
-  const kongenRank = getSokaijuRank(sheet, 'kongen')
   const resistenza =
     input.resistenza === 'DERIVATA' || input.resistenza == null
-      ? calculateConstructResistance(kongenRank, tier, taglia_effettiva)
+      ? calculateConstructResistance(0, tier, taglia_effettiva)
       : typeof input.resistenza === 'object' &&
           input.resistenza !== null &&
           'tipo' in input.resistenza
-        ? resolveValoreDanno(input.resistenza, tier) ?? calculateConstructResistance(kongenRank, tier, taglia_effettiva)
-        : calculateConstructResistance(kongenRank, tier, taglia_effettiva)
+        ? resolveValoreDanno(input.resistenza, tier) ?? calculateConstructResistance(0, tier, taglia_effettiva)
+        : calculateConstructResistance(0, tier, taglia_effettiva)
 
   const mobile = input.comportamento !== 'STATICO'
   const sizeDef = CONSTRUCT_SIZES[taglia_effettiva]

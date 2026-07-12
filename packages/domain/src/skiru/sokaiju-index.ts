@@ -20,8 +20,12 @@ export interface SokaijuAnchorDef {
   loreBody: string
   /** Suggerimento giocatore («Potenziarlo serve a…»). */
   gameplayHint: string
-  /** Formula meccanica (motore). */
+  /** Formula meccanica unificata Meiju|Shiju (motore + UI). */
   derivedFormula: string
+  /** Testo effetto Meiju (Vita) — appendice Skiru. */
+  meijuMechanic: string
+  /** Testo effetto Shiju (Morte) — appendice Skiru. */
+  shijuMechanic: string
   drivesDerived?: SkiruDerivedDriver[]
   /** Categoria waza papabile per IR (assente su Tenkan e affinità Gojū). */
   wazaCategoriaPapabile?: WazaCategoriaPapabile
@@ -34,7 +38,21 @@ export const SOKAIJU_INTRO_LORE: readonly string[] = [
 ] as const
 
 export const SOKAIJU_PLAYING_TIP =
-  'In breve, per chi gioca: il Terzo Occhio è la tua sorgente; tutto il resto sono i luoghi del corpo dove quella sorgente diventa una capacità precisa. Potenzia i nodi che parlano al tuo stile — chi picchia coltiva il Fondamento (Kongen), chi costruisce il Regno (Genkai) e la Saggezza (Chikō), chi sostiene la squadra la Misericordia (Jikai), chi vuole colpire per primo la Grazia (Kashin). Ogni nodo ha un lato luminoso e un lato oscuro: la stessa forza, due modi di lasciarla scorrere.'
+  'Appendice Skiru a sé stante: il Terzo Occhio (Tenkan) è accademico e non si alza di livello. Ogni altro ancoraggio è legato a una categoria waza: Vita (Meiju) +1,5% IR per punto sul lancio; Morte (Shiju) +1,5% Danno per punto. Esempio Kongen → waza [Costrutto].'
+
+function categoryAnchorFormulas(categoria: WazaCategoriaPapabile): {
+  derivedFormula: string
+  meijuMechanic: string
+  shijuMechanic: string
+} {
+  const meijuMechanic = `Vita: ogni punto assegnato incrementa l'IR del lancio delle waza [${categoria}] di +1,5%.`
+  const shijuMechanic = `Morte: ogni punto assegnato incrementa il Danno delle waza [${categoria}] di +1,5%.`
+  return {
+    meijuMechanic,
+    shijuMechanic,
+    derivedFormula: `${meijuMechanic} ${shijuMechanic}`,
+  }
+}
 
 export const SOKAIJU_ELEMENTALS_INTRO =
   'Chi coltiva la Comprensione sceglie una sola affinità elementale, radicata nella propria storia più che comprata con l\'esperienza. L\'elemento tinge le tecniche e, quando vanno a segno, lascia sul nemico uno status che dura tre turni.'
@@ -69,8 +87,12 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'È la sorgente. Tutta la Jigo-Ka di un Analista nasce qui e da qui defluisce nel resto dell\'albero — per questo lo si chiama comunemente il Terzo Occhio. Nella sua forma viva, Tenkan, la Corona si apre e lascia affluire energia in abbondanza: più l\'Analista si concentra e si esprime, più la sorgente zampilla. Ma un\'apertura spinta troppo oltre diventa Shikai, il Mare Morto: l\'energia ristagna, si gonfia oltre misura e marcisce, ritorcendosi contro chi l\'ha trattenuta.',
     gameplayHint:
       'Skiru accademica — non si potenzia con EXP. Simboleggia l\'apertura del Terzo Occhio ed è il prerequisito per coltivare tutti gli altri ancoraggi Sōkaiju. In combattimento si usa con [tenkan] in chat (accumulo CS, non rank).',
+    meijuMechanic:
+      'Corona (Vita): +3 CS/turno con [tenkan] attivo e azione ≥500 caratteri.',
+    shijuMechanic:
+      'Mare Morto (Morte): Overheat oltre 20 CS — −2 HP/stack a fine turno; 3 turni → Defaticamento.',
     derivedFormula:
-      '+3 CS/turno con [tenkan] e azione ≥500 caratteri. Oltre 20 CS: −2 HP/stack a fine turno. Non ha rank investibili.',
+      'Accademica — non rank investibili. [tenkan] in chat · accumulo CS / Overheat.',
     drivesDerived: ['chronoStack'],
   },
   {
@@ -95,7 +117,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     loreBody:
       'La mente che progetta. Qui la Jigo-Ka prende disegno prima di prendere forma: è il nodo di chi tiene molte cose "scritte" nel mondo contemporaneamente, gestendole con lucidità. Nel suo lato oscuro, Muga, quella lucidità si svuota: l\'Analista perde i propri contorni, si dissolve in ciò che ha creato fino a non distinguersi più.',
     gameplayHint: 'Potenziarlo serve a: creare più costrutti nello stesso momento, e farli più grandi.',
-    derivedFormula: 'Costrutti attivi max = 1 + rank. Taglia massima dichiarabile +1 grado ogni 2 rank.',
+    ...categoryAnchorFormulas('Raggio'),
     drivesDerived: ['maxConstructs'],
     wazaCategoriaPapabile: 'Raggio',
   },
@@ -122,7 +144,11 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'Comprendere la natura di ciò che ci circonda e piegarla. È il nodo degli elementi: fuoco, fulmine, acqua, gravità, aria. Da esso l\'Analista trae un\'affinità che tinge le sue tecniche e lascia un segno sul nemico. Nel suo lato oscuro, Kyogai, la comprensione si perde dietro cose vuote, e la forza si disperde in nulla.',
     gameplayHint:
       'Potenziarlo serve a: dare al tuo elemento e allo status che infligge (bruciare, sovraccaricare, intorpidire…) più mordente.',
-    derivedFormula: 'Waza [Elementale] a segno con affinità attiva → status elementale per 3 turni (auto).',
+    ...categoryAnchorFormulas('Proiettile'),
+    shijuMechanic:
+      'Morte: ogni punto assegnato incrementa il Danno delle waza [Proiettile] di +1,5%. Affinità elementale attiva → status su colpo [Elementale] (ramo Jin dedicato).',
+    derivedFormula:
+      'Vita: ogni punto +1,5% IR sulle waza [Proiettile]. Morte: ogni punto +1,5% Danno sulle waza [Proiettile]. Affinità elementale: status automatico su waza [Elementale] a segno.',
     drivesDerived: ['elementalStatus'],
     wazaCategoriaPapabile: 'Proiettile',
   },
@@ -148,7 +174,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     loreBody:
       'La forza rivolta agli altri per sostenerli. Da questo nodo passano le cure e i rinforzi: curare una ferita, irrobustire un compagno, tenere in piedi chi sta cadendo. Nel suo lato oscuro, Hegaiō, la stessa forza smette di aiutare e comincia a costringere: un dono che diventa catena.',
     gameplayHint: 'Potenziarlo serve a: rendere più forti le tue cure e i tuoi potenziamenti.',
-    derivedFormula: 'Cure e buff che applichi: +rank al valore di cura o al bonus del buff.',
+    ...categoryAnchorFormulas('Potenziamento'),
     drivesDerived: ['supportPower'],
     wazaCategoriaPapabile: 'Potenziamento',
   },
@@ -174,7 +200,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     loreBody:
       'Rispondere al colpo con il colpo. È il nodo della ritorsione: chi ti ferisce trova, nella tua risposta, un peso maggiore di quello che si aspettava. Nel suo lato oscuro, Emu, la giustizia degenera in accanimento cieco, punizione che non sa più fermarsi.',
     gameplayHint: 'Potenziarlo serve a: rendere più forti i tuoi contrattacchi — le risposte a chi ti colpisce.',
-    derivedFormula: 'Contrattacchi e risposte reattive: +rank danno (oltre al floor Kongen).',
+    ...categoryAnchorFormulas('Contatto'),
     drivesDerived: ['counterBonus'],
     wazaCategoriaPapabile: 'Contatto',
   },
@@ -200,7 +226,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     loreBody:
       'L\'armonia del gesto. Un movimento eseguito con grazia arriva prima, si insinua nel momento giusto senza sprecarlo. È il nodo di chi sembra sempre un passo avanti. Nel suo lato oscuro, Dokuyoku, quella stessa bellezza seduce per avvelenare: eleganza che nasconde la lama.',
     gameplayHint: 'Potenziarlo serve a: agire prima degli altri quando siete alla pari — essere più svelto sullo scatto.',
-    derivedFormula: 'A parità di IR: agisce/risolve prima chi ha rank più alto → poi [Energetiche] → attaccante.',
+    ...categoryAnchorFormulas('Emanazione a Distanza'),
     drivesDerived: ['initiativeTiebreak'],
     wazaCategoriaPapabile: 'Emanazione a Distanza',
   },
@@ -227,7 +253,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'La costanza che fa durare. Ciò che questo nodo sostiene non svanisce in fretta: uno status, un rinforzo, un costrutto reggono più a lungo grazie alla sua tenuta. Nel suo lato oscuro, Retsuja, la spinta si spezza a metà, e ciò che era stabile comincia a oscillare e a cedere.',
     gameplayHint:
       'Potenziarlo serve a: far durare più a lungo i tuoi effetti (status, potenziamenti, costrutti).',
-    derivedFormula: 'Effetti a tempo che applichi: +floor(rank / 2) turni di durata.',
+    ...categoryAnchorFormulas('Emanazione'),
     drivesDerived: ['effectDuration'],
     wazaCategoriaPapabile: 'Emanazione',
   },
@@ -253,7 +279,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     loreBody:
       'Toccare le emozioni altrui. Da questo nodo l\'Analista instilla paura, ira, e altri moti dell\'animo che piegano il nemico dall\'interno. Nel suo lato oscuro, Kokuyō, l\'emozione è portata all\'eccesso: una luce così intensa da bruciare nera, che travolge senza controllo.',
     gameplayHint: 'Potenziarlo serve a: rendere più pesanti gli status emotivi che infliggi (paura, ira…).',
-    derivedFormula: 'Status emotivi che applichi: +floor(rank / 2) stack.',
+    ...categoryAnchorFormulas('Propagazione'),
     drivesDerived: ['emotionalPower'],
     wazaCategoriaPapabile: 'Propagazione',
   },
@@ -280,7 +306,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
       'La mole di Jigo-Ka che scorre in te. È il nodo che misura quanto sei "pieno" di potere: non riguarda una singola tecnica, ma dà peso a tutto ciò che fai. Più profonda è la sorgente, più forte è ogni tuo colpo. Nel suo lato oscuro, Senkaku, quella potenza si indurisce in pura furia bellica: più devastante, ma cieca.',
     gameplayHint:
       'Potenziarlo serve a: fare più male con ogni singolo colpo. È la tua potenza di base, quella che alza tutto.',
-    derivedFormula: 'Floor danno su ogni waza: +round(rank × 1,5). Resistenza costrutti: (rank Kongen + numero tier) × mult taglia.',
+    ...categoryAnchorFormulas('Costrutto'),
     drivesDerived: ['damageFloor', 'constructResistance'],
     wazaCategoriaPapabile: 'Costrutto',
   },
@@ -306,8 +332,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     loreBody:
       'Ciò che resta nascosto. È il nodo di chi colpisce senza farsi vedere arrivare, aggirando la difesa di un nemico che non poteva prevedere il colpo. Nel suo lato oscuro, Ketchiju, il segreto smette di proteggere e comincia a divorare, consumando dall\'interno chi lo custodisce.',
     gameplayHint: 'Potenziarlo serve a: far sì che i tuoi colpi a sorpresa scavalchino la difesa del nemico.',
-    derivedFormula:
-      'Colpo a sorpresa (bersaglio non poteva percepire): bypass schivata reattiva se rank > Chōkaku bersaglio.',
+    ...categoryAnchorFormulas('Propagazione Conica'),
     drivesDerived: ['surprise'],
     wazaCategoriaPapabile: 'Propagazione Conica',
   },
@@ -333,7 +358,7 @@ export const SOKAIJU_ANCHORS: readonly SokaijuAnchorDef[] = [
     loreBody:
       'Dare corpo solido alle cose. È il punto in cui la Jigo-Ka, giunta a terra, si fa materia che regge: quanto sono robusti i costrutti che pianti nel mondo dipende da qui. Nel suo lato oscuro, Sōmei, ogni cosa reale proietta la sua ombra gemella, e il mondo raddoppia nel buio.',
     gameplayHint: 'Potenziarlo serve a: rendere più resistenti gli Scudi energetici (non i costrutti — quelli dipendono da Kongen).',
-    derivedFormula: 'Scudo energetico: Resistenza = valore tier (T1=4 … T5=23).',
+    ...categoryAnchorFormulas('Scudo'),
     drivesDerived: [],
     wazaCategoriaPapabile: 'Scudo',
   },

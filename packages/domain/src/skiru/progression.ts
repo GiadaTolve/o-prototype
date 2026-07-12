@@ -5,7 +5,7 @@ import {
   isJigaExclusiveSkiruId,
   JIGA_EXCLUSIVE_SKIRU_IDS,
 } from './exclusive-skiru'
-import { SOKAIJU_GATE_SKIRU_ID } from './sokaiju-index'
+import { isSokaijuFaceSheetKey, SOKAIJU_GATE_SKIRU_ID } from './sokaiju-categoria-map'
 import type { SkiruSheet, SkiruValidationResult } from './types'
 
 /** Affinità elementali (ramo Jin dedicato in arrivo) — id riservati per combat/legacy. */
@@ -75,14 +75,17 @@ export function getSkiruPoints(sheet: SkiruSheet, skiruId: string): number {
 }
 
 export function getSkiruMaxPoints(skiruId: string): number {
+  if (isSokaijuFaceSheetKey(skiruId)) return SKIRU_MAX_POINTS
   const def = getSkiruDef(skiruId)
   const raw = def?.maxPoints
+  if (raw === 0) return 0
   if (!Number.isInteger(raw) || (raw ?? 0) < 1) return SKIRU_MAX_POINTS
   return raw as number
 }
 
 /** true se il padre (se presente) ha abbastanza punti per sbloccare l'investimento. */
 export function isSkiruParentUnlocked(sheet: SkiruSheet, skiruId: string): boolean {
+  if (isSokaijuFaceSheetKey(skiruId)) return isSokaijuGateOpen(sheet)
   const def = getSkiruDef(skiruId)
   if (!def?.parentSkiruId) return true
   const min = def.minParentPoints ?? 1
@@ -101,6 +104,11 @@ export function grantSokaijuTenkan(sheet: SkiruSheet): SkiruSheet {
 
 /** Messaggio UI se il nodo è bloccato dal prerequisito padre. */
 export function getSkiruParentUnlockMessage(sheet: SkiruSheet, skiruId: string): string | null {
+  if (isSokaijuFaceSheetKey(skiruId)) {
+    return isSokaijuGateOpen(sheet)
+      ? null
+      : 'Richiede Tenkan in scheda — l\'apertura accademica del Terzo Occhio.'
+  }
   if (isSkiruParentUnlocked(sheet, skiruId)) return null
   const def = getSkiruDef(skiruId)
   if (!def?.parentSkiruId) return null
@@ -131,6 +139,14 @@ export function validateSkiruSheet(sheet: SkiruSheet): SkiruValidationResult {
     }
     if (points < 0) {
       errors.push(`Skiru «${id}»: punti negativi non ammessi.`)
+      continue
+    }
+    if (isSokaijuFaceSheetKey(id)) {
+      if (points > SKIRU_MAX_POINTS) {
+        errors.push(`Skiru «${id}»: massimo ${SKIRU_MAX_POINTS} punti.`)
+      } else if (points > 0 && !isSokaijuGateOpen(sheet)) {
+        errors.push(`Skiru «${id}»: richiede Tenkan in scheda.`)
+      }
       continue
     }
     const maxPoints = isGojuElementalSkiruId(id) ? 1 : getSkiruMaxPoints(id)
@@ -189,6 +205,11 @@ export function normalizeSkiruSheet(sheet: SkiruSheet): SkiruSheet {
   const out: Record<string, number> = {}
   for (const [id, points] of Object.entries(sheet)) {
     if (!Number.isFinite(points) || points <= 0) continue
+    if (isSokaijuFaceSheetKey(id)) {
+      const capped = Math.min(SKIRU_MAX_POINTS, Math.max(0, Math.round(points)))
+      if (capped > 0) out[id] = capped
+      continue
+    }
     if (isGojuElementalSkiruId(id)) {
       const capped = Math.min(1, Math.max(0, Math.round(points)))
       if (capped > 0) out[id] = capped
@@ -209,6 +230,14 @@ export function canAffordSkiruRaise(
   targetPoints: number,
   spendableExp: number,
 ): boolean {
+  if (isSokaijuFaceSheetKey(skiruId)) {
+    if (!isSokaijuGateOpen(sheet)) return false
+    const current = getSkiruPoints(sheet, skiruId)
+    if (targetPoints <= current || targetPoints > SKIRU_MAX_POINTS) return false
+    const cost = expCostToRaiseSkiru(current, targetPoints - current)
+    return cost != null && spendableExp >= cost
+  }
+
   const def = getSkiruDef(skiruId)
   if (!def || def.kind === 'milestone' || def.expPurchasable === false) return false
   if (!isSkiruParentUnlocked(sheet, skiruId)) return false

@@ -30,9 +30,12 @@ describe('sokaiju categoria waza papabile', () => {
     }
   })
 
-  test('affinità elementali Gojū non sono nel catalogo (ramo Jin dedicato in arrivo)', () => {
+  test('affinità elementali nel ramo Jin dedicato', () => {
     for (const id of ['goju-fuoco', 'goju-fulmine', 'goju-acqua', 'goju-gravita', 'goju-aria']) {
-      expect(SKIRU_CATALOG.some((s) => s.id === id)).toBe(false)
+      const def = SKIRU_CATALOG.find((s) => s.id === id)
+      expect(def).toBeTruthy()
+      expect(def?.branchId).toBe('jin-elementi')
+      expect(def?.expPurchasable).toBe(false)
     }
   })
 })

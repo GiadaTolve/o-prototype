@@ -16,7 +16,6 @@ import {
 import { getWazaLaunchProfile } from "@domain/combat/waza-launch-extras";
 import { computeDeclaredActionIr, computeLaunchDamagePreview, extractMechanicTagsFromEffect, getSkiruRider } from "@domain/combat/waza-skiru-riders";
 import { getSkiruDef } from "@domain/skiru/catalog";
-import { getSokaijuRank } from "@domain/skiru/sokaiju-combat";
 import { useDoMechanicsSnapshot } from "@/hooks/useDoMechanicsSnapshot";
 import type { Presente } from "../types";
 
@@ -154,30 +153,13 @@ export function WazaLaunchPanel({
     [wazaEntry?.poolId],
   );
 
-  const hikanRank = useMemo(
-    () => (skiruSheet ? getSokaijuRank(skiruSheet, "hikan") : 0),
-    [skiruSheet],
-  );
-
-  useEffect(() => {
-    setSurpriseAttack(false);
-    setGiurisdizioneCategory("proiettile");
-    setSuturaKind("offensiva");
-    setDecretoText("");
-    setNagoriFrom("liquido");
-    setNagoriTo("solido");
-    setMeisakuLabel("");
-    setDeclareHit(false);
-    setTargetCharacterId("");
-  }, [selectedWazaId]);
-
   const launchExtras = useMemo(
     () => ({
       giurisdizioneCategory: launchProfile?.needsGiurisdizioneCategory
         ? giurisdizioneCategory
         : null,
       suturaKind: launchProfile?.needsSuturaKind ? suturaKind : null,
-      surpriseAttack: surpriseAttack && hikanRank > 0,
+      surpriseAttack: surpriseAttack,
       decretoText: launchProfile?.needsDecreto ? decretoText : null,
       nagoriShift: launchProfile?.needsNagoriShift
         ? { from: nagoriFrom, to: nagoriTo }
@@ -189,7 +171,6 @@ export function WazaLaunchPanel({
       giurisdizioneCategory,
       suturaKind,
       surpriseAttack,
-      hikanRank,
       decretoText,
       nagoriFrom,
       nagoriTo,
@@ -224,9 +205,27 @@ export function WazaLaunchPanel({
 
   const launchIr = useMemo(() => {
     if (!skiruSheet || wazaPreview?.isPassive) return null;
-    if (autoSkiruId) return computeDeclaredActionIr(skiruSheet, autoSkiruId);
+    if (autoSkiruId) {
+      return computeDeclaredActionIr(
+        skiruSheet,
+        autoSkiruId,
+        wazaEntry?.effect ?? wazaEntry?.description ?? null,
+      );
+    }
     return null;
-  }, [skiruSheet, autoSkiruId, wazaPreview?.isPassive]);
+  }, [skiruSheet, autoSkiruId, wazaPreview?.isPassive, wazaEntry?.effect, wazaEntry?.description]);
+
+  useEffect(() => {
+    setSurpriseAttack(false);
+    setGiurisdizioneCategory("proiettile");
+    setSuturaKind("offensiva");
+    setDecretoText("");
+    setNagoriFrom("liquido");
+    setNagoriTo("solido");
+    setMeisakuLabel("");
+    setDeclareHit(false);
+    setTargetCharacterId("");
+  }, [selectedWazaId]);
 
   const launchLinePreview = useMemo(() => {
     if (!selectedWaza) return null;
@@ -545,12 +544,12 @@ export function WazaLaunchPanel({
                   Colpo a segno
                 </span>
                 Aggiunge <code className="text-[8px]">[hit:1]</code> — il motore applica danno tier
-                (+ Kongen, rider Skiru) al bersaglio. Il Master può arbitrare in narrato.
+                (+ Shiju %, rider Skiru) al bersaglio. Il Master può arbitrare in narrato.
               </span>
             </label>
           )}
 
-          {wazaPreview && hikanRank > 0 && launchProfile?.allowsSurprise !== false && (
+          {wazaPreview && launchProfile?.allowsSurprise !== false && (
             <label className="flex items-start gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -560,10 +559,9 @@ export function WazaLaunchPanel({
               />
               <span className="text-[9px] text-[var(--accent-violet-light)] leading-relaxed">
                 <span className="uppercase tracking-wider text-gray-500 font-display block mb-0.5">
-                  Sorpresa (Hikan rank {hikanRank})
+                  Sorpresa narrativa
                 </span>
-                Aggiunge <code className="text-[8px]">[sorpresa:1]</code> — se il bersaglio non ti
-                percepiva, può ignorare la schivata reattiva (Hikan &gt; Chōkaku).
+                Aggiunge <code className="text-[8px]">[sorpresa:1]</code> — tag narrativo per il Master.
               </span>
             </label>
           )}

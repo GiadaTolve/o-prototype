@@ -1,4 +1,5 @@
 import { buildSokaijuCatalogEntries, SOKAIJU_BRANCH_DESCRIPTION } from './sokaiju-index'
+import { buildJinElementiCatalogEntries, JIN_ELEMENTI_BRANCH } from './jin-elementi-catalog'
 import type { SkiruBranchDef, SkiruDef } from './types'
 
 /** Rami Skiru per dominio (UltimateManual). */
@@ -32,6 +33,7 @@ export const SKIRU_BRANCHES: readonly SkiruBranchDef[] = [
     domain: 'jin',
     description: SOKAIJU_BRANCH_DESCRIPTION,
   },
+  JIN_ELEMENTI_BRANCH,
   {
     id: 'jiga-no-shihaisha',
     label: "Padrone dell'Io",
@@ -459,8 +461,11 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     kind: 'standard',
   },
 
-  // ─── Jin · Sōkaiju (11 nodi doppio volto + affinità Gojū) ───
+  // ─── Jin · Sōkaiju (11 nodi doppio volto) ───
   ...buildSokaijuCatalogEntries(),
+
+  // ─── Jin · Elementi (affinità Gojū — inserimento narrativo) ───
+  ...buildJinElementiCatalogEntries(),
 
   // ─── Jin · Jiga no Shihaisha (milestone) ───
   {

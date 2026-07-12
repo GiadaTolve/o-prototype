@@ -1,5 +1,7 @@
 import type { SkiruDomain } from './types'
 import { SOKAIJU_ANCHORS, SOKAIJU_BRANCH_DESCRIPTION } from './sokaiju-index'
+import { GOJU_ELEMENTAL_SKIRU_IDS } from './progression'
+import { JIN_ELEMENTI_BRANCH, JIN_ELEMENTI_INTRO, JIN_ELEMENTI_SECTION_ID } from './jin-elementi-catalog'
 
 /** Nodo visualizzato nell'albero (rombo). `skiruId` = investibile se presente in catalogo. */
 export type SkiruTreeNodeKind = 'domain' | 'branch' | 'skill' | 'subskill' | 'milestone'
@@ -110,6 +112,53 @@ function buildSokaijuTreeNodes(): SkiruTreeNodeDef[] {
       col: 1,
       row,
       parentNodeId: branchId,
+    })
+  })
+
+  return nodes
+}
+
+function buildJinElementiTreeNodes(): SkiruTreeNodeDef[] {
+  const branchNodeId = 'branch-jin-elementi'
+  const nodes: SkiruTreeNodeDef[] = [
+    {
+      id: branchNodeId,
+      label: JIN_ELEMENTI_BRANCH.label,
+      labelJa: JIN_ELEMENTI_BRANCH.labelJa,
+      description: JIN_ELEMENTI_BRANCH.description ?? '',
+      kind: 'branch',
+      domain: 'jin',
+      branchId: JIN_ELEMENTI_BRANCH.id,
+      col: 1,
+      row: 0,
+    },
+    {
+      id: JIN_ELEMENTI_SECTION_ID,
+      skiruId: JIN_ELEMENTI_SECTION_ID,
+      label: 'Elenco degli elementi',
+      labelJa: '元素一覧',
+      description: JIN_ELEMENTI_INTRO,
+      kind: 'skill',
+      domain: 'jin',
+      branchId: JIN_ELEMENTI_BRANCH.id,
+      col: 1,
+      row: 1,
+      parentNodeId: branchNodeId,
+    },
+  ]
+
+  GOJU_ELEMENTAL_SKIRU_IDS.forEach((id, index) => {
+    nodes.push({
+      id,
+      skiruId: id,
+      label: id.replace('goju-', '').replace(/^./, (c) => c.toUpperCase()),
+      description: 'Affinità elementale — inserimento narrativo in scheda.',
+      kind: 'subskill',
+      domain: 'jin',
+      branchId: JIN_ELEMENTI_BRANCH.id,
+      col: 1,
+      row: 2 + index,
+      parentNodeId: JIN_ELEMENTI_SECTION_ID,
     })
   })
 
@@ -620,6 +669,18 @@ export const SKIRU_TREE_SECTIONS: readonly SkiruTreeSectionDef[] = [
         parentNodeId: 'branch-shinka-no-nagare',
       },
     ],
+  },
+
+  // ─── Jin · Elementi (affinità Gojū) ───
+  {
+    id: 'jin-elementi',
+    domain: 'jin',
+    title: 'Jin',
+    titleJa: '人',
+    domainDescription: 'Lo spirito: fra volontà e identità.',
+    cols: 2,
+    rows: 8,
+    nodes: buildJinElementiTreeNodes(),
   },
 
   // ─── Jin · Sōkaiju (Meiju / Shiju · 11 ancoraggi) ───

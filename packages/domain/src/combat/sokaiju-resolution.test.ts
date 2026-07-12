@@ -11,7 +11,7 @@ describe('sokaiju confrontation wiring', () => {
     expect(messageDeclaresEnergeticWaza('[Elementale] lancio')).toBe(false)
   })
 
-  test('kashin tie-break via resolveConfrontation', () => {
+  test('pareggio IR → spareggio quarti (niente Kashin legacy)', () => {
     const actor = { kashin: 4, seimitsu: 3, bakuryoku: 3 }
     const defender = { kashin: 2, hansha: 3, kansatsu: 3 }
     const input = {
@@ -22,7 +22,7 @@ describe('sokaiju confrontation wiring', () => {
     const defInput = {
       physicalSkiruId: 'hansha',
       channelingSkiruId: 'kansatsu',
-      quartersSpent: 1,
+      quartersSpent: 2,
     }
     const sokaiju = buildSokaijuConfrontationFromSheets(actor, defender, false, false)
     const result = resolveConfrontation(actor, input, defender, defInput, sokaiju)

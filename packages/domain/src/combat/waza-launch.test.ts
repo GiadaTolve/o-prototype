@@ -85,17 +85,17 @@ describe('waza launch', () => {
     expect(getSkiruRider('bakuryoku')?.label).toContain('+2')
   })
 
-  it('computeLaunchDamagePreview include Kongen e rider', () => {
+  it('computeLaunchDamagePreview include Shiju % e rider', () => {
     const dmg = computeLaunchDamagePreview({
       tier: 3,
-      attackerSheet: { kongen: 4, bakuryoku: 5 },
+      attackerSheet: { 'kongen:shiju': 4, bakuryoku: 5 },
       declaredSkiruId: 'bakuryoku',
-      wazaEffectText: 'Attiva · [Contatto]',
+      wazaEffectText: 'Attiva · [Costrutto]',
     })
     expect(dmg?.tierValue).toBe(12)
-    expect(dmg?.kongenFloor).toBe(6)
+    expect(dmg?.shijuPercentBonus).toBeCloseTo(0.06)
     expect(dmg?.riderBonus).toBe(2)
-    expect(dmg?.totalBeforeMitigation).toBe(20)
+    expect(dmg?.totalBeforeMitigation).toBe(15)
   })
 
   it('shintai-kokan rider solo su Contatto', () => {

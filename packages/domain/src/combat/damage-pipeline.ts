@@ -2,7 +2,7 @@ import {
   applyMitigationToDamage,
   calculateMitigationPercentFromSkiru,
 } from '../skiru/derived-stats'
-import { resolveSokaijuFlatDamageBonus } from '../skiru/sokaiju-combat'
+import { calculateSokaijuShijuDamagePercentBonus } from '../skiru/sokaiju-face-effects'
 import type { SkiruSheet } from '../skiru/types'
 import { absorbDamageWithResistance } from './constructs'
 import { getTierValue, type WazaTier } from './tier'
@@ -20,8 +20,10 @@ export interface DamageBonusInput {
 export interface DamagePipelineInput {
   tier: WazaTier
   bonuses?: DamageBonusInput
-  /** Scheda attaccante — floor Kongen (+ Gōjin se `isReactiveCounter`). */
+  /** Scheda attaccante — bonus Shiju % se `wazaTags` presenti. */
   attackerSheet?: SkiruSheet
+  /** Tag meccanici waza per bonus Shiju per categoria. */
+  wazaTags?: readonly string[]
   isReactiveCounter?: boolean
   /** Resistenza [Scudo] o Costrutto sul bersaglio (0 se assente). */
   shieldResistance?: number
@@ -81,15 +83,13 @@ export function applyShieldToDamage(baseDamage: number, shieldResistance = 0): {
  */
 export function resolveDamageToHp(input: DamagePipelineInput): DamagePipelineBreakdown {
   const tierValue = getTierValue(input.tier)
-  const sokaijuFlat =
-    input.attackerSheet != null
-      ? resolveSokaijuFlatDamageBonus(input.attackerSheet, {
-          isReactive: input.isReactiveCounter,
-        })
+  const shijuPercent =
+    input.attackerSheet != null && input.wazaTags?.length
+      ? calculateSokaijuShijuDamagePercentBonus(input.attackerSheet, input.wazaTags)
       : 0
   const bonuses: DamageBonusInput = {
     ...input.bonuses,
-    flatBonus: (input.bonuses?.flatBonus ?? 0) + sokaijuFlat,
+    damagePercentBonus: (input.bonuses?.damagePercentBonus ?? 0) + shijuPercent,
   }
   const baseDamage = calculateBaseDamage(input.tier, bonuses)
   const { afterShield, shieldAbsorbed } = applyShieldToDamage(

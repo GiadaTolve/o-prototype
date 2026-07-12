@@ -12,7 +12,6 @@ import {
   SKIRU_ID_UNDO,
 } from '../skiru/derived-stats'
 import { getSkiruPoints } from '../skiru/progression'
-import { getSokaijuRank } from '../skiru/sokaiju-combat'
 import type { SkiruSheet } from '../skiru/types'
 import {
   JUNKAN_POTENZIAMENTO_BASE,
@@ -102,8 +101,7 @@ export function resolveConstructResistanceFromSheet(
   wazaTier: WazaTier,
   size: ConstructSizeId = 'media',
 ): number {
-  const kongenRank = getSokaijuRank(sheet, 'kongen')
-  return calculateConstructResistance(kongenRank, wazaTier, size)
+  return calculateConstructResistance(0, wazaTier, size)
 }
 
 export function resolveMentalSkiruIndex(
@@ -203,13 +201,12 @@ function constructResistanceLine(ctx: WazaResolveContext): WazaResolvedLine | nu
   const tier = ctx.wazaTier
   if (!tier || !isWazaTier(tier)) return null
   const size = ctx.constructSize ?? 'media'
-  const kongenRank = getSokaijuRank(ctx.sheet, 'kongen')
   const mult = CONSTRUCT_SIZES[size].resistanceMult
   const resistance = resolveConstructResistanceFromSheet(ctx.sheet, tier, size)
   return {
     label: `Resistenza (${CONSTRUCT_SIZES[size].label})`,
     value: String(resistance),
-    hint: `(Kongen ${kongenRank} + tier ${tier}) × ${mult}`,
+    hint: `(tier ${tier}) × ${mult}`,
   }
 }
 

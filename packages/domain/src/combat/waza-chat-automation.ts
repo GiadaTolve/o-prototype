@@ -158,8 +158,6 @@ import {
   processGenericheIppuku,
 } from '../styles/generiche/generiche-effects'
 import {
-  applySokaijuEffectDuration,
-  applySokaijuEmotionalStacks,
   resolveGojuElementalAutoApply,
 } from '../skiru/sokaiju-combat'
 import {
@@ -719,11 +717,7 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
         const declaredSkiru = extractLaunchSkiruId(input.content)
         if (input.actorSkiruSheet) {
           if (durationTurns != null) {
-            durationTurns = applySokaijuEffectDuration(durationTurns, input.actorSkiruSheet)
             durationTurns = applyFudoshinDurationRider(durationTurns, declaredSkiru) ?? durationTurns
-          }
-          if (stacks != null && getStatusDefinition(spec.statusId).kind === 'emotional') {
-            stacks = applySokaijuEmotionalStacks(stacks, input.actorSkiruSheet)
           }
         }
         effects.push({
@@ -765,7 +759,7 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
     if (hitSpec && goju) {
       const target = resolveParticipantBySpec(hitSpec, input.roomParticipants, input.actorCharacterId)
       if (target) {
-        let durationTurns = applySokaijuEffectDuration(goju.durationTurns, input.actorSkiruSheet)
+        let durationTurns = goju.durationTurns
         durationTurns =
           applyFudoshinDurationRider(durationTurns, extractLaunchSkiruId(input.content)) ?? durationTurns
         effects.push({

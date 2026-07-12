@@ -1,6 +1,6 @@
 import { getSkiruDef, SKIRU_CATALOG } from '../skiru/catalog'
 import { getSkiruPoints } from '../skiru/progression'
-import { compareSokaijuInitiativeTieBreak, getSokaijuRank } from '../skiru/sokaiju-combat'
+import { applySokaijuMeijuToIr } from '../skiru/sokaiju-face-effects'
 import type { SkiruSheet } from '../skiru/types'
 
 /**
@@ -16,6 +16,8 @@ export interface ActionIndexInput {
   quartersSpent?: number
   /** Bonus flat all'IR (oggetti, status, milestone +15% pre-calcolato, ecc.). */
   indexBonus?: number
+  /** Tag waza per bonus Meiju Sōkaiju sulla categoria papabile. */
+  wazaTags?: readonly string[]
 }
 
 export interface SuccessIndexBreakdown {
@@ -55,7 +57,11 @@ export function calculateSuccessIndex(
   const channelingPoints = getSkiruPoints(sheet, input.channelingSkiruId)
   const rawAverage = (physicalPoints + channelingPoints) / 2
   const indexBonus = input.indexBonus ?? 0
-  const successIndex = Math.round(rawAverage + indexBonus)
+  const preMeiju = Math.round(rawAverage + indexBonus)
+  const successIndex =
+    input.wazaTags?.length
+      ? applySokaijuMeijuToIr(sheet, preMeiju, input.wazaTags)
+      : preMeiju
 
   return {
     physicalSkiruId: input.physicalSkiruId,
@@ -133,26 +139,22 @@ export function hintActionSkiruDomains(input: ActionIndexInput): SkiruDomainHint
 }
 
 export interface SokaijuConfrontationOptions {
-  actorKashinRank?: number
-  defenderKashinRank?: number
   actorIsEnergetic?: boolean
   defenderIsEnergetic?: boolean
 }
 
-/** Waza con tag [Energetiche] / [Energetico] / [Energetica] — spareggio IR dopo Kashin. */
+/** Waza con tag [Energetiche] / [Energetico] / [Energetica]. */
 export function messageDeclaresEnergeticWaza(content: string): boolean {
   return /\[(Energetico|Energetica|Energetiche)\]/i.test(content)
 }
 
 export function buildSokaijuConfrontationFromSheets(
-  sheetActor: SkiruSheet,
-  sheetDefender: SkiruSheet,
+  _sheetActor: SkiruSheet,
+  _sheetDefender: SkiruSheet,
   energeticActor = false,
   energeticDefender = false,
 ): SokaijuConfrontationOptions {
   return {
-    actorKashinRank: getSokaijuRank(sheetActor, 'kashin'),
-    defenderKashinRank: getSokaijuRank(sheetDefender, 'kashin'),
     actorIsEnergetic: energeticActor,
     defenderIsEnergetic: energeticDefender,
   }
@@ -160,24 +162,16 @@ export function buildSokaijuConfrontationFromSheets(
 
 /**
  * Due effetti nello stesso istante: risolve prima chi ha IR più alto.
- * A parità IR → Kashin → quarti narrati.
- * @returns negative se B prima, positive se A prima, 0 se pari (poi spareggio quarti)
+ * A parità IR → quarti narrati.
  */
 export function compareResolutionPriority(
   indexA: number,
   quartersA: number,
   indexB: number,
   quartersB: number,
-  sokaiju?: Pick<SokaijuConfrontationOptions, 'actorKashinRank' | 'defenderKashinRank' | 'actorIsEnergetic' | 'defenderIsEnergetic'>,
+  _sokaiju?: SokaijuConfrontationOptions,
 ): number {
   if (indexA !== indexB) return indexA - indexB
-  const kashinCmp = compareSokaijuInitiativeTieBreak(
-    sokaiju?.actorKashinRank ?? 0,
-    sokaiju?.defenderKashinRank ?? 0,
-    sokaiju?.actorIsEnergetic ?? false,
-    sokaiju?.defenderIsEnergetic ?? false,
-  )
-  if (kashinCmp !== 0) return kashinCmp
   return quartersB - quartersA
 }
 
@@ -199,19 +193,6 @@ export function resolveConfrontation(
     return { outcome: 'actor_wins', actor, defender, stalemate: false }
   }
   if (defender.successIndex > actor.successIndex) {
-    return { outcome: 'defender_wins', actor, defender, stalemate: false }
-  }
-
-  const kashinCmp = compareSokaijuInitiativeTieBreak(
-    sokaiju?.actorKashinRank ?? getSokaijuRank(sheetActor, 'kashin'),
-    sokaiju?.defenderKashinRank ?? getSokaijuRank(sheetDefender, 'kashin'),
-    sokaiju?.actorIsEnergetic ?? false,
-    sokaiju?.defenderIsEnergetic ?? false,
-  )
-  if (kashinCmp > 0) {
-    return { outcome: 'actor_wins', actor, defender, stalemate: false }
-  }
-  if (kashinCmp < 0) {
     return { outcome: 'defender_wins', actor, defender, stalemate: false }
   }
 

@@ -8,7 +8,6 @@ import {
   SKIRU_DOMAIN_LABELS,
   SKIRU_MAX_POINTS,
   SOKAIJU_ANCHORS,
-  SOKAIJU_ELEMENTALS_INTRO,
   SOKAIJU_GATE_SKIRU_ID,
   SOKAIJU_INTRO_LORE,
   SOKAIJU_PLAYING_TIP,
@@ -18,10 +17,13 @@ import {
   getSkiruPoints,
   getSkiruParentUnlockMessage,
   isSkiruParentUnlocked,
+  isSokaijuGateOpen,
   totalSkiruPointsInvested,
   calculateSkiruDerivedStats,
-  computeSokaijuCombatSummary,
   formatSokaijuAnchorLiveValue,
+  getSokaijuFacePoints,
+  getActiveGojuElementalSkiruId,
+  sokaijuFaceSheetKey,
   type SkiruDef,
   type SkiruDomain,
   type SkiruSheet,
@@ -384,6 +386,7 @@ function SkiruNodeRow({
   const maxPoints = isMilestone ? 1 : getSkiruMaxPoints(def.id);
   const isPassive = !isMilestone && maxPoints === 1;
   const isDeclarativePassive = isPassive && def.expPurchasable === false;
+  const isSectionHeader = !isMilestone && maxPoints === 0 && def.expPurchasable === false;
   const accent = DOMAIN_ACCENT[def.domain];
   const nextCost =
     !isMilestone && points < maxPoints
@@ -451,8 +454,8 @@ function SkiruNodeRow({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {!isMilestone && !isPassive && <SkiruPointBar points={points} max={maxPoints} />}
-          {!isMilestone && !isPassive && (
+          {!isMilestone && !isPassive && !isSectionHeader && <SkiruPointBar points={points} max={maxPoints} />}
+          {!isMilestone && !isPassive && !isSectionHeader && (
             <span className="font-display text-xs tabular-nums text-[var(--accent-gold)] w-10 text-right">
               {`${points}/${maxPoints}`}
             </span>
@@ -462,7 +465,7 @@ function SkiruNodeRow({
               {points > 0 ? "✓" : "—"}
             </span>
           )}
-          {canEdit && !isMilestone && !isDeclarativePassive && points < maxPoints && (
+          {canEdit && !isMilestone && !isDeclarativePassive && !isSectionHeader && points < maxPoints && (
             <button
               type="button"
               disabled={!canRaise || isRaising}
@@ -506,7 +509,7 @@ function SkiruNodeRow({
             : "Concessa accademicamente (non si potenzia con EXP). Senza Tenkan in scheda non puoi investire negli altri nodi dell'albero."}
         </p>
       )}
-      {canEdit && !isMilestone && !isDeclarativePassive && nextCost != null && points < maxPoints && (
+      {canEdit && !isMilestone && !isDeclarativePassive && !isSectionHeader && nextCost != null && points < maxPoints && (
         <p className="text-[9px] text-[var(--accent-violet-light)]/50 mt-1.5 tabular-nums">
           {unlockMsg ?? `Prossimo punto: ${nextCost} EXP`}
         </p>
@@ -567,13 +570,108 @@ function SkiruMasterGroup({
       <SkiruNodeRow def={master} {...rowProps} />
       <div className="ml-1 pl-3 border-l border-[var(--accent-gold)]/25 space-y-2">
         <p className="text-[8px] uppercase tracking-[0.2em] text-[var(--accent-violet-light)]/45 px-0.5">
-          {allDeclarative ? "Passive elementali" : "Passive acquistabili"}
+          {allDeclarative ? "Affinità elementali" : "Passive acquistabili"}
         </p>
         {passives.map((child) => (
           <SkiruNodeRow key={child.id} def={child} compact {...rowProps} />
         ))}
       </div>
     </SkiruDisclosure>
+  );
+}
+
+function SkiruSokaijuFaceInvestRow({
+  anchorId,
+  sheet,
+  canEdit,
+  expSpendable,
+  expCostNextByNode,
+  raisingId,
+  onRaise,
+}: {
+  anchorId: string;
+  sheet: SkiruSheet;
+  canEdit?: boolean;
+  expSpendable: number;
+  expCostNextByNode?: Record<string, number | null>;
+  raisingId: string | null;
+  onRaise?: (skiruId: string) => void;
+}) {
+  const faces = [
+    { face: "meiju" as const, label: "Vita · Meiju", barClass: "bg-[var(--accent-gold)]", textClass: "text-[var(--accent-gold)]" },
+    { face: "shiju" as const, label: "Morte · Shiju", barClass: "bg-[var(--accent-violet-light)]", textClass: "text-[var(--accent-violet-light)]" },
+  ];
+
+  return (
+    <div className="space-y-2.5">
+      {faces.map(({ face, label, barClass, textClass }) => {
+        const key = sokaijuFaceSheetKey(anchorId, face);
+        const points = getSokaijuFacePoints(sheet, anchorId, face);
+        const nextCost =
+          points < SKIRU_MAX_POINTS
+            ? (expCostNextByNode?.[key] ?? expCostForNextSkiruPoint(points))
+            : null;
+        const canRaise =
+          canEdit &&
+          isSokaijuGateOpen(sheet) &&
+          nextCost != null &&
+          canAffordSkiruRaise(sheet, key, points + 1, expSpendable);
+        const isRaising = raisingId === key;
+        const unlockMsg = getSkiruParentUnlockMessage(sheet, key);
+
+        return (
+          <div
+            key={key}
+            className={`rounded-md border px-2.5 py-2 bg-black/25 ${
+              points > 0 ? "border-[var(--accent-gold)]/25" : "border-[var(--border-color)]/50 opacity-80"
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className={`text-[10px] uppercase tracking-[0.16em] font-display ${textClass}`}>{label}</p>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: SKIRU_MAX_POINTS }, (_, i) => (
+                    <span
+                      key={i}
+                      className={`w-2 h-3 rounded-sm border ${
+                        i < points
+                          ? `${barClass} border-transparent`
+                          : "border-[var(--border-color)]/60 bg-black/40"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className={`font-display text-xs tabular-nums w-10 text-right ${textClass}`}>
+                  {`${points}/${SKIRU_MAX_POINTS}`}
+                </span>
+                {canEdit && points < SKIRU_MAX_POINTS && (
+                  <button
+                    type="button"
+                    disabled={!canRaise || isRaising}
+                    onClick={() => onRaise?.(key)}
+                    title={
+                      nextCost != null
+                        ? canRaise
+                          ? `Acquista +1 (${nextCost} EXP)`
+                          : `Servono ${nextCost} EXP`
+                        : undefined
+                    }
+                    className="w-7 h-7 rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] text-xs flex items-center justify-center hover:bg-[var(--accent-gold)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <FontAwesomeIcon icon={icons.plus} className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+            {canEdit && points < SKIRU_MAX_POINTS && nextCost != null && (
+              <p className="text-[9px] text-[var(--accent-violet-light)]/50 mt-1.5 tabular-nums">
+                {unlockMsg ?? `Prossimo punto: ${nextCost} EXP`}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -598,19 +696,31 @@ function SokaijuIntroPanel() {
 
 function SokaijuCombatAutomationsPanel({ sheet }: { sheet: SkiruSheet }) {
   const [open, setOpen] = useState(false);
-  const summary = useMemo(() => computeSokaijuCombatSummary(sheet), [sheet]);
   const investedCount = useMemo(
-    () => SOKAIJU_ANCHORS.filter((a) => getSkiruPoints(sheet, a.id) > 0).length,
+    () =>
+      SOKAIJU_ANCHORS.filter((a) => {
+        if (a.id === SOKAIJU_GATE_SKIRU_ID) return getSkiruPoints(sheet, a.id) > 0;
+        return (
+          getSokaijuFacePoints(sheet, a.id, "meiju") > 0 ||
+          getSokaijuFacePoints(sheet, a.id, "shiju") > 0
+        );
+      }).length,
     [sheet],
   );
   const highlights = useMemo(() => {
     const parts: string[] = [];
-    if (summary.kongenDamageFloor > 0) parts.push(`Kongen +${summary.kongenDamageFloor}`);
-    if (summary.maxActiveConstructs > 1) parts.push(`${summary.maxActiveConstructs} costrutti`);
-    if (summary.gojuElemental) parts.push(`[${summary.gojuElemental.statusId}]`);
-    if (summary.kashinRank > 0) parts.push(`Kashin ${summary.kashinRank}`);
+    const elemental = getActiveGojuElementalSkiruId(sheet);
+    if (elemental) parts.push(elemental.replace("goju-", ""));
+    for (const anchor of SOKAIJU_ANCHORS) {
+      if (anchor.id === SOKAIJU_GATE_SKIRU_ID) continue;
+      const meiju = getSokaijuFacePoints(sheet, anchor.id, "meiju");
+      const shiju = getSokaijuFacePoints(sheet, anchor.id, "shiju");
+      if (meiju > 0 || shiju > 0) {
+        parts.push(`${anchor.id} V${meiju}/M${shiju}`);
+      }
+    }
     return parts.slice(0, 4);
-  }, [summary]);
+  }, [sheet]);
 
   return (
     <div className="rounded-lg border border-[var(--accent-violet)]/30 bg-black/35 overflow-hidden">
@@ -652,8 +762,12 @@ function SokaijuCombatAutomationsPanel({ sheet }: { sheet: SkiruSheet }) {
           <div className="max-h-44 overflow-y-auto overscroll-contain pr-1 -mr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {SOKAIJU_ANCHORS.map((anchor) => {
-                const live = formatSokaijuAnchorLiveValue(anchor.id, sheet, summary);
-                const points = getSkiruPoints(sheet, anchor.id);
+                const live = formatSokaijuAnchorLiveValue(anchor.id, sheet);
+                const points =
+                  anchor.id === SOKAIJU_GATE_SKIRU_ID
+                    ? getSkiruPoints(sheet, anchor.id)
+                    : getSokaijuFacePoints(sheet, anchor.id, "meiju") +
+                      getSokaijuFacePoints(sheet, anchor.id, "shiju");
                 return (
                   <div
                     key={anchor.id}
@@ -693,34 +807,13 @@ function SokaijuAnchorLore({ anchor }: { anchor: (typeof SOKAIJU_ANCHORS)[number
       <p className="text-[11px] text-[var(--accent-violet-light)]/80 leading-relaxed italic">
         {anchor.gameplayHint}
       </p>
-    </div>
-  );
-}
-
-function SokaijuElementalsPanel({
-  passives,
-  rowProps,
-}: {
-  passives: SkiruDef[];
-  rowProps: {
-    sheet: SkiruSheet;
-    canEdit?: boolean;
-    expSpendable: number;
-    expCostNextByNode?: Record<string, number | null>;
-    raisingId: string | null;
-    onRaise?: (skiruId: string) => void;
-  };
-}) {
-  return (
-    <div className="mt-3 rounded-md border border-[var(--accent-violet)]/25 bg-black/25 px-3 py-3 space-y-2">
-      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--accent-violet-light)] font-display">
-        Gli Elementi (sotto la Comprensione — Gojū)
-      </p>
-      <p className="text-[11px] text-gray-500 leading-relaxed">{SOKAIJU_ELEMENTALS_INTRO}</p>
-      <div className="space-y-2 pt-1">
-        {passives.map((def) => (
-          <SkiruNodeRow key={def.id} def={def} compact {...rowProps} />
-        ))}
+      <div className="rounded border border-[var(--border-color)]/40 bg-black/25 px-2.5 py-2 space-y-1.5">
+        <p className="text-[9px] uppercase tracking-widest text-[var(--accent-gold)]/80">Vita (Meiju)</p>
+        <p className="text-[10px] text-gray-500 leading-relaxed">{anchor.meijuMechanic}</p>
+        <p className="text-[9px] uppercase tracking-widest text-[var(--accent-violet-light)]/70 pt-1">
+          Morte (Shiju)
+        </p>
+        <p className="text-[10px] text-gray-500 leading-relaxed">{anchor.shijuMechanic}</p>
       </div>
     </div>
   );
@@ -757,7 +850,6 @@ function SkiruSokaijuBranchContent({
   raisingId,
   onRaise,
   accent,
-  byParent,
 }: {
   sheet: SkiruSheet;
   canEdit?: boolean;
@@ -783,10 +875,11 @@ function SkiruSokaijuBranchContent({
       {SOKAIJU_ANCHORS.map((anchor) => {
         const master = byId.get(anchor.id);
         if (!master) return null;
-        const passives = byParent.get(anchor.id) ?? [];
         const anchorPoints =
-          getSkiruPoints(sheet, master.id) +
-          passives.reduce((sum, p) => sum + getSkiruPoints(sheet, p.id), 0);
+          anchor.id === SOKAIJU_GATE_SKIRU_ID
+            ? getSkiruPoints(sheet, master.id)
+            : getSokaijuFacePoints(sheet, anchor.id, "meiju") +
+              getSokaijuFacePoints(sheet, anchor.id, "shiju");
 
         return (
           <SkiruDisclosure
@@ -807,15 +900,11 @@ function SkiruSokaijuBranchContent({
                 {formatSokaijuAnchorLiveValue(anchor.id, sheet)}
               </p>
             </div>
-            <SkiruMasterGroup
-              master={master}
-              passives={anchor.id === "goju" ? [] : passives}
-              accent={accent}
-              {...rowProps}
-            />
-            {anchor.id === "goju" && passives.length > 0 ? (
-              <SokaijuElementalsPanel passives={passives} rowProps={rowProps} />
-            ) : null}
+            {anchor.id === SOKAIJU_GATE_SKIRU_ID ? (
+              <SkiruNodeRow def={master} {...rowProps} />
+            ) : (
+              <SkiruSokaijuFaceInvestRow anchorId={anchor.id} {...rowProps} />
+            )}
           </SkiruDisclosure>
         );
       })}
@@ -1035,8 +1124,8 @@ export function SchedaSkiruPage({
             <div>
               <h2 className="font-display text-xl text-[var(--accent-gold)] mb-1">Sōkaiju</h2>
               <p className="text-[11px] text-[var(--accent-violet-light)]/70 max-w-xl">
-                Il Doppio Albero dei Mondi — undici ancoraggi Meiju|Shiju. Nodi passivi: il motore applica gli
-                automatismi in combattimento.
+                Appendice Skiru — il Doppio Albero dei Mondi. Tenkan è accademica (non rank); ogni altro
+                ancoraggio premia una categoria waza: Vita +1,5% IR/pt · Morte +1,5% Danno/pt.
               </p>
             </div>
 

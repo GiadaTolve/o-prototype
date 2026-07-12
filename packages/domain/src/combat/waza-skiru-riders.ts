@@ -1,5 +1,8 @@
 import { getSkiruDef, listSkiruByDomain } from '../skiru/catalog'
-import { calculateKongenDamageFloor, calculateGojinCounterBonus } from '../skiru/sokaiju-combat'
+import {
+  applySokaijuMeijuToIr,
+  calculateSokaijuShijuDamagePercentBonus,
+} from '../skiru/sokaiju-face-effects'
 import { getSkiruPoints } from '../skiru/progression'
 import type { SkiruSheet } from '../skiru/types'
 import { getTierValue, type WazaTier } from './tier'
@@ -46,8 +49,12 @@ function bestSkiruInDomain(sheet: SkiruSheet, domain: 'chi' | 'jin'): string | n
   return bestId
 }
 
-/** IR al lancio con Skiru dichiarata: (dichiarata + incanalamento complementare) / 2. */
-export function computeDeclaredActionIr(sheet: SkiruSheet, declaredSkiruId: string): number {
+/** IR al lancio con Skiru dichiarata + Meiju sulla categoria waza. */
+export function computeDeclaredActionIr(
+  sheet: SkiruSheet,
+  declaredSkiruId: string,
+  wazaEffectText?: string | null,
+): number {
   const declaredPts = getSkiruPoints(sheet, declaredSkiruId)
   const def = getSkiruDef(declaredSkiruId)
   let channelPts = declaredPts
@@ -61,7 +68,9 @@ export function computeDeclaredActionIr(sheet: SkiruSheet, declaredSkiruId: stri
     const jin = bestSkiruInDomain(sheet, 'jin')
     if (jin) channelPts = getSkiruPoints(sheet, jin)
   }
-  return Math.round((declaredPts + channelPts) / 2)
+  const baseIr = Math.round((declaredPts + channelPts) / 2)
+  const tags = extractMechanicTagsFromEffect(wazaEffectText)
+  return applySokaijuMeijuToIr(sheet, baseIr, tags)
 }
 
 /** Costruisce ActionIndexInput da Skiru dichiarata al lancio. */
@@ -139,8 +148,7 @@ export function computeSkiruRiderFlatBonus(
 
 export type LaunchDamagePreview = {
   tierValue: number
-  kongenFloor: number
-  gojinBonus: number
+  shijuPercentBonus: number
   riderBonus: number
   totalBeforeMitigation: number
   summary: string
@@ -156,21 +164,21 @@ export function computeLaunchDamagePreview(input: {
 }): LaunchDamagePreview | null {
   if (input.tier == null || input.tier < 1 || input.tier > 5) return null
   const tierValue = getTierValue(input.tier as WazaTier)
-  const kongenFloor = input.attackerSheet ? calculateKongenDamageFloor(input.attackerSheet) : 0
-  const gojinBonus =
-    input.isReactiveCounter && input.attackerSheet
-      ? calculateGojinCounterBonus(input.attackerSheet)
-      : 0
+  const tags = extractMechanicTagsFromEffect(input.wazaEffectText)
+  const shijuPercentBonus = input.attackerSheet
+    ? calculateSokaijuShijuDamagePercentBonus(input.attackerSheet, tags)
+    : 0
   const riderBonus = computeSkiruRiderFlatBonus(input.declaredSkiruId, input.wazaEffectText)
-  const totalBeforeMitigation = tierValue + kongenFloor + gojinBonus + riderBonus
+  const afterShiju = Math.round(tierValue * (1 + shijuPercentBonus))
+  const totalBeforeMitigation = afterShiju + riderBonus
   const parts = [`tier ${tierValue}`]
-  if (kongenFloor > 0) parts.push(`Kongen +${kongenFloor}`)
-  if (gojinBonus > 0) parts.push(`Gōjin +${gojinBonus}`)
+  if (shijuPercentBonus > 0) {
+    parts.push(`Shiju +${Math.round(shijuPercentBonus * 1000) / 10}%`)
+  }
   if (riderBonus > 0) parts.push(`rider +${riderBonus}`)
   return {
     tierValue,
-    kongenFloor,
-    gojinBonus,
+    shijuPercentBonus,
     riderBonus,
     totalBeforeMitigation,
     summary: parts.join(' · '),
