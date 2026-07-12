@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { canAffordSkiruRaise, grantSokaijuTenkan, isSkiruParentUnlocked, isSokaijuGateOpen } from './progression.ts'
-import { SOKAIJU_GATE_SKIRU_ID } from './sokaiju-index.ts'
+import { SOKAIJU_GATE_SKIRU_ID } from './sokaiju-categoria-map.ts'
 
 describe('sokaiju gate (tenkan)', () => {
   test('tenkan is not purchasable with EXP', () => {

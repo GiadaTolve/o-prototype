@@ -1,3 +1,4 @@
+import { SOKAIJU_GATE_SKIRU_ID } from './sokaiju-categoria-map'
 import type { SkiruDef, SkiruDerivedDriver, SokaijuFaceDef } from './types'
 import type { WazaCategoriaPapabile } from './waza-categoria-papabile'
 
@@ -56,9 +57,6 @@ function categoryAnchorFormulas(categoria: WazaCategoriaPapabile): {
 
 export const SOKAIJU_ELEMENTALS_INTRO =
   'Chi coltiva la Comprensione sceglie una sola affinità elementale, radicata nella propria storia più che comprata con l\'esperienza. L\'elemento tinge le tecniche e, quando vanno a segno, lascia sul nemico uno status che dura tre turni.'
-
-/** Skiru Sōkaiju che sblocca l'albero (Terzo Occhio) — accademica, non potenziabile con EXP. */
-export const SOKAIJU_GATE_SKIRU_ID = 'tenkan'
 
 export const SOKAIJU_BRANCH_DESCRIPTION = SOKAIJU_INTRO_LORE.join(' ')
 
