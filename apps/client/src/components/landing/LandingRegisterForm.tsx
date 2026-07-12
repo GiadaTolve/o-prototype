@@ -244,7 +244,7 @@ export function LandingRegisterForm({
               delay: 500,
             },
             {
-              text: "Come si [@chiami]? Nome e cognome, per favore — sui documenti ci va tutto.",
+              text: "Come si [@chiami]? Solo il nome, per favore — quello che comparirà sui documenti.",
               delay: 1200,
             },
           ],
@@ -520,7 +520,7 @@ export function LandingRegisterForm({
           [
             { text: tail, delay: 500 },
             {
-              text: "Ora parliamo di te. Anzi: del tuo personaggio.\nCome si [@chiami]? Nome e cognome, per favore — sui documenti ci va tutto.",
+              text: "Ora parliamo di te. Anzi: del tuo personaggio.\nCome si [@chiami]? Solo il nome, per favore — quello che comparirà sui documenti.",
               delay: 1400,
             },
           ],
@@ -737,7 +737,7 @@ export function LandingRegisterForm({
           playMessageSequence(
             [
               {
-                text: "Va bene. Come si [@chiami]? Nome e cognome, per favore — sui documenti ci va tutto.",
+                text: "Va bene. Come si [@chiami]? Solo il nome, per favore — quello che comparirà sui documenti.",
                 delay: 400,
               },
             ],
