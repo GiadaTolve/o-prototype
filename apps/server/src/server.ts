@@ -106,7 +106,7 @@ const app = new Elysia()
     console.log(`🚀 Server avviato su http://localhost:${PORT}`)
     const email = emailConfigStatus()
     if (!email.configured) {
-      console.warn('⚠️  Email disabilitate: configura RESEND_API_KEY (Render) o EMAIL_PASS (locale)')
+      console.warn('⚠️  Email disabilitate: configura Gmail API OAuth, RESEND_API_KEY o EMAIL_PASS (locale)')
     } else if (email.warning) {
       console.warn(`⚠️  Email via ${email.provider}: ${email.warning}`)
     } else {

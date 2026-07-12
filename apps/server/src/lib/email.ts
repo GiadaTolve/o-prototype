@@ -9,21 +9,24 @@ import {
   GMAIL_FROM_NOTIFY,
   RESEND_API_KEY,
   EMAIL_FROM,
+  EMAIL_PROVIDER,
   IS_RENDER,
 } from '../config'
+import { isGmailApiConfigured, sendViaGmailApi } from './gmail-api'
 
 const REPLY_TO = process.env.EMAIL_REPLY_TO || REGISTRATION_NOTIFY_EMAIL
 
-type EmailProvider = 'resend' | 'gmail' | 'none'
+export type EmailProvider = 'gmail-api' | 'resend' | 'gmail-smtp' | 'none'
 
 type MailPayload = {
   to: string
   subject: string
   html: string
   text: string
-  /** Solo Gmail: mittente con nome display prerelease */
   gmailFrom?: string
 }
+
+export type MailSendResult = { ok: boolean; error?: string }
 
 function escapeHtml(value: string): string {
   return value
@@ -33,11 +36,18 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
-/** Resend ha priorità (funziona su Render); Gmail solo in locale senza API key. */
-export function getEmailProvider(): EmailProvider {
+function resolveAutoProvider(): EmailProvider {
+  if (isGmailApiConfigured()) return 'gmail-api'
   if (RESEND_API_KEY) return 'resend'
-  if (EMAIL_PASS) return 'gmail'
+  if (EMAIL_PASS) return 'gmail-smtp'
   return 'none'
+}
+
+export function getEmailProvider(): EmailProvider {
+  if (EMAIL_PROVIDER === 'gmail-api' || EMAIL_PROVIDER === 'resend' || EMAIL_PROVIDER === 'gmail-smtp') {
+    return EMAIL_PROVIDER
+  }
+  return resolveAutoProvider()
 }
 
 export function emailConfigStatus() {
@@ -47,25 +57,35 @@ export function emailConfigStatus() {
 
   if (provider === 'none') {
     warnings.push(
-      'Configura RESEND_API_KEY (produzione/Render) oppure EMAIL_PASS (solo sviluppo locale).',
+      'Configura Gmail API OAuth (Render), RESEND_API_KEY (+ dominio), o EMAIL_PASS (solo locale).',
     )
-  } else if (provider === 'gmail' && IS_RENDER) {
+  } else if (provider === 'gmail-api' && !isGmailApiConfigured()) {
+    warnings.push('EMAIL_PROVIDER=gmail-api ma mancano GMAIL_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN.')
+  } else if (provider === 'gmail-smtp' && IS_RENDER) {
     warnings.push(
-      'Su Render la posta SMTP Gmail è bloccata o instabile. Imposta RESEND_API_KEY per invii affidabili.',
+      'Su Render il piano free blocca SMTP (587). Usa Gmail API OAuth o Resend con dominio verificato.',
     )
   } else if (provider === 'resend' && usingResendTestDomain) {
     warnings.push(
-      'EMAIL_FROM usa @resend.dev: in test Resend invia solo all\'email dell\'account. Per produzione verifica un dominio su resend.com/domains.',
+      'EMAIL_FROM usa @resend.dev: Resend invia solo all\'email dell\'account. Verifica un dominio o passa a Gmail API.',
     )
   }
 
+  const fromByProvider: Record<EmailProvider, string> = {
+    'gmail-api': GMAIL_FROM_WELCOME,
+    resend: EMAIL_FROM,
+    'gmail-smtp': GMAIL_FROM_WELCOME,
+    none: GMAIL_FROM_WELCOME,
+  }
+
   return {
-    configured: provider !== 'none',
+    configured: provider !== 'none' && !(provider === 'gmail-api' && !isGmailApiConfigured()),
     provider,
-    from: provider === 'resend' ? EMAIL_FROM : GMAIL_FROM_WELCOME,
+    from: fromByProvider[provider],
     notifyTo: REGISTRATION_NOTIFY_EMAIL,
     replyTo: REPLY_TO,
     usingResendTestDomain: provider === 'resend' && usingResendTestDomain,
+    gmailApiReady: isGmailApiConfigured(),
     warning: warnings.length > 0 ? warnings.join(' ') : null,
   }
 }
@@ -94,7 +114,7 @@ function formatResendError(error: { message: string; name?: string }) {
   return error.name ? `${error.name}: ${error.message}` : error.message
 }
 
-async function sendViaResend(payload: MailPayload): Promise<{ ok: boolean; error?: string }> {
+async function sendViaResend(payload: MailPayload): Promise<MailSendResult> {
   const resend = getResend()
   if (!resend) return { ok: false, error: 'RESEND_API_KEY non configurato' }
 
@@ -113,7 +133,7 @@ async function sendViaResend(payload: MailPayload): Promise<{ ok: boolean; error
   return { ok: true }
 }
 
-async function sendViaGmail(payload: MailPayload): Promise<{ ok: boolean; error?: string }> {
+async function sendViaGmailSmtp(payload: MailPayload): Promise<MailSendResult> {
   const transporter = getGmailTransporter()
   if (!transporter) return { ok: false, error: 'EMAIL_PASS non configurato' }
 
@@ -133,15 +153,24 @@ async function sendViaGmail(payload: MailPayload): Promise<{ ok: boolean; error?
   }
 }
 
-async function sendMail(payload: MailPayload): Promise<{ ok: boolean; error?: string }> {
+async function sendMail(payload: MailPayload): Promise<MailSendResult> {
   const provider = getEmailProvider()
+  if (provider === 'gmail-api') {
+    return sendViaGmailApi({
+      to: payload.to,
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+      from: payload.gmailFrom ?? GMAIL_FROM_WELCOME,
+      replyTo: REPLY_TO,
+    })
+  }
   if (provider === 'resend') return sendViaResend(payload)
-  if (provider === 'gmail') return sendViaGmail(payload)
+  if (provider === 'gmail-smtp') return sendViaGmailSmtp(payload)
   return { ok: false, error: 'Nessun provider email configurato' }
 }
 
-/** Invio diagnostico (Gestione). */
-export async function sendTestEmail(to: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendTestEmail(to: string): Promise<MailSendResult> {
   const status = emailConfigStatus()
   if (!status.configured) {
     return { ok: false, error: status.warning ?? 'Email non configurata' }
@@ -162,7 +191,7 @@ export async function sendTestEmail(to: string): Promise<{ ok: boolean; error?: 
   })
 }
 
-export async function sendPasswordResetEmail(to: string, token: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendPasswordResetEmail(to: string, token: string): Promise<MailSendResult> {
   if (getEmailProvider() === 'none') {
     console.warn('[Email] Nessun provider. Link reset (solo dev):', `${APP_URL}/auth/reset-password?token=${token}`)
     return { ok: true }
@@ -185,14 +214,18 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   })
 }
 
-/** Email registrazione — testi prerelease (benvenuto + notifica staff). */
+export type RegistrationEmailResult = {
+  welcome: MailSendResult
+  staff: MailSendResult
+}
+
 export async function sendRegistrationEmails(params: {
   email: string
   password: string
   characterName: string
   userId: string
   playerPreferences?: string
-}): Promise<void> {
+}): Promise<RegistrationEmailResult> {
   const { email, password, characterName, userId, playerPreferences } = params
   const nomePg = escapeHtml(characterName)
   const emailSafe = escapeHtml(email)
@@ -238,8 +271,9 @@ export async function sendRegistrationEmails(params: {
     html: welcomeHtml,
     text: `Benvenuto in Oyasumi, ${characterName}.`,
   })
+
   if (!welcome.ok) {
-    throw new Error(welcome.error ?? 'Invio email benvenuto fallito')
+    console.error(`[Email] Benvenuto non inviato a ${email}:`, welcome.error)
   }
 
   const staff = await sendMail({
@@ -249,9 +283,18 @@ export async function sendRegistrationEmails(params: {
     html: staffHtml,
     text: `Nuova registrazione: ${characterName} (${email})`,
   })
+
   if (!staff.ok) {
-    throw new Error(staff.error ?? 'Invio notifica staff fallita')
+    console.error(`[Email] Notifica staff non inviata:`, staff.error)
   }
 
-  console.log(`✅ Registrazione completata per ${characterName}. Email inviate (${getEmailProvider()}).`)
+  if (welcome.ok && staff.ok) {
+    console.log(`✅ Registrazione ${characterName}: email inviate (${getEmailProvider()}).`)
+  } else {
+    console.warn(
+      `[Email] Registrazione ${characterName}: email parziali (benvenuto=${welcome.ok}, staff=${staff.ok}).`,
+    )
+  }
+
+  return { welcome, staff }
 }

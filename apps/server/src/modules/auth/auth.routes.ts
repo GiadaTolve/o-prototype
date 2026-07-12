@@ -37,7 +37,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         body.playerPreferences,
       )
 
-      await sendRegistrationEmails({
+      const emailResult = await sendRegistrationEmails({
         email: body.email,
         password: body.password,
         characterName: body.characterName,
@@ -45,12 +45,22 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         playerPreferences: body.playerPreferences?.trim(),
       })
 
+      const emailsOk = emailResult.welcome.ok && emailResult.staff.ok
+      if (!emailsOk) {
+        console.warn('[auth] Utente creato ma email non inviate per intero:', {
+          characterName: body.characterName,
+          welcome: emailResult.welcome.error,
+          staff: emailResult.staff.error,
+        })
+      }
+
       set.status = 201
       return {
         success: true,
         userId: result.user.id,
         characterId: result.character.id,
         message: 'Utente registrato con successo!',
+        emailsSent: emailsOk,
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Errore durante la registrazione'
