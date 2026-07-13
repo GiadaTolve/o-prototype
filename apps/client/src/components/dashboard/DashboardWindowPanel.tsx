@@ -23,6 +23,7 @@ import type { SocialClassState } from "./professione/types";
 import { InventorySection } from "./inventory/InventorySection";
 import { SkiruWazaPanel } from "./SkiruWazaPanel";
 import { MercatoPanel } from "./mercato/MercatoPanel";
+import { PannelloCombattimentoWindow } from "./chat-combat/PannelloCombattimentoWindow";
 import { resolveCharacterComputed, formatMovementMeters } from "./character-computed";
 import { getMadoshoDef } from "@domain/progression/madosho";
 import { resolveLevelFromExp, presentiNameClass } from "@/lib/leveling";
@@ -42,6 +43,7 @@ const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   bestiario: icons.trophy,
   notifiche: icons.bell,
   spazioEventi: icons.gamepad,
+  combattimento: icons.waza,
 };
 
 const STAT_LABELS: Record<string, string> = {
@@ -70,6 +72,9 @@ type Props = {
   onCharUpdate?: () => void;
   /** Admin/master: può attivare/disattivare Circus (partychat). */
   canAccessGestione?: boolean;
+  /** Stato connessione chat WebSocket (per pannello combattimento). */
+  chatConnected?: boolean;
+  presentiAreMock?: boolean;
 };
 
 /** Finestre con dimensione unificata: 80% della zona centrale */
@@ -78,7 +83,7 @@ const UNIFIED_PANEL_IDS = ["sms", "banca", "mercato", "ordine", "bestiario", "no
 /** Stesse dimensioni della colonna centrale (chat / main area) */
 const MAIN_AREA_PANEL_IDS = ["scheda", "profilo", "waza"] as const;
 
-export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione }: Props) {
+export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione, chatConnected = true }: Props) {
   const isSms = windowId === "sms";
   const isFetch = windowId === "fetch";
   const isScheda = windowId === "scheda";
@@ -86,6 +91,7 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   const isSchedaLike = isScheda || isProfilo;
   const isMainAreaPanel = (MAIN_AREA_PANEL_IDS as readonly string[]).includes(windowId);
   const isUnifiedPanel = (UNIFIED_PANEL_IDS as readonly string[]).includes(windowId);
+  const isCombattimento = windowId === "combattimento";
   return (
     <div
       className={`fixed inset-0 z-30 pointer-events-none ${
@@ -101,6 +107,8 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
         className={`relative flex flex-col overflow-hidden pointer-events-auto ${
           isFetch
             ? "w-full max-w-4xl h-[calc(80vh-5rem)]"
+            : isCombattimento
+            ? "w-full max-w-lg h-[calc(90vh-4rem)] bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl shadow-[0_0_32px_rgba(165,131,224,0.18)]"
             : isMainAreaPanel
             ? "w-full max-w-full h-full md:w-[calc(100vw-37.75rem)] md:h-[calc(100vh-8rem)] md:absolute md:top-[calc(50%+5px)] md:left-[calc(50vw+0.625rem)] md:-translate-x-[50%] md:-translate-y-[50%] md:max-w-[calc(1800px-37.75rem)] bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl"
             : isUnifiedPanel
@@ -143,6 +151,14 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
             onLower={() => onLower(windowId)}
             onClose={() => onClose(windowId)}
           />
+        ) : isCombattimento ? (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <PannelloCombattimentoWindow
+              char={char}
+              usersInRoom={presenti}
+              chatConnected={chatConnected}
+            />
+          </div>
         ) : (
         <div
           className={`flex-1 min-h-0 overflow-hidden ${

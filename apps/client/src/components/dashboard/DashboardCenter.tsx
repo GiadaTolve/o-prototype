@@ -7,20 +7,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { resolveWazaTagPreview, WAZA_TAG_INDEX } from "@domain/combat/waza-tag-index";
 import {
-  extractIrTagFromText,
   extractWazaTagNames,
   removeWazaTagsFromText,
 } from "@domain/combat/waza-tag-preview";
 import {
   expandWazaLaunchInMessage,
-  extractHitDeclaredFromText,
-  extractLaunchSkiruId,
-  extractLaunchTierFromText,
-  extractWazaLaunchTargetSpec,
-  resolveLaunchIrFromMessage,
 } from "@domain/combat/waza-launch";
-import { getSkiruRider, computeLaunchDamagePreview } from "@domain/combat/waza-skiru-riders";
-import { getSkiruDef } from "@domain/skiru/catalog";
 import { normalizeWazaLookupKey } from "@domain/combat/waza-tag-preview";
 import { formatNarrativeText } from "@/lib/narrative-parser";
 import { useInventoryUpdatedListener } from "@/hooks/useInventoryUpdatedListener";
@@ -54,9 +46,9 @@ import {
 } from "@/config/map-config";
 import type { ChatMessage, Presente, CharacterSummary } from "./types";
 import { QuarterTurnHud } from "./QuarterTurnHud";
-import { ChatCombatPanel } from "./chat-combat/ChatCombatPanel";
 import { ChatInfoPanel } from "./ChatInfoPanel";
-import { WazaLaunchStrip } from "./WazaLaunchStrip";
+import { ChatWazaResolutionPost } from "./chat-combat/ChatWazaResolutionPost";
+import { buildChatWazaPostFromMessage } from "./chat-combat/buildChatWazaPostFromMessage";
 
 /** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
 const MOBILE_CHAT_MAX_LENGTH = 500;
@@ -95,6 +87,8 @@ type Props = {
   variant?: "default" | "mobile";
   /** true quando la chat è a schermo intero (per nascondere bottom nav) */
   onImmersiveChange?: (immersive: boolean) => void;
+  /** Apre la finestra Pannello Combattimento nel dock. */
+  onOpenCombattimento?: () => void;
 };
 
 export function DashboardCenter({
@@ -117,6 +111,7 @@ export function DashboardCenter({
   char,
   variant = "default",
   onImmersiveChange,
+  onOpenCombattimento,
 }: Props) {
   const compact = variant === "mobile";
   const [view, setView] = useState<View>("root");
@@ -579,6 +574,7 @@ export function DashboardCenter({
           canAccessGestione={canAccessGestione}
           char={char}
           compact={compact}
+          onOpenCombattimento={onOpenCombattimento}
         />
         </div>
       )}
@@ -1975,6 +1971,7 @@ function ChatView({
   canAccessGestione,
   char,
   compact = false,
+  onOpenCombattimento,
 }: {
   roomId: RoomId;
   placeLabel: string;
@@ -1992,6 +1989,7 @@ function ChatView({
   canAccessGestione?: boolean;
   char?: CharacterSummary;
   compact?: boolean;
+  onOpenCombattimento?: () => void;
 }) {
   const [showMobileTools, setShowMobileTools] = useState(false);
   const place = getChatLocationByRoomId(roomId);
@@ -2040,6 +2038,22 @@ function ChatView({
     },
     [sendMessage, char?.skiruSheet, tagLuogoRef],
   );
+
+  // Bridge eventi DOM → PannelloCombattimentoWindow (la finestra dock usa questi eventi)
+  useEffect(() => {
+    const handleInsert = (e: Event) => {
+      insertChatText((e as CustomEvent<string>).detail);
+    };
+    const handleSend = (e: Event) => {
+      sendLaunchFromPanel((e as CustomEvent<string>).detail);
+    };
+    window.addEventListener("oyasumi:chatInsert", handleInsert);
+    window.addEventListener("oyasumi:chatSend", handleSend);
+    return () => {
+      window.removeEventListener("oyasumi:chatInsert", handleInsert);
+      window.removeEventListener("oyasumi:chatSend", handleSend);
+    };
+  }, [insertChatText, sendLaunchFromPanel]);
 
   // Scroll automatico quando viene mostrata l'animazione
   useEffect(() => {
@@ -2459,17 +2473,15 @@ function ChatView({
             </div>
           )}
           <ArmadioCasa roomId={roomId} characterId={char?.id} />
-          {!compact && (
-          <ChatCombatPanel
-            onInsertText={insertChatText}
-            onSendMessage={sendLaunchFromPanel}
-            chatConnected={chatConnected}
-            characterId={char?.id}
-            skiruSheet={char?.skiruSheet}
-            char={char}
-            usersInRoom={usersInRoom}
-            isMaster={Boolean(canAccessShinigami)}
-          />
+          {!compact && onOpenCombattimento && (
+            <button
+              type="button"
+              onClick={onOpenCombattimento}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-gold)] uppercase tracking-wider"
+            >
+              <FontAwesomeIcon icon={icons.waza} className="w-3.5 h-3.5" />
+              Pannello Combattimento
+            </button>
           )}
           <MasterNotesBox roomId={roomId} canAccessShinigami={canAccessShinigami} />
         </aside>
@@ -2832,42 +2844,20 @@ function ChatMessageBlock({
     }
     return names;
   }, [currentCharacterName, currentCharacterSurname]);
-  const messageIr = useMemo(() => extractIrTagFromText(message.content), [message.content]);
-  const launchSkiruId = useMemo(() => extractLaunchSkiruId(message.content), [message.content]);
-  const launchTargetSpec = useMemo(
-    () => extractWazaLaunchTargetSpec(message.content),
-    [message.content],
-  );
   const wazaLaunches = useMemo(() => {
-    const skiruName = launchSkiruId ? getSkiruDef(launchSkiruId)?.name ?? launchSkiruId : null;
-    const riderLabel = launchSkiruId ? getSkiruRider(launchSkiruId)?.label ?? null : null;
-    const targetName =
-      launchTargetSpec?.nameQuery ??
-      (launchTargetSpec?.characterId ? `id:${launchTargetSpec.characterId.slice(0, 8)}…` : null);
-    const hitDeclared = extractHitDeclaredFromText(message.content);
-    const launchTier = extractLaunchTierFromText(message.content);
+    const characterName = [message.name, message.surname].filter(Boolean).join(" ");
     return extractWazaTagNames(message.content).map((name) => {
       const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(name));
-      const dmg =
-        actorSkiruSheet && launchTier != null
-          ? computeLaunchDamagePreview({
-              tier: launchTier,
-              attackerSheet: actorSkiruSheet,
-              declaredSkiruId: launchSkiruId,
-              wazaEffectText: entry?.effect ?? entry?.description ?? null,
-            })
-          : null;
-      return {
-        preview: resolveWazaTagPreview(name, WAZA_TAG_INDEX),
-        ir: resolveLaunchIrFromMessage(message.content, actorSkiruSheet ?? null, messageIr),
-        skiruName,
-        riderLabel,
-        targetName,
-        hitDeclared,
-        damageGross: dmg?.totalBeforeMitigation ?? null,
-      };
+      const preview = resolveWazaTagPreview(name, WAZA_TAG_INDEX);
+      return buildChatWazaPostFromMessage({
+        messageContent: message.content,
+        characterName,
+        preview,
+        entry: entry ?? null,
+        actorSkiruSheet: actorSkiruSheet ?? null,
+      });
     });
-  }, [message.content, messageIr, launchSkiruId, launchTargetSpec, actorSkiruSheet]);
+  }, [message.content, message.name, message.surname, actorSkiruSheet]);
   const narrativeBody = useMemo(
     () => removeWazaTagsFromText(message.content),
     [message.content],
@@ -2906,17 +2896,8 @@ function ChatMessageBlock({
         <div className="masterscreen-format font-sans text-[13px] leading-relaxed whitespace-pre-wrap mb-4">
           {(wazaLaunches.length > 0) && (
             <div className="mb-3 space-y-2">
-              {wazaLaunches.map(({ preview, ir, skiruName, riderLabel, targetName, hitDeclared, damageGross }, i) => (
-                <WazaLaunchStrip
-                  key={`${preview.name}-${i}`}
-                  preview={preview}
-                  ir={ir}
-                  skiruName={skiruName}
-                  riderLabel={riderLabel}
-                  targetName={targetName}
-                  hitDeclared={hitDeclared}
-                  damageGross={damageGross}
-                />
+              {wazaLaunches.map((post, i) => (
+                <ChatWazaResolutionPost key={`${post.wazaRomaji}-${i}`} data={post} />
               ))}
             </div>
           )}
@@ -2934,6 +2915,25 @@ function ChatMessageBlock({
     const date = new Date(isoString);
     return date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
   };
+
+  const hasWazaAttack = wazaLaunches.length > 0 && !diceRollOnly;
+  const hasNarrativeAfterWaza = narrativeBody.trim().length > 0;
+
+  if (hasWazaAttack) {
+    return (
+      <div className="chat-waza-attack-message w-full mb-3 space-y-2">
+        {wazaLaunches.map((post, i) => (
+          <ChatWazaResolutionPost key={`${post.wazaRomaji}-${i}`} data={post} />
+        ))}
+        {hasNarrativeAfterWaza && (
+          <p
+            className="m-0 leading-relaxed whitespace-pre-wrap break-words font-sans text-[13px] text-[#7d7f7d] text-justify"
+            dangerouslySetInnerHTML={{ __html: formattedContent }}
+          />
+        )}
+      </div>
+    );
+  }
   
   return (
     <div className={`w-full text-[#b3b3c0] relative pl-3 ${diceRollOnly ? "mb-4 chat-dice-roll" : "mb-6"}`}>
@@ -2992,22 +2992,6 @@ function ChatMessageBlock({
         />
       ) : (
       <div className="flow-root">
-        {(wazaLaunches.length > 0) && (
-          <div className="mb-3 space-y-2 clear-both">
-            {wazaLaunches.map(({ preview, ir, skiruName, riderLabel, targetName, hitDeclared, damageGross }, i) => (
-              <WazaLaunchStrip
-                key={`${preview.name}-${i}`}
-                preview={preview}
-                ir={ir}
-                skiruName={skiruName}
-                riderLabel={riderLabel}
-                targetName={targetName}
-                hitDeclared={hitDeclared}
-                damageGross={damageGross}
-              />
-            ))}
-          </div>
-        )}
         {message.miniAvatar && (
           <div className="float-left mr-4 mb-1">
             <Image

@@ -14,7 +14,9 @@ import { resolveCharacterComputed, formatMovementMeters } from "../character-com
 import { StatusEffectsPanel } from "../StatusEffectsPanel";
 import { CombatHpInline } from "./CombatHpInline";
 import { CombatCsInline } from "./CombatCsInline";
-import { WazaLaunchPanel } from "./WazaLaunchPanel";
+import { LancioWazaPanel } from "./LancioWazaPanel";
+import { CombatToroSection } from "./CombatToroSection";
+import { CombatConstructsSection } from "./CombatConstructsSection";
 
 const WAZA_TESTER_URL =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_WAZA_TESTER_URL
@@ -30,7 +32,6 @@ const ELEMENTS = [
   { id: "gravita", label: "Gravità" },
   { id: "aria", label: "Aria" },
 ] as const;
-const CONSTRUCT_SIZES = ["piccola", "media", "grande", "enorme"] as const;
 
 type ChronoVitals = {
   csCurrent: number;
@@ -245,20 +246,18 @@ export function ChatCombatPanel({
     }
   }, [usersInRoom]);
 
+  useEffect(() => {
+    void loadSceneStatus();
+  }, [loadSceneStatus]);
+
   const [masterTargetId, setMasterTargetId] = useState("");
   const [masterMsg, setMasterMsg] = useState<string | null>(null);
   const [masterBusy, setMasterBusy] = useState(false);
   const [hpAmount, setHpAmount] = useState(3);
   const [damageHitTier, setDamageHitTier] = useState<number | null>(3);
-  const [constructs, setConstructs] = useState<
-    Array<{ id: string; label: string; wazaTier: number; kongenRank: number; remainingResistance: number; maxResistance: number }>
-  >([]);
   const [masterTargetStatus, setMasterTargetStatus] = useState<
     Array<{ id: string; tag: string; stacks: number }>
   >([]);
-  const [cLabel, setCLabel] = useState("Barriera");
-  const [cTier, setCTier] = useState(3);
-  const [cSize, setCSize] = useState<(typeof CONSTRUCT_SIZES)[number]>("media");
 
   const masterTargets = useMemo(
     () => usersInRoom.map((u) => ({ id: u.id, label: u.name + (u.isMe ? " (tu)" : "") })),
@@ -267,30 +266,27 @@ export function ChatCombatPanel({
 
   const effectiveMasterTargetId = masterTargetId || masterTargets[0]?.id || "";
 
+  const othersInScene = useMemo(
+    () => sceneStatus.filter((row) => row.characterId !== characterId),
+    [sceneStatus, characterId],
+  );
+
   const loadMasterTarget = useCallback(async (cid: string) => {
     if (!cid) {
       if (mountedRef.current) {
-        setConstructs([]);
         setMasterTargetStatus([]);
       }
       return;
     }
     try {
-      const [fc, st] = await Promise.all([
-        api.get(`/characters/${cid}/field-constructs`) as Promise<{
-          constructs?: typeof constructs;
-        }>,
-        api.get(`/characters/${cid}/status-effects`) as Promise<{
-          effects?: Array<{ id: string; tag: string; stacks: number }>;
-        }>,
-      ]);
+      const st = (await api.get(`/characters/${cid}/status-effects`)) as {
+        effects?: Array<{ id: string; tag: string; stacks: number }>;
+      };
       if (mountedRef.current) {
-        setConstructs(fc.constructs ?? []);
         setMasterTargetStatus(st.effects ?? []);
       }
     } catch {
       if (mountedRef.current) {
-        setConstructs([]);
         setMasterTargetStatus([]);
       }
     }
@@ -344,7 +340,7 @@ export function ChatCombatPanel({
         Combattimento
       </h5>
 
-      <CombatSection title="Vitali & status" icon={icons.heart} defaultOpen>
+      <CombatSection title="Tu" icon={icons.heart} defaultOpen>
         {ownHp && ownHp.max > 0 && (
           <div className="mb-2">
             <CombatHpInline current={ownHp.current} max={ownHp.max} />
@@ -372,9 +368,18 @@ export function ChatCombatPanel({
             </div>
           </dl>
         )}
-        <div className="mt-2 scale-[0.92] origin-top-left w-[108%]">
-          <StatusEffectsPanel characterId={characterId} isOwnCharacter />
-        </div>
+        <StatusEffectsPanel characterId={characterId} isOwnCharacter embedded />
+      </CombatSection>
+
+      <CombatSection title="Tōrō & tag chat" icon={icons.skiru}>
+        <CombatToroSection onInsertText={insertAtCursor} />
+      </CombatSection>
+
+      <CombatSection title="Costrutti sul campo" icon={icons.waza}>
+        <CombatConstructsSection
+          characterId={characterId}
+          onInsertText={insertAtCursor}
+        />
       </CombatSection>
 
       {!doMechanicsLoading && doMechanicsVisible && (
@@ -392,19 +397,14 @@ export function ChatCombatPanel({
         </CombatSection>
       )}
 
-      <CombatSection title="In scena" icon={icons.presenti}>
-        <button
-          type="button"
-          onClick={loadSceneStatus}
-          className="mb-2 text-[9px] uppercase tracking-wider text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)]"
-        >
-          {sceneLoading ? "Aggiorno…" : "Aggiorna status presenti"}
-        </button>
-        {sceneStatus.length === 0 ? (
-          <p className="text-[10px] text-gray-500 italic">Apri e aggiorna per vedere status in chat.</p>
+      <CombatSection title="Altri in scena" icon={icons.presenti}>
+        {sceneLoading ? (
+          <p className="text-[9px] text-gray-500 italic">Aggiorno…</p>
+        ) : othersInScene.length === 0 ? (
+          <p className="text-[10px] text-gray-500 italic">Nessun altro presente in chat.</p>
         ) : (
           <ul className="space-y-2">
-            {sceneStatus.map((row) => (
+            {othersInScene.map((row) => (
               <li key={row.characterId} className="chat-combat-scene-row">
                 <span className="chat-combat-scene-row__name">{row.name}</span>
                 {row.hpMax > 0 && (
@@ -437,7 +437,7 @@ export function ChatCombatPanel({
       </CombatSection>
 
       <CombatSection title="Waza in chat" icon={icons.waza} defaultOpen>
-        <WazaLaunchPanel
+        <LancioWazaPanel
           characterId={characterId}
           skiruSheet={skiruSheet}
           usersInRoom={usersInRoom}
@@ -666,94 +666,15 @@ export function ChatCombatPanel({
             >
               Colpo subito
             </button>
-            {masterTargetStatus.map((e) => (
-              <button
-                key={`rm-${e.id}`}
-                type="button"
-                disabled={masterBusy || !effectiveMasterTargetId}
-                onClick={() =>
-                  runMaster(
-                    () =>
-                      api.delete(`/characters/${effectiveMasterTargetId}/status-effects/${e.id}`),
-                    `Rimosso ${e.tag}`,
-                  )
-                }
-                className="chat-combat-master-btn chat-combat-master-btn--warn"
-              >
-                −{e.tag}
-              </button>
-            ))}
           </div>
 
-          <p className="text-[9px] uppercase text-gray-500 font-display mb-1">Costrutti</p>
-          {constructs.length > 0 && (
-            <ul className="space-y-1 mb-2 max-h-24 overflow-y-auto">
-              {constructs.map((c) => (
-                <li key={c.id} className="text-[9px] text-gray-400 flex justify-between gap-1">
-                  <span>
-                    {c.label} K{c.kongenRank} T{c.wazaTier} · {c.remainingResistance}/{c.maxResistance}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={masterBusy}
-                    onClick={() =>
-                      runMaster(() => api.delete(`/characters/field-constructs/${c.id}`), "Rimosso")
-                    }
-                    className="text-red-400/80 hover:text-red-400"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="grid grid-cols-3 gap-1 mb-1">
-            <input
-              value={cLabel}
-              onChange={(e) => setCLabel(e.target.value)}
-              placeholder="Nome"
-              className="rounded border border-[var(--border-color)] bg-black/40 px-2 py-1 text-[10px] col-span-2"
-            />
-            <input
-              type="number"
-              min={1}
-              max={5}
-              value={cTier}
-              onChange={(e) => setCTier(Number(e.target.value) || 1)}
-              title="Tier waza"
-              className="rounded border border-[var(--border-color)] bg-black/40 px-1 py-1 text-[10px]"
-            />
-            <select
-              value={cSize}
-              onChange={(e) => setCSize(e.target.value as (typeof CONSTRUCT_SIZES)[number])}
-              className="rounded border border-[var(--border-color)] bg-black/40 px-1 py-1 text-[10px] col-span-3"
-            >
-              {CONSTRUCT_SIZES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="button"
-            disabled={masterBusy || !effectiveMasterTargetId}
-            onClick={() =>
-              runMaster(
-                () =>
-                  api.post(`/characters/${effectiveMasterTargetId}/field-constructs`, {
-                    label: cLabel,
-                    wazaTier: cTier,
-                    size: cSize,
-                    stationary: true,
-                  }),
-                "Costrutto evocato (Genkai da scheda)",
-              )
-            }
-            className="chat-combat-master-btn chat-combat-master-btn--gold w-full"
-          >
-            Evoca costrutto
-          </button>
+          <p className="text-[9px] uppercase text-gray-500 font-display mb-1 mt-3">
+            Costrutti bersaglio
+          </p>
+          <CombatConstructsSection
+            isMaster
+            masterTargetId={effectiveMasterTargetId}
+          />
         </CombatSection>
       )}
     </div>

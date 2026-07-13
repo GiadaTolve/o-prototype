@@ -576,6 +576,7 @@ export default function DashboardPage() {
           canAccessGestione={char?.canAccessGestione}
           canAccessSviluppo={char?.canAccessSviluppo}
           char={char}
+          onOpenCombattimento={() => open("combattimento")}
         />
         <DashboardRightCol
           presenti={presenti}
@@ -601,11 +602,16 @@ export default function DashboardPage() {
             openWindow === "scheda" ||
             openWindow === "mercato" ||
             openWindow === "banca" ||
-            openWindow === "waza"
+            openWindow === "waza" ||
+            openWindow === "combattimento"
               ? char
               : undefined
           }
-          presenti={openWindow === "presenti" ? presenti : undefined}
+          presenti={
+            openWindow === "presenti" || openWindow === "combattimento"
+              ? presenti
+              : undefined
+          }
           presentiAreMock={openWindow === "presenti" ? presentiAreMock : undefined}
           profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}
           smsTargetCharacterId={openWindow === "sms" ? smsTargetCharacterId : undefined}
@@ -613,6 +619,7 @@ export default function DashboardPage() {
           onUnreadChange={openWindow === "sms" ? fetchSmsUnread : undefined}
           onNotificationsUnreadChange={fetchNotificationsUnread}
           canAccessGestione={char?.canAccessGestione}
+          chatConnected={openWindow === "combattimento" ? chatConnected : undefined}
         />
       )}
       {char?.pendingLevelUp && (
