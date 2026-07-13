@@ -76,6 +76,10 @@ export type DoMechanicsUiMeta = {
   komonoireWeapon?: import('./madosho/komonoire').KomonoireWeaponState | null
   /** Kyōshin · vibrazione sul bersaglio */
   genericheKyoshin?: import('./generiche/kyoshin').GenericheKyoshinState | null
+  /** Armi in uso (dichiarazione d'uso, max 2 - Ambidestria). InventoryItem ID → in uso. */
+  combatActiveWeaponIds?: string[]
+  /** Contatore munizioni per armi a proiettile. InventoryItem ID → carica residua. */
+  combatAmmo?: Record<string, number>
 }
 
 export type DoMechanicsSnapshot = {

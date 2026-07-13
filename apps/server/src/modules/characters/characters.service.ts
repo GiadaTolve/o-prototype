@@ -1987,7 +1987,12 @@ export class CharacterService {
       columns: { uiMetadata: true },
     });
     if (!char) throw new Error('Personaggio non trovato');
-    return readDoMechanicsFromMeta((char.uiMetadata ?? {}) as DoMechanicsUiMeta, currentCs);
+    const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
+    return {
+      ...readDoMechanicsFromMeta(meta, currentCs),
+      combatActiveWeaponIds: meta.combatActiveWeaponIds ?? [],
+      combatAmmo: meta.combatAmmo ?? {},
+    };
   }
 
   /** Tag `[stato: …]` con meccaniche Dō e status attivi (coda azione chat). */
@@ -2527,6 +2532,30 @@ export class CharacterService {
         decayed,
         chrono: chronoVitals,
       },
+    };
+  }
+
+  async patchCombatWeapons(
+    characterId: string,
+    input: { activeWeaponIds?: string[]; ammo?: Record<string, number> },
+  ) {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { uiMetadata: true },
+    });
+    if (!char) throw new Error('Personaggio non trovato');
+    const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
+    const next: DoMechanicsUiMeta = { ...meta };
+    if (input.activeWeaponIds !== undefined) {
+      next.combatActiveWeaponIds = input.activeWeaponIds.slice(0, 2);
+    }
+    if (input.ammo !== undefined) {
+      next.combatAmmo = { ...(meta.combatAmmo ?? {}), ...input.ammo };
+    }
+    await db.update(characters).set({ uiMetadata: next }).where(eq(characters.id, characterId));
+    return {
+      combatActiveWeaponIds: next.combatActiveWeaponIds ?? [],
+      combatAmmo: next.combatAmmo ?? {},
     };
   }
 

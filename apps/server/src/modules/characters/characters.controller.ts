@@ -647,6 +647,24 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       }
     }, { detail: { summary: 'Fine turno Itō: decay Tensione (−1 se nessun filo)' } })
 
+    .patch('/me/combat-weapons', async ({ user, body, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      try {
+        const char = await characterService.getCharacterByUserId(user.id)
+        if (!char) { set.status = 404; return { error: 'Personaggio non trovato' } }
+        return await characterService.patchCombatWeapons(char.id, body)
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore armi combat' }
+      }
+    }, {
+      body: t.Object({
+        activeWeaponIds: t.Optional(t.Array(t.String())),
+        ammo: t.Optional(t.Record(t.String(), t.Number())),
+      }),
+      detail: { summary: 'Aggiorna armi in uso e munizioni (Dichiarazione d\'uso)' },
+    })
+
     .get('/:id/field-constructs', async ({ user, params, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       try {

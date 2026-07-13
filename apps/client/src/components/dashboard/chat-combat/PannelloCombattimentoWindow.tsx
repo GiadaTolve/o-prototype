@@ -10,6 +10,7 @@ import { StatusEffectsPanel } from "../StatusEffectsPanel";
 import { CombatHpInline } from "./CombatHpInline";
 import { CombatCsInline } from "./CombatCsInline";
 import { CombatToroSection } from "./CombatToroSection";
+import { CombatWeaponsSection } from "./CombatWeaponsSection";
 import { LancioWazaPanel } from "./LancioWazaPanel";
 import { resolveCharacterComputed, formatMovementMeters } from "../character-computed";
 import { computeIndicativeActionIr } from "@domain/combat/resolution";
@@ -236,7 +237,11 @@ export function PannelloCombattimentoWindow({
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
       >
         <ZoneHeader label="In uso ora — Tōrō & tag chat" dot="var(--accent-gold)" />
-        <CombatToroSection onInsertText={onInsertText} />
+        <CombatWeaponsSection onInsertText={onInsertText} />
+        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border-color)" }}>
+          <p className="text-[9px] uppercase tracking-wider text-gray-500 font-display mb-1.5">Tōrō</p>
+          <CombatToroSection onInsertText={onInsertText} />
+        </div>
         <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border-color)" }}>
           <p className="text-[9px] uppercase tracking-wider text-gray-500 font-display mb-1.5">Sorpresa narrativa</p>
           <button
