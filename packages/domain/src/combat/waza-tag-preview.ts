@@ -249,6 +249,12 @@ export function removeWazaTagsFromText(text: string): string {
     .replace(/\s*\[generiche:\s*colpito:[^\]]+\]/gi, '')
     .replace(/\s*\[origine:[^\]]+\]/gi, '')
     .replace(/\s*\[(?:hit|colpito):1\]/gi, '')
+    .replace(/\s*\[taglia:[^\]]+\]/gi, '')
+    .replace(/\s*\[sticker:[^\]]+\]/gi, '')
+    .replace(/\s*\[kaden:[^\]]+\]/gi, '')
+    .replace(/\s*\[quarto:[^\]]+\]/gi, '')
+    .replace(/\s*\[setup:1\]/gi, '')
+    .replace(/\s*\[sorpresa:1\]/gi, '')
     .replace(/^\s+/, '')
 }
 
