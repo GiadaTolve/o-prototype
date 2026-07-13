@@ -18,9 +18,9 @@ import {
   resolveJunkanPotenziamentoCapacity,
 } from '../styles/naikan/junkan'
 import {
-  ATSURYOKU_METAMORPHOSIS_CS,
-  resolveAtsuryokuState,
-} from '../styles/hado/atsuryoku'
+  KADEN_METAMORPHOSIS_CS,
+  resolveKadenState,
+} from '../styles/hado/kaden'
 import { YURAGI_IR_PARITY_BONUS } from '../styles/hensei/yuragi'
 import { nagoriCollateralLabel } from '../styles/hensei/nagori'
 
@@ -37,8 +37,8 @@ export type WazaResolveContext = {
   description?: string | null
   /** CS attuali — Hadō Pressione / Kaatsu. */
   currentCs?: number | null
-  /** Stack Atsuryoku (Hadō). */
-  atsuryokuPressure?: number | null
+  /** Stack Kaden (Hadō). */
+  kadenPressure?: number | null
   /** Tier ultimo colpo subìto — Junnō / Hibiki-Gaeshi. */
   lastReceivedHitTier?: WazaTier | null
   /** Prossima waza Hensei cambia consistenza → bonus parità Yuragi. */
@@ -341,21 +341,21 @@ function reactiveTierLine(
   }
 }
 
-function atsuryokuStyleLines(ctx: WazaResolveContext): WazaResolvedLine[] {
+function kadenStyleLines(ctx: WazaResolveContext): WazaResolvedLine[] {
   const cs = ctx.currentCs
-  const pressure = ctx.atsuryokuPressure ?? 0
+  const pressure = ctx.kadenPressure ?? 0
   const lines: WazaResolvedLine[] = []
-  if (cs != null && cs >= ATSURYOKU_METAMORPHOSIS_CS) {
+  if (cs != null && cs >= KADEN_METAMORPHOSIS_CS) {
     lines.push({
       label: 'Pressione attiva',
       value: '+1 tier',
-      hint: `CS ${cs} ≥ ${ATSURYOKU_METAMORPHOSIS_CS} — Kaatsu / Emanazione·Propagazione·Energetica`,
+      hint: `CS ${cs} ≥ ${KADEN_METAMORPHOSIS_CS} — Kaatsu / Emanazione·Propagazione·Energetica`,
     })
   }
   if (pressure > 0) {
-    const state = resolveAtsuryokuState(pressure, cs ?? 0)
+    const state = resolveKadenState(pressure, cs ?? 0)
     lines.push({
-      label: 'Atsuryoku',
+      label: 'Kaden',
       value: `${pressure} stack`,
       hint: `+${state.damageBonusPercent}% danno waza`,
     })
@@ -406,12 +406,12 @@ function hibikiGaeshiLines(ctx: WazaResolveContext): WazaResolvedLine[] {
 }
 
 function kaatsuLines(ctx: WazaResolveContext): WazaResolvedLine[] {
-  const fromState = atsuryokuStyleLines(ctx)
+  const fromState = kadenStyleLines(ctx)
   if (fromState.length > 0) return fromState
   return [
     {
       label: 'Pressione (Kaatsu)',
-      value: `CS ≥ ${ATSURYOKU_METAMORPHOSIS_CS}`,
+      value: `CS ≥ ${KADEN_METAMORPHOSIS_CS}`,
       hint: 'Prossima Emanazione / Propagazione / Energetica: +1 tier',
     },
   ]
@@ -625,7 +625,7 @@ export function resolveWazaPersonalValues(
       lines.push(junkanCapacityLine(ctx.sheet))
     }
     if (ctx.styleId === 'hado') {
-      lines.push(...atsuryokuStyleLines(ctx))
+      lines.push(...kadenStyleLines(ctx))
     }
     if (ctx.styleId === 'hensei') {
       lines.push(...yuragiStyleLines(ctx))

@@ -77,15 +77,15 @@ describe('waza-resolve', () => {
     expect(v?.lines[0]?.value).toBe('+8')
   })
 
-  it('Hadō: Pressione e Atsuryoku', () => {
+  it('Hadō: Pressione e Kaden', () => {
     const v = resolveWazaPersonalValues('howa-saturazione', {
       sheet,
       styleId: 'hado',
       currentCs: 14,
-      atsuryokuPressure: 5,
+      kadenPressure: 5,
     })
     expect(v?.lines.some((l) => l.label === 'Pressione attiva')).toBe(true)
-    expect(v?.lines.some((l) => l.label === 'Atsuryoku')).toBe(true)
+    expect(v?.lines.some((l) => l.label === 'Kaden')).toBe(true)
   })
 
   it('Kaatsu: soglia CS 12', () => {

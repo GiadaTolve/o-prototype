@@ -26,6 +26,15 @@ async function resolveMasterAccessForUser(user: { id: string; role?: string | nu
   return resolveShinigamiAccess(user.role, icon)
 }
 
+async function canManageCharacterAsUser(
+  user: { id: string; role?: string | null },
+  characterId: string,
+): Promise<boolean> {
+  if (await resolveMasterAccessForUser(user)) return true
+  const char = await characterService.getCharacterByUserId(user.id)
+  return char?.id === characterId
+}
+
 const socialClassIdSchema = t.Union([
   t.Literal('ishi'),
   t.Literal('shokunin'),
@@ -513,14 +522,17 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       try {
         const char = await characterService.getCharacterByUserId(user.id)
         if (!char) { set.status = 404; return { error: 'Personaggio non trovato' } }
-        return await characterService.setToroWeaponInContact(char.id, body.weaponInContact)
+        return await characterService.patchToroState(char.id, body)
       } catch (e: unknown) {
         set.status = 400
         return { error: e instanceof Error ? e.message : 'Errore Tōrō' }
       }
     }, {
-      body: t.Object({ weaponInContact: t.Boolean() }),
-      detail: { summary: 'Toggle weapon contact (Tōrō sigillo)' },
+      body: t.Object({
+        weaponInContact: t.Optional(t.Boolean()),
+        toroBatteria: t.Optional(t.Boolean()),
+      }),
+      detail: { summary: 'Toggle Tōrō sigillo / batteria' },
     })
 
     .get('/me/gosa-state', async ({ user, set }) => {
@@ -614,7 +626,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         itoTension: t.Optional(t.Number()),
         naikanPhase: t.Optional(t.Number()),
         yuragiPhase: t.Optional(t.String()),
-        hadoPressure: t.Optional(t.Number()),
+        kaden: t.Optional(t.Number()),
         currentCs: t.Optional(t.Number()),
         lastReceivedHitTier: t.Optional(t.Number()),
       }),
@@ -647,9 +659,9 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .post('/:id/field-constructs', async ({ user, params, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!(await resolveMasterAccessForUser(user))) {
+      if (!(await canManageCharacterAsUser(user, params.id))) {
         set.status = 403
-        return { error: 'Solo Master/Admin' }
+        return { error: 'Non autorizzato su questo personaggio' }
       }
       try {
         return await characterService.createFieldConstructForCharacter(params.id, body)
@@ -663,8 +675,9 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         wazaTier: t.Number(),
         size: t.Optional(t.String()),
         stationary: t.Optional(t.Boolean()),
+        proprieta: t.Optional(t.Array(t.String())),
       }),
-      detail: { summary: 'Master: spawn field construct (Genkai da scheda creatore)' },
+      detail: { summary: 'Evoca costrutto sul campo (PG proprietario o Master)' },
     })
 
     .post('/field-constructs/:constructId/damage', async ({ user, params, body, set }) => {
@@ -686,17 +699,22 @@ export const charactersController = new Elysia({ prefix: '/characters' })
 
     .delete('/field-constructs/:constructId', async ({ user, params, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
-      if (!(await resolveMasterAccessForUser(user))) {
-        set.status = 403
-        return { error: 'Solo Master/Admin' }
-      }
       try {
+        const ownerId = await characterService.getFieldConstructOwnerId(params.constructId)
+        if (!ownerId) {
+          set.status = 404
+          return { error: 'Costrutto non trovato' }
+        }
+        if (!(await canManageCharacterAsUser(user, ownerId))) {
+          set.status = 403
+          return { error: 'Non autorizzato' }
+        }
         return await characterService.destroyFieldConstructById(params.constructId)
       } catch (e: unknown) {
         set.status = 400
         return { error: e instanceof Error ? e.message : 'Errore distruzione costrutto' }
       }
-    }, { detail: { summary: 'Master: destroy field construct' } })
+    }, { detail: { summary: 'Distruggi costrutto (creatore o Master)' } })
 
     // 4. Aggiorna profilo pubblico (avatar, miniAvatar, surname, bio, backgroundImage, themeMusicUrl)
     .put('/me/profilo', async ({ user, body, set }) => {

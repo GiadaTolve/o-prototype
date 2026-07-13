@@ -134,7 +134,7 @@ function buildResolveContext(
   sheet: SkiruSheet,
   extras?: Pick<
     WazaResolveContext,
-    'currentCs' | 'atsuryokuPressure' | 'lastReceivedHitTier' | 'yuragiParityNext' | 'itoIrBonus' | 'nagoriCollateralFrom'
+    'currentCs' | 'kadenPressure' | 'lastReceivedHitTier' | 'yuragiParityNext' | 'itoIrBonus' | 'nagoriCollateralFrom'
   >,
 ): WazaResolveContext {
   const tier = parseWazaTierFromRank(entry.rank)
@@ -156,7 +156,7 @@ export function enrichWazaTagPreviewWithSkiru(
   sheet?: SkiruSheet | null,
   extras?: Pick<
     WazaResolveContext,
-    'currentCs' | 'atsuryokuPressure' | 'lastReceivedHitTier' | 'yuragiParityNext' | 'itoIrBonus' | 'nagoriCollateralFrom'
+    'currentCs' | 'kadenPressure' | 'lastReceivedHitTier' | 'yuragiParityNext' | 'itoIrBonus' | 'nagoriCollateralFrom'
   >,
 ): WazaTagPreview {
   if (!sheet || !entry?.poolId) return preview
@@ -264,17 +264,23 @@ export function buildWazaLaunchInsertLine(
     declaredSkiruId?: string | null
     csOverride?: number | null
     currentCs?: number | null
-    atsuryokuPressure?: number | null
+    kadenPressure?: number | null
     lastReceivedHitTier?: WazaTier | null
     yuragiParityNext?: boolean
     itoIrBonus?: number | null
+    /**
+     * IR già calcolato a monte (es. dal pannello, dalla coppia di Skiru papabili
+     * scelte a mano via `calculateSuccessIndex`). Se presente vince: emette `[ir:N]`
+     * così com'è, senza ricalcolare da una singola Skiru dichiarata.
+     */
+    irOverride?: number | null
   },
 ): string {
   const entry = index.get(normalizeWazaLookupKey(wazaName.trim()))
   const resolveExtras = options
     ? {
         currentCs: options.currentCs,
-        atsuryokuPressure: options.atsuryokuPressure,
+        kadenPressure: options.kadenPressure,
         lastReceivedHitTier: options.lastReceivedHitTier,
         yuragiParityNext: options.yuragiParityNext,
         itoIrBonus: options.itoIrBonus,
@@ -293,7 +299,12 @@ export function buildWazaLaunchInsertLine(
       ? Math.max(0, Math.round(options.csOverride))
       : preview.csCost
   let line = `${tag} [tier:${preview.tier}] [cs:${cs}]`
-  if (options?.skiruSheet) {
+  const hasIrOverride =
+    options?.irOverride != null && Number.isFinite(options.irOverride)
+  if (hasIrOverride) {
+    // L'IR è già completo di media coppia + modificatori: emettilo così com'è.
+    line += ` [ir:${Math.max(0, Math.round(options!.irOverride as number))}]`
+  } else if (options?.skiruSheet) {
     let ir: number
     if (options.declaredSkiruId) {
       ir = computeDeclaredActionIr(options.skiruSheet, options.declaredSkiruId)

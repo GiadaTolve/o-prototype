@@ -7,7 +7,7 @@ import {
 } from './ito/tensione'
 import { resolveJunkanState, type JunkanState } from './naikan/junkan'
 import { resolveYuragiState, type YuragiPhase, type YuragiState } from './hensei/yuragi'
-import { resolveAtsuryokuState, type AtsuryokuState } from './hado/atsuryoku'
+import { resolveKadenState, type KadenState } from './hado/kaden'
 import { readInvestimentoFromMeta, type InvestimentoState } from './hado/investimento'
 import { readShakkinDebts, type ShakkinDebtEntry } from './hado/debito-shakkin'
 import { readNagoriState, type ConsistencyKind } from './hensei/nagori'
@@ -20,7 +20,7 @@ export type DoMechanicsUiMeta = {
   naikanPhase?: number
   yuragiPhase?: string
   yuragiLastConsistency?: string
-  hadoPressure?: number
+  kaden?: number
   gosaStacks?: number
   /** Tier ultimo colpo subìto (Junnō / Hibiki) — aggiornato in combattimento o da pannello. */
   lastReceivedHitTier?: number
@@ -82,7 +82,7 @@ export type DoMechanicsSnapshot = {
   ito: TensioneState
   naikan: JunkanState
   hensei: YuragiState
-  hado: AtsuryokuState
+  hado: KadenState
   investimento: InvestimentoState
   shakkinDebts: ShakkinDebtEntry[]
   currentCs?: number
@@ -105,7 +105,7 @@ export function readDoMechanicsFromMeta(
       meta?.yuragiPhase ?? 'neutro',
       meta?.yuragiLastConsistency,
     ),
-    hado: resolveAtsuryokuState(meta?.hadoPressure ?? 0, currentCs),
+    hado: resolveKadenState(meta?.kaden ?? 0, currentCs),
     investimento: readInvestimentoFromMeta(meta),
     shakkinDebts: readShakkinDebts(meta),
     currentCs,
@@ -119,7 +119,7 @@ export function mapDoMechanicsToWazaResolveFields(
   snapshot: DoMechanicsSnapshot | null | undefined,
 ): {
   currentCs?: number | null
-  atsuryokuPressure?: number | null
+  kadenPressure?: number | null
   yuragiParityNext?: boolean
   lastReceivedHitTier?: WazaTier | null
   itoIrBonus?: number | null
@@ -128,7 +128,7 @@ export function mapDoMechanicsToWazaResolveFields(
   if (!snapshot) return {}
   return {
     currentCs: snapshot.currentCs ?? null,
-    atsuryokuPressure: snapshot.hado.pressure,
+    kadenPressure: snapshot.hado.pressure,
     yuragiParityNext: snapshot.hensei.phase !== 'neutro',
     lastReceivedHitTier: snapshot.lastReceivedHitTier ?? null,
     itoIrBonus: snapshot.ito.irBonus,
@@ -215,7 +215,7 @@ export function patchDoMechanicsMeta(
       if (patch.action === 'setPhase') next.yuragiPhase = patch.phase
       break
     case 'hado':
-      if (patch.action === 'vent') next.hadoPressure = Math.max(0, (next.hadoPressure ?? 0) - 4)
+      if (patch.action === 'vent') next.kaden = Math.max(0, (next.kaden ?? 0) - 4)
       break
   }
   return next

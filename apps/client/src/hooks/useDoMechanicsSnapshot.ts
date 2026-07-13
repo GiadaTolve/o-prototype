@@ -13,7 +13,7 @@ export type { DoMechanicsSnapshot };
 export type WazaResolveExtras = Pick<
   WazaResolveContext,
   | 'currentCs'
-  | 'atsuryokuPressure'
+  | 'kadenPressure'
   | 'lastReceivedHitTier'
   | 'yuragiParityNext'
   | 'itoIrBonus'

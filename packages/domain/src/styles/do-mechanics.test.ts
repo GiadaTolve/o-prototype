@@ -4,14 +4,14 @@ import { mapDoMechanicsToWazaResolveFields, readDoMechanicsFromMeta, accumulateI
 describe('do-mechanics → waza resolve', () => {
   it('espone lastReceivedHitTier e campi Hadō/Hensei', () => {
     const snap = readDoMechanicsFromMeta(
-      { hadoPressure: 5, yuragiPhase: 'solido', lastReceivedHitTier: 3 },
+      { kaden: 5, yuragiPhase: 'solido', lastReceivedHitTier: 3 },
       14,
     )
     expect(snap.lastReceivedHitTier).toBe(3)
     expect(snap.hado.metamorphosisReady).toBe(true)
     expect(mapDoMechanicsToWazaResolveFields(snap)).toEqual({
       currentCs: 14,
-      atsuryokuPressure: 5,
+      kadenPressure: 5,
       yuragiParityNext: true,
       lastReceivedHitTier: 3,
       itoIrBonus: 0,

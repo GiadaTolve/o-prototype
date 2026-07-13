@@ -67,7 +67,6 @@ import {
   validateEquippedPassiveIds,
   type PassiveSlotsUiMeta,
   canLearnWazaFromStyle,
-  getMaxWazaForStyle,
   getStyleRelation,
   isStyleId,
   readStyleHexMeta,
@@ -188,7 +187,7 @@ import {
 } from '@domain/styles/generiche/passive-triggers';
 import { clampJunkanPhase } from '@domain/styles/naikan/junkan';
 import { isYuragiPhase } from '@domain/styles/hensei/yuragi';
-import { clampAtsuryoku } from '@domain/styles/hado/atsuryoku';
+import { clampKaden } from '@domain/styles/hado/kaden';
 
 export class CharacterService {
   
@@ -659,7 +658,6 @@ export class CharacterService {
                   primaryStyleId,
                   unlockedStyleIds,
                   styleId,
-                  styleCounts.get(styleId) ?? 0,
                 );
                 if (!check.ok) {
                   canPurchase = false;
@@ -687,7 +685,7 @@ export class CharacterService {
    * Acquista una skill con EXP (e Keys se richiesto).
    */
   async purchaseSkill(characterId: string, skillId: string) {
-    const [char, skill, existing, styleCounts, ownedPoolIds] = await Promise.all([
+    const [char, skill, existing, ownedPoolIds] = await Promise.all([
       db.query.characters.findFirst({
         where: eq(characters.id, characterId),
         columns: {
@@ -722,7 +720,6 @@ export class CharacterService {
       db.query.characterSkills.findFirst({
         where: and(eq(characterSkills.characterId, characterId), eq(characterSkills.skillId, skillId)),
       }),
-      this.countOwnedWazaByStyle(characterId),
       this.getOwnedWazaPoolIds(characterId),
     ]);
     if (!char || !skill) throw new Error('Personaggio o skill non trovato');
@@ -759,7 +756,6 @@ export class CharacterService {
           primaryStyleId,
           unlockedStyleIds,
           styleId,
-          styleCounts.get(styleId) ?? 0,
         );
         if (!check.ok) throw new Error(check.error ?? 'Acquisto bloccato dall\'Esagono.');
       }
@@ -966,13 +962,11 @@ export class CharacterService {
 
     const styles = STYLE_HEX_ORDER.map((id) => {
       const relation = primaryStyleId ? getStyleRelation(primaryStyleId, id) : null;
-      const maxWaza = primaryStyleId ? getMaxWazaForStyle(primaryStyleId, id) : null;
       const ownedWaza = styleCounts.get(id) ?? 0;
       return {
         id,
         label: STYLE_LABELS[id],
         relation,
-        maxWaza,
         ownedWaza,
         unlocked: unlockedStyleIds.includes(id),
         isPrimary: primaryStyleId === id,
@@ -986,7 +980,6 @@ export class CharacterService {
       keys: char.keys ?? 0,
       unlockKeyCost: STYLE_UNLOCK_KEY_COST,
       styles,
-      capsByRelation: { primary: 6, adjacent: 3, distant: 1, opposite: 0 },
     };
   }
 
@@ -1624,9 +1617,13 @@ export class CharacterService {
   async listFieldConstructsForCharacter(characterId: string) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
-      columns: { id: true },
+      columns: { id: true, uiMetadata: true },
     });
     if (!char) throw new Error('Personaggio non trovato');
+
+    const proprietaMap = this.readFieldConstructProprietaMap(
+      char.uiMetadata as { fieldConstructProprieta?: Record<string, string[]> },
+    );
 
     const rows = await db.query.fieldConstructs.findMany({
       where: eq(fieldConstructs.creatorCharacterId, characterId),
@@ -1636,20 +1633,37 @@ export class CharacterService {
     return {
       characterId,
       constructs: rows.map((r) =>
-        fieldConstructToApi({
-          id: r.id,
-          creatorCharacterId: r.creatorCharacterId,
-          label: r.label,
-          size: r.size,
-          wazaTier: r.wazaTier as FieldConstruct['wazaTier'],
-          kongenRank: r.kongenRank,
-          maxResistance: r.maxResistance,
-          remainingResistance: r.remainingResistance,
-          stationary: r.stationary,
-          createdAt: r.createdAt?.toISOString(),
-        }),
+        fieldConstructToApi(
+          {
+            id: r.id,
+            creatorCharacterId: r.creatorCharacterId,
+            label: r.label,
+            size: r.size,
+            wazaTier: r.wazaTier as FieldConstruct['wazaTier'],
+            kongenRank: r.kongenRank,
+            maxResistance: r.maxResistance,
+            remainingResistance: r.remainingResistance,
+            stationary: r.stationary,
+            createdAt: r.createdAt?.toISOString(),
+          },
+          { proprieta: proprietaMap[r.id] },
+        ),
       ),
     };
+  }
+
+  private readFieldConstructProprietaMap(
+    meta: { fieldConstructProprieta?: Record<string, string[]> } | null | undefined,
+  ): Record<string, string[]> {
+    return meta?.fieldConstructProprieta ?? {};
+  }
+
+  async getFieldConstructOwnerId(constructId: string): Promise<string | null> {
+    const row = await db.query.fieldConstructs.findFirst({
+      where: eq(fieldConstructs.id, constructId),
+      columns: { creatorCharacterId: true },
+    });
+    return row?.creatorCharacterId ?? null;
   }
 
   async createFieldConstructForCharacter(
@@ -1661,6 +1675,7 @@ export class CharacterService {
       stationary?: boolean;
       descriptionChars?: number;
       isNewForm?: boolean;
+      proprieta?: string[];
     },
   ) {
     const char = await db.query.characters.findFirst({
@@ -1708,7 +1723,24 @@ export class CharacterService {
       stationary: built.stationary,
     });
 
-    const meta = (char.uiMetadata ?? {}) as { gosaStacks?: number };
+    const proprieta = (input.proprieta ?? [])
+      .map((p) => p.trim().toUpperCase())
+      .filter(Boolean);
+
+    let meta = (char.uiMetadata ?? {}) as {
+      fieldConstructProprieta?: Record<string, string[]>;
+      gosaStacks?: number;
+    };
+    if (proprieta.length > 0) {
+      meta = {
+        ...meta,
+        fieldConstructProprieta: {
+          ...(meta.fieldConstructProprieta ?? {}),
+          [built.id]: proprieta,
+        },
+      };
+    }
+
     const currentGosa = clampGosaStacks(meta.gosaStacks ?? 0);
     const nextGosa = accumulateGosaOnConstruct(currentGosa, {
       descriptionChars: input.descriptionChars ?? input.label.length,
@@ -1716,13 +1748,13 @@ export class CharacterService {
       size,
       isNewForm: input.isNewForm,
     });
-    if (nextGosa !== currentGosa) {
+    if (nextGosa !== currentGosa || proprieta.length > 0) {
       await db
         .update(characters)
         .set({
           uiMetadata: {
             ...meta,
-            gosaStacks: nextGosa,
+            ...(nextGosa !== currentGosa ? { gosaStacks: nextGosa } : {}),
           },
         })
         .where(eq(characters.id, characterId));
@@ -1790,6 +1822,28 @@ export class CharacterService {
       size: row.size,
       stationary: row.stationary,
     });
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, row.creatorCharacterId),
+      columns: { uiMetadata: true },
+    });
+    if (char) {
+      const meta = (char.uiMetadata ?? {}) as {
+        fieldConstructProprieta?: Record<string, string[]>;
+      };
+      if (meta.fieldConstructProprieta?.[constructId]) {
+        const next = { ...meta.fieldConstructProprieta };
+        delete next[constructId];
+        await db
+          .update(characters)
+          .set({
+            uiMetadata: {
+              ...meta,
+              fieldConstructProprieta: next,
+            },
+          })
+          .where(eq(characters.id, row.creatorCharacterId));
+      }
+    }
     await db.delete(fieldConstructs).where(eq(fieldConstructs.id, constructId));
     return this.listFieldConstructsForCharacter(row.creatorCharacterId);
   }
@@ -1801,7 +1855,10 @@ export class CharacterService {
     });
     if (!char) throw new Error('Personaggio non trovato');
 
-    const meta = (char.uiMetadata ?? {}) as { toroWeaponInContact?: boolean };
+    const meta = (char.uiMetadata ?? {}) as {
+      toroWeaponInContact?: boolean;
+      toroBatteria?: boolean;
+    };
     const passiveState = await this.getPassiveSlotsState(characterId);
     const equipped = passiveState.slots
       .map((s) => s.equipped)
@@ -1837,6 +1894,7 @@ export class CharacterService {
       ...toro,
       toroPassivePoolId: TORO_PASSIVE_POOL_ID,
       weaponInContact: meta.toroWeaponInContact ?? false,
+      toroBatteria: meta.toroBatteria ?? false,
       hasToroPassiveOwned: ownedToro,
       hasToroPassiveEquipped: hasToroEquipped,
       hasMichishirube,
@@ -1844,25 +1902,38 @@ export class CharacterService {
     };
   }
 
-  async setToroWeaponInContact(characterId: string, weaponInContact: boolean) {
+  async patchToroState(
+    characterId: string,
+    patch: { weaponInContact?: boolean; toroBatteria?: boolean },
+  ) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
       columns: { uiMetadata: true },
     });
     if (!char) throw new Error('Personaggio non trovato');
 
-    const meta = char.uiMetadata ?? {};
+    const meta = (char.uiMetadata ?? {}) as {
+      toroWeaponInContact?: boolean;
+      toroBatteria?: boolean;
+    };
+    const next = {
+      ...meta,
+      ...(patch.weaponInContact !== undefined
+        ? { toroWeaponInContact: patch.weaponInContact }
+        : {}),
+      ...(patch.toroBatteria !== undefined ? { toroBatteria: patch.toroBatteria } : {}),
+    };
     await db
       .update(characters)
-      .set({
-        uiMetadata: {
-          ...meta,
-          toroWeaponInContact: weaponInContact,
-        },
-      })
+      .set({ uiMetadata: next })
       .where(eq(characters.id, characterId));
 
     return this.getToroState(characterId);
+  }
+
+  /** @deprecated usa patchToroState */
+  async setToroWeaponInContact(characterId: string, weaponInContact: boolean) {
+    return this.patchToroState(characterId, { weaponInContact });
   }
 
   async getGosaState(characterId: string) {
@@ -2363,7 +2434,7 @@ export class CharacterService {
       itoTension?: number;
       naikanPhase?: number;
       yuragiPhase?: string;
-      hadoPressure?: number;
+      kaden?: number;
       currentCs?: number;
       lastReceivedHitTier?: number;
       threads?: 1 | 2;
@@ -2429,8 +2500,8 @@ export class CharacterService {
     if (typeof input.yuragiPhase === 'string' && isYuragiPhase(input.yuragiPhase)) {
       next.yuragiPhase = input.yuragiPhase;
     }
-    if (typeof input.hadoPressure === 'number') {
-      next.hadoPressure = clampAtsuryoku(input.hadoPressure);
+    if (typeof input.kaden === 'number') {
+      next.kaden = clampKaden(input.kaden);
     }
     if (typeof input.lastReceivedHitTier === 'number') {
       const t = Math.floor(input.lastReceivedHitTier);
@@ -2653,6 +2724,8 @@ export class CharacterService {
         movementMetersPerQuarter: derivedStats.movementMetersPerQuarter,
         cac: derivedStats.cac,
         cad: derivedStats.cad,
+        dodgeIr: derivedStats.dodgeIr,
+        parryIr: derivedStats.parryIr,
       },
       skiruDomains,
       activeJigaMilestone: getActiveJigaMilestone(skiruSheet),

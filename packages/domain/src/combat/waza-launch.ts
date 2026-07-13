@@ -34,10 +34,15 @@ export type WazaLaunchBuildOptions = {
   /** Dichiara colpo a segno → `[hit:1]` (danno tier applicato dal motore). */
   declareHit?: boolean
   currentCs?: number | null
-  atsuryokuPressure?: number | null
+  kadenPressure?: number | null
   lastReceivedHitTier?: import('./tier').WazaTier | null
   yuragiParityNext?: boolean
   itoIrBonus?: number | null
+  /**
+   * IR calcolato a monte (coppia di Skiru papabili scelte a mano nel pannello).
+   * Se presente, emette `[ir:N]` così com'è invece di ricalcolarlo da una sola Skiru.
+   */
+  irOverride?: number | null
   /** Tag extra per waza avanzate (Giurisdizione, Hōgō, Decreto…). */
   launchExtras?: WazaLaunchExtras | null
   /** poolId waza — per tag extra. */
@@ -241,12 +246,13 @@ export function buildFullWazaLaunchLine(
   const base = buildWazaLaunchInsertLine(wazaName, index, {
     skiruSheet: options?.skiruSheet,
     currentCs: options?.currentCs,
-    atsuryokuPressure: options?.atsuryokuPressure,
+    kadenPressure: options?.kadenPressure,
     lastReceivedHitTier: options?.lastReceivedHitTier,
     yuragiParityNext: options?.yuragiParityNext,
     itoIrBonus: options?.itoIrBonus,
     declaredSkiruId: options?.declaredSkiruId,
     csOverride: options?.csOverride,
+    irOverride: options?.irOverride,
   })
   const parts = [base]
   if (options?.declaredSkiruId) {
