@@ -9,6 +9,7 @@ import { DoMechanicsPanel } from "../DoMechanicsPanel";
 import { StatusEffectsPanel } from "../StatusEffectsPanel";
 import { CombatHpInline } from "./CombatHpInline";
 import { CombatCsInline } from "./CombatCsInline";
+import { CombatConstructsSection } from "./CombatConstructsSection";
 import { CombatToroSection } from "./CombatToroSection";
 import { CombatWeaponsSection } from "./CombatWeaponsSection";
 import { LancioWazaPanel } from "./LancioWazaPanel";
@@ -75,6 +76,7 @@ export function PannelloCombattimentoWindow({
   const characterId = char?.id;
   const skiruSheet = char?.skiruSheet;
   const mountedRef = useRef(true);
+  const [showCampo, setShowCampo] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -170,12 +172,15 @@ export function PannelloCombattimentoWindow({
           <button
             type="button"
             className="text-[11px] px-2.5 py-1 rounded border transition-colors hover:bg-[var(--accent-violet)]/10"
-            style={{ color: "var(--accent-violet-light)", borderColor: "color-mix(in srgb, var(--accent-violet) 40%, transparent)" }}
-            onClick={() => {
-              // placeholder per futura Zona 5 Campo
+            style={{
+              color: showCampo ? "var(--accent-gold)" : "var(--accent-violet-light)",
+              borderColor: showCampo
+                ? "color-mix(in srgb, var(--accent-gold) 50%, transparent)"
+                : "color-mix(in srgb, var(--accent-violet) 40%, transparent)",
             }}
+            onClick={() => setShowCampo((v) => !v)}
           >
-            Campo ▸
+            Campo {showCampo ? "▾" : "▸"}
           </button>
         </div>
 
@@ -230,6 +235,20 @@ export function PannelloCombattimentoWindow({
         {/* Status attivi */}
         <StatusEffectsPanel characterId={characterId} isOwnCharacter embedded />
       </section>
+
+      {/* ── Z5 · CAMPO (costrutti attivi) — collassabile da "Campo ▸" ── */}
+      {showCampo && (
+        <section
+          className="rounded-xl border p-3"
+          style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "color-mix(in srgb, var(--accent-gold) 25%, var(--border-color))" }}
+        >
+          <ZoneHeader label="Campo · Costrutti attivi" dot="var(--accent-gold)" />
+          <CombatConstructsSection
+            characterId={characterId}
+            onInsertText={onInsertText}
+          />
+        </section>
+      )}
 
       {/* ── Z2 · IN USO ORA — cosa impugni e cos'è Tōrō (equipaggi in scheda) ── */}
       <section
