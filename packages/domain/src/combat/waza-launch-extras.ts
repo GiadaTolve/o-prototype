@@ -3,6 +3,8 @@ import type { ConsistencyKind } from '../styles/hensei/nagori'
 import type { HogosuturaKind } from '../styles/naikan/hogo'
 import type { WazaLaunchTargetSpec } from './waza-launch'
 
+export type KadenIntensity = 'cs12' | 'overheat' | 'frattura'
+
 export type WazaLaunchExtras = {
   giurisdizioneCategory?: GiurisdizioneCategory | null
   suturaKind?: HogosuturaKind | null
@@ -13,6 +15,12 @@ export type WazaLaunchExtras = {
   decretoText?: string | null
   /** `[meisaku:Nome]` — Opera Prima. */
   meisakuLabel?: string | null
+  /** Intensità Kaden (Hadō): cs12 / overheat / frattura volontaria. */
+  kadenIntensity?: KadenIntensity | null
+  /** Quarto d'azione selezionato (1–4) per waza multi-quarto (Rensa, Uzu…). */
+  quartoSelected?: 1 | 2 | 3 | 4 | null
+  /** Waza in setup/attesa — non agisce subito (Fuin no Hi, Rensa). */
+  delayedEffect?: boolean
 }
 
 export type WazaLaunchProfile = {
@@ -24,9 +32,28 @@ export type WazaLaunchProfile = {
   needsTarget?: boolean
   allowsSurprise?: boolean
   needsMeisakuLabel?: boolean
+  /** Waza multi-quarto (Rensa, Uzu): mostra selettore 1/4→4/4. */
+  needsQuarto?: boolean
+  /** Waza a effetto rimandato (Fuin no Hi, Rensa): toggle "setup". */
+  needsDelayedEffect?: boolean
+  /** Waza solo-narrazione: nasconde IR/danno, mostra solo note per il Master. */
+  masterOnlyCard?: boolean
 }
 
 const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
+  'fuin-no-hi-sigillo-della-fiamma': {
+    poolId: 'fuin-no-hi-sigillo-della-fiamma',
+    needsDelayedEffect: true,
+  },
+  'rensa-catena-fili': {
+    poolId: 'rensa-catena-fili',
+    needsQuarto: true,
+    needsDelayedEffect: true,
+  },
+  'rensa-baku-detonazione-catena': {
+    poolId: 'rensa-baku-detonazione-catena',
+    needsQuarto: true,
+  },
   'kankatsu-giurisdizione': {
     poolId: 'kankatsu-giurisdizione',
     needsGiurisdizioneCategory: true,
@@ -110,6 +137,18 @@ export function buildWazaLaunchExtraTags(
 
   if (extras.surpriseAttack) {
     tags.push('[sorpresa:1]')
+  }
+
+  if (extras.kadenIntensity) {
+    tags.push(`[kaden:${extras.kadenIntensity}]`)
+  }
+
+  if (profile?.needsQuarto && extras.quartoSelected != null) {
+    tags.push(`[quarto:${extras.quartoSelected}/4]`)
+  }
+
+  if (profile?.needsDelayedEffect && extras.delayedEffect) {
+    tags.push('[setup:1]')
   }
 
   return tags

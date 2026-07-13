@@ -35,6 +35,7 @@ type LwzRow = {
   name: string;
   fonte: WazaCatalogFamily;
   styleLabel: string | null;
+  styleId: string | null;
   tier: number | null;
   cs: number | null;
   tags: string[];
@@ -42,6 +43,8 @@ type LwzRow = {
   effect: string | null;
   candidates: string[];
 };
+
+import type { KadenIntensity } from "@domain/combat/waza-launch-extras";
 
 type RawWaza = {
   id?: string;
@@ -113,6 +116,10 @@ export function LancioWazaPanel({
   const [nagoriTo, setNagoriTo] = useState<"solido" | "liquido" | "gassoso" | "sonoro" | "elementale" | "energetico">("solido");
   const [meisakuLabel, setMeisakuLabel] = useState("");
   const [surpriseAttack, setSurpriseAttack] = useState(false);
+  // §4 nuovi controlli condizionali
+  const [kadenIntensity, setKadenIntensity] = useState<KadenIntensity | null>(null);
+  const [quartoSelected, setQuartoSelected] = useState<1 | 2 | 3 | 4>(1);
+  const [delayedEffect, setDelayedEffect] = useState(false);
 
   const { extras: wazaResolveExtras } = useDoMechanicsSnapshot(currentCs ?? null, true);
 
@@ -175,6 +182,7 @@ export function LancioWazaPanel({
                 poolId: w.poolId,
               }),
               styleLabel: preview.styleLabel,
+              styleId: w.styleId ?? null,
               tier: preview.tier,
               cs: preview.csCost,
               tags: extractMechanicTagsFromEffect(effect).slice(0, 4),
@@ -268,6 +276,9 @@ export function LancioWazaPanel({
     setNagoriFrom("liquido");
     setNagoriTo("solido");
     setMeisakuLabel("");
+    setKadenIntensity(null);
+    setQuartoSelected(1);
+    setDelayedEffect(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selId]);
 
@@ -284,8 +295,11 @@ export function LancioWazaPanel({
       decretoText: launchProfile?.needsDecreto ? decretoText : null,
       nagoriShift: launchProfile?.needsNagoriShift ? { from: nagoriFrom, to: nagoriTo } : null,
       meisakuLabel: launchProfile?.needsMeisakuLabel ? meisakuLabel : null,
+      kadenIntensity: sel?.styleId === "hado" ? kadenIntensity : null,
+      quartoSelected: launchProfile?.needsQuarto ? quartoSelected : null,
+      delayedEffect: launchProfile?.needsDelayedEffect ? delayedEffect : false,
     }),
-    [launchProfile, giurisdizioneCategory, suturaKind, surpriseAttack, decretoText, nagoriFrom, nagoriTo, meisakuLabel],
+    [launchProfile, giurisdizioneCategory, suturaKind, surpriseAttack, decretoText, nagoriFrom, nagoriTo, meisakuLabel, sel?.styleId, kadenIntensity, quartoSelected, delayedEffect],
   );
 
   // IR — §5: (Skiru A + Skiru B) / 2 + Σ modificatori (Meiju Sōkaiju via tag).
@@ -561,10 +575,73 @@ export function LancioWazaPanel({
             </label>
           )}
 
+          {/* §4 — Kaden intensity (solo waza Hadō) */}
+          {sel?.styleId === "hado" && (
+            <label className="block">
+              <span className="lwz__label">Intensità Kaden</span>
+              <select
+                className="lwz__select"
+                style={{ width: "100%" }}
+                value={kadenIntensity ?? ""}
+                onChange={(e) => setKadenIntensity((e.target.value || null) as KadenIntensity | null)}
+              >
+                <option value="">Nessuna (normale)</option>
+                <option value="cs12">CS ≥ 12 — +1 tier (Kaatsu)</option>
+                <option value="overheat">Overheat — +2 tier + drain</option>
+                <option value="frattura">Frattura volontaria — −5 HP → +1 tier</option>
+              </select>
+            </label>
+          )}
+
+          {/* §4 — Multi-quarto */}
+          {launchProfile?.needsQuarto && (
+            <label className="block">
+              <span className="lwz__label">Quarto d&apos;azione</span>
+              <div className="lwz__chips" style={{ marginTop: 4 }}>
+                {([1, 2, 3, 4] as const).map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => setQuartoSelected(q)}
+                    className={`lwz__chip${quartoSelected === q ? " lwz__chip--on" : ""}`}
+                  >
+                    {q}/4
+                  </button>
+                ))}
+              </div>
+            </label>
+          )}
+
+          {/* §4 — Effetto rimandato (setup) */}
+          {launchProfile?.needsDelayedEffect && (
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={delayedEffect}
+                onChange={(e) => setDelayedEffect(e.target.checked)}
+                className="mt-0.5 accent-[var(--accent-violet)]"
+              />
+              <span className="text-[9px] text-[var(--accent-violet-light)] leading-relaxed">
+                <span className="lwz__label" style={{ display: "block", marginBottom: 2 }}>Effetto rimandato</span>
+                Aggiunge <code className="text-[8px]">[setup:1]</code> — waza in attesa, non agisce subito.
+              </span>
+            </label>
+          )}
+
           {/* anteprima card */}
           <div className="lwz__card">
-            <div className="lwz__label" style={{ marginBottom: 8 }}>Anteprima in chat</div>
-            <div className="lwz__card-nums">
+            <div className="lwz__label" style={{ marginBottom: 8 }}>
+              Anteprima in chat
+              {launchProfile?.masterOnlyCard && (
+                <span className="lwz__badge lwz__badge--do" style={{ marginLeft: 6 }}>solo narrazione</span>
+              )}
+            </div>
+            {launchProfile?.masterOnlyCard && (
+              <p className="text-[9px] text-[var(--accent-violet-light)] italic mb-2">
+                Waza nota-master: nessun IR/danno visibile — aggiungi il tuo testo di narrazione.
+              </p>
+            )}
+            <div className="lwz__card-nums" style={launchProfile?.masterOnlyCard ? { display: "none" } : {}}>
               <div className="lwz__bignum lwz__bignum--ir">
                 <div className="lwz__bignum-label">Indice</div>
                 <div className="lwz__bignum-val">{ir ?? "—"}</div>
