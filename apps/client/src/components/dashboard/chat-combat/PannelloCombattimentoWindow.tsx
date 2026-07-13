@@ -10,7 +10,6 @@ import { StatusEffectsPanel } from "../StatusEffectsPanel";
 import { CombatHpInline } from "./CombatHpInline";
 import { CombatCsInline } from "./CombatCsInline";
 import { CombatConstructsSection } from "./CombatConstructsSection";
-import { CombatToroSection } from "./CombatToroSection";
 import { CombatWeaponsSection } from "./CombatWeaponsSection";
 import { LancioWazaPanel } from "./LancioWazaPanel";
 import { resolveCharacterComputed, formatMovementMeters } from "../character-computed";
@@ -267,9 +266,6 @@ export function PannelloCombattimentoWindow({
           </span>
         </div>
         <CombatWeaponsSection />
-        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border-color)" }}>
-          <CombatToroSection onInsertText={onInsertText} />
-        </div>
       </section>
 
       {/* ── Z3 · LANCIO WAZA ───────────────────────────────────────────── */}
