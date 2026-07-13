@@ -660,9 +660,10 @@ export const charactersController = new Elysia({ prefix: '/characters' })
     }, {
       body: t.Object({
         activeWeaponIds: t.Optional(t.Array(t.String())),
+        toroWeaponIds: t.Optional(t.Array(t.String())),
         ammo: t.Optional(t.Record(t.String(), t.Number())),
       }),
-      detail: { summary: 'Aggiorna armi in uso e munizioni (Dichiarazione d\'uso)' },
+      detail: { summary: 'Aggiorna armi impugnate, oggetti Tōrō e munizioni (Dichiarazione d\'uso)' },
     })
 
     .get('/:id/field-constructs', async ({ user, params, set }) => {

@@ -1991,6 +1991,7 @@ export class CharacterService {
     return {
       ...readDoMechanicsFromMeta(meta, currentCs),
       combatActiveWeaponIds: meta.combatActiveWeaponIds ?? [],
+      combatToroWeaponIds: meta.combatToroWeaponIds ?? [],
       combatAmmo: meta.combatAmmo ?? {},
     };
   }
@@ -2537,7 +2538,7 @@ export class CharacterService {
 
   async patchCombatWeapons(
     characterId: string,
-    input: { activeWeaponIds?: string[]; ammo?: Record<string, number> },
+    input: { activeWeaponIds?: string[]; toroWeaponIds?: string[]; ammo?: Record<string, number> },
   ) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
@@ -2547,7 +2548,12 @@ export class CharacterService {
     const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
     const next: DoMechanicsUiMeta = { ...meta };
     if (input.activeWeaponIds !== undefined) {
+      // Vincolo armi impugnate — max 1, salvo Ambidestria (max 2). Cfr. spec §2 Zona2.
       next.combatActiveWeaponIds = input.activeWeaponIds.slice(0, 2);
+    }
+    if (input.toroWeaponIds !== undefined) {
+      // Tōrō liberi e multipli — nessun limite. Cfr. spec §2 Zona2.
+      next.combatToroWeaponIds = input.toroWeaponIds;
     }
     if (input.ammo !== undefined) {
       next.combatAmmo = { ...(meta.combatAmmo ?? {}), ...input.ammo };
@@ -2555,6 +2561,7 @@ export class CharacterService {
     await db.update(characters).set({ uiMetadata: next }).where(eq(characters.id, characterId));
     return {
       combatActiveWeaponIds: next.combatActiveWeaponIds ?? [],
+      combatToroWeaponIds: next.combatToroWeaponIds ?? [],
       combatAmmo: next.combatAmmo ?? {},
     };
   }

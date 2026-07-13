@@ -15,7 +15,11 @@ import { getWazaLaunchProfile } from "@domain/combat/waza-launch-extras";
 import {
   computeLaunchDamagePreview,
   extractMechanicTagsFromEffect,
+  wazaEffectDeclaresConstruct,
 } from "@domain/combat/waza-skiru-riders";
+import { deriveConstructProfile } from "@domain/combat/construct-profile";
+import { CONSTRUCT_SIZES, CONSTRUCT_SIZE_IDS, type ConstructSizeId } from "@domain/combat/constructs";
+import { CONSTRUCT_PROPRIETA_IDS, BATTERIA_CS_CAP, type ConstructProprietaId } from "@domain/combat/construct-profile";
 import {
   buildIndicativeActionIndex,
   calculateSuccessIndex,
@@ -42,6 +46,7 @@ type LwzRow = {
   poolId: string | null;
   effect: string | null;
   candidates: string[];
+  evocaCostrutto: boolean;
 };
 
 import type { KadenIntensity } from "@domain/combat/waza-launch-extras";
@@ -104,7 +109,6 @@ export function LancioWazaPanel({
   const [skiruB, setSkiruB] = useState("");
   const [dett, setDett] = useState(false);
   const [targetId, setTargetId] = useState("");
-  const [declareHit, setDeclareHit] = useState(false);
   const [narrative, setNarrative] = useState("");
   const [favIds, setFavIds] = useState<string[]>([]);
 
@@ -115,11 +119,17 @@ export function LancioWazaPanel({
   const [nagoriFrom, setNagoriFrom] = useState<"solido" | "liquido" | "gassoso" | "sonoro" | "elementale" | "energetico">("liquido");
   const [nagoriTo, setNagoriTo] = useState<"solido" | "liquido" | "gassoso" | "sonoro" | "elementale" | "energetico">("solido");
   const [meisakuLabel, setMeisakuLabel] = useState("");
-  const [surpriseAttack, setSurpriseAttack] = useState(false);
   // §4 nuovi controlli condizionali
   const [kadenIntensity, setKadenIntensity] = useState<KadenIntensity | null>(null);
   const [quartoSelected, setQuartoSelected] = useState<1 | 2 | 3 | 4>(1);
   const [delayedEffect, setDelayedEffect] = useState(false);
+  // blocco costrutto (solo se la waza evoca) — taglia + sticker
+  const [constructTaglia, setConstructTaglia] = useState<ConstructSizeId>("media");
+  const [constructSticker, setConstructSticker] = useState<Record<ConstructProprietaId, boolean>>({
+    BATTERIA: false,
+    PERSONALE: false,
+    TORO: false,
+  });
 
   const { extras: wazaResolveExtras } = useDoMechanicsSnapshot(currentCs ?? null, true);
 
@@ -189,6 +199,7 @@ export function LancioWazaPanel({
               poolId: entry?.poolId ?? w.poolId ?? null,
               effect,
               candidates,
+              evocaCostrutto: wazaEffectDeclaresConstruct(effect),
             };
           })
           // solo waza lanciabili in catalogo (tier+cs presenti)
@@ -267,9 +278,7 @@ export function LancioWazaPanel({
     setSkiruA(opts[0] ?? "");
     setSkiruB(opts[1] ?? opts[0] ?? "");
     // reset controlli condizionali
-    setDeclareHit(false);
     setTargetId("");
-    setSurpriseAttack(false);
     setGiurisdizioneCategory("proiettile");
     setSuturaKind("offensiva");
     setDecretoText("");
@@ -279,6 +288,8 @@ export function LancioWazaPanel({
     setKadenIntensity(null);
     setQuartoSelected(1);
     setDelayedEffect(false);
+    setConstructTaglia("media");
+    setConstructSticker({ BATTERIA: false, PERSONALE: false, TORO: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selId]);
 
@@ -291,16 +302,47 @@ export function LancioWazaPanel({
     () => ({
       giurisdizioneCategory: launchProfile?.needsGiurisdizioneCategory ? giurisdizioneCategory : null,
       suturaKind: launchProfile?.needsSuturaKind ? suturaKind : null,
-      surpriseAttack,
       decretoText: launchProfile?.needsDecreto ? decretoText : null,
       nagoriShift: launchProfile?.needsNagoriShift ? { from: nagoriFrom, to: nagoriTo } : null,
       meisakuLabel: launchProfile?.needsMeisakuLabel ? meisakuLabel : null,
       kadenIntensity: sel?.styleId === "hado" ? kadenIntensity : null,
       quartoSelected: launchProfile?.needsQuarto ? quartoSelected : null,
       delayedEffect: launchProfile?.needsDelayedEffect ? delayedEffect : false,
+      constructTaglia: sel?.evocaCostrutto ? constructTaglia : null,
+      constructSticker: sel?.evocaCostrutto
+        ? (CONSTRUCT_PROPRIETA_IDS.filter((p) => constructSticker[p]) as ConstructProprietaId[])
+        : null,
     }),
-    [launchProfile, giurisdizioneCategory, suturaKind, surpriseAttack, decretoText, nagoriFrom, nagoriTo, meisakuLabel, sel?.styleId, kadenIntensity, quartoSelected, delayedEffect],
+    [
+      launchProfile,
+      giurisdizioneCategory,
+      suturaKind,
+      decretoText,
+      nagoriFrom,
+      nagoriTo,
+      meisakuLabel,
+      sel?.styleId,
+      sel?.evocaCostrutto,
+      kadenIntensity,
+      quartoSelected,
+      delayedEffect,
+      constructTaglia,
+      constructSticker,
+    ],
   );
+
+  // Blocco costrutto — parametri derivati dalla taglia (§5: Resistenza, Movimento).
+  const constructProfile = useMemo(() => {
+    if (!sel?.evocaCostrutto || !skiruSheet || sel.tier == null) return null;
+    return deriveConstructProfile({
+      wazaTier: sel.tier,
+      taglia: constructTaglia,
+      proprieta: CONSTRUCT_PROPRIETA_IDS.filter((p) => constructSticker[p]) as ConstructProprietaId[],
+      creator: { sheet: skiruSheet },
+      resistenza: "DERIVATA",
+      movimento_m: "DERIVATA",
+    });
+  }, [sel?.evocaCostrutto, sel?.tier, skiruSheet, constructTaglia, constructSticker]);
 
   // IR — §5: (Skiru A + Skiru B) / 2 + Σ modificatori (Meiju Sōkaiju via tag).
   const irBreakdown = useMemo(() => {
@@ -329,8 +371,10 @@ export function LancioWazaPanel({
     });
   }, [sel, skiruSheet, skiruA]);
 
+  // CS residui — costo waza + eventuale Batteria −5 (§5).
+  const batteriaCsCost = sel?.evocaCostrutto && constructSticker.BATTERIA ? BATTERIA_CS_CAP : 0;
   const csAfter =
-    currentCs != null && sel?.cs != null ? currentCs - sel.cs : null;
+    currentCs != null && sel?.cs != null ? currentCs - sel.cs - batteriaCsCost : null;
 
   const targetOptions = useMemo(
     () => usersInRoom.filter((u) => u.id && !u.isMe).map((u) => ({ id: u.id, label: u.name })),
@@ -360,12 +404,11 @@ export function LancioWazaPanel({
       poolId: sel.poolId,
       launchExtras,
       target,
-      declareHit,
       currentCs: currentCs ?? null,
       ...wazaResolveExtras,
     });
     return narrative.trim() ? `${narrative.trim()}\n${line}` : line;
-  }, [sel, targetId, skiruSheet, skiruA, ir, launchExtras, declareHit, currentCs, wazaResolveExtras, narrative]);
+  }, [sel, targetId, skiruSheet, skiruA, ir, launchExtras, currentCs, wazaResolveExtras, narrative]);
 
   const doInsert = useCallback(() => {
     const body = buildBody();
@@ -531,6 +574,77 @@ export function LancioWazaPanel({
             </div>
           </div>
 
+          {/* blocco costrutto — solo se la waza evoca (mockup + spec §2/§4/§5) */}
+          {sel.evocaCostrutto && (
+            <div
+              className="rounded-lg p-2.5"
+              style={{
+                background: "color-mix(in srgb, var(--accent-violet) 10%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--accent-violet) 30%, transparent)",
+              }}
+            >
+              <div className="text-[10px] font-mono mb-2" style={{ color: "var(--accent-violet-light)" }}>
+                ▚ Evoca un costrutto
+              </div>
+
+              <div className="text-[9px] mb-1" style={{ color: "var(--muted-foreground)" }}>Taglia</div>
+              <div className="flex gap-1 mb-2.5">
+                {CONSTRUCT_SIZE_IDS.map((sizeId) => (
+                  <button
+                    key={sizeId}
+                    type="button"
+                    onClick={() => setConstructTaglia(sizeId)}
+                    className="flex-1 text-[10px] rounded py-1 transition-colors"
+                    style={{
+                      background: constructTaglia === sizeId ? "var(--accent-violet)" : "rgba(0,0,0,0.25)",
+                      color: constructTaglia === sizeId ? "#160f22" : "var(--muted-foreground)",
+                      border: `1px solid ${constructTaglia === sizeId ? "var(--accent-violet)" : "var(--border-color)"}`,
+                      fontWeight: constructTaglia === sizeId ? 700 : 400,
+                    }}
+                  >
+                    {CONSTRUCT_SIZES[sizeId].label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-[9px] mb-1" style={{ color: "var(--muted-foreground)" }}>Sticker</div>
+              <div className="flex gap-1.5 flex-wrap mb-2.5">
+                {CONSTRUCT_PROPRIETA_IDS.map((stickerId) => {
+                  const on = constructSticker[stickerId];
+                  const label = stickerId === "BATTERIA" ? "Batteria" : stickerId === "PERSONALE" ? "Personale" : "Tōrō";
+                  return (
+                    <button
+                      key={stickerId}
+                      type="button"
+                      onClick={() => setConstructSticker((prev) => ({ ...prev, [stickerId]: !prev[stickerId] }))}
+                      className="text-[10px] rounded px-2.5 py-1 transition-colors"
+                      style={{
+                        background: on ? "#3a2519" : "rgba(0,0,0,0.25)",
+                        color: on ? "var(--accent-ember, #e8763a)" : "var(--muted-foreground)",
+                        border: `1px solid ${on ? "var(--accent-ember, #e8763a)" : "var(--border-color)"}`,
+                      }}
+                    >
+                      {on ? "✓ " : ""}{label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {constructProfile && (
+                <div
+                  className="flex gap-3 text-[10px] font-mono pt-2"
+                  style={{ color: "var(--muted-foreground)", borderTop: "1px solid color-mix(in srgb, var(--accent-violet) 20%, transparent)" }}
+                >
+                  <span>Resistenza <b style={{ color: "var(--foreground)" }}>{constructProfile.resistenza}</b></span>
+                  <span>Mov <b style={{ color: "var(--foreground)" }}>{constructProfile.movimento_m != null ? `${constructProfile.movimento_m}m` : "—"}</b></span>
+                  {constructSticker.BATTERIA && (
+                    <span style={{ color: "var(--accent-ember, #e8763a)" }}>Batteria −{BATTERIA_CS_CAP} CS → al costrutto</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* controlli condizionali avanzati (§4 — parità con pannello precedente) */}
           {launchProfile?.needsGiurisdizioneCategory && (
             <label className="block">
@@ -688,24 +802,6 @@ export function LancioWazaPanel({
                   <option key={t.id} value={t.id}>{t.label}</option>
                 ))}
               </select>
-            </label>
-          )}
-          {targetId !== "" && (
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" checked={declareHit} onChange={(e) => setDeclareHit(e.target.checked)} className="mt-0.5 accent-[var(--accent-gold)]" />
-              <span className="text-[9px] text-[var(--accent-violet-light)] leading-relaxed">
-                <span className="lwz__label" style={{ display: "block", marginBottom: 2 }}>Colpo a segno</span>
-                Aggiunge <code className="text-[8px]">[hit:1]</code> — dichiarazione arbitrabile dal Master.
-              </span>
-            </label>
-          )}
-          {launchProfile?.allowsSurprise !== false && (
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" checked={surpriseAttack} onChange={(e) => setSurpriseAttack(e.target.checked)} className="mt-0.5 accent-[var(--accent-violet)]" />
-              <span className="text-[9px] text-[var(--accent-violet-light)] leading-relaxed">
-                <span className="lwz__label" style={{ display: "block", marginBottom: 2 }}>Sorpresa narrativa</span>
-                Aggiunge <code className="text-[8px]">[sorpresa:1]</code> — tag per il Master.
-              </span>
             </label>
           )}
 

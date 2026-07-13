@@ -76,8 +76,10 @@ export type DoMechanicsUiMeta = {
   komonoireWeapon?: import('./madosho/komonoire').KomonoireWeaponState | null
   /** Kyōshin · vibrazione sul bersaglio */
   genericheKyoshin?: import('./generiche/kyoshin').GenericheKyoshinState | null
-  /** Armi in uso (dichiarazione d'uso, max 2 - Ambidestria). InventoryItem ID → in uso. */
+  /** Armi impugnate ora (dichiarazione d'uso, max 1 · max 2 con Ambidestria). InventoryItem ID → impugnata. */
   combatActiveWeaponIds?: string[]
+  /** Oggetti dichiarati Tōrō ora (§2 Zona2 — liberi e multipli, nessun limite). InventoryItem ID → è Tōrō. */
+  combatToroWeaponIds?: string[]
   /** Contatore munizioni per armi a proiettile. InventoryItem ID → carica residua. */
   combatAmmo?: Record<string, number>
 }

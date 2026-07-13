@@ -125,6 +125,11 @@ export function wazaEffectDeclaresContact(effect?: string | null): boolean {
   return extractMechanicTagsFromEffect(effect).some((t) => /contatto/i.test(t))
 }
 
+/** True se la waza evoca un costrutto (`[Costrutto]` nel testo effetto — cfr. blocco EVOCA_COSTRUTTO). */
+export function wazaEffectDeclaresConstruct(effect?: string | null): boolean {
+  return extractMechanicTagsFromEffect(effect).some((t) => /costrutto/i.test(t))
+}
+
 /** Penalità IR al difensore quando l'attaccante dichiara Seimitsu (−2 evasione). */
 export function computeSkiruRiderDefenderIrPenalty(
   declaredSkiruId: string | null | undefined,

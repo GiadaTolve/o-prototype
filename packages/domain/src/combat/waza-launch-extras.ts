@@ -2,6 +2,8 @@ import type { GiurisdizioneCategory } from '../styles/ito/giurisdizione'
 import type { ConsistencyKind } from '../styles/hensei/nagori'
 import type { HogosuturaKind } from '../styles/naikan/hogo'
 import type { WazaLaunchTargetSpec } from './waza-launch'
+import type { ConstructSizeId } from './constructs'
+import type { ConstructProprietaId } from './construct-profile'
 
 export type KadenIntensity = 'cs12' | 'overheat' | 'frattura'
 
@@ -21,6 +23,10 @@ export type WazaLaunchExtras = {
   quartoSelected?: 1 | 2 | 3 | 4 | null
   /** Waza in setup/attesa — non agisce subito (Fuin no Hi, Rensa). */
   delayedEffect?: boolean
+  /** Taglia del costrutto evocato (waza con blocco EVOCA_COSTRUTTO). */
+  constructTaglia?: ConstructSizeId | null
+  /** Sticker attivi sul costrutto evocato (Batteria/Personale/Tōrō). */
+  constructSticker?: ConstructProprietaId[] | null
 }
 
 export type WazaLaunchProfile = {
@@ -149,6 +155,14 @@ export function buildWazaLaunchExtraTags(
 
   if (profile?.needsDelayedEffect && extras.delayedEffect) {
     tags.push('[setup:1]')
+  }
+
+  if (extras.constructTaglia) {
+    tags.push(`[taglia:${extras.constructTaglia}]`)
+  }
+
+  if (extras.constructSticker && extras.constructSticker.length > 0) {
+    tags.push(`[sticker:${extras.constructSticker.join('+')}]`)
   }
 
   return tags

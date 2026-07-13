@@ -231,29 +231,25 @@ export function PannelloCombattimentoWindow({
         <StatusEffectsPanel characterId={characterId} isOwnCharacter embedded />
       </section>
 
-      {/* ── Z2 · DICHIARAZIONE D'USO ───────────────────────────────────── */}
+      {/* ── Z2 · IN USO ORA — cosa impugni e cos'è Tōrō (equipaggi in scheda) ── */}
       <section
         className="rounded-xl border p-3"
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
       >
-        <ZoneHeader label="In uso ora — Tōrō & tag chat" dot="var(--accent-gold)" />
-        <CombatWeaponsSection onInsertText={onInsertText} />
-        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border-color)" }}>
-          <p className="text-[9px] uppercase tracking-wider text-gray-500 font-display mb-1.5">Tōrō</p>
-          <CombatToroSection onInsertText={onInsertText} />
-        </div>
-        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border-color)" }}>
-          <p className="text-[9px] uppercase tracking-wider text-gray-500 font-display mb-1.5">Sorpresa narrativa</p>
-          <button
-            type="button"
-            className="chat-combat-master-btn"
-            onClick={() => onInsertText("[sorpresa:1] ")}
+        <div className="mb-2">
+          <span
+            className="text-[9.5px] uppercase tracking-[0.2em] font-display"
+            style={{ color: "var(--muted-foreground)" }}
           >
-            + [sorpresa:1]
-          </button>
-          <p className="mt-1.5 text-[8px] text-gray-600 leading-relaxed">
-            Aggiunge il tag sorpresa al prossimo lancio — visibile al Master.
-          </p>
+            In uso ora
+          </span>
+          <span className="text-[9.5px] ml-1.5 normal-case tracking-normal" style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
+            — cosa impugni e cos&apos;è Tōrō (equipaggi in scheda)
+          </span>
+        </div>
+        <CombatWeaponsSection />
+        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border-color)" }}>
+          <CombatToroSection onInsertText={onInsertText} />
         </div>
       </section>
 
