@@ -360,21 +360,27 @@ export function LancioWazaPanel({
 
   const ir = irBreakdown?.successIndex ?? null;
 
+  // Kaden tier bonus: cs12/frattura +1, overheat +2 (solo waza Hadō).
+  const kadenTierBonus =
+    sel?.styleId === "hado" && kadenIntensity === "overheat" ? 2
+    : sel?.styleId === "hado" && (kadenIntensity === "cs12" || kadenIntensity === "frattura") ? 1
+    : 0;
+
   // Danno — §5: valore-tier + bonus situazionali (pre-mitigazione).
   const damage = useMemo(() => {
     if (!sel?.tier) return null;
     return computeLaunchDamagePreview({
-      tier: sel.tier,
+      tier: Math.min(5, sel.tier + kadenTierBonus) as 1 | 2 | 3 | 4 | 5,
       attackerSheet: skiruSheet ?? null,
       declaredSkiruId: skiruA || null,
       wazaEffectText: sel.effect,
     });
-  }, [sel, skiruSheet, skiruA]);
+  }, [sel, skiruSheet, skiruA, kadenTierBonus]);
 
   // CS residui — costo waza + eventuale Batteria −5 (§5).
-  const batteriaCsCost = sel?.evocaCostrutto && constructSticker.BATTERIA ? BATTERIA_CS_CAP : 0;
+  const batteriaDeposit = sel?.evocaCostrutto && constructSticker.BATTERIA ? BATTERIA_CS_CAP : 0;
   const csAfter =
-    currentCs != null && sel?.cs != null ? currentCs - sel.cs - batteriaCsCost : null;
+    currentCs != null && sel?.cs != null ? currentCs - sel.cs : null;
 
   const targetOptions = useMemo(
     () => usersInRoom.filter((u) => u.id && !u.isMe).map((u) => ({ id: u.id, label: u.name })),
@@ -410,19 +416,34 @@ export function LancioWazaPanel({
     return narrative.trim() ? `${narrative.trim()}\n${line}` : line;
   }, [sel, targetId, skiruSheet, skiruA, ir, launchExtras, currentCs, wazaResolveExtras, narrative]);
 
+  const applyFrattura = useCallback(() => {
+    if (kadenIntensity === "frattura") {
+      void api.patch("/characters/me/kaden-frattura", {}).then((v) => {
+        const vitals = v as { hpCurrent: number; hpMax: number };
+        if (vitals?.hpCurrent != null && characterId) {
+          window.dispatchEvent(new CustomEvent("characterHpUpdated", {
+            detail: { characterId, hpCurrent: vitals.hpCurrent, hpMax: vitals.hpMax },
+          }));
+        }
+      }).catch(() => {});
+    }
+  }, [kadenIntensity, characterId]);
+
   const doInsert = useCallback(() => {
     const body = buildBody();
     if (!body) return;
+    applyFrattura();
     onInsertText(`${body}\n`);
     setNarrative("");
-  }, [buildBody, onInsertText]);
+  }, [buildBody, onInsertText, applyFrattura]);
 
   const doSend = useCallback(() => {
     const body = buildBody();
     if (!body || !onSendMessage) return;
+    applyFrattura();
     onSendMessage(body);
     setNarrative("");
-  }, [buildBody, onSendMessage]);
+  }, [buildBody, onSendMessage, applyFrattura]);
 
   if (!characterId) {
     return <p className="text-[10px] text-gray-500 italic">Seleziona un personaggio per lanciare waza.</p>;
@@ -638,7 +659,7 @@ export function LancioWazaPanel({
                   <span>Resistenza <b style={{ color: "var(--foreground)" }}>{constructProfile.resistenza}</b></span>
                   <span>Mov <b style={{ color: "var(--foreground)" }}>{constructProfile.movimento_m != null ? `${constructProfile.movimento_m}m` : "—"}</b></span>
                   {constructSticker.BATTERIA && (
-                    <span style={{ color: "var(--accent-ember, #e8763a)" }}>Batteria −{BATTERIA_CS_CAP} CS → al costrutto</span>
+                    <span style={{ color: "var(--accent-ember, #e8763a)" }}>Batteria: {BATTERIA_CS_CAP} CS depositati nel costrutto (recuperabili)</span>
                   )}
                 </div>
               )}
@@ -832,6 +853,11 @@ export function LancioWazaPanel({
           {csAfter != null && (
             <div className={`lwz__cs-after${csAfter < 0 ? " lwz__cs-after--warn" : ""}`}>
               CS dopo il lancio: {csAfter}
+              {batteriaDeposit > 0 && (
+                <span style={{ color: "var(--accent-ember, #e8763a)", marginLeft: 6, fontSize: "0.8em" }}>
+                  +{batteriaDeposit} depositati nel costrutto
+                </span>
+              )}
             </div>
           )}
         </div>

@@ -666,6 +666,20 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       detail: { summary: 'Aggiorna armi impugnate, oggetti Tōrō e munizioni (Dichiarazione d\'uso)' },
     })
 
+    .patch('/me/kaden-frattura', async ({ user, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      try {
+        const char = await characterService.getCharacterByUserId(user.id)
+        if (!char) { set.status = 404; return { error: 'Personaggio non trovato' } }
+        const vitals = await characterService.applyCombatHpDelta(char.id, -5)
+        broadcastCharacterHpUpdated({ characterId: char.id, ...vitals })
+        return vitals
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore frattura HP' }
+      }
+    }, { detail: { summary: 'Giocatore: frattura volontaria Kaden (−5 HP self-damage)' } })
+
     .get('/:id/field-constructs', async ({ user, params, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       try {

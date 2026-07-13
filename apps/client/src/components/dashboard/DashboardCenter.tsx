@@ -48,7 +48,9 @@ import type { ChatMessage, Presente, CharacterSummary } from "./types";
 import { QuarterTurnHud } from "./QuarterTurnHud";
 import { ChatInfoPanel } from "./ChatInfoPanel";
 import { ChatWazaResolutionPost } from "./chat-combat/ChatWazaResolutionPost";
+import { ChatConstructResolutionPost } from "./chat-combat/ChatConstructResolutionPost";
 import { buildChatWazaPostFromMessage } from "./chat-combat/buildChatWazaPostFromMessage";
+import { buildConstructPostFromMessage } from "./chat-combat/buildConstructPostFromMessage";
 
 /** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
 const MOBILE_CHAT_MAX_LENGTH = 500;
@@ -2858,6 +2860,21 @@ function ChatMessageBlock({
       });
     });
   }, [message.content, message.name, message.surname, actorSkiruSheet]);
+
+  const constructPost = useMemo(() => {
+    const wazaNames = extractWazaTagNames(message.content);
+    for (const name of wazaNames) {
+      const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(name));
+      const post = buildConstructPostFromMessage({
+        messageContent: message.content,
+        wazaName: name,
+        wazaEffect: entry?.effect ?? entry?.description ?? null,
+        actorSkiruSheet: actorSkiruSheet ?? null,
+      });
+      if (post) return post;
+    }
+    return null;
+  }, [message.content, actorSkiruSheet]);
   const narrativeBody = useMemo(
     () => removeWazaTagsFromText(message.content),
     [message.content],
@@ -2894,11 +2911,12 @@ function ChatMessageBlock({
     return (
       <div className="w-full mb-6 p-5 bg-black/40 border border-[var(--accent-gold)]/30 rounded shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] relative">
         <div className="masterscreen-format font-sans text-[13px] leading-relaxed whitespace-pre-wrap mb-4">
-          {(wazaLaunches.length > 0) && (
+          {(wazaLaunches.length > 0 || constructPost) && (
             <div className="mb-3 space-y-2">
               {wazaLaunches.map((post, i) => (
                 <ChatWazaResolutionPost key={`${post.wazaRomaji}-${i}`} data={post} />
               ))}
+              {constructPost && <ChatConstructResolutionPost data={constructPost} />}
             </div>
           )}
           <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
@@ -2925,6 +2943,7 @@ function ChatMessageBlock({
         {wazaLaunches.map((post, i) => (
           <ChatWazaResolutionPost key={`${post.wazaRomaji}-${i}`} data={post} />
         ))}
+        {constructPost && <ChatConstructResolutionPost data={constructPost} />}
         {hasNarrativeAfterWaza && (
           <p
             className="m-0 leading-relaxed whitespace-pre-wrap break-words font-sans text-[13px] text-[#7d7f7d] text-justify"
