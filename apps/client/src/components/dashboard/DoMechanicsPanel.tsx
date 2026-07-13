@@ -283,32 +283,33 @@ export function DoMechanicsPanel({
         <div className="rounded border border-[var(--border-color)]/80 bg-black/25 p-3">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-[10px] font-display uppercase text-[var(--accent-gold)]">
-              Atsuryoku · Hadō-dō
+              Kaden · Hadō-dō
             </span>
             <span className="text-[9px] tabular-nums text-gray-400">{state.hado.pressure}/15</span>
           </div>
-          <p className="text-[10px] text-gray-500 mb-2 leading-relaxed">
-            Pressione da CS trattenuto: bonus danno fino al +30%. Metamorfosi a CS ≥ 12 (in combattimento).
-          </p>
           <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] font-display uppercase text-gray-500 mb-2">
-            <dt>Bonus danno</dt>
-            <dd className="text-right text-[var(--accent-gold)] tabular-nums">+{state.hado.damageBonusPercent}%</dd>
             {state.hado.metamorphosisReady && (
               <>
-                <dt>Pressione attiva</dt>
-                <dd className="text-right text-[var(--accent-gold)]">CS ≥ 12</dd>
+                <dt>CS ≥ 12</dt>
+                <dd className="text-right text-[var(--accent-gold)]">+1 tier emissioni</dd>
               </>
             )}
             {state.hado.overheatBand && (
               <>
-                <dt>Banda overheat</dt>
-                <dd className="text-right text-[var(--accent-violet-light)]">Attiva</dd>
+                <dt>Overheat</dt>
+                <dd className="text-right text-[var(--accent-violet-light)]">+2 tier + drain</dd>
+              </>
+            )}
+            {!state.hado.metamorphosisReady && !state.hado.overheatBand && (
+              <>
+                <dt>Stato</dt>
+                <dd className="text-right text-gray-600">Normale</dd>
               </>
             )}
           </dl>
           {state.hado.pressure > 0 && (
             <button type="button" disabled={saving} className={btnClass} onClick={() => action("hado", "vent")}>
-              Sfiato (−4 pressione)
+              Sfiato (−4 kaden)
             </button>
           )}
           {(state.investimento.active || state.investimento.payoutPending) && (
@@ -332,15 +333,9 @@ export function DoMechanicsPanel({
           )}
           {state.shakkinDebts.length > 0 && (
             <p className="text-[9px] text-[var(--accent-violet-light)] mt-2 leading-snug">
-              Debiti Shakkin attivi: {state.shakkinDebts.length} (
-              {state.shakkinDebts.reduce((n, d) => n + d.stacks, 0)} stack totali)
+              Debiti Shakkin attivi: {state.shakkinDebts.length} ({state.shakkinDebts.reduce((n, d) => n + d.stacks, 0)} stack totali)
             </p>
           )}
-          <p className="text-[9px] text-gray-600 mt-2 leading-snug">
-            Tag chat: <span className="text-[var(--accent-gold)]">[investimento:+N]</span> ·{" "}
-            <span className="text-[var(--accent-gold)]">[investimento:riscuoti]</span> ·{" "}
-            <span className="text-[var(--accent-gold)]">[debito:NomePG]</span> con Shakkin
-          </p>
         </div>
       )}
 
