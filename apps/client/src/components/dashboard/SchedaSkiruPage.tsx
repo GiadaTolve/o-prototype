@@ -43,6 +43,8 @@ const DERIVED_LABELS: Record<string, string> = {
   constructResistance: "Res. Costrutti",
   cac: "CAC",
   cad: "CAD",
+  dodgeIr: "Schivata",
+  parryIr: "Parata",
 };
 
 const DOMAIN_ACCENT: Record<
@@ -117,6 +119,8 @@ function SkiruStatsBar({
     movementMetersPerQuarter: number;
     cac: number;
     cad: number;
+    dodgeIr: number;
+    parryIr: number;
   };
 }) {
   return (
@@ -151,6 +155,18 @@ function SkiruStatsBar({
         label="CAD"
         value={derived.cad}
         tooltip="Danno colpo a distanza"
+        valueClass="text-[var(--accent-gold)]"
+      />
+      <SkiruStatWithTooltip
+        label="Schivata"
+        value={derived.dodgeIr}
+        tooltip="IR schivata · Hansha + 0,5 × Chōkaku"
+        valueClass="text-[var(--accent-gold)]"
+      />
+      <SkiruStatWithTooltip
+        label="Parata"
+        value={derived.parryIr}
+        tooltip="IR parata · Konjō + 0,5 × Kairiki"
         valueClass="text-[var(--accent-gold)]"
       />
     </div>
@@ -1031,6 +1047,8 @@ export function SchedaSkiruPage({
           : derivedFromSheet.movementMetersPerQuarter,
       cac: derivedFromSheet.cac,
       cad: derivedFromSheet.cad,
+      dodgeIr: derivedFromSheet.dodgeIr,
+      parryIr: derivedFromSheet.parryIr,
     };
   }, [apiData, canEdit, derivedFromChar, derivedFromSheet]);
 

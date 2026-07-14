@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRT font — opzioni retro-futuristiche</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=DotGothic16&family=Michroma&family=Nova+Mono&family=Oxanium:wght@400;500;600&family=Quantico:ital,wght@0,400;0,700;1,400&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&family=Workbench&display=swap" rel="stylesheet" />
+  <style>
+    @font-face {
+      font-family: "VCR OSD Mono";
+      src: url("/fonts/VCR_OSD_MONO_1.001.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --accent-gold: #d4af37;
+      --accent-violet: #7c3aed;
+      --accent-violet-light: #a78bfa;
+      --background: #050508;
+      --panel-bg: #0f0f12;
+      --button-bg: #141418;
+      --border-color: #2a2a32;
+      --text: #e5e5e5;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+      background-image: radial-gradient(circle at 50% -20%, rgba(42, 5, 20, 0.55) 0%, transparent 45%);
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    header h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+    }
+
+    header p {
+      margin: 0 auto;
+      max-width: 40rem;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.45rem;
+      margin-bottom: 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 0.75rem 0;
+      background: rgba(5, 5, 8, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .filter-btn {
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: var(--button-bg);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+      gap: 1rem;
+    }
+
+    .option {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+      overflow: hidden;
+    }
+
+    .option.is-hidden { display: none; }
+
+    .option-head {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .option-head h2 {
+      margin: 0;
+      font-size: 0.82rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+    }
+
+    .option-head p {
+      margin: 0.3rem 0 0;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+
+    .tag {
+      flex-shrink: 0;
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.4rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--accent-violet-light);
+    }
+
+    .tag.current { color: var(--accent-gold); border-color: rgba(212, 175, 55, 0.4); }
+
+    .crt-stack {
+      padding: 0.85rem;
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .crt {
+      background: #000;
+      border: 1px solid color-mix(in srgb, var(--accent-violet) 38%, var(--border-color));
+      border-radius: 5px;
+      padding: 0.65rem 0.7rem;
+      color: var(--accent-violet-light);
+      line-height: 1.4;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 16px rgba(124, 58, 237, 0.1);
+    }
+
+    .crt::after {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.11) 2px,
+        rgba(0, 0, 0, 0.11) 3px
+      );
+      opacity: 0.55;
+    }
+
+    .crt > * { position: relative; z-index: 1; }
+
+    .crt-label {
+      color: var(--accent-violet);
+      text-transform: uppercase;
+      margin: 0 0 0.35rem;
+      opacity: 0.9;
+    }
+
+    .crt-gold { color: var(--accent-gold); }
+    .crt-dim { color: #666; }
+
+    .crt p { margin: 0.15rem 0; }
+
+    /* Per-option font sizes — alcuni font vanno scalati */
+    .opt-vcr { --crt-size: 0.68rem; --crt-label-size: 0.56rem; --crt-ls: 0.06em; }
+    .opt-vt323 { --crt-size: 0.95rem; --crt-label-size: 0.78rem; --crt-ls: 0.04em; }
+    .opt-share { --crt-size: 0.62rem; --crt-label-size: 0.52rem; --crt-ls: 0.1em; }
+    .opt-space { --crt-size: 0.64rem; --crt-label-size: 0.54rem; --crt-ls: 0.05em; }
+    .opt-oxanium { --crt-size: 0.72rem; --crt-label-size: 0.58rem; --crt-ls: 0.12em; }
+    .opt-quantico { --crt-size: 0.7rem; --crt-label-size: 0.58rem; --crt-ls: 0.08em; }
+    .opt-rajdhani { --crt-size: 0.82rem; --crt-label-size: 0.66rem; --crt-ls: 0.14em; }
+    .opt-michroma { --crt-size: 0.52rem; --crt-label-size: 0.46rem; --crt-ls: 0.06em; }
+    .opt-audiowide { --crt-size: 0.52rem; --crt-label-size: 0.44rem; --crt-ls: 0.08em; }
+    .opt-dot { --crt-size: 0.72rem; --crt-label-size: 0.62rem; --crt-ls: 0.02em; }
+    .opt-nova { --crt-size: 0.62rem; --crt-label-size: 0.52rem; --crt-ls: 0.04em; }
+    .opt-workbench { --crt-size: 0.78rem; --crt-label-size: 0.64rem; --crt-ls: 0.02em; }
+
+    .crt-stack .crt {
+      font-size: var(--crt-size);
+      letter-spacing: var(--crt-ls);
+    }
+
+    .crt-stack .crt-label {
+      font-size: var(--crt-label-size);
+      letter-spacing: calc(var(--crt-ls) + 0.06em);
+    }
+
+    .guide {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .guide h3 {
+      margin: 0 0 0.75rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+    }
+
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .guide-item {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .guide-item strong {
+      display: block;
+      color: var(--accent-violet-light);
+      font-size: 0.65rem;
+      margin-bottom: 0.15rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>CRT — opzioni retro-futuristiche</h1>
+      <p>
+        Stessi contenuti su Visor, Beeper, MP3 e Yume. Confronta il vibe rispetto a VCR OSD Mono.
+        Apri con dev server: <code style="color:var(--accent-violet-light)">/font-crt-options-preview.html</code>
+      </p>
+    </header>
+
+    <nav class="filters" aria-label="Filtra">
+      <button class="filter-btn active" data-filter="all">Tutte</button>
+      <button class="filter-btn" data-filter="terminal">Terminal / CRT</button>
+      <button class="filter-btn" data-filter="hud">HUD sci-fi</button>
+      <button class="filter-btn" data-filter="synth">Synthwave</button>
+      <button class="filter-btn" data-filter="lcd">LCD / pixel</button>
+    </nav>
+
+    <div class="grid" id="grid">
+
+      <article class="option opt-vcr" data-tags="terminal" style="--crt-font: 'VCR OSD Mono', ui-monospace, monospace">
+        <div class="option-head">
+          <div>
+            <h2>VCR OSD Mono</h2>
+            <p>Attuale. VHS/OSD autentico ma resa un po' grezza su LCD piccoli.</p>
+          </div>
+          <span class="tag current">In uso</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-vt323" data-tags="terminal" style="--crt-font: 'VT323', monospace">
+        <div class="option-head">
+          <div>
+            <h2>VT323</h2>
+            <p>Terminal green-screen anni '80. Leggero, scanline-friendly, molto leggibile.</p>
+          </div>
+          <span class="tag">Terminal</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-share" data-tags="hud terminal" style="--crt-font: 'Share Tech Mono', monospace">
+        <div class="option-head">
+          <div>
+            <h2>Share Tech Mono</h2>
+            <p>HUD militare / cockpit. Pulito, tech, leggermente wider — ottimo su Beeper.</p>
+          </div>
+          <span class="tag">HUD</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-space" data-tags="terminal hud" style="--crt-font: 'Space Mono', monospace">
+        <div class="option-head">
+          <div>
+            <h2>Space Mono</h2>
+            <p>Mono geometrico con carattere retro-space. Equilibrato tra vintage e moderno.</p>
+          </div>
+          <span class="tag">Bilanciato</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-oxanium" data-tags="hud synth" style="--crt-font: Oxanium, sans-serif">
+        <div class="option-head">
+          <div>
+            <h2>Oxanium</h2>
+            <p>Cyber / mecha display. Angolare, futuristico — forte su brand «OYASUMI · BEEPER».</p>
+          </div>
+          <span class="tag">Cyber</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-quantico" data-tags="hud synth" style="--crt-font: Quantico, sans-serif">
+        <div class="option-head">
+          <div>
+            <h2>Quantico</h2>
+            <p>Tech militare anni 2000. Tagliente, da pannello di controllo nave.</p>
+          </div>
+          <span class="tag">Tech</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-rajdhani" data-tags="synth hud" style="--crt-font: Rajdhani, sans-serif">
+        <div class="option-head">
+          <div>
+            <h2>Rajdhani</h2>
+            <p>Synthwave / Tron-adjacent. Condensato, luminoso su sfondo nero — molto retro-future.</p>
+          </div>
+          <span class="tag">Synth</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-michroma" data-tags="synth hud" style="--crt-font: Michroma, sans-serif">
+        <div class="option-head">
+          <div>
+            <h2>Michroma</h2>
+            <p>Space age anni '70. Display bold, iconico — meglio su titoli CRT che su paragrafi lunghi.</p>
+          </div>
+          <span class="tag">Space age</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-audiowide" data-tags="synth" style="--crt-font: Audiowide, sans-serif">
+        <div class="option-head">
+          <div>
+            <h2>Audiowide</h2>
+            <p>Racing / synthwave logo font. Estremo su marquee MP3, meno adatto a chat Yume lunga.</p>
+          </div>
+          <span class="tag">Bold</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-dot" data-tags="lcd" style="--crt-font: 'DotGothic16', sans-serif">
+        <div class="option-head">
+          <div>
+            <h2>DotGothic16</h2>
+            <p>LCD giapponese / famicom. Pixel retro — curioso abbinamento con estetica Oyasumi.</p>
+          </div>
+          <span class="tag">LCD JP</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-nova" data-tags="hud terminal" style="--crt-font: 'Nova Mono', monospace">
+        <div class="option-head">
+          <div>
+            <h2>Nova Mono</h2>
+            <p>Mono geometrico art-deco tech. Elegante, meno «videocassetta» di VCR.</p>
+          </div>
+          <span class="tag">Mono</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+      <article class="option opt-workbench" data-tags="lcd terminal" style="--crt-font: Workbench, monospace">
+        <div class="option-head">
+          <div>
+            <h2>Workbench</h2>
+            <p>Pixel monospace stilizzato. Vibe demoscene / computer anni '90, più nitido di VCR.</p>
+          </div>
+          <span class="tag">Pixel</span>
+        </div>
+        <div class="crt-stack" style="font-family: var(--crt-font)"></div>
+      </article>
+
+    </div>
+
+    <section class="guide">
+      <h3>Come scegliere</h3>
+      <div class="guide-grid">
+        <div class="guide-item"><strong>Più leggibile in chat</strong>VT323, Share Tech Mono, Space Mono — testo lungo Yume senza affaticare.</div>
+        <div class="guide-item"><strong>Più retro-future</strong>Rajdhani, Oxanium, Quantico — pannelli e brand Beeper con presenza.</div>
+        <div class="guide-item"><strong>Più CRT autentico</strong>VT323, Workbench — scanline e glow viola funzionano bene.</div>
+        <div class="guide-item"><strong>Più Oyasumi / JP</strong>DotGothic16 — LCD retro giapponese, distintivo ma divisivo.</div>
+      </div>
+    </section>
+  </div>
+
+  <template id="crt-template">
+    <div class="crt">
+      <p class="crt-label">▌ News Visor</p>
+      <p class="crt-gold">[NUOVO] Manutenzione server — domenica 22:00</p>
+      <p>[FORUM] Bilanciamento path Genzai</p>
+    </div>
+    <div class="crt">
+      <p class="crt-label">▌ Beeper</p>
+      <p>OYASUMI · BEEPER · ● LIVE</p>
+      <p class="crt-gold">&gt; FETCH · Ricognizione magazzino sud</p>
+      <p>&gt; FETCH · Scorta medicinali</p>
+    </div>
+    <div class="crt">
+      <p class="crt-label">▌ Lettore MP3</p>
+      <p class="crt-gold">▶ MIDNIGHT PARADE — OYASUMI OST</p>
+      <p>VOL 72% · TRK 03/12</p>
+    </div>
+    <div class="crt">
+      <p class="crt-label">▌ Yume-chan</p>
+      <p class="crt-gold">YUME-CHAN · ONLINE</p>
+      <p>&gt; Ciao! Sono Yume-chan ♪</p>
+      <p>&gt; Come ti chiami?</p>
+      <p class="crt-dim">[ digita qui… ]</p>
+    </div>
+  </template>
+
+  <script>
+    const tpl = document.getElementById("crt-template");
+    document.querySelectorAll(".crt-stack").forEach((stack) => {
+      stack.appendChild(tpl.content.cloneNode(true));
+    });
+
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const f = btn.dataset.filter;
+        document.querySelectorAll(".option").forEach((card) => {
+          if (f === "all") {
+            card.classList.remove("is-hidden");
+            return;
+          }
+          const tags = (card.dataset.tags || "").split(" ");
+          card.classList.toggle("is-hidden", !tags.includes(f));
+        });
+      });
+    });
+  </script>
+</body>
+</html>

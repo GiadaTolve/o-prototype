@@ -43,25 +43,33 @@
   gap: 0.5rem;
   padding: 0.35rem 0.5rem 0.55rem;
   border-bottom: 1px solid color-mix(in srgb, var(--border-color) 80%, black);
+  min-width: 0;
 }
 
 .fetch-pager__brand {
-  font-family: ui-monospace, "Courier New", monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.28em;
+  font-family: var(--font-workbench), ui-monospace, monospace;
+  font-size: clamp(0.54rem, 1.15vh, 0.68rem);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--pager-lcd-dim);
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fetch-pager__status {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-family: ui-monospace, monospace;
-  font-size: 0.58rem;
-  letter-spacing: 0.12em;
+  font-family: var(--font-workbench), ui-monospace, monospace;
+  font-size: clamp(0.5rem, 1vh, 0.58rem);
+  letter-spacing: 0.08em;
   color: var(--pager-lcd-dim);
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .fetch-pager__led {
@@ -131,7 +139,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  font-family: ui-monospace, "Courier New", monospace;
+  font-family: var(--font-workbench), ui-monospace, monospace;
   color: var(--pager-lcd-text);
 }
 
@@ -239,7 +247,7 @@
 }
 
 .fetch-pager__btn {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-workbench), ui-monospace, monospace;
   font-size: 0.6rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -281,7 +289,7 @@
   width: 100%;
   margin-top: 0.25rem;
   padding: 0.5rem 0.65rem;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-workbench), ui-monospace, monospace;
   font-size: 0.58rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -340,7 +348,7 @@
   overflow-y: auto;
   background: var(--pager-lcd-bg);
   border: 2px inset color-mix(in srgb, var(--border-color) 70%, black);
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-workbench), ui-monospace, monospace;
   color: var(--pager-lcd-text);
   font-size: 0.7rem;
   line-height: 1.5;
@@ -369,7 +377,7 @@
   justify-content: space-between;
   padding: 0.55rem 0.75rem;
   border-bottom: 1px solid var(--border-color);
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-workbench), ui-monospace, monospace;
   font-size: 0.58rem;
   letter-spacing: 0.18em;
   color: var(--pager-lcd-dim);
@@ -537,7 +545,7 @@
 .fetch-pager-loading {
   padding: 2rem;
   text-align: center;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-workbench), ui-monospace, monospace;
   font-size: 0.68rem;
   letter-spacing: 0.2em;
   color: var(--pager-lcd-dim);
@@ -582,8 +590,8 @@
 }
 
 .fetch-pager--home .fetch-pager__brand {
-  font-size: 0.5rem;
-  letter-spacing: 0.22em;
+  font-size: clamp(0.52rem, 1.05vh, 0.6rem);
+  letter-spacing: 0.08em;
 }
 
 .fetch-pager--home .fetch-pager__status {
@@ -709,7 +717,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-workbench), ui-monospace, monospace;
   font-size: 0.52rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;

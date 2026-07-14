@@ -64,12 +64,15 @@ export function LandingRegisterForm({
   const [showRecapButtons, setShowRecapButtons] = useState(false);
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  /** Stato locale: non persistere — evita sessione bloccata su refresh durante il redirect. */
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const activeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sessionRef = useRef(session);
   const fixFieldRef = useRef<"name" | "email" | null>(null);
+  const registeredTokenRef = useRef<string | null>(null);
   sessionRef.current = session;
 
   const linkHandlers: YumeLinkHandlers = {
@@ -174,20 +177,56 @@ export function LandingRegisterForm({
       if (!loginRes.ok || !loginBody.token) {
         throw new Error(loginBody.error || "Login automatico non riuscito");
       }
+
+      const token = loginBody.token;
+      localStorage.setItem("token", token);
+      registeredTokenRef.current = token;
       clearYumeSession();
-      persist({ isComplete: true });
+      setIsFinishing(true);
+      setIsInputDisabled(true);
+
       playMessageSequence(
         [
           { text: `Ecco fatto. Ora ${data.nomePg} è pronto a venire al mondo.`, delay: 900 },
           { text: "Ti aspettiamo~ 🖤", delay: 1200 },
         ],
-        () => {
-          setTimeout(() => onRegisterSuccess(loginBody.token!), 2200);
-        },
       );
     },
-    [onRegisterSuccess, persist, playMessageSequence],
+    [playMessageSequence],
   );
+
+  const restartRegistration = useCallback(() => {
+    clearAllTimers();
+    clearYumeSession();
+    const fresh = createFreshSession();
+    sessionRef.current = fresh;
+    setSession(fresh);
+    setMessages([]);
+    setInputValue("");
+    setError("");
+    setIsFinishing(false);
+    setIsInputDisabled(true);
+    setShowYesNo(false);
+    setShowRecapButtons(false);
+    playMessageSequence(OPENING, () => {
+      const next = { ...createFreshSession(), step: 0 };
+      saveYumeSession(next);
+      setSession(next);
+      sessionRef.current = next;
+      setIsInputDisabled(false);
+    });
+  }, [clearAllTimers, playMessageSequence]);
+
+  const goToLand = useCallback(() => {
+    const token = registeredTokenRef.current ?? localStorage.getItem("token");
+    if (token) onRegisterSuccess(token);
+  }, [onRegisterSuccess]);
+
+  const startNewRegistration = useCallback(() => {
+    localStorage.removeItem("token");
+    registeredTokenRef.current = null;
+    restartRegistration();
+  }, [restartRegistration]);
 
   const handleFinalSubmit = useCallback(async () => {
     const data = sessionRef.current.userData;
@@ -778,6 +817,23 @@ export function LandingRegisterForm({
 
   useEffect(() => {
     const stored = loadYumeSession();
+    const savedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    // Sessione legacy bloccata: isComplete salvato ma redirect non completato
+    if (stored?.isComplete) {
+      clearYumeSession();
+      if (savedToken) {
+        onRegisterSuccess(savedToken);
+        return;
+      }
+      playMessageSequence(OPENING, () => {
+        persist({ step: 0 });
+        setIsInputDisabled(false);
+        setHydrated(true);
+      });
+      return () => clearAllTimers();
+    }
+
     if (stored && stored.messages.length > 0) {
       setSession(stored);
       setMessages(
@@ -787,8 +843,8 @@ export function LandingRegisterForm({
           content: m.sender === "yume" ? renderYume(m.text) : m.text,
         })),
       );
-      setIsInputDisabled(stored.isTerminated || stored.isComplete || false);
-      setShowRecapButtons(stored.step === 11 && !stored.isComplete && !stored.isTerminated);
+      setIsInputDisabled(stored.isTerminated || false);
+      setShowRecapButtons(stored.step === 11 && !stored.isTerminated);
       setHydrated(true);
       return;
     }
@@ -823,9 +879,11 @@ export function LandingRegisterForm({
   const step = session.step;
   const inputType = step === 9 || step === 10 ? "password" : step === 8 ? "email" : "text";
 
+  const flowLocked = isFinishing || session.isTerminated;
+
   const placeholder = (() => {
     if (session.isTerminated) return "Registrazione non possibile.";
-    if (session.isComplete) return "Registrazione completata!";
+    if (isFinishing) return "Registrazione completata!";
     if (isInputDisabled) return "Yume-chan sta scrivendo...";
     if (step === 6) return "Preferenze di gioco (opzionale)...";
     if (step === 11) return 'Scrivi "sì" o "no"...';
@@ -850,7 +908,7 @@ export function LandingRegisterForm({
             <p className="chat-header-status">
               {isYumeTyping
                 ? "sta scrivendo…"
-                : session.isComplete
+                : isFinishing
                   ? "iscrizione completata"
                   : "guida all'iscrizione"}
             </p>
@@ -894,14 +952,16 @@ export function LandingRegisterForm({
             </div>
           </div>
         )}
-        {session.isComplete && (
-          <p className="success-message">Benvenuto in Oyasumi! Ti porto alla land...</p>
+        {isFinishing && (
+          <div className="chat-register-recovery">
+            <p className="success-message">Iscrizione completata. Scegli cosa fare:</p>
+          </div>
         )}
         {error && <p className="error-message">{error}</p>}
         <div ref={chatEndRef} />
       </div>
 
-      {(showYesNo || showRecapButtons) && !isInputDisabled && !session.isTerminated && !session.isComplete && (
+      {(showYesNo || showRecapButtons) && !isInputDisabled && !session.isTerminated && !isFinishing && (
         <div className="chat-quick-replies">
           {showYesNo && (
             <>
@@ -927,28 +987,39 @@ export function LandingRegisterForm({
       )}
 
       <form className="chat-composer" onSubmit={handleUserReply}>
-        <div className="chat-composer-field">
-          <input
-            type={inputType}
-            className="chat-input"
-            placeholder={placeholder}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            disabled={isInputDisabled || session.isComplete || session.isTerminated}
-            aria-label="Risposta a Yume-chan"
-            autoComplete={step === 9 || step === 10 ? "new-password" : step === 8 ? "email" : "off"}
-          />
-          <button
-            type="submit"
-            className="chat-send-button"
-            disabled={isInputDisabled || session.isComplete || session.isTerminated}
-            aria-label="Invia messaggio"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-              <path fill="currentColor" d="M3.4 20.6 21 12 3.4 3.4l2.8 7.2L17 12l-10.8 1.4-2.8 7.2z" />
-            </svg>
-          </button>
-        </div>
+        {isFinishing ? (
+          <div className="chat-finish-actions">
+            <button type="button" className="chat-finish-btn chat-finish-btn--gold" onClick={goToLand}>
+              Vai alla land
+            </button>
+            <button type="button" className="chat-finish-btn" onClick={startNewRegistration}>
+              Nuova iscrizione
+            </button>
+          </div>
+        ) : (
+          <div className="chat-composer-field">
+            <input
+              type={inputType}
+              className="chat-input"
+              placeholder={placeholder}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              disabled={isInputDisabled || flowLocked}
+              aria-label="Risposta a Yume-chan"
+              autoComplete={step === 9 || step === 10 ? "new-password" : step === 8 ? "email" : "off"}
+            />
+            <button
+              type="submit"
+              className="chat-send-button"
+              disabled={isInputDisabled || flowLocked}
+              aria-label="Invia messaggio"
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                <path fill="currentColor" d="M3.4 20.6 21 12 3.4 3.4l2.8 7.2L17 12l-10.8 1.4-2.8 7.2z" />
+              </svg>
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

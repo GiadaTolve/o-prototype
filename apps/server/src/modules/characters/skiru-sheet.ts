@@ -41,6 +41,8 @@ export function buildSkiruCharacterComputed(
       movementMetersPerQuarter: derived.movementMetersPerQuarter,
       cac: derived.cac,
       cad: derived.cad,
+      dodgeIr: derived.dodgeIr,
+      parryIr: derived.parryIr,
     },
     skiruSheet: sheet,
     skiruDomains,

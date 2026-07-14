@@ -8,6 +8,8 @@ export type CharacterComputed = {
   movement?: number;
   cac?: number;
   cad?: number;
+  dodgeIr?: number;
+  parryIr?: number;
   jigokaMax?: number;
   reflexes?: number;
   velocity?: number;
@@ -23,6 +25,8 @@ export type ResolvedSkiruStats = {
   movementMeters: number;
   cac: number;
   cad: number;
+  dodgeIr: number;
+  parryIr: number;
 };
 
 const MOVEMENT_BAR_CAP = 20;
@@ -44,6 +48,8 @@ export function resolveCharacterComputed(
     movementMeters: Math.max(0, c.movementMetersPerQuarter ?? c.movement ?? 0),
     cac: Math.max(0, c.cac ?? 0),
     cad: Math.max(0, c.cad ?? 0),
+    dodgeIr: Math.max(0, c.dodgeIr ?? 0),
+    parryIr: Math.max(0, c.parryIr ?? 0),
   };
 }
 

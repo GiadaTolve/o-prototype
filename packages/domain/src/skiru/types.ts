@@ -23,6 +23,8 @@ export type SkiruDerivedDriver =
   | 'constructResistance'
   | 'cac'
   | 'cad'
+  | 'dodgeIr'
+  | 'parryIr'
   | 'chronoStack'
   | 'maxConstructs'
   | 'elementalStatus'

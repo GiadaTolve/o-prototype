@@ -27,7 +27,7 @@ Usare **solo** queste variabili per colori, ombre e glow:
 
 - **Animate.css** — animazioni UI: `animate__animated animate__fadeIn`, `animate__slideInUp`, ecc.
 - **Font Awesome** — icone
-- **Font:** Cinzel (display), Inter (sans), Cormorant Garamond (accent)
+- **Font:** Source Sans 3 (sans), Philosopher (display), EB Garamond (accent), Protest Demo (wordmark Oyasumi), Workbench (schermi CRT)
 
 ## Principi
 

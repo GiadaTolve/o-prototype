@@ -79,6 +79,10 @@ export const characters = pgTable('characters', {
   unlockedStyleIds?: string[];
   /** Tōrō attivo: mano a contatto con l'arma. */
   toroWeaponInContact?: boolean;
+  /** Carica batteria Tōrō (condizione toro.batteria). */
+  toroBatteria?: boolean;
+  /** Proprietà sticker costrutti (BATTERIA, TORO, …) per id costrutto. */
+  fieldConstructProprieta?: Record<string, string[]>;
   }>().default({}),
 
   // --- RUOLO SOCIALE ---

@@ -254,17 +254,7 @@ export function PannelloCombattimentoWindow({
         className="rounded-xl border p-3"
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
       >
-        <div className="mb-2">
-          <span
-            className="text-[9.5px] uppercase tracking-[0.2em] font-display"
-            style={{ color: "var(--muted-foreground)" }}
-          >
-            In uso ora
-          </span>
-          <span className="text-[9.5px] ml-1.5 normal-case tracking-normal" style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>
-            — cosa impugni e cos&apos;è Tōrō (equipaggi in scheda)
-          </span>
-        </div>
+        <ZoneHeader label="Equipaggiamento" />
         <CombatWeaponsSection />
       </section>
 

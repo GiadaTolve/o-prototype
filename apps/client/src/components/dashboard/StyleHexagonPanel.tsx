@@ -7,7 +7,6 @@ type StyleRow = {
   id: string;
   label: string;
   relation: "primary" | "adjacent" | "distant" | "opposite" | null;
-  maxWaza: number | null;
   ownedWaza: number;
   unlocked: boolean;
   isPrimary: boolean;
@@ -20,7 +19,6 @@ type StyleHexState = {
   keys: number;
   unlockKeyCost: number;
   styles: StyleRow[];
-  capsByRelation: { primary: number; adjacent: number; distant: number; opposite: number };
 };
 
 /** Posizioni esagono (viewBox 300×280). Ordine manuale: Tōka → Genzai → Itō → Naikan → Hensei → Hadō */
@@ -34,10 +32,10 @@ const HEX_POSITIONS: Record<string, { x: number; y: number }> = {
 };
 
 const RELATION_LABEL: Record<string, string> = {
-  primary: "Principale · 6 waza",
-  adjacent: "Adiacente · 3 waza",
-  distant: "Lontano · 1 waza",
-  opposite: "Opposto · 0 waza",
+  primary: "Stile principale",
+  adjacent: "Adiacente",
+  distant: "Lontano",
+  opposite: "Opposto",
 };
 
 function nodeClass(style: StyleRow, selected: string | null): string {
@@ -137,7 +135,7 @@ export function StyleHexagonPanel({ onCharUpdate }: { onCharUpdate?: () => void 
       <header className="px-4 py-3 border-b border-[var(--border-color)]/70 bg-black/50">
         <h3 className="font-display text-sm text-[var(--accent-gold)]">Esagono degli Stili</h3>
         <p className="text-[11px] text-[var(--accent-violet-light)]/65 mt-1 max-w-xl">
-          Scegli lo stile principale, sblocca gli altri con Key. I limiti waza seguono il manuale: 6 · 3 · 1 · 0.
+          Scegli lo stile principale e sblocca le altre Vie con Key. Nessun tetto al numero di waza per Via.
         </p>
       </header>
 
@@ -210,7 +208,7 @@ export function StyleHexagonPanel({ onCharUpdate }: { onCharUpdate?: () => void 
                     {style.label.replace("-dō", "").replace("-Do", "")}
                   </span>
                   <span className="block text-[8px] text-gray-500 tabular-nums mt-0.5">
-                    {style.ownedWaza}/{style.maxWaza ?? "—"}
+                    {style.ownedWaza} waza
                   </span>
                 </span>
               </button>
@@ -228,7 +226,6 @@ export function StyleHexagonPanel({ onCharUpdate }: { onCharUpdate?: () => void 
             )}
             <p className="text-gray-500 tabular-nums">
               Waza possedute: {selectedStyle.ownedWaza}
-              {selectedStyle.maxWaza != null ? ` / ${selectedStyle.maxWaza}` : ""}
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
               {!state.primaryStyleId && (

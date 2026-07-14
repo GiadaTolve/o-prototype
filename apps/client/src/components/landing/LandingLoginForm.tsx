@@ -44,7 +44,7 @@ export function LandingLoginForm() {
         <input
           type="text"
           className="landing-input"
-          placeholder="Nome PG"
+          placeholder="Nome PG (es. Botan Miyazaki)"
           value={nomePg}
           onChange={(e) => setNomePg(e.target.value)}
           required

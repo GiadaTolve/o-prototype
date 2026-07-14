@@ -13,6 +13,8 @@ export type SkiruApiResponse = {
     movementMetersPerQuarter: number;
     cac: number;
     cad: number;
+    dodgeIr: number;
+    parryIr: number;
   };
   skiruDomains: SkiruDomainIndex[];
   activeJigaMilestone?: string | null;

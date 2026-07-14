@@ -41,9 +41,12 @@ function kindClass(kind: StatusEffectItem["kind"]): string {
 export function StatusEffectsPanel({
   characterId,
   isOwnCharacter = true,
+  embedded = false,
 }: {
   characterId?: string;
   isOwnCharacter?: boolean;
+  /** In pannello combattimento chat: senza card esterna ripetuta. */
+  embedded?: boolean;
 }) {
   const [state, setState] = useState<StatusEffectsState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,7 +106,7 @@ export function StatusEffectsPanel({
 
   if (loading) {
     return (
-      <p className="text-[10px] text-gray-500 animate__animated animate__fadeIn">
+      <p className={`text-[10px] text-gray-500 animate__animated animate__fadeIn${embedded ? "" : ""}`}>
         Caricamento status…
       </p>
     );
@@ -111,7 +114,11 @@ export function StatusEffectsPanel({
 
   if (error) {
     return (
-      <div className="rounded-lg border border-[var(--border-color)] bg-black/30 px-3 py-2 text-[10px] text-[var(--accent-violet-light)]">
+      <div
+        className={`text-[10px] text-[var(--accent-violet-light)]${
+          embedded ? "" : " rounded-lg border border-[var(--border-color)] bg-black/30 px-3 py-2"
+        }`}
+      >
         {error}
       </div>
     );
@@ -120,24 +127,18 @@ export function StatusEffectsPanel({
   const effects = state?.effects ?? [];
   const m = state?.modifiers;
 
-  return (
-    <section className="rounded-lg border border-[var(--border-color)] bg-black/35 p-4 shadow-[var(--shadow-violet)]">
-      <div className="flex items-center gap-2 mb-3">
-        <FontAwesomeIcon icon={icons.waza} className="text-[var(--accent-violet-light)] text-xs" />
-        <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[var(--accent-gold)]">
-          Status attivi
-        </h3>
-        <span className="text-[9px] text-gray-500 ml-auto"></span>
-      </div>
-
+  const body = (
+    <>
       {effects.length === 0 ? (
-        <p className="text-[11px] text-gray-500 italic">Nessuno status attivo sul personaggio.</p>
+        <p className={`${embedded ? "text-[9px]" : "text-[11px]"} text-gray-500 italic`}>
+          Nessuno status attivo.
+        </p>
       ) : (
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className={embedded ? "flex flex-wrap gap-1" : "flex flex-wrap gap-1.5 mb-3"}>
           {effects.map((e) => (
             <span
               key={e.id}
-              className={kindClass(e.kind)}
+              className={`${kindClass(e.kind)}${embedded ? " text-[8px]" : ""}`}
               title={`${e.description}${e.maxStacks != null ? ` · max ${e.maxStacks}` : ""}`}
             >
               {e.tag} ×{e.stacks}
@@ -147,7 +148,7 @@ export function StatusEffectsPanel({
       )}
 
       {m && effects.length > 0 && (
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[9px] font-display uppercase tracking-wide text-gray-500">
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[9px] font-display uppercase tracking-wide text-gray-500 mt-1.5">
           {m.offensiveTierBonus !== 0 && (
             <>
               <dt>Tier offensivo</dt>
@@ -201,7 +202,22 @@ export function StatusEffectsPanel({
           )}
         </dl>
       )}
+    </>
+  );
 
+  if (embedded) {
+    return <div className="chat-combat-status-embedded">{body}</div>;
+  }
+
+  return (
+    <section className="rounded-lg border border-[var(--border-color)] bg-black/35 p-4 shadow-[var(--shadow-violet)]">
+      <div className="flex items-center gap-2 mb-3">
+        <FontAwesomeIcon icon={icons.waza} className="text-[var(--accent-violet-light)] text-xs" />
+        <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[var(--accent-gold)]">
+          Status attivi
+        </h3>
+      </div>
+      {body}
       <p className="mt-3 text-[9px] text-gray-600 leading-relaxed">
         Applicazione e tick a fine turno: Master in combattimento chat.
       </p>

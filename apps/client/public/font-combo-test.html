@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Combo font Oyasumi — test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    @font-face {
+      font-family: "VCR OSD Mono";
+      src: url("/fonts/VCR_OSD_MONO_1.001.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Protest Demo";
+      src: url("/fonts/Protest_Demo.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --accent-gold: #d4af37;
+      --accent-violet: #7c3aed;
+      --accent-violet-light: #a78bfa;
+      --background: #050508;
+      --panel-bg: #0f0f12;
+      --button-bg: #141418;
+      --border-color: #2a2a32;
+      --shadow-gold: rgba(212, 175, 55, 0.25);
+      --shadow-violet: rgba(124, 58, 237, 0.3);
+      --text: #e5e5e5;
+      --text-muted: #9ca3af;
+
+      --font-sans: "Source Sans 3", system-ui, sans-serif;
+      --font-display: Philosopher, serif;
+      --font-accent: "EB Garamond", Georgia, serif;
+      --font-vcr: "VCR OSD Mono", ui-monospace, monospace;
+      --font-wordmark: "Protest Demo", Philosopher, serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+      background-image: radial-gradient(circle at 50% -20%, rgba(42, 5, 20, 0.6) 0%, transparent 45%);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-header h1 {
+      font-family: var(--font-display);
+      color: var(--accent-gold);
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin: 0 0 0.5rem;
+    }
+
+    .page-header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+    }
+
+    .legend-item {
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--panel-bg);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item strong {
+      display: block;
+      color: var(--accent-violet-light);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+      font-weight: 600;
+    }
+
+    .section {
+      margin-bottom: 1.5rem;
+    }
+
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      margin: 0 0 0.65rem;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    /* ─── Landing block ─── */
+    .landing-block {
+      text-align: center;
+      padding: 2rem 1rem;
+      background:
+        linear-gradient(180deg, rgba(124, 58, 237, 0.06) 0%, transparent 40%),
+        var(--panel-bg);
+    }
+
+    .landing-title {
+      font-family: var(--font-wordmark);
+      font-size: clamp(3rem, 12vw, 5.5rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      line-height: 1.05;
+      margin: 0;
+      background: linear-gradient(to bottom, #efe784, #cf9a31, #b37f1f);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 4px 20px var(--shadow-gold));
+    }
+
+    .landing-motto {
+      font-family: var(--font-accent);
+      font-size: clamp(0.72rem, 2.2vw, 0.9rem);
+      color: var(--accent-gold);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin: 0.35rem 0 1.25rem;
+    }
+
+    .landing-nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .landing-nav-btn {
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.45rem 1rem;
+      border: 1px solid var(--border-color);
+      background: var(--button-bg);
+      color: #bfc0d1;
+      border-radius: 2px;
+    }
+
+    .landing-body {
+      max-width: 34rem;
+      margin: 1.25rem auto 0;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: #bfc0d1;
+    }
+
+    /* ─── Dashboard UI block ─── */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .ui-card h3 {
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      margin: 0 0 0.75rem;
+    }
+
+    .ui-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .ui-label {
+      font-family: var(--font-display);
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      color: var(--text-muted);
+    }
+
+    .ui-body {
+      font-size: 0.84rem;
+      line-height: 1.55;
+      color: #c9c9d4;
+      margin: 0 0 0.65rem;
+    }
+
+    .ui-accent {
+      font-family: var(--font-accent);
+      font-size: 0.8rem;
+      font-style: italic;
+      color: var(--accent-gold);
+      margin: 0 0 0.85rem;
+      padding-left: 0.6rem;
+      border-left: 2px solid rgba(124, 58, 237, 0.45);
+      line-height: 1.5;
+    }
+
+    .ui-btn {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border-color);
+      background: var(--button-bg);
+      color: var(--text);
+      border-radius: 2px;
+    }
+
+    /* ─── CRT block ─── */
+    .crt-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+
+    .crt {
+      font-family: var(--font-vcr);
+      letter-spacing: 0.06em;
+      background: #000;
+      border: 1px solid color-mix(in srgb, var(--accent-violet) 40%, var(--border-color));
+      border-radius: 6px;
+      padding: 0.85rem;
+      color: var(--accent-violet-light);
+      font-size: 0.68rem;
+      line-height: 1.45;
+      box-shadow: inset 0 0 18px rgba(124, 58, 237, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .crt::after {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.12) 2px,
+        rgba(0, 0, 0, 0.12) 3px
+      );
+      opacity: 0.5;
+    }
+
+    .crt > * { position: relative; z-index: 1; }
+
+    .crt-title {
+      color: var(--accent-violet);
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin: 0 0 0.5rem;
+    }
+
+    .crt-gold {
+      color: var(--accent-gold);
+    }
+
+    .crt-line { margin: 0.25rem 0; }
+
+    .crt-marquee {
+      white-space: nowrap;
+      overflow: hidden;
+      color: var(--accent-gold);
+      margin-top: 0.35rem;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>Combo font attuale — test</h1>
+      <p>Anteprima di come convivono Protest, Runa arcana e VCR OSD Mono nell'interfaccia Oyasumi.</p>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item"><strong>Wordmark</strong>Protest Demo</div>
+      <div class="legend-item"><strong>Display</strong>Philosopher</div>
+      <div class="legend-item"><strong>Sans</strong>Source Sans 3</div>
+      <div class="legend-item"><strong>Accent</strong>EB Garamond</div>
+      <div class="legend-item"><strong>CRT</strong>VCR OSD Mono</div>
+    </div>
+
+    <!-- Landing -->
+    <section class="section">
+      <p class="section-label">Landing — Protest + EB Garamond + Philosopher + Source Sans 3</p>
+      <div class="panel landing-block">
+        <h2 class="landing-title">Oyasumi</h2>
+        <p class="landing-motto">Il sonno attende i coraggiosi</p>
+        <div class="landing-nav">
+          <span class="landing-nav-btn">Accedi</span>
+          <span class="landing-nav-btn">Registrati</span>
+          <span class="landing-nav-btn">Info</span>
+        </div>
+        <p class="landing-body">
+          Play-by-chat dark fantasy. Crea il tuo personaggio, esplora il mondo e combatti in chat con il sistema Waza e Chrono Stack.
+        </p>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section class="section">
+      <p class="section-label">Dashboard — Philosopher + Source Sans 3 + EB Garamond</p>
+      <div class="dashboard-grid">
+        <div class="panel ui-card">
+          <h3>Scheda · Combattimento</h3>
+          <div class="ui-labels">
+            <span class="ui-label">Waza</span>
+            <span class="ui-label">Chrono Stack</span>
+            <span class="ui-label">HP 24/30</span>
+            <span class="ui-label">Jigoka 3</span>
+          </div>
+          <p class="ui-body">
+            <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra. Il Master conferma l'esito del colpo.
+          </p>
+          <p class="ui-accent">Maschera scheggiata: l'ombra non mente, ma il volto sì.</p>
+          <span class="ui-btn">Lancia waza</span>
+        </div>
+
+        <div class="panel ui-card">
+          <h3>Inventario · Oggetto</h3>
+          <div class="ui-labels">
+            <span class="ui-label">Raro</span>
+            <span class="ui-label">Equip</span>
+            <span class="ui-label">×1</span>
+          </div>
+          <p class="ui-body" style="font-family: var(--font-display); font-size: 0.9rem; color: #ececf1;">
+            Maschera di Mujina
+          </p>
+          <p class="ui-accent" style="font-style: normal;">
+            Reliquia legata al volto che non appartiene più al suo portatore. Chi la indossa sente l'ombra respirare al ritmo del proprio cuore.
+          </p>
+          <span class="ui-btn">Equipaggia</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CRT screens -->
+    <section class="section">
+      <p class="section-label">Schermi CRT — VCR OSD Mono (Visor · Beeper · MP3 · Yume)</p>
+      <div class="crt-grid">
+        <div class="crt">
+          <p class="crt-title">▌ News Visor</p>
+          <p class="crt-line crt-gold">[NUOVO] Annuncio staff — manutenzione server domenica</p>
+          <p class="crt-line">[FORUM] Discussione: bilanciamento Genzai path</p>
+          <p class="crt-line">[EVENTO] Quest Paradise — finestra 22:00</p>
+        </div>
+
+        <div class="crt">
+          <p class="crt-title">▌ Beeper</p>
+          <p class="crt-line">OYASUMI · BEEPER · ● LIVE</p>
+          <p class="crt-line crt-gold">&gt; FETCH · Ricognizione magazzino sud</p>
+          <p class="crt-line">&gt; FETCH · Scorta medicinali (ASSEGNATO)</p>
+          <p class="crt-line">+2 IN CODA</p>
+        </div>
+
+        <div class="crt">
+          <p class="crt-title">▌ Lettore MP3</p>
+          <p class="crt-line crt-gold">▶ MIDNIGHT PARADE — OYASUMI OST</p>
+          <div class="crt-marquee">▶ MIDNIGHT PARADE — OYASUMI OST · ▶ MIDNIGHT PARADE — OYASUMI OST</div>
+          <p class="crt-line" style="margin-top:0.5rem">VOL 72% · TRK 03/12</p>
+        </div>
+
+        <div class="crt">
+          <p class="crt-title">▌ Yume-chan · iscrizione</p>
+          <p class="crt-line crt-gold">YUME-CHAN · ONLINE</p>
+          <p class="crt-line">&gt; Ciao! Sono Yume-chan ♪</p>
+          <p class="crt-line">&gt; Come ti chiami?</p>
+          <p class="crt-line" style="color:#888">[ digita qui… ]</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Side by side contrast -->
+    <section class="section">
+      <p class="section-label">Contrasto diretto — stessa frase, font diversi</p>
+      <div class="panel" style="display:grid; gap:0.85rem;">
+        <p style="margin:0;font-family:var(--font-wordmark);font-size:2rem;color:var(--accent-gold);">Oyasumi — Protest Demo</p>
+        <p style="margin:0;font-family:var(--font-display);font-size:1.1rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent-gold);">Waza · Chrono Stack — Philosopher</p>
+        <p style="margin:0;font-family:var(--font-sans);font-size:0.95rem;color:#c9c9d4;">Il combattimento avviene in chat, non in una schermata dedicata. — Source Sans 3</p>
+        <p style="margin:0;font-family:var(--font-accent);font-size:0.95rem;font-style:italic;color:var(--accent-gold);">L'ombra non mente, ma il volto sì. — EB Garamond</p>
+        <p style="margin:0;font-family:var(--font-vcr);font-size:0.78rem;letter-spacing:0.08em;color:var(--accent-violet-light);">▶ TRASMISSIONE IN CORSO — VCR OSD MONO</p>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opzioni font — Oyasumi Dark Arcane</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Cormorant+SC:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=Manrope:wght@400;500;600;700&family=Outfit:wght@400;500;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --accent-gold: #d4af37;
+      --accent-violet: #7c3aed;
+      --accent-violet-light: #a78bfa;
+      --background: #050508;
+      --panel-bg: #0f0f12;
+      --button-bg: #141418;
+      --border-color: #2a2a32;
+      --shadow-gold: rgba(212, 175, 55, 0.25);
+      --text: #e5e5e5;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+      background-image: radial-gradient(circle at 50% -20%, rgba(42, 5, 20, 0.6) 0%, transparent 45%);
+    }
+
+    .page-header {
+      text-align: center;
+      padding: 2.5rem 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-header h1 {
+      font-family: Cinzel, serif;
+      color: var(--accent-gold);
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      letter-spacing: 0.1em;
+      margin: 0 0 0.5rem;
+    }
+
+    .page-header p {
+      margin: 0 auto;
+      max-width: 42rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(5, 5, 8, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .filter-btn {
+      font-family: Cinzel, serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.55rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: var(--button-bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+      gap: 1.25rem;
+      padding: 1.25rem;
+      max-width: 1200px;
+      margin: 0 auto 2rem;
+    }
+
+    .option-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .option-card:hover {
+      border-color: rgba(212, 175, 55, 0.35);
+      box-shadow: 0 0 24px rgba(212, 175, 55, 0.08);
+    }
+
+    .option-card.is-hidden { display: none; }
+
+    .option-meta {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .option-meta h2 {
+      margin: 0;
+      font-family: Cinzel, serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+    }
+
+    .option-meta p {
+      margin: 0.35rem 0 0;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .badge {
+      flex-shrink: 0;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      color: var(--accent-violet-light);
+    }
+
+    .badge.current { border-color: var(--accent-gold); color: var(--accent-gold); }
+
+    .font-stack {
+      padding: 0.55rem 1rem;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      line-height: 1.5;
+    }
+
+    .font-stack strong { color: var(--accent-violet-light); font-weight: 500; }
+
+    .preview {
+      padding: 1.25rem 1rem 1rem;
+    }
+
+    .preview-title {
+      font-size: clamp(1.8rem, 6vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      line-height: 1.05;
+      color: var(--accent-gold);
+      margin: 0 0 0.15rem;
+    }
+
+    .preview-motto {
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent-violet-light);
+      margin: 0 0 1rem;
+    }
+
+    .preview-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .preview-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      color: var(--text-muted);
+    }
+
+    .preview-body {
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: #c9c9d4;
+      margin: 0 0 0.75rem;
+    }
+
+    .preview-accent {
+      font-size: 0.78rem;
+      line-height: 1.5;
+      font-style: italic;
+      color: var(--accent-gold);
+      opacity: 0.9;
+      margin: 0 0 1rem;
+      padding-left: 0.65rem;
+      border-left: 2px solid rgba(124, 58, 237, 0.45);
+    }
+
+    .preview-btn {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.55rem 1.1rem;
+      border: 1px solid var(--border-color);
+      background: var(--button-bg);
+      color: var(--text);
+      border-radius: 2px;
+    }
+
+    .legend {
+      max-width: 1200px;
+      margin: 0 auto 2.5rem;
+      padding: 0 1.25rem;
+    }
+
+    .legend h3 {
+      font-family: Cinzel, serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      margin: 0 0 0.75rem;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .legend-item {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--panel-bg);
+    }
+
+    .legend-item span {
+      display: block;
+      color: var(--accent-violet-light);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .filter-btn, .option-card { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Opzioni tipografiche</h1>
+    <p>
+      Confronto di 6 palette per Oyasumi. Ogni card mostra i tre ruoli:
+      <strong style="color: var(--accent-gold)">Display</strong> (titoli),
+      <strong style="color: var(--accent-violet-light)">Sans</strong> (corpo/UI),
+      <strong style="color: var(--accent-gold)">Accent</strong> (flavor narrativo).
+      Apri con il dev server: <code style="color: var(--accent-violet-light)">/font-options-preview.html</code>
+    </p>
+  </header>
+
+  <nav class="filters" aria-label="Filtra opzioni">
+    <button class="filter-btn active" data-filter="all">Tutte</button>
+    <button class="filter-btn" data-filter="conservative">Cambio leggero</button>
+    <button class="filter-btn" data-filter="fantasy">Più fantasy</button>
+    <button class="filter-btn" data-filter="readable">Più leggibile</button>
+  </nav>
+
+  <main class="grid" id="grid">
+    <!-- 0 — Attuale -->
+    <article class="option-card" data-tags="conservative">
+      <div class="option-meta">
+        <div>
+          <h2>Attuale</h2>
+          <p>Baseline di riferimento. Cinzel marcato, Inter neutro, Cormorant poetico.</p>
+        </div>
+        <span class="badge current">In uso</span>
+      </div>
+      <div class="font-stack">
+        <strong>Sans</strong> Inter · <strong>Display</strong> Cinzel · <strong>Accent</strong> Cormorant Garamond
+      </div>
+      <div class="preview" style="--sans: Inter; --display: Cinzel; --accent: 'Cormorant Garamond'">
+        <p class="preview-title" style="font-family: var(--display), serif">Oyasumi</p>
+        <p class="preview-motto" style="font-family: var(--accent), Georgia, serif">Il sonno attende i coraggiosi</p>
+        <div class="preview-labels">
+          <span class="preview-label" style="font-family: var(--display), serif">Waza</span>
+          <span class="preview-label" style="font-family: var(--display), serif">Chrono Stack</span>
+          <span class="preview-label" style="font-family: var(--display), serif">HP 24/30</span>
+        </div>
+        <p class="preview-body" style="font-family: var(--sans), system-ui, sans-serif">
+          <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra verso il bersaglio. Il Master conferma l'esito.
+        </p>
+        <p class="preview-accent" style="font-family: var(--accent), Georgia, serif">
+          Maschera scheggiata: l'ombra non mente, ma il volto sì.
+        </p>
+        <span class="preview-btn" style="font-family: var(--display), serif">Lancia waza</span>
+      </div>
+    </article>
+
+    <!-- 1 — Notte viola -->
+    <article class="option-card" data-tags="conservative readable">
+      <div class="option-meta">
+        <div>
+          <h2>Notte viola</h2>
+          <p>Mantiene Cinzel sui titoli. Corpo più morbido con Manrope; accent più editoriale.</p>
+        </div>
+        <span class="badge">Leggero</span>
+      </div>
+      <div class="font-stack">
+        <strong>Sans</strong> Manrope · <strong>Display</strong> Cinzel · <strong>Accent</strong> Crimson Pro
+      </div>
+      <div class="preview">
+        <p class="preview-title" style="font-family: Cinzel, serif">Oyasumi</p>
+        <p class="preview-motto" style="font-family: 'Crimson Pro', Georgia, serif">Il sonno attende i coraggiosi</p>
+        <div class="preview-labels">
+          <span class="preview-label" style="font-family: Cinzel, serif">Waza</span>
+          <span class="preview-label" style="font-family: Cinzel, serif">Chrono Stack</span>
+          <span class="preview-label" style="font-family: Cinzel, serif">HP 24/30</span>
+        </div>
+        <p class="preview-body" style="font-family: Manrope, system-ui, sans-serif">
+          <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra verso il bersaglio. Il Master conferma l'esito.
+        </p>
+        <p class="preview-accent" style="font-family: 'Crimson Pro', Georgia, serif">
+          Maschera scheggiata: l'ombra non mente, ma il volto sì.
+        </p>
+        <span class="preview-btn" style="font-family: Cinzel, serif">Lancia waza</span>
+      </div>
+    </article>
+
+    <!-- 2 — Sigillo regale -->
+    <article class="option-card" data-tags="conservative fantasy">
+      <div class="option-meta">
+        <div>
+          <h2>Sigillo regale</h2>
+          <p>UI moderna e pulita; display in small caps eleganti. Sensazione da codice arcano curato.</p>
+        </div>
+        <span class="badge">Elegante</span>
+      </div>
+      <div class="font-stack">
+        <strong>Sans</strong> Plus Jakarta Sans · <strong>Display</strong> Cormorant SC · <strong>Accent</strong> Libre Baskerville
+      </div>
+      <div class="preview">
+        <p class="preview-title" style="font-family: 'Cormorant SC', serif">Oyasumi</p>
+        <p class="preview-motto" style="font-family: 'Libre Baskerville', Georgia, serif">Il sonno attende i coraggiosi</p>
+        <div class="preview-labels">
+          <span class="preview-label" style="font-family: 'Cormorant SC', serif">Waza</span>
+          <span class="preview-label" style="font-family: 'Cormorant SC', serif">Chrono Stack</span>
+          <span class="preview-label" style="font-family: 'Cormorant SC', serif">HP 24/30</span>
+        </div>
+        <p class="preview-body" style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+          <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra verso il bersaglio. Il Master conferma l'esito.
+        </p>
+        <p class="preview-accent" style="font-family: 'Libre Baskerville', Georgia, serif">
+          Maschera scheggiata: l'ombra non mente, ma il volto sì.
+        </p>
+        <span class="preview-btn" style="font-family: 'Cormorant SC', serif">Lancia waza</span>
+      </div>
+    </article>
+
+    <!-- 3 — Grimorio -->
+    <article class="option-card" data-tags="fantasy readable">
+      <div class="option-meta">
+        <div>
+          <h2>Grimorio</h2>
+          <p>Display serif letterario (Spectral). DM Sans per UI densa. Lora per descrizioni oggetto.</p>
+        </div>
+        <span class="badge">Letterario</span>
+      </div>
+      <div class="font-stack">
+        <strong>Sans</strong> DM Sans · <strong>Display</strong> Spectral · <strong>Accent</strong> Lora
+      </div>
+      <div class="preview">
+        <p class="preview-title" style="font-family: Spectral, serif">Oyasumi</p>
+        <p class="preview-motto" style="font-family: Lora, Georgia, serif">Il sonno attende i coraggiosi</p>
+        <div class="preview-labels">
+          <span class="preview-label" style="font-family: Spectral, serif">Waza</span>
+          <span class="preview-label" style="font-family: Spectral, serif">Chrono Stack</span>
+          <span class="preview-label" style="font-family: Spectral, serif">HP 24/30</span>
+        </div>
+        <p class="preview-body" style="font-family: 'DM Sans', system-ui, sans-serif">
+          <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra verso il bersaglio. Il Master conferma l'esito.
+        </p>
+        <p class="preview-accent" style="font-family: Lora, Georgia, serif">
+          Maschera scheggiata: l'ombra non mente, ma il volto sì.
+        </p>
+        <span class="preview-btn" style="font-family: Spectral, serif; font-weight: 700">Lancia waza</span>
+      </div>
+    </article>
+
+    <!-- 4 — Tomo antico -->
+    <article class="option-card" data-tags="fantasy">
+      <div class="option-meta">
+        <div>
+          <h2>Tomo antico</h2>
+          <p>Philosopher per titoli: più mistico e meno "cinema fantasy". Corpo Source Sans 3 molto leggibile.</p>
+        </div>
+        <span class="badge">Mistico</span>
+      </div>
+      <div class="font-stack">
+        <strong>Sans</strong> Source Sans 3 · <strong>Display</strong> Philosopher · <strong>Accent</strong> EB Garamond
+      </div>
+      <div class="preview">
+        <p class="preview-title" style="font-family: Philosopher, serif">Oyasumi</p>
+        <p class="preview-motto" style="font-family: 'EB Garamond', Georgia, serif">Il sonno attende i coraggiosi</p>
+        <div class="preview-labels">
+          <span class="preview-label" style="font-family: Philosopher, serif">Waza</span>
+          <span class="preview-label" style="font-family: Philosopher, serif">Chrono Stack</span>
+          <span class="preview-label" style="font-family: Philosopher, serif">HP 24/30</span>
+        </div>
+        <p class="preview-body" style="font-family: 'Source Sans 3', system-ui, sans-serif">
+          <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra verso il bersaglio. Il Master conferma l'esito.
+        </p>
+        <p class="preview-accent" style="font-family: 'EB Garamond', Georgia, serif">
+          Maschera scheggiata: l'ombra non mente, ma il volto sì.
+        </p>
+        <span class="preview-btn" style="font-family: Philosopher, serif">Lancia waza</span>
+      </div>
+    </article>
+
+    <!-- 5 — Manoscritto -->
+    <article class="option-card" data-tags="fantasy readable">
+      <div class="option-meta">
+        <div>
+          <h2>Manoscritto</h2>
+          <p>Cardo come display serif classico; Outfit geometrico ma sobrio. Atmosfera da pergamena digitale.</p>
+        </div>
+        <span class="badge">Classico</span>
+      </div>
+      <div class="font-stack">
+        <strong>Sans</strong> Outfit · <strong>Display</strong> Cardo · <strong>Accent</strong> Cardo
+      </div>
+      <div class="preview">
+        <p class="preview-title" style="font-family: Cardo, serif">Oyasumi</p>
+        <p class="preview-motto" style="font-family: Cardo, Georgia, serif; font-style: italic">Il sonno attende i coraggiosi</p>
+        <div class="preview-labels">
+          <span class="preview-label" style="font-family: Cardo, serif">Waza</span>
+          <span class="preview-label" style="font-family: Cardo, serif">Chrono Stack</span>
+          <span class="preview-label" style="font-family: Cardo, serif">HP 24/30</span>
+        </div>
+        <p class="preview-body" style="font-family: Outfit, system-ui, sans-serif">
+          <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra verso il bersaglio. Il Master conferma l'esito.
+        </p>
+        <p class="preview-accent" style="font-family: Cardo, Georgia, serif; font-style: italic">
+          Maschera scheggiata: l'ombra non mente, ma il volto sì.
+        </p>
+        <span class="preview-btn" style="font-family: Cardo, serif; font-weight: 700">Lancia waza</span>
+      </div>
+    </article>
+
+    <!-- 6 — Runa arcana -->
+    <article class="option-card" data-tags="fantasy">
+      <div class="option-meta">
+        <div>
+          <h2>Runa arcana</h2>
+          <p>Cambio più audace: Almendra per titoli (runico/medievale). Solo se vuoi staccarti da Cinzel.</p>
+        </div>
+        <span class="badge">Audace</span>
+      </div>
+      <div class="font-stack">
+        <strong>Sans</strong> Source Sans 3 · <strong>Display</strong> Almendra · <strong>Accent</strong> EB Garamond
+      </div>
+      <div class="preview">
+        <p class="preview-title" style="font-family: Almendra, serif">Oyasumi</p>
+        <p class="preview-motto" style="font-family: 'EB Garamond', Georgia, serif">Il sonno attende i coraggiosi</p>
+        <div class="preview-labels">
+          <span class="preview-label" style="font-family: Almendra, serif">Waza</span>
+          <span class="preview-label" style="font-family: Almendra, serif">Chrono Stack</span>
+          <span class="preview-label" style="font-family: Almendra, serif">HP 24/30</span>
+        </div>
+        <p class="preview-body" style="font-family: 'Source Sans 3', system-ui, sans-serif">
+          <strong style="color: var(--accent-violet-light)">Mujina</strong> canalizza il Genzai e scaglia un filo d'ombra verso il bersaglio. Il Master conferma l'esito.
+        </p>
+        <p class="preview-accent" style="font-family: 'EB Garamond', Georgia, serif">
+          Maschera scheggiata: l'ombra non mente, ma il volto sì.
+        </p>
+        <span class="preview-btn" style="font-family: Almendra, serif">Lancia waza</span>
+      </div>
+    </article>
+  </main>
+
+  <section class="legend">
+    <h3>Come scegliere</h3>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <span>Cambio leggero</span>
+        Notte viola o Sigillo regale — stessa struttura, refresh senza stravolgere l'identità.
+      </div>
+      <div class="legend-item">
+        <span>Più leggibile</span>
+        Grimorio o Manoscritto — ottimi su mobile e chat lunga; meno "uppercase epico".
+      </div>
+      <div class="legend-item">
+        <span>Più fantasy</span>
+        Tomo antico o Runa arcana — spostano il mood verso mistico/medievale.
+      </div>
+      <div class="legend-item">
+        <span>Mix & match</span>
+        Puoi cambiare solo Sans (corpo) o solo Display (titoli) — non serve cambiarli tutti e tre.
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const buttons = document.querySelectorAll('.filter-btn');
+    const cards = document.querySelectorAll('.option-card');
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        cards.forEach((card) => {
+          if (filter === 'all') {
+            card.classList.remove('is-hidden');
+            return;
+          }
+          const tags = (card.dataset.tags || '').split(' ');
+          card.classList.toggle('is-hidden', !tags.includes(filter));
+        });
+      });
+    });
+  </script>
+</body>
+</html>

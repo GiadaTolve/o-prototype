@@ -297,10 +297,7 @@ export function WazaDoBrowser({
                 const row = hex?.styles.find((s) => s.id === styleId);
                 const isSelected = selected === styleId;
                 const unlocked = row?.unlocked ?? false;
-                const max = row?.maxWaza ?? 0;
                 const owned = row?.ownedWaza ?? 0;
-                const progressPct =
-                  max > 0 ? Math.min(100, Math.round((owned / max) * 100)) : 0;
 
                 return (
                   <button
@@ -335,14 +332,8 @@ export function WazaDoBrowser({
                       )}
                     </span>
                     <span className="block text-[8px] text-[var(--foreground)]/40 tabular-nums mt-1.5 font-display">
-                      {owned}/{max > 0 ? max : "—"}
+                      {owned} waza
                     </span>
-                    <div className="waza-do-progress mt-1.5" aria-hidden>
-                      <div
-                        className="waza-do-progress-fill"
-                        style={{ width: `${progressPct}%` }}
-                      />
-                    </div>
                   </button>
                 );
               })}

@@ -21,6 +21,9 @@ import {
   characterPlayerRequests,
 } from '../../db/schema'
 import type { UserRole, BanState } from '@domain/security/jwt'
+import { totalExpSpentOnSkiruSheet } from '@domain/skiru'
+import type { BaseStats } from '@domain/stats/calculator'
+import { resolveCharacterSkiruSheet } from '../characters/skiru-sheet'
 
 /**
  * Ottiene tutti gli utenti con i loro personaggi associati
@@ -226,15 +229,43 @@ export async function assignCharacterGrade(characterId: string, grade: string) {
 }
 
 /**
- * Reset abilità: azzera Skiru + Waza, conserva EXP e dati identitari.
+ * Reset abilità: azzera Skiru + Waza, rimborsa l'EXP investita in Skiru.
  */
 export async function resetCharacterAbilities(characterId: string) {
   return db.transaction(async (tx) => {
     const char = await tx.query.characters.findFirst({
       where: eq(characters.id, characterId),
-      columns: { id: true, uiMetadata: true },
+      columns: {
+        id: true,
+        uiMetadata: true,
+        skiruSheet: true,
+        experienceSpendable: true,
+        experienceTotal: true,
+        strength: true,
+        constitution: true,
+        dexterity: true,
+        mind: true,
+        empathy: true,
+      },
     })
     if (!char) throw new Error('Personaggio non trovato')
+
+    const baseStats: BaseStats = {
+      strength: char.strength,
+      constitution: char.constitution,
+      dexterity: char.dexterity,
+      mind: char.mind,
+      empathy: char.empathy,
+    }
+    const sheet = resolveCharacterSkiruSheet(
+      char.skiruSheet as Record<string, number> | undefined,
+      baseStats,
+    )
+    const refund = totalExpSpentOnSkiruSheet(sheet)
+    const nextSpendable = Math.min(
+      char.experienceTotal ?? 0,
+      (char.experienceSpendable ?? 0) + refund,
+    )
 
     await tx.delete(characterSkills).where(eq(characterSkills.characterId, characterId))
 
@@ -250,6 +281,7 @@ export async function resetCharacterAbilities(characterId: string) {
       .set({
         skiruSheet: {},
         uiMetadata: nextMeta,
+        experienceSpendable: nextSpendable,
       })
       .where(eq(characters.id, characterId))
       .returning()

@@ -12,6 +12,8 @@ export type WazaResolutionPostData = {
   irFinale: number;
   dannoFinale: number;
   dannoLordo?: number;
+  isPassive?: boolean;
+  notInCatalog?: boolean;
   expanded: {
     irBase: { skiruA: string; valA: number; skiruB: string; valB: number; media: number };
     irModifiers: { label: string; value: number }[];
@@ -35,9 +37,11 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
   const detailId = useId();
   const hasFiltro = data.expanded.filtroDifesa != null;
 
+  const showCombatStats = !data.isPassive;
+
   return (
     <article
-      className="chat-waza-launch-post"
+      className={`chat-waza-launch-post${data.notInCatalog ? " chat-waza-launch-post--unknown" : ""}`}
       aria-label={`Lancio waza ${data.wazaRomaji} · ${data.characterName}`}
     >
       <div className="chat-waza-launch-post__row">
@@ -55,13 +59,19 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
               {data.descrizione}
             </span>
           </span>
-          <span className="chat-waza-launch-post__stats">
-            IR <strong>{data.irFinale}</strong>
-            <span className="chat-waza-launch-post__stat-sep" aria-hidden>
-              ·
+          {showCombatStats ? (
+            <span className="chat-waza-launch-post__stats">
+              IR <strong>{data.irFinale}</strong>
+              <span className="chat-waza-launch-post__stat-sep" aria-hidden>
+                ·
+              </span>
+              Danno <strong>{data.dannoFinale}</strong>
             </span>
-            Danno <strong>{data.dannoFinale}</strong>
-          </span>
+          ) : (
+            <span className="chat-waza-launch-post__stats chat-waza-launch-post__stats--passive">
+              Passiva
+            </span>
+          )}
         </div>
 
         <button
@@ -81,14 +91,26 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
           id={detailId}
           className="chat-waza-launch-post__detail animate__animated animate__fadeIn motion-reduce:animate-none"
         >
+          {data.isPassive ? (
+            <section className="chat-waza-launch-post__detail-section">
+              <p className="chat-waza-launch-post__detail-text">
+                Waza passiva — nessun confronto IR o danno al lancio.
+              </p>
+            </section>
+          ) : (
+            <>
           <section className="chat-waza-launch-post__detail-section">
             <h4 className="chat-waza-launch-post__detail-title">Skiru papabili (IR)</h4>
             <ul className="chat-waza-launch-post__steps">
-              {data.papabili.map((p) => (
-                <li key={p.label}>
-                  {p.label} <strong>{p.rank}</strong>
-                </li>
-              ))}
+              {data.papabili.length > 0 ? (
+                data.papabili.map((p) => (
+                  <li key={p.label}>
+                    {p.label} <strong>{p.rank}</strong>
+                  </li>
+                ))
+              ) : (
+                <li className="chat-waza-launch-post__detail-text">Scheda non disponibile in chat.</li>
+              )}
             </ul>
           </section>
 
@@ -194,6 +216,8 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
           <p className="chat-waza-launch-post__verdict">
             Entrato / mancato / stallo: <strong>valutazione Shinigami</strong>, non del sistema.
           </p>
+            </>
+          )}
         </div>
       ) : null}
     </article>

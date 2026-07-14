@@ -9,6 +9,31 @@ import { JWT_SECRET } from '../../config'
 import { registerUser } from './auth.service'
 import { sendPasswordResetEmail, sendRegistrationEmails } from '../../lib/email'
 
+/** Risolve il personaggio per login: «Botan Miyazaki» o solo «Botan». */
+async function resolveLoginCharacter(nomePg: string) {
+  const raw = nomePg.trim()
+  if (!raw) return null
+
+  const parts = raw.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    const surname = parts[parts.length - 1]!
+    const name = parts.slice(0, -1).join(' ')
+    const byFullName = await db.query.characters.findFirst({
+      where: and(ilike(characters.name, name), ilike(characters.surname, surname)),
+      with: { user: true },
+    })
+    if (byFullName) return byFullName
+  }
+
+  const matches = await db.query.characters.findMany({
+    where: ilike(characters.name, raw),
+    with: { user: true },
+    limit: 2,
+  })
+  if (matches.length === 1) return matches[0]!
+  return null
+}
+
 export const authRoutes = new Elysia({ prefix: '/auth' })
   .use(jwt({ name: 'jwt', secret: JWT_SECRET }))
 
@@ -88,11 +113,20 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   // ===================== LOGIN (Nome PG + Password) =====================
   .post('/login', async ({ body, set, jwt }) => {
     try {
-      const char = await db.query.characters.findFirst({
-        where: ilike(characters.name, body.nomePg),
-        with: { user: true },
-      })
+      const char = await resolveLoginCharacter(body.nomePg)
       if (!char?.user) {
+        const ambiguous = await db.query.characters.findMany({
+          where: ilike(characters.name, body.nomePg.trim()),
+          columns: { id: true },
+          limit: 2,
+        })
+        if (ambiguous.length > 1) {
+          set.status = 401
+          return {
+            error:
+              'Più personaggi con questo nome: usa «Nome Cognome» (es. Botan Miyazaki).',
+          }
+        }
         set.status = 401
         return { error: "Nome PG o password non validi" }
       }

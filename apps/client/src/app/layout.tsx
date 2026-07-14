@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cinzel, Inter, Cormorant_Garamond, Ropa_Sans } from "next/font/google";
+import { Source_Sans_3, Philosopher, EB_Garamond, Workbench } from "next/font/google";
 import "animate.css/animate.min.css";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import { config } from "@fortawesome/fontawesome-svg-core";
@@ -8,29 +8,28 @@ import { ToastContainer } from "@/components/ui/Toast";
 
 config.autoAddCss = false;
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const philosopher = Philosopher({
+  variable: "--font-philosopher",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
+
+const ebGaramond = EB_Garamond({
+  variable: "--font-eb-garamond",
   subsets: ["latin"],
   display: "swap",
 });
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
+const workbench = Workbench({
+  variable: "--font-workbench",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const ropaSans = Ropa_Sans({
-  variable: "--font-ropa",
-  subsets: ["latin"],
-  weight: ["400"],
   display: "swap",
 });
 
@@ -58,10 +57,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it">
-      <body
-        className={`${cinzel.variable} ${inter.variable} ${cormorant.variable} ${ropaSans.variable} font-sans antialiased`}
-      >
+    <html
+      lang="it"
+      className={`${sourceSans.variable} ${philosopher.variable} ${ebGaramond.variable} ${workbench.variable}`}
+    >
+      <body className="font-sans antialiased">
         {children}
         <ToastContainer />
       </body>

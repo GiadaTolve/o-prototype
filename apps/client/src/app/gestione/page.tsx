@@ -26,6 +26,7 @@ type User = {
   characters?: Array<{
     id: string;
     name: string;
+    surname?: string | null;
     grade?: string | null;
     uiMetadata?: { roleIcon?: string } | null;
   }>;
@@ -350,7 +351,10 @@ function UserManagementModal({
   onUpdate: () => void;
   onDeleted: () => void;
 }) {
-  const character = user.characters && user.characters.length > 0 ? user.characters[0] : null;
+  const characters = user.characters ?? [];
+  const [selectedCharacterId, setSelectedCharacterId] = useState(characters[0]?.id ?? "");
+  const character =
+    characters.find((c) => c.id === selectedCharacterId) ?? characters[0] ?? null;
   const initialRuolo = (character?.uiMetadata?.roleIcon ?? "").toLowerCase();
   const [newBanState, setNewBanState] = useState(user.banState);
   const [newName, setNewName] = useState(character?.name || "");
@@ -456,7 +460,7 @@ function UserManagementModal({
     if (!character) return;
     if (
       !confirm(
-        "Confermi reset abilità?\n\nAzzera Skiru e Waza, ma conserva l'EXP del personaggio.",
+        "Confermi reset abilità?\n\nAzzera Skiru e Waza e rimborsa l'EXP investita in Skiru (EXP totale invariata).",
       )
     ) {
       return;
@@ -528,6 +532,34 @@ function UserManagementModal({
             <div>
               <p className="text-sm text-gray-400 mb-1">Preferenze iscrizione (Yume)</p>
               <p className="text-sm text-gray-300 whitespace-pre-wrap">{user.playerPreferences}</p>
+            </div>
+          )}
+
+          {characters.length > 1 && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Personaggio</p>
+              <select
+                value={selectedCharacterId}
+                onChange={(e) => {
+                  const nextId = e.target.value;
+                  setSelectedCharacterId(nextId);
+                  const next = characters.find((c) => c.id === nextId);
+                  setNewName(next?.name ?? "");
+                  const ruolo = (next?.uiMetadata?.roleIcon ?? "").toLowerCase();
+                  setNewRuolo(
+                    PIXEL_ICON_RUOLI.includes(ruolo as PixelIconRuolo) ? ruolo : "",
+                  );
+                  setNewGrade(next?.grade ?? "Nemuribito");
+                }}
+                className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+              >
+                {characters.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.surname ? ` ${c.surname}` : ""}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -673,7 +705,7 @@ function UserManagementModal({
                   >
                     Reset Abilità
                     <span className="block mt-1 text-[10px] text-gray-400 normal-case">
-                      Azzera Skiru e Waza, mantenendo EXP totale e spendibile.
+                      Azzera Skiru e Waza; rimborsa l&apos;EXP spesa in Skiru su quella spendibile.
                     </span>
                   </button>
                 </div>

@@ -30,7 +30,6 @@ export type StyleHexRow = {
   id: string;
   label: string;
   unlocked: boolean;
-  maxWaza: number | null;
   ownedWaza: number;
   isPrimary: boolean;
 };

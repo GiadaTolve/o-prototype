@@ -103,17 +103,15 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
               onClick={onClick}
               title={label}
               aria-label={label}
-              className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+              className="dashboard-sidebar-btn relative group w-full overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:brightness-110 flex items-center justify-center gap-1.5"
             >
-              <div className="absolute inset-0 flex items-center justify-center gap-1.5">
-                <FontAwesomeIcon
-                  icon={icon}
-                  className="dashboard-sidebar-btn__icon w-3.5 h-3.5 text-[var(--accent-gold)] group-hover:text-white transition-colors"
-                />
-                <span className="dashboard-sidebar-btn__label text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors">
-                  {label}
-                </span>
-              </div>
+              <FontAwesomeIcon
+                icon={icon}
+                className="dashboard-sidebar-btn__icon w-3.5 h-3.5 text-[var(--accent-gold)] group-hover:text-white transition-colors shrink-0"
+              />
+              <span className="dashboard-sidebar-btn__label text-xs uppercase tracking-wider text-[var(--accent-gold)] font-display group-hover:text-white transition-colors truncate">
+                {label}
+              </span>
             </button>
           ))}
         </div>
@@ -245,7 +243,9 @@ function NewsVisor() {
                 letterSpacing: "0.5px",
               }}
             >
-              <span className="inline-block animate-pulse">▶</span>{" "}
+              <span className="inline-block animate-pulse news-visor__eye" aria-hidden>
+                <img src="/icon.png" alt="" width={14} height={14} className="inline-block object-contain opacity-90" />
+              </span>{" "}
               {(() => {
                 const text = getPlainText(currentTopic.contenuto);
                 // Limita a 200 caratteri per la preview

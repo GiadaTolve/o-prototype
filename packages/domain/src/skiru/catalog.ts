@@ -141,7 +141,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     branchId: 'seishin-tanren',
     description:
       'La capacità di cogliere ciò che sfugge ai sensi ordinari, percependo sogni, presagi, energie e fenomeni nascosti.',
+    derivedFormula: '+0,5 IR schivata per punto investito (additivo su Hansha).',
     kind: 'standard',
+    drivesDerived: ['dodgeIr'],
   },
 
   // ─── Chi · Tōsō ───
@@ -317,7 +319,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     branchId: 'binsho',
     description:
       'La rapidità di reazione agli stimoli esterni. Determina schivate, tempi di risposta e capacità di cogliere opportunità improvvise.',
+    derivedFormula: 'Base IR schivata: +1 per punto investito.',
     kind: 'standard',
+    drivesDerived: ['dodgeIr'],
   },
   {
     id: 'seimitsu',
@@ -373,9 +377,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     description:
       'La capacità di spingere il corpo oltre il limite. Resistenza alla fatica e alla stanchezza attraverso pura volontà fisica.',
     derivedFormula:
-      'Ogni punto: +5 HP massimi (con Dokusei). Totale HP: 20 + 5 × (Dokusei + Konjō).',
+      'Ogni punto: +5 HP massimi (con Dokusei). Base IR parata: +1 per punto. Totale HP: 20 + 5 × (Dokusei + Konjō).',
     kind: 'standard',
-    drivesDerived: ['hp'],
+    drivesDerived: ['hp', 'parryIr'],
   },
 
   // ─── Chi · Kairyoku ───
@@ -401,7 +405,9 @@ export const SKIRU_CATALOG: readonly SkiruDef[] = [
     branchId: 'kairyoku',
     description:
       'La forza massimale sostenuta. Sollevare, trascinare, rompere, forzare.',
+    derivedFormula: '+0,5 IR parata per punto investito (additivo su Konjō).',
     kind: 'standard',
+    drivesDerived: ['parryIr'],
   },
   {
     id: 'goatsu',

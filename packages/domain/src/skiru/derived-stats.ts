@@ -13,6 +13,10 @@ export interface SkiruDerivedStats {
   cac: number
   /** Danno colpo a distanza (armi bianche e da fuoco): 1 × Seimitsu */
   cad: number
+  /** IR schivata: Hansha + 0,5 × Chōkaku (arrotondato per eccesso). */
+  dodgeIr: number
+  /** IR parata: Konjō + 0,5 × Kairiki (arrotondato per eccesso). */
+  parryIr: number
 }
 
 export const DERIVED_HP_BASE = 20
@@ -29,6 +33,11 @@ export const SKIRU_ID_ITAMI = 'itami'
 export const SKIRU_ID_UNDO = 'undo'
 export const SKIRU_ID_BAKURYOKU = 'bakuryoku'
 export const SKIRU_ID_SEIMITSU = 'seimitsu'
+export const SKIRU_ID_HANSHA = 'hansha'
+export const SKIRU_ID_CHOKAKU = 'chokaku'
+export const SKIRU_ID_KAIRIKI = 'kairiki'
+export const DERIVED_DODGE_IR_PER_CHOKAKU = 0.5
+export const DERIVED_PARRY_IR_PER_KAIRIKI = 0.5
 
 function roundMovement(value: number): number {
   return Math.round(value * 10) / 10
@@ -67,6 +76,20 @@ export function calculateCadFromSkiru(sheet: SkiruSheet): number {
   return getSkiruPoints(sheet, SKIRU_ID_SEIMITSU)
 }
 
+/** IR schivata: Hansha + 0,5 × Chōkaku. */
+export function calculateDodgeIrFromSkiru(sheet: SkiruSheet): number {
+  const hansha = getSkiruPoints(sheet, SKIRU_ID_HANSHA)
+  const chokaku = getSkiruPoints(sheet, SKIRU_ID_CHOKAKU)
+  return Math.ceil(hansha + DERIVED_DODGE_IR_PER_CHOKAKU * chokaku)
+}
+
+/** IR parata: Konjō + 0,5 × Kairiki. */
+export function calculateParryIrFromSkiru(sheet: SkiruSheet): number {
+  const konjou = getSkiruPoints(sheet, SKIRU_ID_KONJOU)
+  const kairiki = getSkiruPoints(sheet, SKIRU_ID_KAIRIKI)
+  return Math.ceil(konjou + DERIVED_PARRY_IR_PER_KAIRIKI * kairiki)
+}
+
 /** Calcola tutti i parametri derivati da una scheda Skiru. */
 export function calculateSkiruDerivedStats(sheet: SkiruSheet): SkiruDerivedStats {
   const mitigationPercent = calculateMitigationPercentFromSkiru(sheet)
@@ -76,6 +99,8 @@ export function calculateSkiruDerivedStats(sheet: SkiruSheet): SkiruDerivedStats
     movementMetersPerQuarter: calculateMovementMetersPerQuarterFromSkiru(sheet),
     cac: calculateCacFromSkiru(sheet),
     cad: calculateCadFromSkiru(sheet),
+    dodgeIr: calculateDodgeIrFromSkiru(sheet),
+    parryIr: calculateParryIrFromSkiru(sheet),
   }
 }
 

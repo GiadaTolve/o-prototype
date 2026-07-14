@@ -79,7 +79,7 @@ export function LandingInfoModal({ kind, onClose }: { kind: InfoKind; onClose: (
   const { title, body } = CONTENT[kind];
   return (
     <div className="landing-info-modal animate__animated animate__fadeIn">
-      <h2 style={{ fontFamily: "var(--font-cinzel)", color: "var(--accent-gold)", marginBottom: "1rem" }}>{title}</h2>
+      <h2 style={{ fontFamily: "var(--font-philosopher)", color: "var(--accent-gold)", marginBottom: "1rem" }}>{title}</h2>
       {body}
       <button type="button" className="landing-info-close" onClick={onClose}>
         Chiudi

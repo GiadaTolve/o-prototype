@@ -81,10 +81,15 @@ export function applyDamageToFieldConstruct(
   }
 }
 
-export function fieldConstructToApi(construct: FieldConstruct) {
+export function fieldConstructToApi(
+  construct: FieldConstruct,
+  options?: { proprieta?: readonly string[] },
+) {
   const sizeDef = CONSTRUCT_SIZES[construct.size]
+  const proprieta = options?.proprieta?.length ? [...options.proprieta] : []
   return {
     ...construct,
+    proprieta,
     sizeLabel: sizeDef.label,
     resistanceMult: sizeDef.resistanceMult,
     pctRemaining:

@@ -50,6 +50,15 @@ fi
 SOURCE_URL="${NEON_DATABASE_URL:-${DATABASE_URL:-}}"
 LOCAL_URL="${LOCAL_DATABASE_URL:-postgres://localhost:5432/oyasumi_2}"
 
+# Neon pooler rifiuta `options=search_path` in pg_dump — usa endpoint diretto e togli options.
+normalize_neon_source_url() {
+  local url="$1"
+  url="${url//-pooler.c-/.c-}"
+  url="$(printf '%s' "$url" | sed -E 's/[?&]options=[^&]*//g; s/[?&]$//')"
+  printf '%s' "$url"
+}
+SOURCE_URL="$(normalize_neon_source_url "$SOURCE_URL")"
+
 if [[ -z "$SOURCE_URL" ]]; then
   echo "Errore: imposta NEON_DATABASE_URL o DATABASE_URL in .env"
   exit 1

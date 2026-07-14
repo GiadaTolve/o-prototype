@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { logoutPresence } from "@/lib/presence-logout";
+import { DashboardBrand } from "./DashboardBrand";
 
 const PUBLIC_LINKS = [
   { href: "/guida", label: "Guida" },
@@ -100,12 +101,7 @@ export function DashboardHeader({
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 max-w-[1800px] mx-auto">
-        <h1
-          className="font-display text-2xl md:text-3xl font-bold tracking-[0.12em] text-[var(--accent-gold)]"
-          style={{ textShadow: "0 0 12px var(--glow-gold)" }}
-        >
-          Oyasumi
-        </h1>
+        <DashboardBrand />
         <nav className="flex flex-wrap items-center gap-2 md:gap-4">
           {smsNotification && (
             <span className="text-[var(--accent-gold)] text-sm italic animate-pulse">*drin drin!*</span>

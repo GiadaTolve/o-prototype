@@ -1,0 +1,33 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "client",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "apps/client",
+      "port": 3000
+    },
+    {
+      "name": "server",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "apps/server",
+      "port": 4000
+    },
+    {
+      "name": "tester",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "apps/tester",
+      "port": 3002
+    },
+    {
+      "name": "tester-api",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "apps/tester-api",
+      "port": 3751
+    }
+  ]
+}

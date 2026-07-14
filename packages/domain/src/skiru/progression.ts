@@ -124,6 +124,15 @@ export function totalSkiruPointsInvested(sheet: SkiruSheet): number {
   return Object.values(sheet).reduce((sum, n) => sum + n, 0)
 }
 
+/** EXP già spesa per costruire la scheda Skiru corrente (rimborso al reset abilità). */
+export function totalExpSpentOnSkiruSheet(sheet: SkiruSheet): number {
+  let total = 0
+  for (const points of Object.values(sheet)) {
+    if (points > 0) total += totalExpForSkiruPoints(points)
+  }
+  return total
+}
+
 export function countSkiruWithPoints(sheet: SkiruSheet, minPoints = 1): number {
   return SKIRU_CATALOG.filter((s) => getSkiruPoints(sheet, s.id) >= minPoints).length
 }

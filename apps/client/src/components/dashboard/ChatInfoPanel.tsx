@@ -85,8 +85,8 @@ export function ChatInfoPanel({ compact = false }: { compact?: boolean }) {
               <ul className="list-none space-y-0.5 text-[10px] text-gray-400">
                 <li>
                   <span className="text-[var(--accent-gold)]">[waza:Nome]</span> — lancio tecnica;
-                  in chat compare una <strong className="text-[var(--accent-violet-light)] font-normal">striscia</strong> con
-                  Dō, tier, CS, danno e IR risolto; passa col mouse per la descrizione (i tag restano nel testo grezzo per il log)
+                  in chat compare una <strong className="text-[var(--accent-violet-light)] font-normal">card</strong> con
+                  IR, danno e dettaglio <code>[+]</code>
                 </li>
                 <li>
                   <span className="text-[var(--accent-gold)]">[tenkan]</span> apre la Corona — ogni azione
@@ -95,7 +95,17 @@ export function ChatInfoPanel({ compact = false }: { compact?: boolean }) {
                 </li>
                 <li><span className="text-[var(--accent-gold)]">[cs:N]</span> · <span className="text-[var(--accent-gold)]">[1/4]…[4/4]</span> · <span className="text-[var(--accent-gold)]">[Scudo]</span> · <span className="text-[var(--accent-gold)]">[IR:N]</span></li>
                 <li>HP: Master aggiorna barra da <strong className="text-[var(--accent-violet-light)] font-normal">Strumenti Master</strong> (non compare in chat; narrato nel masterscreen)</li>
-                <li><span className="text-[var(--accent-gold)]">[toro]</span> · consistenza/categoria · status</li>
+                <li>
+                  <span className="text-[var(--accent-gold)]">[toro]</span> — canale Tōka; pannello Combattimento → Tōrō (sigillo + batteria)
+                </li>
+                <li>
+                  <span className="text-[var(--accent-gold)]">[toro:batteria:1]</span> ·{" "}
+                  <span className="text-[var(--accent-gold)]">[origine:Arma]</span>
+                </li>
+                <li>
+                  Costrutto <span className="text-[var(--accent-gold)]">Batteria</span>: evoca dal pannello con «Tag Batteria» o{" "}
+                  <span className="text-[var(--accent-gold)]">[costrutto:batteria]</span> in narrato (Hadō / Chikuden)
+                </li>
                 <li>
                   <span className="text-[var(--accent-gold)]">[investimento:+N]</span> versa CS in Tōshi (Hadō);{" "}
                   <span className="text-[var(--accent-gold)]">[investimento:riscuoti]</span> riscatta il pool

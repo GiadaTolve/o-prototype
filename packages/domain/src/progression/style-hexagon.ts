@@ -47,14 +47,6 @@ export const STYLE_HEX_OPPOSITE: Record<StyleId, StyleId> = {
   hado: 'ito',
 }
 
-/** Waza apprendibili per relazione rispetto allo stile principale. */
-export const WAZA_CAP_BY_RELATION: Record<StyleRelation, number> = {
-  primary: 6,
-  adjacent: 3,
-  distant: 1,
-  opposite: 0,
-}
-
 export const STYLE_UNLOCK_KEY_COST = 1
 
 export type StyleHexUiMeta = {
@@ -102,10 +94,6 @@ export function getStyleRelation(primary: StyleId, target: StyleId): StyleRelati
   return 'distant'
 }
 
-export function getMaxWazaForStyle(primary: StyleId, target: StyleId): number {
-  return WAZA_CAP_BY_RELATION[getStyleRelation(primary, target)]
-}
-
 export function styleIdFromBranchLabel(branch: string): StyleId | null {
   const key = branch.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const fromWazaBranch = WAZA_BRANCH_TO_STYLE[key]
@@ -149,24 +137,12 @@ export function canLearnWazaFromStyle(
   primary: StyleId | null,
   unlocked: readonly StyleId[],
   targetStyle: StyleId,
-  ownedInStyle: number,
-): { ok: boolean; error?: string; max?: number } {
+): { ok: boolean; error?: string } {
   if (!primary) {
     return { ok: false, error: 'Scegli prima lo stile principale (Esagono).' }
   }
   if (!unlocked.includes(targetStyle)) {
     return { ok: false, error: `Sblocca ${STYLE_LABELS[targetStyle]} con ${STYLE_UNLOCK_KEY_COST} Key.` }
   }
-  const max = getMaxWazaForStyle(primary, targetStyle)
-  if (max === 0) {
-    return { ok: false, error: `${STYLE_LABELS[targetStyle]} è opposto al tuo stile principale: nessuna waza.` }
-  }
-  if (ownedInStyle >= max) {
-    return {
-      ok: false,
-      error: `Limite Esagono per ${STYLE_LABELS[targetStyle]}: ${max} waza (possedute ${ownedInStyle}).`,
-      max,
-    }
-  }
-  return { ok: true, max }
+  return { ok: true }
 }
