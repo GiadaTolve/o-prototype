@@ -2924,12 +2924,54 @@ export class CharacterService {
         id: r.id,
         date: r.createdAt,
         questName: r.quest.title,
-        shinigamiName: r.quest.creator.surname 
+        shinigamiName: r.quest.creator.surname
           ? `${r.quest.creator.name} ${r.quest.creator.surname}`
           : r.quest.creator.name,
         reward: r.value ?? 0,
       })),
     };
+  }
+
+  /**
+   * Fine sessione: resetta stack meccaniche e status attivi del PG.
+   * HP, CS, costrutti in campo e dichiarazioni armi NON vengono toccati.
+   * Chiamato da closeGameSession per ogni partecipante.
+   */
+  async resetCombatStateForSession(characterId: string): Promise<void> {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { uiMetadata: true },
+    });
+    if (!char) return;
+
+    // Copia tutto (roleIcon, orderIcon, themeColor, ecc.) poi azzera solo i campi combat
+    const meta = { ...(char.uiMetadata ?? {}) } as DoMechanicsUiMeta & Record<string, unknown>;
+
+    const COMBAT_MECHANICS_KEYS: (keyof DoMechanicsUiMeta)[] = [
+      'itoTension', 'itoUsedThisTurn', 'naikanPhase', 'yuragiPhase', 'yuragiLastConsistency',
+      'kaden', 'gosaStacks', 'lastReceivedHitTier',
+      'hadoInvestimentoActive', 'hadoInvestimentoTurnsLeft', 'hadoInvestimentoPoolCs',
+      'hadoInvestimentoDepositedThisTurn', 'hadoInvestimentoPayout', 'hadoDebts',
+      'naikanKomei', 'naikanReadTarget', 'henseiNagori', 'itoGiurisdizione',
+      'itoDecreto', 'itoMugenShihai', 'genzaiEden', 'genzaiEdenDestroyedQueue',
+      'genzaiMeisaku', 'naikanSutura',
+      'genericheKajibaHalfHpTriggered', 'genericheKajibaTierBonusPending',
+      'genericheIaiReady', 'genericheIaiWazaLaunchesThisTurn', 'genericheIaiDamagedTargetIds',
+      'genericheTurnWazaUsed', 'tokaOmocha', 'tokaGangushi', 'henseiIgyoLast',
+      'komonoireWeapon', 'genericheKyoshin',
+    ];
+
+    for (const key of COMBAT_MECHANICS_KEYS) {
+      delete meta[key];
+    }
+
+    // Cancella tutti i status effects del PG (stack Emorragia, Pressione, ecc.)
+    await db.delete(characterStatusEffects).where(eq(characterStatusEffects.characterId, characterId));
+
+    // Riaggiorna uiMetadata: conserva roleIcon/ammo/armi, azzera meccaniche
+    await db.update(characters)
+      .set({ uiMetadata: meta as typeof char.uiMetadata })
+      .where(eq(characters.id, characterId));
   }
 }
 

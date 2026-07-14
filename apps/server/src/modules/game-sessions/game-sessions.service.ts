@@ -4,6 +4,7 @@ import { gameSessions, gameSessionParticipants, zoneMessages, characters, fetche
 import { isValidRoom } from '../chat/chat.service'
 import { createRem } from '@domain/types/money'
 import { earn } from '@domain/ledger/transaction'
+import { characterService } from '../characters/characters.service'
 
 const ACTION_THRESHOLD = 500 // 1 azione = messaggio con >500 caratteri totali
 
@@ -350,7 +351,7 @@ export async function closeGameSession(sessionId: string) {
   // premia automaticamente i giocatori con >4 azioni
   if (updatedSession.fetchId && updatedSession.fetch) {
     await rewardFetchParticipants(updatedSession.fetchId, updatedSession.participants)
-    
+
     // Aggiorna lo stato della fetch a "AWAITING_REWARD" se non è già completata
     if (!updatedSession.fetch.completionStatus) {
       await db
@@ -362,6 +363,11 @@ export async function closeGameSession(sessionId: string) {
         .where(eq(fetches.id, updatedSession.fetchId))
     }
   }
+
+  // Fine sessione: reset stack meccaniche + status attivi per ogni partecipante (HP/CS/costrutti restano)
+  await Promise.allSettled(
+    updatedSession.participants.map((p) => characterService.resetCombatStateForSession(p.characterId))
+  )
 
   return updated
 }
