@@ -92,6 +92,105 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   const isMainAreaPanel = (MAIN_AREA_PANEL_IDS as readonly string[]).includes(windowId);
   const isUnifiedPanel = (UNIFIED_PANEL_IDS as readonly string[]).includes(windowId);
   const isCombattimento = windowId === "combattimento";
+
+  // ── Draggable combat panel ───────────────────────────────────────────────
+  const [showCampo, setShowCampo] = useState(false);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const COMBAT_W = showCampo ? 700 : 440;
+  const COMBAT_H = 680;
+
+  useEffect(() => {
+    if (isCombattimento && !dragPos) {
+      setDragPos({
+        x: Math.max(8, Math.round((window.innerWidth - COMBAT_W) / 2)),
+        y: Math.max(8, Math.round((window.innerHeight - COMBAT_H) / 2)),
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCombattimento]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current || !dragRef.current) return;
+      setDragPos({
+        x: dragRef.current.initX + (e.clientX - dragRef.current.startX),
+        y: dragRef.current.initY + (e.clientY - dragRef.current.startY),
+      });
+    };
+    const onUp = () => { isDraggingRef.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  const handleCombatHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest(".combat-drag-handle")) return;
+    isDraggingRef.current = true;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, initX: dragPos?.x ?? 0, initY: dragPos?.y ?? 0 };
+    e.preventDefault();
+  }, [dragPos]);
+  // ────────────────────────────────────────────────────────────────────────
+
+  if (isCombattimento) {
+    return (
+      <div
+        className="fixed inset-0 z-30 pointer-events-none"
+        role="dialog"
+        aria-label={WINDOW_LABELS[windowId]}
+        aria-modal="true"
+      >
+        {dragPos && (
+          <div
+            className="absolute flex flex-col overflow-hidden pointer-events-auto bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl shadow-[0_0_32px_rgba(165,131,224,0.18)]"
+            style={{ left: dragPos.x, top: dragPos.y, width: COMBAT_W, height: COMBAT_H, transition: "width 0.2s ease" }}
+            onMouseDown={handleCombatHeaderMouseDown}
+          >
+            {/* Header — drag handle */}
+            <div className="combat-drag-handle flex items-center justify-between shrink-0 px-4 py-2.5 border-b border-[var(--border-color)] bg-black/40 select-none cursor-grab active:cursor-grabbing">
+              <h3 className="font-display text-xs uppercase tracking-widest text-[var(--accent-gold)] flex items-center gap-2 pointer-events-none">
+                <FontAwesomeIcon icon={PANEL_ICONS[windowId]} className="w-3.5 h-3.5" />
+                {WINDOW_LABELS[windowId]}
+              </h3>
+              <div className="flex items-center gap-1 pointer-events-auto" onMouseDown={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => onLower(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-[var(--accent-gold)] hover:bg-white/10 rounded transition-colors"
+                  title="Abbassa (in dock)"
+                >
+                  <FontAwesomeIcon icon={icons.minimize} className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onClose(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-white/10 rounded transition-colors"
+                  title="Chiudi"
+                >
+                  <FontAwesomeIcon icon={icons.close} className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <PannelloCombattimentoWindow
+                char={char}
+                usersInRoom={presenti}
+                chatConnected={chatConnected}
+                showCampo={showCampo}
+                setShowCampo={setShowCampo}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className={`fixed inset-0 z-30 pointer-events-none ${
@@ -107,8 +206,6 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
         className={`relative flex flex-col overflow-hidden pointer-events-auto ${
           isFetch
             ? "w-full max-w-4xl h-[calc(80vh-5rem)]"
-            : isCombattimento
-            ? "w-full max-w-lg h-[calc(90vh-4rem)] bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl shadow-[0_0_32px_rgba(165,131,224,0.18)]"
             : isMainAreaPanel
             ? "w-full max-w-full h-full md:w-[calc(100vw-37.75rem)] md:h-[calc(100vh-8rem)] md:absolute md:top-[calc(50%+5px)] md:left-[calc(50vw+0.625rem)] md:-translate-x-[50%] md:-translate-y-[50%] md:max-w-[calc(1800px-37.75rem)] bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl"
             : isUnifiedPanel
@@ -151,14 +248,6 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
             onLower={() => onLower(windowId)}
             onClose={() => onClose(windowId)}
           />
-        ) : isCombattimento ? (
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <PannelloCombattimentoWindow
-              char={char}
-              usersInRoom={presenti}
-              chatConnected={chatConnected}
-            />
-          </div>
         ) : (
         <div
           className={`flex-1 min-h-0 overflow-hidden ${

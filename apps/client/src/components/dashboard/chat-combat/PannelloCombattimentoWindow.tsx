@@ -67,15 +67,18 @@ export function PannelloCombattimentoWindow({
   char,
   usersInRoom,
   chatConnected = true,
+  showCampo,
+  setShowCampo,
 }: {
   char?: CharacterSummary;
   usersInRoom?: Presente[];
   chatConnected?: boolean;
+  showCampo: boolean;
+  setShowCampo: (v: boolean) => void;
 }) {
   const characterId = char?.id;
   const skiruSheet = char?.skiruSheet;
   const mountedRef = useRef(true);
-  const [showCampo, setShowCampo] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -156,13 +159,14 @@ export function PannelloCombattimentoWindow({
   const charName = char?.name ?? "Personaggio";
 
   return (
-    <div
-      className="flex flex-col gap-3 p-3 overflow-y-auto h-full"
-      style={{ background: "var(--panel-bg)" }}
-    >
+    <div className="flex flex-row h-full overflow-hidden" style={{ background: "var(--panel-bg)" }}>
+
+      {/* ── Colonna principale (Z1 + Z2 + Z3) ─────────────────────────── */}
+      <div className="flex flex-col gap-3 p-3 overflow-y-auto flex-1 min-w-0">
+
       {/* ── Z1 · CRUSCOTTO ─────────────────────────────────────────────── */}
       <section
-        className="rounded-xl border p-3"
+        className="rounded-xl border p-3 shrink-0"
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
       >
         {/* Nome + pulsante Campo */}
@@ -170,16 +174,16 @@ export function PannelloCombattimentoWindow({
           <span className="font-display text-base text-white">{charName}</span>
           <button
             type="button"
-            className="text-[11px] px-2.5 py-1 rounded border transition-colors hover:bg-[var(--accent-violet)]/10"
+            className="text-[11px] px-2.5 py-1 rounded border transition-colors hover:bg-[var(--accent-gold)]/10"
             style={{
               color: showCampo ? "var(--accent-gold)" : "var(--accent-violet-light)",
               borderColor: showCampo
                 ? "color-mix(in srgb, var(--accent-gold) 50%, transparent)"
                 : "color-mix(in srgb, var(--accent-violet) 40%, transparent)",
             }}
-            onClick={() => setShowCampo((v) => !v)}
+            onClick={() => setShowCampo(!showCampo)}
           >
-            Campo {showCampo ? "▾" : "▸"}
+            Campo {showCampo ? "◀" : "▸"}
           </button>
         </div>
 
@@ -235,30 +239,16 @@ export function PannelloCombattimentoWindow({
         <StatusEffectsPanel characterId={characterId} isOwnCharacter embedded />
       </section>
 
-      {/* ── Z5 · CAMPO (costrutti attivi) — collassabile da "Campo ▸" ── */}
-      {showCampo && (
-        <section
-          className="rounded-xl border p-3"
-          style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "color-mix(in srgb, var(--accent-gold) 25%, var(--border-color))" }}
-        >
-          <ZoneHeader label="Campo · Costrutti attivi" dot="var(--accent-gold)" />
-          <CombatConstructsSection
-            characterId={characterId}
-            onInsertText={onInsertText}
-          />
-        </section>
-      )}
-
-      {/* ── Z2 · IN USO ORA — cosa impugni e cos'è Tōrō (equipaggi in scheda) ── */}
+      {/* ── Z2 · IN USO ORA ──────────────────────────────────────────────── */}
       <section
-        className="rounded-xl border p-3"
+        className="rounded-xl border p-3 shrink-0"
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
       >
         <ZoneHeader label="Equipaggiamento" />
         <CombatWeaponsSection />
       </section>
 
-      {/* ── Z3 · LANCIO WAZA ───────────────────────────────────────────── */}
+      {/* ── Z3 · LANCIO WAZA ─────────────────────────────────────────────── */}
       <section
         className="rounded-xl border p-3"
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
@@ -274,6 +264,48 @@ export function PannelloCombattimentoWindow({
           chatConnected={chatConnected}
         />
       </section>
+
+      </div>{/* fine colonna principale */}
+
+      {/* ── Z5 · CAMPO — tab laterale ──────────────────────────────────── */}
+      {showCampo && (
+        <div
+          className="flex flex-col border-l overflow-y-auto"
+          style={{
+            width: 256,
+            flexShrink: 0,
+            borderColor: "color-mix(in srgb, var(--accent-gold) 30%, var(--border-color))",
+            background: "color-mix(in srgb, var(--panel-bg) 90%, #1a1200)",
+          }}
+        >
+          {/* Tab header */}
+          <div
+            className="flex items-center justify-between px-3 py-2 border-b shrink-0"
+            style={{ borderColor: "color-mix(in srgb, var(--accent-gold) 20%, var(--border-color))" }}
+          >
+            <span className="text-[10px] uppercase tracking-[0.18em] font-display" style={{ color: "var(--accent-gold)" }}>
+              Campo — Costrutti
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowCampo(false)}
+              className="text-gray-500 hover:text-gray-300 text-xs px-1"
+              title="Chiudi Campo"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Costrutti lista */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            <CombatConstructsSection
+              characterId={characterId}
+              onInsertText={onInsertText}
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
