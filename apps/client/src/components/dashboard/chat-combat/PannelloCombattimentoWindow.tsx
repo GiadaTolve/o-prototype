@@ -263,10 +263,6 @@ export function PannelloCombattimentoWindow({
         className="rounded-xl border p-3"
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
       >
-        <ZoneHeader
-          label="Lancio Waza"
-          dot="var(--accent-gold)"
-        />
         <LancioWazaPanel
           characterId={characterId}
           skiruSheet={skiruSheet}
