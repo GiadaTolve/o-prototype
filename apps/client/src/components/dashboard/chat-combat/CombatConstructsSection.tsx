@@ -119,10 +119,12 @@ export function CombatConstructsSection({
     try {
       await fn();
       setMsg(ok);
+      setTimeout(() => setMsg(null), 3000);
       window.dispatchEvent(new CustomEvent("characterStatusUpdated"));
       await load();
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : "Operazione fallita");
+      setTimeout(() => setMsg(null), 5000);
     } finally {
       setBusy(false);
     }
