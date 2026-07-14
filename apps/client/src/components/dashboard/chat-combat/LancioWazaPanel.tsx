@@ -432,8 +432,7 @@ export function LancioWazaPanel({
     lanciabile(sel) &&
     !missingTarget &&
     !missingDecreto &&
-    !!skiruA &&
-    !!skiruB;
+    (launchProfile?.masterOnlyCard ? true : !!skiruA && !!skiruB);
 
   const buildBody = useCallback(() => {
     if (!sel) return null;
@@ -559,6 +558,7 @@ export function LancioWazaPanel({
                 disabled={!canCast}
                 onClick={() => canCast && setSelId(r.id)}
                 className={`lwz__row${on ? " lwz__row--on" : ""}${canCast ? "" : " lwz__row--off"}`}
+                title={r.effect ?? undefined}
               >
                 <div className="lwz__row-top">
                   <span className="lwz__row-name">
@@ -610,25 +610,27 @@ export function LancioWazaPanel({
         <div className="lwz__config">
           <div className="lwz__label">Configura · {sel.name}</div>
 
-          {/* due Skiru papabili per l'IR */}
-          <div>
-            <div className="lwz__label" style={{ marginBottom: 4, opacity: 0.8 }}>
-              Skiru per l&apos;Indice (due papabili)
+          {/* due Skiru papabili per l'IR — nascosti per waza solo-narrazione */}
+          {!launchProfile?.masterOnlyCard && (
+            <div>
+              <div className="lwz__label" style={{ marginBottom: 4, opacity: 0.8 }}>
+                Skiru per l&apos;Indice (due papabili)
+              </div>
+              <div className="lwz__skiru-row">
+                <select className="lwz__select" value={skiruA} onChange={(e) => setSkiruA(e.target.value)}>
+                  {skiruOptions.map((o) => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
+                  ))}
+                </select>
+                <span style={{ color: "rgba(255,255,255,0.4)" }}>+</span>
+                <select className="lwz__select" value={skiruB} onChange={(e) => setSkiruB(e.target.value)}>
+                  {skiruOptions.map((o) => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="lwz__skiru-row">
-              <select className="lwz__select" value={skiruA} onChange={(e) => setSkiruA(e.target.value)}>
-                {skiruOptions.map((o) => (
-                  <option key={o.id} value={o.id}>{o.label}</option>
-                ))}
-              </select>
-              <span style={{ color: "rgba(255,255,255,0.4)" }}>+</span>
-              <select className="lwz__select" value={skiruB} onChange={(e) => setSkiruB(e.target.value)}>
-                {skiruOptions.map((o) => (
-                  <option key={o.id} value={o.id}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          )}
 
           {/* blocco costrutto — solo se la waza evoca (mockup + spec §2/§4/§5) */}
           {sel.evocaCostrutto && (
