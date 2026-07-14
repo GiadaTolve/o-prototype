@@ -14,6 +14,53 @@ type FieldConstructRow = {
   proprieta?: string[];
 };
 
+/** Mini-riga "agisce" espandibile per ogni costrutto. */
+function ConstructAgisceRow({
+  construct,
+  onInsertText,
+}: {
+  construct: FieldConstructRow;
+  onInsertText: (text: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [action, setAction] = useState("");
+
+  const confirm = () => {
+    const text = action.trim();
+    if (!text) return;
+    onInsertText(`Il costrutto ${construct.label} agisce: ${text} [costrutto:agisce]`);
+    setAction("");
+    setOpen(false);
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-[8px] text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)] transition-colors shrink-0"
+      >
+        agisce →
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex gap-1 items-center flex-1">
+      <input
+        autoFocus
+        value={action}
+        onChange={(e) => setAction(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") confirm(); if (e.key === "Escape") setOpen(false); }}
+        placeholder="Dichiarazione azione…"
+        className="flex-1 rounded border border-[var(--border-color)] bg-black/40 px-1.5 py-0.5 text-[9px] text-white"
+      />
+      <button type="button" onClick={confirm} className="text-[8px] text-[var(--accent-gold)] shrink-0">↵</button>
+      <button type="button" onClick={() => setOpen(false)} className="text-[8px] text-gray-500 shrink-0">✕</button>
+    </div>
+  );
+}
+
 export function CombatConstructsSection({
   characterId,
   isMaster = false,
@@ -96,26 +143,32 @@ export function CombatConstructsSection({
       ) : constructs.length === 0 ? (
         <p className="text-[9px] text-gray-600 italic">Nessun costrutto attivo sul campo.</p>
       ) : (
-        <ul className="space-y-1 max-h-28 overflow-y-auto">
+        <ul className="space-y-1.5 max-h-36 overflow-y-auto">
           {constructs.map((c) => (
-            <li key={c.id} className="text-[9px] text-gray-400 flex justify-between gap-1 items-start">
-              <span>
-                {c.label} T{c.wazaTier} · {c.remainingResistance}/{c.maxResistance}
-                {(c.proprieta?.length ?? 0) > 0 && (
-                  <span className="text-[var(--accent-gold)]">
-                    {" "}
-                    · {(c.proprieta ?? []).join(", ")}
-                  </span>
-                )}
-              </span>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => run(() => api.delete(`/characters/field-constructs/${c.id}`), "Rimosso")}
-                className="text-red-400/80 hover:text-red-400 shrink-0"
-              >
-                ×
-              </button>
+            <li key={c.id} className="text-[9px] text-gray-400 flex flex-col gap-0.5">
+              <div className="flex justify-between gap-1 items-center">
+                <span className="flex-1 min-w-0">
+                  <span className="text-white">{c.label}</span> T{c.wazaTier} · {c.remainingResistance}/{c.maxResistance}
+                  {(c.proprieta?.length ?? 0) > 0 && (
+                    <span className="text-[var(--accent-gold)]">
+                      {" "}· {(c.proprieta ?? []).join(", ")}
+                    </span>
+                  )}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {onInsertText && (
+                    <ConstructAgisceRow construct={c} onInsertText={onInsertText} />
+                  )}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => run(() => api.delete(`/characters/field-constructs/${c.id}`), "Rimosso")}
+                    className="text-red-400/80 hover:text-red-400"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
             </li>
           ))}
         </ul>
