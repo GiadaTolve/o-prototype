@@ -62,9 +62,45 @@ export type WazaLaunchProfile = {
 }
 
 const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
+  // ── Waza solo-narrazione (nessun danno computabile) ────────────────────────
+  'kakucho-espansione-della-luce': {
+    poolId: 'kakucho-espansione-della-luce',
+    masterOnlyCard: true,
+  },
+  'gangushi-il-giocattolaio': {
+    poolId: 'gangushi-il-giocattolaio',
+    masterOnlyCard: true,
+  },
+  'shokushin-lettura-corpo': {
+    poolId: 'shokushin-lettura-corpo',
+    masterOnlyCard: true,
+  },
+  'generiche-ippuku-gestione-pressione': {
+    poolId: 'generiche-ippuku-gestione-pressione',
+    masterOnlyCard: true,
+  },
+  'generiche-ukenagashi-parata-perfetta': {
+    poolId: 'generiche-ukenagashi-parata-perfetta',
+    masterOnlyCard: true,
+  },
+  'generiche-shukuchi-scatto-potenziato': {
+    poolId: 'generiche-shukuchi-scatto-potenziato',
+    masterOnlyCard: true,
+  },
+  'generiche-choyaku-salto-potenziato': {
+    poolId: 'generiche-choyaku-salto-potenziato',
+    masterOnlyCard: true,
+  },
+  'uzu': {
+    poolId: 'uzu',
+    needsQuarto: true,
+    masterOnlyCard: true,
+  },
+  // ──────────────────────────────────────────────────────────────────────────
   'fuin-no-hi-sigillo-della-fiamma': {
     poolId: 'fuin-no-hi-sigillo-della-fiamma',
     needsDelayedEffect: true,
+    masterOnlyCard: true,
   },
   'rensa-catena-fili': {
     poolId: 'rensa-catena-fili',
@@ -94,6 +130,7 @@ const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
     poolId: 'hogo-sutura-ego',
     needsSuturaKind: true,
     needsTarget: true,
+    masterOnlyCard: true,
   },
   'mugen-shihai-dominazione-onirica': {
     poolId: 'mugen-shihai-dominazione-onirica',
