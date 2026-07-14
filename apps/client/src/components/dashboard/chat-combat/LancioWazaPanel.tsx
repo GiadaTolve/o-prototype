@@ -123,7 +123,7 @@ export function LancioWazaPanel({
   const [skiruB, setSkiruB] = useState("");
   const [dett, setDett] = useState(false);
   const [targetId, setTargetId] = useState("");
-  const [narrative, setNarrative] = useState("");
+
   const [favIds, setFavIds] = useState<string[]>([]);
 
   // controlli condizionali avanzati (§4 — portati dal pannello precedente)
@@ -470,8 +470,8 @@ export function LancioWazaPanel({
       currentCs: currentCs ?? null,
       ...wazaResolveExtras,
     });
-    return narrative.trim() ? `${narrative.trim()}\n${line}` : line;
-  }, [sel, targetId, skiruSheet, skiruA, launchProfile, ir, launchExtras, currentCs, wazaResolveExtras, narrative]);
+    return line;
+  }, [sel, targetId, skiruSheet, skiruA, launchProfile, ir, launchExtras, currentCs, wazaResolveExtras]);
 
   const applyFrattura = useCallback(() => {
     if (kadenIntensity === "frattura") {
@@ -491,7 +491,6 @@ export function LancioWazaPanel({
     if (!body) return;
     applyFrattura();
     onInsertText(`${body}\n`);
-    setNarrative("");
   }, [buildBody, onInsertText, applyFrattura]);
 
   const doSend = useCallback(() => {
@@ -499,7 +498,6 @@ export function LancioWazaPanel({
     if (!body || !onSendMessage) return;
     applyFrattura();
     onSendMessage(body);
-    setNarrative("");
   }, [buildBody, onSendMessage, applyFrattura]);
 
   if (!characterId) {
@@ -946,19 +944,6 @@ export function LancioWazaPanel({
               </select>
             </label>
           )}
-
-          {/* narrato */}
-          <label className="block">
-            <span className="lwz__label">Narrato (opz.)</span>
-            <textarea
-              value={narrative}
-              onChange={(e) => setNarrative(e.target.value)}
-              rows={2}
-              placeholder="Descrivi l'azione in chat…"
-              className="lwz__search"
-              style={{ resize: "vertical", minHeight: "2.5rem" }}
-            />
-          </label>
 
           {/* lancia */}
           <div className="lwz__launch-row">

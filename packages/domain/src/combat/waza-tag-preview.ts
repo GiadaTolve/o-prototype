@@ -255,6 +255,10 @@ export function removeWazaTagsFromText(text: string): string {
     .replace(/\s*\[quarto:[^\]]+\]/gi, '')
     .replace(/\s*\[setup:1\]/gi, '')
     .replace(/\s*\[sorpresa:1\]/gi, '')
+    .replace(/\s*\[trasforma:[^\]]+\]/gi, '')
+    .replace(/\s*\[costrutto:[^\]]+\]/gi, '')
+    .replace(/\s*\[cedi-controllo:[^\]]+\]/gi, '')
+    .replace(/\s*\[macchiato-spend:[^\]]+\]/gi, '')
     .replace(/^\s+/, '')
 }
 

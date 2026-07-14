@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import type { Presente } from "../types";
 
 const CONSTRUCT_SIZES = ["piccola", "media", "grande", "enorme"] as const;
 
@@ -14,70 +15,39 @@ type FieldConstructRow = {
   proprieta?: string[];
 };
 
-/** Mini-riga "agisce" espandibile per ogni costrutto. */
-function ConstructAgisceRow({
-  construct,
-  onInsertText,
-}: {
-  construct: FieldConstructRow;
-  onInsertText: (text: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [action, setAction] = useState("");
-
-  const confirm = () => {
-    const text = action.trim();
-    if (!text) return;
-    onInsertText(`Il costrutto ${construct.label} agisce: ${text} [costrutto:agisce]`);
-    setAction("");
-    setOpen(false);
-  };
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="text-[8px] text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)] transition-colors shrink-0"
-      >
-        agisce →
-      </button>
-    );
-  }
-
-  return (
-    <div className="flex gap-1 items-center flex-1">
-      <input
-        autoFocus
-        value={action}
-        onChange={(e) => setAction(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") confirm(); if (e.key === "Escape") setOpen(false); }}
-        placeholder="Dichiarazione azione…"
-        className="flex-1 rounded border border-[var(--border-color)] bg-black/40 px-1.5 py-0.5 text-[9px] text-white"
-      />
-      <button type="button" onClick={confirm} className="text-[8px] text-[var(--accent-gold)] shrink-0">↵</button>
-      <button type="button" onClick={() => setOpen(false)} className="text-[8px] text-gray-500 shrink-0">✕</button>
-    </div>
-  );
-}
-
-/** Mini-riga "cedi controllo" — per Ubaiito, Inversione di Proprietà, Dominazione Onirica. */
+/** Mini-riga "cedi controllo" — trasferisce proprietà DB al nuovo proprietario. */
 function ConstructCediRow({
   construct,
-  onInsertText,
+  usersInRoom,
+  myCharacterId,
+  onSuccess,
 }: {
   construct: FieldConstructRow;
-  onInsertText: (text: string) => void;
+  usersInRoom: Presente[];
+  myCharacterId: string;
+  onSuccess: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [target, setTarget] = useState("");
+  const [targetId, setTargetId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  const confirm = () => {
-    const name = target.trim();
-    if (!name) return;
-    onInsertText(`Cedo il controllo di ${construct.label} a ${name} [cedi-controllo:${construct.label}→${name}]`);
-    setTarget("");
-    setOpen(false);
+  const targets = usersInRoom.filter((u) => u.id && u.id !== myCharacterId);
+
+  const confirm = async () => {
+    if (!targetId) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post(`/characters/field-constructs/${construct.id}/transfer`, { targetCharacterId: targetId });
+      onSuccess();
+      setOpen(false);
+      setTargetId("");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Errore");
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (!open) {
@@ -86,7 +56,7 @@ function ConstructCediRow({
         type="button"
         onClick={() => setOpen(true)}
         className="text-[8px] text-[var(--accent-gold)]/70 hover:text-[var(--accent-gold)] transition-colors shrink-0"
-        title="Cedi controllo del costrutto (Ubaiito / Inversione / Dominazione)"
+        title="Cedi controllo del costrutto"
       >
         cedi →
       </button>
@@ -95,16 +65,31 @@ function ConstructCediRow({
 
   return (
     <div className="flex gap-1 items-center flex-1">
-      <input
-        autoFocus
-        value={target}
-        onChange={(e) => setTarget(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") confirm(); if (e.key === "Escape") setOpen(false); }}
-        placeholder="Nuovo controllore…"
-        className="flex-1 rounded border border-[var(--border-color)] bg-black/40 px-1.5 py-0.5 text-[9px] text-white"
-      />
-      <button type="button" onClick={confirm} className="text-[8px] text-[var(--accent-gold)] shrink-0">↵</button>
-      <button type="button" onClick={() => setOpen(false)} className="text-[8px] text-gray-500 shrink-0">✕</button>
+      {targets.length === 0 ? (
+        <span className="text-[8px] text-gray-500 italic flex-1">Nessun altro in stanza</span>
+      ) : (
+        <select
+          autoFocus
+          value={targetId}
+          onChange={(e) => setTargetId(e.target.value)}
+          className="flex-1 rounded border border-[var(--border-color)] bg-black/40 px-1 py-0.5 text-[9px] text-white"
+        >
+          <option value="">— a chi —</option>
+          {targets.map((u) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+      )}
+      <button
+        type="button"
+        disabled={busy || !targetId}
+        onClick={() => void confirm()}
+        className="text-[8px] text-[var(--accent-gold)] shrink-0 disabled:opacity-40"
+      >
+        ↵
+      </button>
+      <button type="button" onClick={() => { setOpen(false); setErr(null); }} className="text-[8px] text-gray-500 shrink-0">✕</button>
+      {err && <span className="text-[8px] text-red-400">{err}</span>}
     </div>
   );
 }
@@ -113,13 +98,14 @@ export function CombatConstructsSection({
   characterId,
   isMaster = false,
   masterTargetId,
-  onInsertText,
+  usersInRoom = [],
+  onSendMessage,
 }: {
   characterId?: string;
   isMaster?: boolean;
-  /** Se Master: evoca sul bersaglio selezionato. */
   masterTargetId?: string;
-  onInsertText?: (text: string) => void;
+  usersInRoom?: Presente[];
+  onSendMessage?: (text: string) => void;
 }) {
   const targetId = isMaster ? masterTargetId : characterId;
   const [constructs, setConstructs] = useState<FieldConstructRow[]>([]);
@@ -186,6 +172,10 @@ export function CombatConstructsSection({
   if (cBatteria) proprieta.push("BATTERIA");
   if (cToro) proprieta.push("TORO");
 
+  // Resistenza derivata preview per il form
+  const sizeMultipliers: Record<string, number> = { piccola: 0.5, media: 1, grande: 1.5, enorme: 2 };
+  const resistenzaPreview = Math.floor(cTier * (sizeMultipliers[cSize] ?? 1));
+
   return (
     <div className="space-y-2">
       {loading ? (
@@ -198,7 +188,8 @@ export function CombatConstructsSection({
             <li key={c.id} className="text-[9px] text-gray-400 flex flex-col gap-0.5">
               <div className="flex justify-between gap-1 items-center">
                 <span className="flex-1 min-w-0">
-                  <span className="text-white">{c.label}</span> T{c.wazaTier} · {c.remainingResistance}/{c.maxResistance}
+                  <span className="text-white">{c.label}</span>{" "}
+                  T{c.wazaTier} · Res {c.remainingResistance}/{c.maxResistance}
                   {(c.proprieta?.length ?? 0) > 0 && (
                     <span className="text-[var(--accent-gold)]">
                       {" "}· {(c.proprieta ?? []).join(", ")}
@@ -206,11 +197,13 @@ export function CombatConstructsSection({
                   )}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
-                  {onInsertText && (
-                    <>
-                      <ConstructAgisceRow construct={c} onInsertText={onInsertText} />
-                      <ConstructCediRow construct={c} onInsertText={onInsertText} />
-                    </>
+                  {characterId && (
+                    <ConstructCediRow
+                      construct={c}
+                      usersInRoom={usersInRoom}
+                      myCharacterId={characterId}
+                      onSuccess={() => { void load(); }}
+                    />
                   )}
                   <button
                     type="button"
@@ -247,14 +240,15 @@ export function CombatConstructsSection({
         <select
           value={cSize}
           onChange={(e) => setCSize(e.target.value as (typeof CONSTRUCT_SIZES)[number])}
-          className="rounded border border-[var(--border-color)] bg-black/40 px-1 py-1.5 text-[10px] col-span-3 text-white"
+          className="rounded border border-[var(--border-color)] bg-black/40 px-1 py-1.5 text-[10px] col-span-2 text-white"
         >
           {CONSTRUCT_SIZES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
+        <span className="text-[9px] text-[var(--accent-violet-light)] flex items-center justify-center">
+          Res {resistenzaPreview}
+        </span>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -290,6 +284,16 @@ export function CombatConstructsSection({
                 size: cSize,
                 stationary: true,
                 proprieta: proprieta.length > 0 ? proprieta : undefined,
+              }).then(() => {
+                if (onSendMessage) {
+                  const stickerTag = proprieta.length > 0
+                    ? ` [sticker:${proprieta.join("+")}]`
+                    : "";
+                  onSendMessage(
+                    `Evoco ${cLabel.trim()} (${cSize}, T${cTier}) — Res ${resistenzaPreview}` +
+                    ` [costrutto:standalone:${cLabel.trim()}] [taglia:${cSize}] [tier:${cTier}]${stickerTag}`
+                  );
+                }
               }),
             "Costrutto evocato",
           )
@@ -299,26 +303,9 @@ export function CombatConstructsSection({
         Evoca costrutto
       </button>
 
-      {onInsertText && (
-        <button
-          type="button"
-          disabled={!cLabel.trim()}
-          className="chat-combat-master-btn w-full"
-          onClick={() => {
-            const tags = proprieta.map((p) => `[costrutto:${p.toLowerCase()}]`).join(" ");
-            onInsertText(
-              `Evoco ${cLabel.trim()} (${cSize}, T${cTier})${tags ? ` ${tags}` : ""} `,
-            );
-          }}
-        >
-          Inserisci dichiarazione in chat
-        </button>
-      )}
-
       <p className="text-[8px] text-gray-600 leading-relaxed">
         <strong className="text-gray-500 font-normal">Batteria (Hadō):</strong> con Chikuden attiva,
-        spunta «Tag Batteria» all&apos;evocazione — il costrutto può trattenere CS (max 5). In narrato
-        puoi anche usare <code>[costrutto:batteria]</code>.
+        spunta «Tag Batteria» all&apos;evocazione — il costrutto può trattenere CS (max 5).
       </p>
 
       {msg && (

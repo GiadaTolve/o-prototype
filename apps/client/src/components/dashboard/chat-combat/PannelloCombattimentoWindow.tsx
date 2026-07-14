@@ -377,7 +377,8 @@ export function PannelloCombattimentoWindow({
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             <CombatConstructsSection
               characterId={characterId}
-              onInsertText={onInsertText}
+              usersInRoom={usersInRoom}
+              onSendMessage={onSendMessage}
             />
           </div>
         </div>

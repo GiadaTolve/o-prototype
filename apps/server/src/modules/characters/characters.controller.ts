@@ -770,6 +770,26 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       }
     }, { detail: { summary: 'Distruggi costrutto (creatore o Master)' } })
 
+    // Cedi controllo costrutto a un altro personaggio
+    .post('/field-constructs/:constructId/transfer', async ({ user, params, body, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      try {
+        const ownerId = await characterService.getFieldConstructOwnerId(params.constructId)
+        if (!ownerId) { set.status = 404; return { error: 'Costrutto non trovato' } }
+        if (ownerId !== user.characterId) { set.status = 403; return { error: 'Non sei il proprietario' } }
+        const result = await characterService.transferFieldConstruct(params.constructId, body.targetCharacterId)
+        broadcastCharacterStatusUpdated({ characterId: user.characterId })
+        broadcastCharacterStatusUpdated({ characterId: body.targetCharacterId })
+        return result
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore trasferimento costrutto' }
+      }
+    }, {
+      body: t.Object({ targetCharacterId: t.String() }),
+      detail: { summary: 'Cedi controllo costrutto a un altro PG' },
+    })
+
     // 4. Aggiorna profilo pubblico (avatar, miniAvatar, surname, bio, backgroundImage, themeMusicUrl)
     .put('/me/profilo', async ({ user, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }

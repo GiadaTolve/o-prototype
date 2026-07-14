@@ -1886,6 +1886,17 @@ export class CharacterService {
     return this.listFieldConstructsForCharacter(row.creatorCharacterId);
   }
 
+  async transferFieldConstruct(constructId: string, targetCharacterId: string) {
+    const row = await db.query.fieldConstructs.findFirst({
+      where: eq(fieldConstructs.id, constructId),
+    });
+    if (!row) throw new Error('Costrutto non trovato');
+    await db.update(fieldConstructs)
+      .set({ creatorCharacterId: targetCharacterId })
+      .where(eq(fieldConstructs.id, constructId));
+    return { ok: true, constructId, toCharacterId: targetCharacterId };
+  }
+
   async getToroState(characterId: string, weaponTagsInContext: string[] = []) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),

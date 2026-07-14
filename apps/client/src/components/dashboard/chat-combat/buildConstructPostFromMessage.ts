@@ -12,6 +12,65 @@ const SIZE_LABELS: Record<ConstructSizeId, ConstructResolutionPostData["taglia"]
   enorme: "Enorme",
 };
 
+/** Estrae il nome costrutto da `[costrutto:standalone:Nome]`. */
+export function extractStandaloneConstructName(text: string): string | null {
+  const m = /\[costrutto:standalone:([^\]]+)\]/i.exec(text);
+  return m?.[1]?.trim() ?? null;
+}
+
+/**
+ * Card costrutto per evoca diretta da Z5 (senza waza).
+ * Attivata dal tag `[costrutto:standalone:Nome]` nel messaggio.
+ */
+export function buildStandaloneConstructPostFromMessage(input: {
+  messageContent: string;
+  actorSkiruSheet?: SkiruSheet | null;
+}): ConstructResolutionPostData | null {
+  const nome = extractStandaloneConstructName(input.messageContent);
+  if (!nome) return null;
+
+  const taglia = extractTagliaFromText(input.messageContent) ?? "media";
+  const stickers = extractStickersFromText(input.messageContent);
+  const tier = extractLaunchTierFromText(input.messageContent);
+
+  let resistenza: number | null = null;
+  let movimento: number | null = null;
+
+  if (tier != null && input.actorSkiruSheet) {
+    const profile = deriveConstructProfile({
+      wazaTier: tier,
+      taglia,
+      proprieta: stickers,
+      creator: { sheet: input.actorSkiruSheet },
+      resistenza: "DERIVATA",
+      movimento_m: "DERIVATA",
+    });
+    resistenza = profile.resistenza ?? null;
+    movimento = profile.movimento_m ?? null;
+  }
+
+  const sizeDef = CONSTRUCT_SIZES[taglia];
+  const hasDanno = sizeDef.resistanceMult >= 1.5;
+
+  return {
+    nome,
+    taglia: SIZE_LABELS[taglia],
+    movimentoM: movimento ?? 0,
+    ...(hasDanno && tier != null ? { dannoMedio: tier } : {}),
+    hpCurrent: resistenza ?? 0,
+    hpMax: resistenza ?? 0,
+    stickers: stickers.map((s) => STICKER_LABELS[s]),
+    expanded: {
+      bonusMalus: [
+        ...(tier != null ? [{ label: "Tier waza", value: `T${tier}` }] : []),
+        { label: "Taglia × resist.", value: `×${sizeDef.resistanceMult}` },
+        ...(movimento != null ? [{ label: "Movimento", value: `${movimento} m/quarto` }] : []),
+      ],
+      note: "Costrutto evocato direttamente. Resistenza derivata da tier × taglia.",
+    },
+  };
+}
+
 /** Estrae `[taglia:X]` dal testo del messaggio. */
 function extractTagliaFromText(text: string): ConstructSizeId | null {
   const m = /\[taglia:([a-z]+)\]/i.exec(text);

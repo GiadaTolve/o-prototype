@@ -50,7 +50,7 @@ import { ChatInfoPanel } from "./ChatInfoPanel";
 import { ChatWazaResolutionPost } from "./chat-combat/ChatWazaResolutionPost";
 import { ChatConstructResolutionPost } from "./chat-combat/ChatConstructResolutionPost";
 import { buildChatWazaPostFromMessage } from "./chat-combat/buildChatWazaPostFromMessage";
-import { buildConstructPostFromMessage } from "./chat-combat/buildConstructPostFromMessage";
+import { buildConstructPostFromMessage, buildStandaloneConstructPostFromMessage } from "./chat-combat/buildConstructPostFromMessage";
 
 /** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
 const MOBILE_CHAT_MAX_LENGTH = 500;
@@ -2873,7 +2873,10 @@ function ChatMessageBlock({
       });
       if (post) return post;
     }
-    return null;
+    return buildStandaloneConstructPostFromMessage({
+      messageContent: message.content,
+      actorSkiruSheet: actorSkiruSheet ?? null,
+    });
   }, [message.content, actorSkiruSheet]);
   const narrativeBody = useMemo(
     () => removeWazaTagsFromText(message.content),
