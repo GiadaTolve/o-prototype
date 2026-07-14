@@ -31,6 +31,20 @@ function extractOrigineTag(text: string): string | null {
   return m?.[1]?.trim() ?? null;
 }
 
+function extractQuartoTag(text: string): string | null {
+  const m = /\[quarto:\s*([^\]]+)\]/i.exec(text);
+  return m?.[1]?.trim() ?? null;
+}
+
+function extractKadenTag(text: string): string | null {
+  const m = /\[kaden:\s*([^\]]+)\]/i.exec(text);
+  return m?.[1]?.trim() ?? null;
+}
+
+function extractSetupTag(text: string): boolean {
+  return /\[setup:1\]/i.test(text);
+}
+
 function buildDescrizione(preview: WazaTagPreview): string {
   const parts: string[] = [];
   if (preview.styleLabel) parts.push(preview.styleLabel);
@@ -71,6 +85,9 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   const launchTargetSpec = extractWazaLaunchTargetSpec(messageContent);
   const launchTier = extractLaunchTierFromText(messageContent) ?? preview.tier;
   const hitDeclared = extractHitDeclaredFromText(messageContent);
+  const quartoTag = extractQuartoTag(messageContent);
+  const kadenTag = extractKadenTag(messageContent);
+  const setupPending = extractSetupTag(messageContent);
   const skiruName = launchSkiruId ? (getSkiruDef(launchSkiruId)?.name ?? launchSkiruId) : null;
   const riderLabel = launchSkiruId ? (getSkiruRider(launchSkiruId)?.label ?? null) : null;
   const targetName =
@@ -158,6 +175,12 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   if (riderLabel && !dannoModifiers.some((m) => m.label === riderLabel)) {
     statusAttivi.push(riderLabel);
   }
+  if (quartoTag) statusAttivi.push(`Stadio: ${quartoTag}`);
+  if (kadenTag === 'cs12') statusAttivi.push('Kaden CS≥12 (+1 tier)');
+  else if (kadenTag === 'overheat') statusAttivi.push('Kaden Overheat (+2 tier)');
+  else if (kadenTag === 'frattura') statusAttivi.push('Kaden Frattura (−5 HP, +1 tier)');
+  else if (kadenTag) statusAttivi.push(`Kaden: ${kadenTag}`);
+  if (setupPending) statusAttivi.push('Effetto rimandato — waza in attesa');
   if (targetName) statusAttivi.push(`Bersaglio: ${targetName}`);
   if (hitDeclared) statusAttivi.push("Colpo dichiarato");
   if (!preview.found) statusAttivi.push("Non in catalogo");
@@ -190,6 +213,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
     dannoLordo: dannoLordo ?? undefined,
     isPassive: preview.isPassive,
     notInCatalog: !preview.found,
+    setupPending: setupPending || undefined,
     expanded: {
       irBase,
       irModifiers,

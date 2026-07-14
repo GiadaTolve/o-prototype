@@ -14,6 +14,8 @@ export type WazaResolutionPostData = {
   dannoLordo?: number;
   isPassive?: boolean;
   notInCatalog?: boolean;
+  /** Waza con effetto rimandato ([setup:1]): mostra badge "in attesa" nel collapsed card. */
+  setupPending?: boolean;
   expanded: {
     irBase: { skiruA: string; valA: number; skiruB: string; valB: number; media: number };
     irModifiers: { label: string; value: number }[];
@@ -66,6 +68,14 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
                 ·
               </span>
               Danno <strong>{data.dannoFinale}</strong>
+              {data.setupPending && (
+                <span className="chat-waza-launch-post__stat-sep" aria-hidden>·</span>
+              )}
+              {data.setupPending && (
+                <span style={{ color: "var(--accent-violet-light)", fontStyle: "italic", fontSize: "0.75em" }}>
+                  in attesa
+                </span>
+              )}
             </span>
           ) : (
             <span className="chat-waza-launch-post__stats chat-waza-launch-post__stats--passive">
