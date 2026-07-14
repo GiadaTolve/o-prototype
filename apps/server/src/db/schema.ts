@@ -386,6 +386,12 @@ export const items = pgTable('items', {
   >().default('junk'),
   integrityMax: integer('integrity_max'),
   effectText: text('effect_text'),
+  /** Danno base dell'arma (WEAPON). */
+  damage: integer('damage'),
+  /** Valore Scudo/DR dell'armatura (ARMOR). */
+  resistance: integer('resistance'),
+  /** Tipo munizioni richieste (armi da fuoco/lancio con munizioni consumabili). */
+  ammoKind: text('ammo_kind'),
   /** Slot inventario occupati da questa riga (default 1). */
   inventorySlotCost: integer('inventory_slot_cost').default(1).notNull(),
   junkTemplateId: text('junk_template_id'),

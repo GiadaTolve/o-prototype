@@ -9,6 +9,10 @@ const MAX_WIELDED = 2; // Ambidestria — vincolo sulle armi IMPUGNATE, non sui 
 type WeaponRow = {
   inventoryId: string;
   name: string;
+  damage: number | null;
+  resistance: number | null;
+  ammoKind: string | null;
+  type: string;
 };
 
 type CombatWeaponsState = {
@@ -48,6 +52,10 @@ export function CombatWeaponsSection() {
           weaponItems.map((it) => ({
             inventoryId: it.id,
             name: it.item.name,
+            damage: it.item.damage ?? null,
+            resistance: it.item.resistance ?? null,
+            ammoKind: it.item.ammoKind ?? null,
+            type: it.item.type,
           })),
         );
         setState({
@@ -137,12 +145,14 @@ export function CombatWeaponsSection() {
         const isActive = state.activeIds.includes(w.inventoryId);
         const isToro = state.toroIds.includes(w.inventoryId);
         const ammoVal = state.ammo[w.inventoryId];
-        const hasAmmo = ammoVal !== undefined;
+        const hasAmmoCounter = ammoVal !== undefined;
+        const needsAmmo = !!w.ammoKind;
+        const isArmor = w.type === "ARMOR";
 
         return (
           <div
             key={w.inventoryId}
-            className="flex items-center gap-2 rounded-lg p-2 transition-colors"
+            className="rounded-lg p-2 transition-colors"
             style={{
               background: isToro
                 ? "color-mix(in srgb, var(--accent-ember, #e8763a) 8%, transparent)"
@@ -150,74 +160,106 @@ export function CombatWeaponsSection() {
               border: `1px solid ${isToro ? "color-mix(in srgb, var(--accent-ember, #e8763a) 45%, transparent)" : "var(--border-color)"}`,
             }}
           >
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: isToro ? "var(--accent-ember, #e8763a)" : "#4a4356" }}
-            />
+            {/* riga principale */}
+            <div className="flex items-center gap-2">
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: isToro ? "var(--accent-ember, #e8763a)" : "#4a4356" }}
+              />
 
-            <input
-              type="checkbox"
-              checked={isActive}
-              disabled={saving || (!isActive && state.activeIds.length >= MAX_WIELDED)}
-              onChange={() => toggleActive(w.inventoryId)}
-              title="Impugnata ora"
-              className="accent-[var(--accent-gold)] shrink-0"
-            />
+              <input
+                type="checkbox"
+                checked={isActive}
+                disabled={saving || (!isActive && state.activeIds.length >= MAX_WIELDED)}
+                onChange={() => toggleActive(w.inventoryId)}
+                title="Impugnata / indossata ora"
+                className="accent-[var(--accent-gold)] shrink-0"
+              />
 
-            <span
-              className="flex-1 text-[11px] leading-tight truncate flex items-center gap-1.5"
-              style={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
-            >
-              {w.name}
-              {hasAmmo && (
+              <span
+                className="flex-1 text-[11px] leading-tight truncate"
+                style={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
+              >
+                {w.name}
+              </span>
+
+              {/* badge danno / resistenza */}
+              {!isArmor && w.damage != null && (
+                <span
+                  className="text-[9px] font-mono px-1.5 py-0.5 rounded shrink-0"
+                  style={{ background: "color-mix(in srgb, var(--accent-gold) 15%, transparent)", color: "var(--accent-gold)", border: "1px solid color-mix(in srgb, var(--accent-gold) 35%, transparent)" }}
+                  title="Danno base arma"
+                >
+                  {w.damage} dmg
+                </span>
+              )}
+              {isArmor && w.resistance != null && (
+                <span
+                  className="text-[9px] font-mono px-1.5 py-0.5 rounded shrink-0"
+                  style={{ background: "color-mix(in srgb, var(--accent-violet) 12%, transparent)", color: "var(--accent-violet-light)", border: "1px solid color-mix(in srgb, var(--accent-violet) 30%, transparent)" }}
+                  title="Scudo (riduzione danno)"
+                >
+                  Sc {w.resistance}
+                </span>
+              )}
+
+              {/* pulsante Tōrō — solo su armi, non armature */}
+              {!isArmor && (
+                <button
+                  type="button"
+                  disabled={saving}
+                  className="text-[10px] px-2 py-0.5 rounded border shrink-0 transition-colors"
+                  style={{
+                    background: isToro ? "#3a2519" : "transparent",
+                    color: isToro ? "var(--accent-ember, #e8763a)" : "var(--muted-foreground)",
+                    borderColor: isToro ? "var(--accent-ember, #e8763a)" : "var(--border-color)",
+                  }}
+                  onClick={() => toggleToro(w.inventoryId)}
+                >
+                  {isToro ? "Tōrō ✓" : "Tōrō"}
+                </button>
+              )}
+            </div>
+
+            {/* riga munizioni — solo armi con ammoKind */}
+            {needsAmmo && (
+              <div className="mt-1.5 flex items-center gap-1.5 pl-5">
+                {hasAmmoCounter ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-[9px] font-mono rounded border px-1"
+                    style={{ borderColor: "var(--border-color)", color: "var(--muted-foreground)" }}
+                  >
+                    <button type="button" disabled={saving} className="disabled:opacity-40" onClick={() => adjustAmmo(w.inventoryId, -1)}>−</button>
+                    <span>{w.ammoKind} · {ammoVal}</span>
+                    <button type="button" disabled={saving} onClick={() => adjustAmmo(w.inventoryId, +1)}>+</button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    className="text-[8px] opacity-50 hover:opacity-100 rounded border px-1.5 py-0.5"
+                    style={{ borderColor: "var(--border-color)", color: "var(--muted-foreground)" }}
+                    onClick={() => adjustAmmo(w.inventoryId, 0)}
+                    title="Attiva conteggio munizioni"
+                  >
+                    + carica {w.ammoKind}
+                  </button>
+                )}
+              </div>
+            )}
+            {/* munizioni manuali per armi non classificate */}
+            {!needsAmmo && hasAmmoCounter && (
+              <div className="mt-1.5 flex items-center gap-1.5 pl-5">
                 <span
                   className="inline-flex items-center gap-1 text-[9px] font-mono rounded border px-1"
                   style={{ borderColor: "var(--border-color)", color: "var(--muted-foreground)" }}
                 >
-                  <button
-                    type="button"
-                    disabled={saving}
-                    className="disabled:opacity-40"
-                    onClick={() => adjustAmmo(w.inventoryId, -1)}
-                  >
-                    −
-                  </button>
-                  munizioni {ammoVal}
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={() => adjustAmmo(w.inventoryId, +1)}
-                  >
-                    +
-                  </button>
+                  <button type="button" disabled={saving} className="disabled:opacity-40" onClick={() => adjustAmmo(w.inventoryId, -1)}>−</button>
+                  <span>munizioni {ammoVal}</span>
+                  <button type="button" disabled={saving} onClick={() => adjustAmmo(w.inventoryId, +1)}>+</button>
                 </span>
-              )}
-              {!hasAmmo && (
-                <button
-                  type="button"
-                  disabled={saving}
-                  className="text-[8px] opacity-50 hover:opacity-100"
-                  onClick={() => adjustAmmo(w.inventoryId, 0)}
-                  title="Attiva conteggio munizioni"
-                >
-                  + munizioni
-                </button>
-              )}
-            </span>
-
-            <button
-              type="button"
-              disabled={saving}
-              className="text-[10px] px-2 py-0.5 rounded border shrink-0 transition-colors"
-              style={{
-                background: isToro ? "#3a2519" : "transparent",
-                color: isToro ? "var(--accent-ember, #e8763a)" : "var(--muted-foreground)",
-                borderColor: isToro ? "var(--accent-ember, #e8763a)" : "var(--border-color)",
-              }}
-              onClick={() => toggleToro(w.inventoryId)}
-            >
-              {isToro ? "Tōrō ✓" : "rendi Tōrō"}
-            </button>
+              </div>
+            )}
           </div>
         );
       })}

@@ -46,6 +46,9 @@ async function upsertCatalogItem(values: typeof schema.items.$inferInsert) {
     marketCategory: values.marketCategory,
     price: values.price,
     isActiveInMarket: values.isActiveInMarket ?? true,
+    damage: values.damage,
+    resistance: values.resistance,
+    ammoKind: values.ammoKind,
   }
   if (existing) {
     await db.update(schema.items).set(fields).where(eq(schema.items.id, existing.id))
@@ -100,6 +103,9 @@ async function main() {
       marketCategory: marketEquipmentCategory(equip.kind),
       price: equip.priceRem,
       isActiveInMarket: true,
+      damage: equip.damage,
+      resistance: equip.resistance,
+      ammoKind: equip.ammoKind,
     })
   }
 

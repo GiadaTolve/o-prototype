@@ -30,6 +30,9 @@ export interface InventoryItemRow {
     description: string | null
     type: string
     slotsBonus: number
+    damage?: number | null
+    resistance?: number | null
+    ammoKind?: string | null
   }
   economy?: InventoryEconomyFields
 }

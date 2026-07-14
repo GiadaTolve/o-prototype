@@ -41,6 +41,12 @@ export interface MarketEquipmentDef {
   readonly craftMaterials?: readonly EconomyMaterialCost[]
   /** Prezzo Rem nel catalogo Market — provvisorio, tarabile da Sviluppo. */
   readonly priceRem: number
+  /** Danno base dell'arma (WEAPON). */
+  readonly damage?: number
+  /** Valore Scudo dell'armatura (ARMOR). */
+  readonly resistance?: number
+  /** Tipo munizioni richieste (pistola | fucile | balestra) — solo armi da fuoco/lancio con ammo. */
+  readonly ammoKind?: string
 }
 
 /** Categoria Market (vetrina a card) derivata dalla sottocategoria meccanica. */
@@ -65,6 +71,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 60,
+    damage: 6,
   },
   {
     id: 'equip-kubikiri',
@@ -80,6 +87,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 90,
+    damage: 10,
   },
   {
     id: 'equip-hotarubi',
@@ -95,6 +103,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 45,
+    damage: 4,
   },
   {
     id: 'equip-onikama',
@@ -109,6 +118,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 60,
+    damage: 6,
   },
   {
     id: 'equip-yarinobori',
@@ -123,6 +133,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 75,
+    damage: 7,
   },
   {
     id: 'equip-kanabo-namida',
@@ -137,6 +148,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 90,
+    damage: 12,
   },
   {
     id: 'equip-kagenui-hari',
@@ -151,6 +163,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 30,
+    damage: 3,
   },
   {
     id: 'equip-nokogiri-to',
@@ -165,6 +178,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 60,
+    damage: 7,
   },
 
   // ─── Armi da fuoco (7) ───
@@ -181,6 +195,8 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 60,
+    damage: 8,
+    ammoKind: 'pistola',
   },
   {
     id: 'equip-kaminari-tsutsu',
@@ -195,6 +211,8 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 45,
+    damage: 10,
+    ammoKind: 'fucile',
   },
   {
     id: 'equip-shinigami-yubi',
@@ -209,6 +227,8 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 60,
+    damage: 12,
+    ammoKind: 'fucile',
   },
   {
     id: 'equip-hachi-su',
@@ -223,6 +243,8 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 45,
+    damage: 6,
+    ammoKind: 'pistola',
   },
   {
     id: 'equip-karasu-uchi',
@@ -237,6 +259,8 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 60,
+    damage: 9,
+    ammoKind: 'fucile',
   },
   {
     id: 'equip-yumihari',
@@ -251,6 +275,8 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 60,
+    damage: 8,
+    ammoKind: 'balestra',
   },
   {
     id: 'equip-hinawa',
@@ -265,6 +291,8 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 30,
+    damage: 7,
+    ammoKind: 'pistola',
   },
 
   // ─── Armi da lancio (4 equip + 1 consumabile) ───
@@ -281,6 +309,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 30,
+    damage: 3,
   },
   {
     id: 'consumable-kaen-bin',
@@ -313,6 +342,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 30,
+    damage: 4,
   },
   {
     id: 'equip-doku-fukiya',
@@ -327,6 +357,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 30,
+    damage: 2,
   },
   {
     id: 'equip-kusari-tama',
@@ -341,6 +372,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 45,
+    damage: 3,
   },
 
   // ─── Protezioni (10) ───
@@ -357,6 +389,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 30,
+    resistance: 4,
   },
   {
     id: 'equip-kawa-dogi',
@@ -371,6 +404,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 45,
+    resistance: 4,
   },
   {
     id: 'equip-teppan-do',
@@ -385,6 +419,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 60,
+    resistance: 8,
   },
   {
     id: 'equip-taiya-kata',
@@ -399,6 +434,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 45,
+    resistance: 4,
   },
   {
     id: 'equip-mushi-karada',
@@ -413,6 +449,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 3,
     isStackable: false,
     priceRem: 90,
+    resistance: 12,
   },
   {
     id: 'equip-mempo-namida',
@@ -441,6 +478,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 45,
+    resistance: 8,
   },
   {
     id: 'equip-jizo-sei',
@@ -455,6 +493,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 2,
     isStackable: false,
     priceRem: 60,
+    resistance: 8,
   },
   {
     id: 'equip-kegawa-gaito',
@@ -469,6 +508,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 45,
+    resistance: 4,
   },
   {
     id: 'equip-ofuda-kote',
@@ -485,6 +525,7 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 1,
     isStackable: false,
     priceRem: 45,
+    resistance: 4,
   },
 
   // ─── Veicoli (5) ───
@@ -560,6 +601,49 @@ export const MARKET_EQUIPMENT_CATALOG: readonly MarketEquipmentDef[] = [
     inventorySlotCost: 5,
     isStackable: false,
     priceRem: 120,
+  },
+  // ─── Munizioni (3 tipi consumabili) ───
+  {
+    id: 'ammo-pistola',
+    kind: 'consumabile',
+    category: 'consumabile',
+    type: 'GENERIC',
+    nameRomaji: 'Jūyaku (銃薬)',
+    nameItalian: 'Cartucce Pistola',
+    description: 'Cartucce calibro generico per pistole e SMG. Compatibili con: Tanuki no Me, Hachi no Su, Hinawa.',
+    effectText: 'Munizioni · 1 cartuccia = 1 sparo',
+    inventorySlotCost: 1,
+    isStackable: true,
+    priceRem: 5,
+    ammoKind: 'pistola',
+  },
+  {
+    id: 'ammo-fucile',
+    kind: 'consumabile',
+    category: 'consumabile',
+    type: 'GENERIC',
+    nameRomaji: 'Sōjūyaku (装銃薬)',
+    nameItalian: 'Cartucce Fucile',
+    description: 'Cartucce lunghe per fucili e doppiette. Compatibili con: Kaminari-tsutsu, Shinigami no Yubi, Karasu-uchi.',
+    effectText: 'Munizioni · 1 cartuccia = 1 sparo',
+    inventorySlotCost: 1,
+    isStackable: true,
+    priceRem: 8,
+    ammoKind: 'fucile',
+  },
+  {
+    id: 'ammo-balestra',
+    kind: 'consumabile',
+    category: 'consumabile',
+    type: 'GENERIC',
+    nameRomaji: 'Yajiri (鏃)',
+    nameItalian: 'Dardi Balestra',
+    description: 'Dardi in metallo per la Yumihari. Recuperabili dopo l\'uso (50% dei tiri).',
+    effectText: 'Munizioni balestra · recuperabili al 50%',
+    inventorySlotCost: 1,
+    isStackable: true,
+    priceRem: 6,
+    ammoKind: 'balestra',
   },
 ] as const
 

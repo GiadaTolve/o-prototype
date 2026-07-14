@@ -162,6 +162,9 @@ export async function getCharacterInventory(characterId: string) {
         item_materialId: items.materialId,
         item_blueprintId: items.blueprintId,
         item_isStackable: items.isStackable,
+        item_damage: items.damage,
+        item_resistance: items.resistance,
+        item_ammoKind: items.ammoKind,
         item_createdAt: items.createdAt,
         inv_integrityCurrent: inventory.integrityCurrent,
         inv_origin: inventory.origin,
@@ -195,6 +198,9 @@ export async function getCharacterInventory(characterId: string) {
           materialId: row.item_materialId,
           blueprintId: row.item_blueprintId,
           isStackable: row.item_isStackable ?? true,
+          damage: row.item_damage ?? null,
+          resistance: row.item_resistance ?? null,
+          ammoKind: row.item_ammoKind ?? null,
         }
         const invRow = {
           id: row.inventory_id!,
@@ -227,6 +233,9 @@ export async function getCharacterInventory(characterId: string) {
             slotsBonus: itemRow.slotsBonus,
             price: itemRow.price,
             createdAt: itemRow.createdAt,
+            damage: itemRow.damage ?? null,
+            resistance: itemRow.resistance ?? null,
+            ammoKind: itemRow.ammoKind ?? null,
           },
           economy: mapItemEconomyFields(itemRow as ItemRow, invRow as InventoryRow),
         }
