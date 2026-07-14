@@ -23,6 +23,70 @@ type ChronoVitals = {
   isOverheated: boolean;
 };
 
+/** Pulsante fine sessione — resetta CS stack, status e costrutti (HP intatti). */
+function FineSessione({ characterId }: { characterId: string }) {
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const doReset = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await api.post("/characters/me/combat-reset", {});
+      window.dispatchEvent(new CustomEvent("characterStatusUpdated"));
+      setMsg("Reset eseguito — CS, status e costrutti azzerati.");
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : "Errore reset");
+    } finally {
+      setBusy(false);
+      setConfirm(false);
+      setTimeout(() => setMsg(null), 4000);
+    }
+  };
+
+  if (msg) {
+    return (
+      <p className="text-[9px] mt-2 px-2 py-1 rounded border border-[var(--border-color)] bg-black/30 text-[var(--accent-violet-light)]">
+        {msg}
+      </p>
+    );
+  }
+
+  if (confirm) {
+    return (
+      <div className="flex items-center gap-2 mt-2">
+        <span className="text-[9px] text-[var(--muted-foreground)] flex-1">Fine sessione: azzera CS, status e costrutti?</span>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void doReset()}
+          className="text-[9px] px-2 py-0.5 rounded border border-red-500/50 text-red-400 hover:bg-red-500/10 transition-colors"
+        >
+          Conferma
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirm(false)}
+          className="text-[9px] text-gray-500 hover:text-gray-300"
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setConfirm(true)}
+      className="mt-2 w-full text-[9px] px-2 py-1 rounded border border-[var(--border-color)] text-[var(--muted-foreground)] hover:text-red-400 hover:border-red-500/40 transition-colors"
+    >
+      Fine Sessione (reset stack)
+    </button>
+  );
+}
+
 /** Chip parametri combattimento (IR, CAC, CAD, Mov, Schivata, Parata). */
 function StatChip({ label, value, accent = false }: { label: string; value: string | number; accent?: boolean }) {
   return (
@@ -245,6 +309,11 @@ export function PannelloCombattimentoWindow({
 
         {/* Status attivi */}
         <StatusEffectsPanel characterId={characterId} isOwnCharacter embedded />
+
+        {/* Fine sessione — reset CS stack + status + costrutti (HP intatti) */}
+        {characterId && (
+          <FineSessione characterId={characterId} />
+        )}
       </section>
 
       {/* ── Z2 · IN USO ORA ──────────────────────────────────────────────── */}

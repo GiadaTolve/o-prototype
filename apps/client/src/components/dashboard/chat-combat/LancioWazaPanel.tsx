@@ -329,7 +329,10 @@ export function LancioWazaPanel({
     setNagoriTo("solido");
     setMeisakuLabel("");
     setKadenIntensity(null);
-    setQuartoSelected(1);
+    // Persiste il quarto per waza multi-stadio: ripristina dall'ultima sessione
+    const quartoKey = sel.poolId ? `lwz-quarto:${characterId ?? ""}:${sel.poolId}` : null;
+    const storedQuarto = quartoKey ? sessionStorage.getItem(quartoKey) : null;
+    setQuartoSelected((storedQuarto && [1,2,3,4].includes(Number(storedQuarto)) ? Number(storedQuarto) : 1) as 1|2|3|4);
     setDelayedEffect(false);
     setConstructTaglia("media");
     setConstructSticker({ BATTERIA: false, PERSONALE: false, TORO: false });
@@ -340,6 +343,13 @@ export function LancioWazaPanel({
     () => getWazaLaunchProfile(sel?.poolId ?? undefined),
     [sel?.poolId],
   );
+
+  // Persiste il quarto selezionato in sessionStorage per waza multi-stadio
+  useEffect(() => {
+    if (!launchProfile?.needsQuarto || !sel?.poolId) return;
+    const key = `lwz-quarto:${characterId ?? ""}:${sel.poolId}`;
+    sessionStorage.setItem(key, String(quartoSelected));
+  }, [quartoSelected, sel?.poolId, launchProfile?.needsQuarto, characterId]);
 
   const launchExtras = useMemo(
     () => ({

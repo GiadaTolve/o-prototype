@@ -633,6 +633,27 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       detail: { summary: 'Aggiorna tracker meccaniche Dō (Itō–Hadō)' },
     })
 
+    .post('/me/combat-reset', async ({ user, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      try {
+        const char = await characterService.getCharacterByUserId(user.id)
+        if (!char) { set.status = 404; return { error: 'Personaggio non trovato' } }
+        const result = await characterService.resetCombatState(char.id)
+        broadcastCharacterChronoUpdated({
+          characterId: char.id,
+          csCurrent: 0,
+          csCapacity: char.baseSlots ?? 20,
+          accumulating: false,
+          isOverheated: false,
+        })
+        broadcastCharacterStatusUpdated({ characterId: char.id })
+        return result
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore reset combattimento' }
+      }
+    }, { detail: { summary: 'Fine sessione: azzera CS stack, status e costrutti (HP intatti)' } })
+
     .post('/me/do-mechanics/tick-ito-turn', async ({ user, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       try {

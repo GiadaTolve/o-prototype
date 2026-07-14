@@ -1538,6 +1538,44 @@ export class CharacterService {
     return this.getStatusEffectsState(characterId);
   }
 
+  /** Fine sessione: azzera stack CS, elimina tutti gli status e i costrutti in campo. HP intatti. */
+  async resetCombatState(characterId: string) {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { id: true, baseSlots: true },
+    });
+    if (!char) throw new Error('Personaggio non trovato');
+
+    const resetChrono: StoredChronoStackState = {
+      current: 0,
+      accumulating: false,
+      skipNextTurn: false,
+      overheatTurns: 0,
+    };
+
+    await db.transaction(async (tx) => {
+      // reset chrono stack
+      await tx.update(characters)
+        .set({ chronoStackState: resetChrono })
+        .where(eq(characters.id, characterId));
+
+      // cancella tutti gli status effect del PG
+      await tx.delete(characterStatusEffects)
+        .where(
+          and(
+            eq(characterStatusEffects.characterId, characterId),
+            eq(characterStatusEffects.targetKind, 'character'),
+          ),
+        );
+
+      // rimuove tutti i costrutti in campo del PG
+      await tx.delete(fieldConstructs)
+        .where(eq(fieldConstructs.creatorCharacterId, characterId));
+    });
+
+    return { ok: true, resetChrono };
+  }
+
   async tickCharacterStatusEndOfTurn(characterId: string, currentCs?: number) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
