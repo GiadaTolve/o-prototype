@@ -5,13 +5,16 @@
  */
 import { writeFileSync } from 'fs'
 import { resolve } from 'path'
-import { WAZA_POOL, type WazaDef } from '../../../apps/tester/src/wazaPool'
+import { WAZA_POOL } from '../../../apps/tester/src/wazaPool'
+import { MADOSHO_WAZA_POOL } from '../../../apps/tester/src/pools/madosho-waza-pool'
 import {
   styleIdForWazaBranch,
   type WazaTagCatalogEntry,
 } from '../../../packages/domain/src/combat/waza-tag-preview.ts'
 
-function defaultRank(w: WazaDef, isPassive: boolean): string | null {
+type PoolEntry = { id: string; name: string; type: string; branch: string; costCs?: number; description?: string; effect?: string }
+
+function defaultRank(w: PoolEntry, isPassive: boolean): string | null {
   if (isPassive) return null
   const cs = w.costCs ?? 0
   if (cs <= 1) return 'T1'
@@ -20,13 +23,15 @@ function defaultRank(w: WazaDef, isPassive: boolean): string | null {
   return 'T4'
 }
 
-function catalogDescription(w: WazaDef): string | undefined {
+function catalogDescription(w: PoolEntry): string | undefined {
   const raw = (w.description || w.effect || '').trim()
   if (!raw) return undefined
   return raw.length > 500 ? `${raw.slice(0, 497)}…` : raw
 }
 
-const entries: WazaTagCatalogEntry[] = WAZA_POOL.map((w) => ({
+const ALL_POOL: PoolEntry[] = [...(WAZA_POOL as unknown as PoolEntry[]), ...(MADOSHO_WAZA_POOL as unknown as PoolEntry[])]
+
+const entries: WazaTagCatalogEntry[] = ALL_POOL.map((w) => ({
   name: w.name.trim(),
   rank: defaultRank(w, w.type === 'passive'),
   styleId: styleIdForWazaBranch(w.branch),

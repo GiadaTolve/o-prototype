@@ -1315,5 +1315,599 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "description": "L'analista posa il palmo sul bersaglio e gli inietta ciò che nessuno ha chiesto: un prestito forzato di Jigo-Ka nera che si annida nella carne e marchia la pelle del suo simbolo. Il debito non sta fermo — cresce a ogni alba, come ogni debito fa. L'unico modo per estinguerlo è restituirlo all'usuraio, colpo su colpo. Ma se l'analista decide di riscuotere, ciò che era stato prestato torna indietro tutto insieme, e l'interesse si paga in fuoco.",
     "poolId": "shakkin-indebitamento",
     "effect": "Attiva · [Contatto] → [Emanazione a Distanza][Energetica] · CS 5 · 1/4 · grado richiesto: Kanteikan [K]. Colpisci un bersaglio a [Contatto] e gli imponi un [Debito] (status): inietti 2 stack iniziali. Per 3 turni:\n\n— Interessi: all'inizio di ogni tuo turno, il Debito cresce di +1 stack (max 6);\n\n— Restituzione: ogni volta che il bersaglio ti colpisce con una waza a [Contatto], il Debito cala di 1 stack.\n\nRiscossione (a comando, 1/4, oppure automatica alla scadenza): tutte le stack si convertono in un'esplosione [Energetico][Emanazione a Distanza] centrata sul bersaglio, raggio 3 m, danno = 5 per stack. Massimo un Debito per bersaglio. Se l'analista è reso incosciente, il Debito si dissolve."
+  },
+  {
+    "name": "Zan'ei",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Una sagoma eterea di Jigo-Ka, lasciata indietro a ogni passo: segue l'analista, ma sempre un movimento in ritardo, come un'eco che non riesce a stare al passo col suono che l'ha generata.",
+    "poolId": "zanei",
+    "effect": "Passiva · CS 0. Ogni spostamento dell'analista lascia una sagoma residua — un Costrutto Energetico — nel punto di origine dello spostamento. Al movimento successivo, la sagoma si sposta seguendo l'ultimo movimento compiuto (resta sempre un passo indietro). Finché analista e sagoma occupano posizioni diverse, l'analista può lanciare waza solo attraverso la sagoma, non dal proprio corpo. La sagoma è immune ai danni che non siano di natura psichica. Interazione con Trance Onirica: la sagoma torna immediatamente alla posizione dell'analista, fondendosi con lui e perdendo le sue proprietà — inutili"
+  },
+  {
+    "name": "Kegare",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Ogni tecnica lanciata lascia un'impronta che il terreno non riesce a smaltire: una macchia di impurità che si rifiuta di seguire le regole del mondo dei vivi.",
+    "poolId": "kegare",
+    "effect": "Passiva · CS 0. Ogni volta che l'analista lancia una waza, genera una macchia larga 1,5 m sotto i propri piedi (sotto la sagoma di Zan'ei, se attiva). La macchia dura 5 turni. L'analista non può lanciare waza finché resta sopra una macchia, eccetto Shoheki."
+  },
+  {
+    "name": "Kokurui",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "La Jigo-Ka del Rin'gai si manifesta come il pianto del mondo onirico: un liquido denso e scuro che non scorre — si deposita.",
+    "poolId": "kokurui",
+    "effect": "Passiva · CS 0. Le waza Liquide dell'analista infliggono Torpore al bersaglio colpito, e ottengono +1 tier di Resistenza. Quando infliggono Torpore, riducono anche di 2 CS il bersaglio (o, se il bersaglio è un Costrutto, gli tolgono 1 tier di Resistenza). Attive"
+  },
+  {
+    "name": "Handō",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un costrutto richiamato non si teletrasporta: torna, e basta — ad alta velocità, come un elastico tirato fino al punto di rottura.",
+    "poolId": "hando",
+    "effect": "Attiva · [Proiettile][Personale] · Tier base 2 · CS 2 · 1/4. Richiama verso di sé un proprio Costrutto entro 12 m. Il costrutto viaggia ad alta velocità danneggiando tutto ciò che attraversa lungo la traiettoria (danno = tier), e assume la consistenza del costrutto richiamato — se è Energetica, non subisce danni durante lo spostamento. Utilizzabile anche ignorando il vincolo di Zan'ei: può essere lanciata dal corpo anche se la sagoma è altrove. Una volta che il costrutto raggiunge l'analista, per il resto del turno ottiene +1 tier alla prossima azione ogni 4 metri percorsi dal costrutto, fino"
+  },
+  {
+    "name": "Magai Jigoku",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Dal terreno sbocciano lame, lance, forconi e artigli lunghi come spade — informi, confusi, come se l'incubo non avesse ancora deciso che forma dare al proprio dolore.",
+    "poolId": "magai-jigoku",
+    "effect": "Attiva · [Liquido][Emanazione] · Tier base 3 · CS 3 · 1/4. Genera sotto i propri piedi una macchia di energia psichica che si espande per 6 m attorno all'analista, sviluppandosi in altezza per 3 m; colpisce con furia indistinta tutto ciò che è in gittata (danno = tier). Con una macchia di Kegare esistente entro 8 m, può usarla come punto di origine: in questo caso la macchia usata scompare."
+  },
+  {
+    "name": "Hedo",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un fiotto di energia psichica liquida, vomitato attraverso un arto o la bocca: non è un colpo composto, è un cedimento controllato.",
+    "poolId": "hedo",
+    "effect": "Attiva · [Liquido][Raggio] · Tier base 2 · CS 2 · 1/4. Proietta un flusso di energia psichica liquida per 15 m (danno = tier al primo bersaglio); durante il turno, l'analista può muovere l'arto o la testa scelti per cambiare la direzione della tecnica in corso (verticale, orizzontale, dritta). Genera 1 macchia ogni 10 m di gittata percorsa, lungo il tragitto della tecnica."
+  },
+  {
+    "name": "Tamashii no Hake",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'arma muta in un pennello dalla taglia media: non è fatto per colpire, è fatto per raccogliere ciò che l'analista stessa ha lasciato indietro.",
+    "poolId": "tamashii-no-hake",
+    "effect": "Attiva · [Solido][Costrutto] · Tier base 2 · CS 2 · 1/4, dura 3 turni. L'arma impugnata diventa un pennello, arma contundente di taglia media, Costrutto Solido. Può colpire le proprie macchie: farlo le fa sparire, e la punta del pennello si carica del colore appena assorbito. Mentre è carico, il pennello ottiene +1 tier al prossimo danno inflitto; dopo quel colpo, genera una nuova macchia a 2 m oltre il punto d'impatto, e torna scarico."
+  },
+  {
+    "name": "Yobimodoshi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Ogni macchia lasciata indietro torna a casa in un solo richiamo: il corpo si riempie di tutto ciò che aveva scartato.",
+    "poolId": "yobimodoshi",
+    "effect": "Attiva · [Nessuna] · CS 2 · 1/4. Richiama a sé ogni macchia presente entro 10 m (non ne genera di nuove, anche con Kegare attiva). Le macchie assorbite riempiono il corpo dell'analista, che ottiene lo status Macchiato con counter pari al numero di macchie assorbite. Lo status decade dopo 3 turni o quando i counter si esauriscono. Spendendo counter Macchiato: – 1 counter: rigenera 2 CS. 55"
+  },
+  {
+    "name": "Buttō",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "La Jigo-Ka liquida esplode in avanti in un cono di rabbia indistinta — non è un attacco mirato, è una pentola che ha smesso di reggere il proprio bollore.",
+    "poolId": "butto",
+    "effect": "Attiva · [Propagazione Conica][Liquido] · Tier base 2 · CS 2 · 1/4. Genera un cono di 4 m di apertura e 8 m di lunghezza davanti a sé; ogni bersaglio nell'area subisce danno = tier e viene sbalzato nella stessa direzione dell'attacco per 3 m. Con una macchia esistente entro 8 m, può usarla come punto di origine: la macchia usata scompare."
+  },
+  {
+    "name": "Kugutsushi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Una copia di sé stessa, fatta di Jigo-Ka liquida: si lancia, colpisce una volta sola, e si scioglie — lasciando dietro di sé solo una macchia e un ordine compiuto.",
+    "poolId": "kugutsushi",
+    "effect": "Attiva · [Liquido][Costrutto] · Tier base 2 · CS 2 · 1/4. Genera una propria copia in Jigo-Ka liquida, pari dimensioni, Costrutto Liquido. La copia si lancia in una direzione scelta ed esegue un ordine semplice d'attacco (danno = tier), percorrendo fino a 10 m prima di dissolversi. Una volta colpito, il bersaglio ottiene 1 stack di Macchiato; la copia, dissolvendosi, genera una macchia sotto di sé. Con una macchia esistente entro 8 m, può originare da essa: la macchia usata scompare."
+  },
+  {
+    "name": "Uzu",
+    "rank": "T1",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un mulinello di Jigo-Ka liquida che si stringe attorno a sé, quarto dopo quarto, fino a esplodere — l'unica waza del lignaggio che non si esaurisce in un solo respiro.",
+    "poolId": "uzu",
+    "effect": "Attiva · [Emanazione][Liquido] · CS variabile, 1 per quarto investito · fino a 4/4. Genera un mulinello di Jigo-Ka liquida per 6 m attorno a sé. È l'unica waza del lignaggio pensata per durare più di un quarto: ogni quarto investito aggiunge un effetto, e ogni stadio richiede un Indice di Riuscita più alto del precedente per essere contrastato. – 1/4: attrae tutto verso l'origine per 2 m; danno tier 1 (4). – 2/4: sposta tutti i bersagli in senso orario o antiorario per 3 m; danno tier 2 (8). – 3/4: schiaccia tutti i bersagli; danno tier 3 (12) e applica Macchiato. – 4/4: il mulinello esplode,"
+  },
+  {
+    "name": "Yasei",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "La Jigo-Ka del Gōkaon, quando lasciata libera di scorrere d'istinto, si fa scura e calda: il segno di una bestia che osserva prima di colpire.",
+    "poolId": "yasei",
+    "effect": "Passiva · CS 0, scelta reciprocamente esclusiva con Cuore Affamato. Mentre possiede almeno 1 stack di Pressione, la Jigo-Ka dell'analista assume una tonalità scura e produce calore percepibile a distanza ravvicinata. Guadagna Pressione così: 1 stack quando subisce danno (una volta a turno, non autoinflitto); 1 stack quando spende CS (una volta a turno); 1 stack quando un nemico entro 8 m usa una waza (una volta a turno); 1 stack quando compie un'azione di movimento (fino a due volte a turno); 2 stack quando scende sotto il 50% degli HP (una volta a quest)."
+  },
+  {
+    "name": "Gashin",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "In altri, la stessa pressione non resta latente: preme contro la pelle dall'interno, finché qualcosa non cede.",
+    "poolId": "gashin",
+    "effect": "Passiva · CS 0, scelta reciprocamente esclusiva con Natura Ferina. Mentre possiede almeno 1 stack di Pressione, il corpo dell'analista mostra segni visivi di tensione: vene in rilievo, leggere screpolature sulla pelle, calore corporeo elevato. Guadagna Pressione così: 1 stack quando infligge danno (fino a due volte a turno); 1 stack quando recupera CS (una volta a turno); 1 stack quando riceve uno status negativo (una volta a turno); 1 stack quando conclude il turno con un attacco o una waza a Contatto (una volta a turno)."
+  },
+  {
+    "name": "Oni no Kyūkaku",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "La Jigo-Ka del Gōkaon permea costantemente i recettori olfattivi dell'analista, alterandoli: il suo  naso  non  sente  più  odori,  ma  traduce  stimoli  chimici  in  informazioni  istintive  sulla condizione di chi lo circonda.",
+    "poolId": "oni-no-kyukaku",
+    "effect": "Passiva · CS 0, costante, non richiede attivazione. Entro 15 m (20 m mentre possiede almeno 1 stack di Pressione), l'analista può: – Percepire la presenza di esseri viventi con corpo biologico anche se non visibili — direzione generale e distanza approssimativa (vicino/medio/lontano); barriere fisiche sigillate bloccano la percezione. – Identificare se un essere vivente entro raggio è sotto il 50% dei propri HP — percezione binaria, non il valore esatto; se sotto soglia, la direzione è percepita con più precisione. – Riconoscere permanentemente individui con cui è stato a contatto ravvicinato"
+  },
+  {
+    "name": "Oni no Mezame",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "La  Pressione  accumulata  forza  il  corpo  a  mutare.  Le  trasformazioni  si  attivano automaticamente al raggiungimento della soglia corrispondente, e non si possono rifiutare.",
+    "poolId": "oni-no-mezame",
+    "effect": "Passiva · CS 0, automatica alle soglie di Pressione. – Soglia 1 — Comunione (2+ stack): la pelle si ispessisce e cambia colore, le iridi si iniettano di sangue. +2 Nintai. Con Cuore Affamato: +1 Kairyoku, un corno appare sulla fronte. Con Natura Ferina: +1 Binshō, un occhio verticale appare sulla fronte. – Soglia 2 — Simbiosi (5+ stack): il colore si accentua, il volto si deforma, spuntano zanne. +3 Nintai. La gittata delle waza a Contatto sale a 3 m (artigli, corna, arti allungati). Con Cuore Affamato: +2 Kairyoku, +1 Binshō. Con Natura Ferina: +2 Binshō, +1 Kairyoku. – Soglia 3 — Rovina (9+"
+  },
+  {
+    "name": "Oni no Ago",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'analista convoglia la Pressione nella propria mandibola: i denti si ispessiscono e si allungano in zanne irregolari, indurite dalla Jigo-Ka.",
+    "poolId": "oni-no-ago",
+    "effect": "Attiva · [Contatto][Solido] · Tier base 2 · CS 2 + 2 stack di Pressione · 1/4. Morso contro un singolo bersaglio in portata, danno = tier; se colpisce, l'analista recupera 2 CS. A 3+ Pressione: il morso ignora il 25% della Resistenza di Costrutti e barriere. A 5+ Pressione: la mandibola si espande e il morso colpisce in un cono di 4 m davanti all'analista — la categoria cambia da Contatto a Propagazione Conica Solida. 59"
+  },
+  {
+    "name": "Jūshi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'analista concentra la trasformazione in una sola parte del corpo, e la spinge oltre ogni proporzione naturale.",
+    "poolId": "jushi",
+    "effect": "Attiva · [Potenziamento][Nessuna] · Tier base 2 · CS 2 · 1/4, un solo Arto Bestiale attivo alla volta. Scegli un'opzione: – Braccio: raddoppia di taglia; i colpi con quell'arto ottengono +1 tier di danno e gittata a Contatto +1 m. Può afferrare Costrutti Solidi di taglia Grande con una mano. – Gamba: salta fino a 4 m in verticale o orizzontale in un solo balzo; l'atterraggio infligge danno = tier in un'area di 2 m. – Testa: le waza che impiegano la testa ottengono +1 tier di danno; le testate diventano un attacco valido (danno = tier base). – Coda: un attacco extra a Contatto Solido (danno = t"
+  },
+  {
+    "name": "Oni no Hōkō",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'analista apre la bocca, e l'aria stessa si piega sotto il peso del suono.",
+    "poolId": "oni-no-hoko",
+    "effect": "Attiva · [Propagazione Conica][Sonoro] · Tier base 2 · CS 2 · 1/4. Cono di 6 m davanti a sé: danno = tier a ogni bersaglio nell'area, che subisce anche Vertigini se perde il confronto d'Indice. I Costrutti nell'area subiscono +1 tier di danno bonus. A 3+ Pressione: il ruggito spinge indietro di 3 m ogni bersaglio colpito."
+  },
+  {
+    "name": "Mōshin",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'analista si lancia in avanti senza più calcolare la distanza che lo separa dall'ostacolo.",
+    "poolId": "moshin",
+    "effect": "Attiva · [Contatto][Solido] · Tier base 2 · CS 2 · 1/4. Carica in linea retta per 10 m; ogni bersaglio sul percorso subisce danno = tier e viene sbalzato di lato di 2 m. L'analista non si ferma finché non raggiunge la distanza massima o un ostacolo inamovibile: se lo colpisce, subisce danno = tier ma l'ostacolo ne subisce il doppio. Se l'analista subisce danno durante la carica, ottiene 1 stack di Ira. A 5+ Pressione: la tecnica diventa Energetica e la gittata sale a 15 m."
+  },
+  {
+    "name": "Kotsudan",
+    "rank": "T1",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'analista spezza uno dei propri corni e lo scaglia, ancora caldo di Jigo-Ka.",
+    "poolId": "kotsudan",
+    "effect": "Attiva · [Proiettile][Solido] · Tier base 1 · CS 1 · 1/4, richiede almeno la Soglia 1 di Risveglio dell'Oni attiva. Scaglia un corno o spuntone per 12 m: danno = tier. Il corno si conficca nel punto d'impatto e diventa un Costrutto Solido con Resistenza scala-tier; se colpisce un bersaglio vivente, applica Emorragia. A 3+ Pressione: il proiettile può essere espulso da qualunque parte del corpo."
+  },
+  {
+    "name": "Jiware",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il colpo non cerca un bersaglio: cerca il terreno, e lascia che sia il terreno a portare il colpo agli altri.",
+    "poolId": "jiware",
+    "effect": "Attiva · [Propagazione][Solido] · Tier base 2 · CS 2 · 1/4. Onda sismica che si espande lungo il suolo per 6 m in ogni direzione: danno = tier a ogni bersaglio a contatto col terreno. I Costrutti a contatto col terreno nell'area subiscono +1 tier di danno bonus. A 5+ Pressione: l'onda si sviluppa anche in altezza, come un'onda vera e propria, coprendo l'intera area."
+  },
+  {
+    "name": "Dōka",
+    "rank": "T1",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'analista afferra ciò che non gli appartiene e lo fa proprio, scomponendolo in qualcosa che il suo corpo può usare.",
+    "poolId": "doka",
+    "effect": "Attiva · [Nessuna] · CS 1 · 1/4 (+1/4 se il Costrutto è nemico, per afferrarlo prima). Afferra un Costrutto di taglia Piccola o Media (proprio o nemico) e lo assorbe, distruggendolo. Per 3 turni ottiene un effetto in base alla sua Consistenza: Solido → +1 tier di Resistenza ai danni; Liquido → rigenera 2 CS; Energetico → +1 tier di danno ai colpi a Contatto; Elementale → i colpi a Contatto applicano 1 stack dello status elementale del Costrutto assorbito. 61"
+  },
+  {
+    "name": "Chi ni somaru",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Nel corpo di chi porta questa discendenza, sangue ed Ego si uniscono in comunione: un patrimonio psichico capace di infestare il sangue stesso, fino a renderlo la fonte delle proprie offensive.",
+    "poolId": "chi-ni-somaru",
+    "effect": "Passiva · CS 0, keystone. Ogni waza Liquida lanciata dal Nakigara (escluse le waza di questa Madoshō, che già la applicano di default) infligge 1 contatore di Emorragia quando colpisce un bersaglio, e assume le sfumature scarlatte che caratterizzano il sangue."
+  },
+  {
+    "name": "Chi no Kehai",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Chiudendo gli occhi e restando immobile, lo spazio attorno a sé gli appare come una tela bianca schizzata di macchie rosse — sangue, tracce, ferite vecchie e nuove.",
+    "poolId": "chi-no-kehai",
+    "effect": "Passiva · CS 0, disattiva appena l'analista entra in combattimento. Chiudendo gli occhi e restando immobile, percepisce entro 15 m qualunque fonte o traccia di sangue presente — comprese le ferite su individui vivi o morti. È in grado di valutare la gravità di una ferita e se è di origine fisica o psichica, riconoscere se il sangue percepito è umano, distinguere fra loro tracce di sangue diverse, e seguire la scia che un individuo affetto da Emorragia lascia dietro di sé finché lo status non viene rimosso."
+  },
+  {
+    "name": "Matsugo no Chi",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "L'ultimo sangue versato non va sprecato: chi sa raccoglierlo, eredita ciò che lascia indietro.",
+    "poolId": "matsugo-no-chi",
+    "effect": "Passiva · CS 0. Se un individuo affetto da Emorragia muore entro 10 m dal Nakigara, questi può trasferirne su di sé tutti i contatori al costo di 1/4 — solo entro 1 turno dalla morte; oltre, non sono più trasferibili. Attive"
+  },
+  {
+    "name": "Ketsumyaku no Yaiba",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il Nakigara apre la propria pelle e lascia che il sangue prenda forma fra le dita: non un'arma qualunque, ma un'estensione di sé.",
+    "poolId": "ketsumyaku-no-yaiba",
+    "effect": "Attiva · [Contatto][Solido] · Tier base 2 · CS 2 + 1 contatore di Emorragia autoinflitto · 1/4. Plasma nella propria mano un'arma di sangue cristallizzato, taglia massima Media, Resistenza scala-tier: danno = tier. Ogni volta che porta a segno un colpo (una volta a turno) infligge 1 contatore di Emorragia al bersaglio. L'arma è più fragile del normale e svanisce dopo 3 turni se non si dissolve prima."
+  },
+  {
+    "name": "Chi no Hōyō",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il sangue che esce non scorre via: si addensa contro la pelle, vetroso, e diventa scudo.",
+    "poolId": "chi-no-hoyo",
+    "effect": "Attiva · [Scudo][Solido] · Tier base 2 · CS 2 + 1 contatore di Emorragia autoinflitto · 1/4. Riveste una zona a scelta (testa, busto, schiena, braccia o gambe) di sangue cristallizzato, Resistenza scala-tier. Dura 3 turni, poi il sangue torna liquido e scivola via; spostare la zona protetta costa 1/4."
+  },
+  {
+    "name": "Hirui",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Le proprie ferite diventano bocche da fuoco: grumi di sangue espulsi come proiettili, ciascuno una piccola parte di sé lanciata contro il nemico.",
+    "poolId": "hirui",
+    "effect": "Attiva · [Proiettile][Liquido] · Tier base 2 · CS 2 + 1 contatore di Emorragia autoinflitto · 1/4. Scaglia in linea retta, per 12 m, 2 Proiettili Liquidi per ogni contatore di Emorragia posseduto, fino a un massimo di 10 proiettili a 5 contatori; danno = tier ciascuno. I proiettili possono essere ripartiti su più bersagli, purché visibili."
+  },
+  {
+    "name": "Chi no Kizuna",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un filamento di sangue addensato si allunga dalla ferita e si aggrappa a chi incontra: da quel momento, ciò che accade a uno scorre nelle vene dell'altro.",
+    "poolId": "chi-no-kizuna",
+    "effect": "Attiva · [Costrutto][Solido] · Tier base 2 · CS 2 + 1 contatore di Emorragia autoinflitto · 1/4. Un filamento di sangue, Resistenza scala-tier, si protende per 8 m verso un essere vivente che il Nakigara può vedere; se lo raggiunge, gli infligge 1 contatore di Emorragia e lo lega a sé. Finché il legame regge, Nakigara e bersaglio non possono allontanarsi oltre 6 m l'uno dall'altro, e ogni contatore di Emorragia applicato al Nakigara si applica automaticamente anche al bersaglio."
+  },
+  {
+    "name": "Yuketsu",
+    "rank": "T1",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Non serve toccare per prendere: basta puntare la mano, e il sangue altrui sa già dove andare.",
+    "poolId": "yuketsu",
+    "effect": "Attiva · [Nessuna] · CS 1 · 1/4. Punta la mano verso un essere vivente che può vedere, entro 10 m: recupera 5 HP per ogni contatore di Emorragia presente sul bersaglio, fino a un massimo di 25 HP. Al termine della waza, il bersaglio guarisce completamente dallo status Emorragia."
+  },
+  {
+    "name": "Kaketsu",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Per qualche istante, una parte del corpo smette di essere carne e diventa esattamente ciò che la regge: sangue, e niente altro.",
+    "poolId": "kaketsu",
+    "effect": "Attiva · [Nessuna] · CS 2 · 1/4, richiede almeno 1 contatore di Emorragia attivo, dura 3 turni. Trasmuta una parte del corpo a scelta (testa, busto, braccia o gambe) in sangue: assume le proprietà della Consistenza Liquida e ne eredita la debolezza al Sonoro. La parte trasmutata è immune alla maggior parte degli attacchi fisici convenzionali, che la attraversano, ma resta vulnerabile ai colpi permeati di Jigo-Ka; può allungarsi fino a 3 m. Impiegando 1/4, l'analista può ricomporre la parte trasmutata e sceglierne un'altra."
+  },
+  {
+    "name": "Soketsu no Minamoto",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Dal petto, dove le ferite si sono fatte più fitte, emerge l'arma che si dice sia unica per ogni Nakigara: la forma che il proprio sangue assume quando gli viene chiesto tutto.",
+    "poolId": "soketsu-no-minamoto",
+    "effect": "Attiva · [Contatto][Solido] · Tier base 3 · CS 3 + 3 contatori di Emorragia autoinflitti · 1/4. Estrae dal proprio petto un'arma di sangue cristallizzato, taglia massima Grande, unica 64"
+  },
+  {
+    "name": "Yume ga nijimu",
+    "rank": "T3",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il cuore e l'Ego entrano in perfetta sintonia, e ogni battito libera onde di Jigo-Ka tanto dense da essere visibili. Il cielo stesso, sotto le giuste condizioni, può tingersi di rosso.",
+    "poolId": "yume-ga-nijimu",
+    "effect": "Attiva · [Emanazione] · Tier base 4 · CS 5 · 1/4. Per 3 turni, ogni essere vivente entro 10 m deve vincere un confronto d'Indice (Konjou) o subisce immediatamente 5 contatori di Emorragia. Per la durata, lo status si estende anche a Costrutti e superfici normalmente immuni (edifici, armi, vegetazione), che perdono 1 tier di Resistenza a turno finché ne sono affetti; e il cap massimo di contatori di Emorragia ottenibili nella zona sale a 10 invece del consueto 5. Allo scadere, la scena collassa su sé stessa: ogni bersaglio nella zona d'influenza guarisce completamente dallo status Emorragia. 65"
+  },
+  {
+    "name": "Kinu no Hada",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Il corpo dell'Hataori è un gomitolo, l'Ego che lo permea un ago: da questa unione nasce una discendenza stretta fra le trame di centinaia di fili e i capi di migliaia di corde.",
+    "poolId": "kinu-no-hada",
+    "effect": "Passiva · CS 0, keystone. Permeando la propria pelle con la Jigo-Ka, l'Hataori fa fuoriuscire fili, corde o funi a piacimento da ogni punto del corpo, nei colori e nelle decorazioni che preferisce. Tessendo con i movimenti giusti, compone Nodi — Costrutti Solidi di taglia Piccola — che, permeati dal proprio Ego, diventano Sigilli."
+  },
+  {
+    "name": "Sokubakukan",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "C'è, nell'Hataori, una sensazione di costrizione mai del tutto sopita — e proprio per questo il suo Ego riconosce con facilità la stretta di un vincolo altrui.",
+    "poolId": "sokubakukan",
+    "effect": "Passiva · CS 0. Restando fermo e chiudendo gli occhi, l'Hataori dispiega i propri fili nell'ambiente entro 15 m, sondando alla ricerca di Sigilli o waza che impongano condizioni o regole sull'area circostante — rendendoli visibili anche se celati. Spendendo l'intero turno per studiare quanto trovato, può apprenderne gli effetti e il funzionamento."
+  },
+  {
+    "name": "Nodoshibari",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Chi veste un suo Sigillo non è mai del tutto fuori portata: l'Hataori può ancora raggiungerlo, in silenzio, attraverso il filo che li lega.",
+    "poolId": "nodoshibari",
+    "effect": "Passiva · CS 0. L'Hataori può comunicare mentalmente con qualunque bersaglio affetto dallo status Sigillato (Portafortuna) entro 20 m. La comunicazione è unilaterale e, mentre è in atto, priva del tutto il bersaglio della capacità di parlare. Attive"
+  },
+  {
+    "name": "Hishi-musubi",
+    "rank": "T1",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un piccolo portafortuna a forma di diamante, capace di proteggere chi lo veste — finché qualcuno non decide di reciderlo.",
+    "poolId": "hishi-musubi",
+    "effect": "Attiva · [Costrutto][Solido] · Tier base 1 · CS 1 · 1/4. Tesse un Nodo a Diamante e lo lancia su un bersaglio visibile entro 8 m, oppure lo appende su di sé. Appeso a un'arma, ne previene l'usura. Appeso a un individuo (o le sue vesti), gli dona +1 tier di Resistenza verso una Consistenza a scelta dell'Hataori. Appeso ai confini di una stanza, ne rende le pareti +1 tier più 67"
+  },
+  {
+    "name": "Kanmusubi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Una corona di filo che non incorona: comanda. Chi la porta si muove, per un istante, secondo un'altra volontà.",
+    "poolId": "kanmusubi",
+    "effect": "Attiva · [Emanazione] · Tier base 2 · CS 2 · 1/4. Tesse un Nodo a Corona che entra in risonanza con ogni bersaglio Sigillato (Portafortuna), taglia massima Media, entro 10 m. Con 1/4, l'Hataori può costringere uno di questi bersagli al movimento (una volta a turno, un bersaglio alla volta): se consenziente, lo sposta fino a 4 m in qualunque direzione senza opposizione; se non consenziente (oggetti inanimati inclusi), serve un confronto d'Indice a favore dell'Hataori."
+  },
+  {
+    "name": "Jūji-musubi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Una croce di filo che non protegge soltanto: rispedisce al mittente ciò che la colpisce.",
+    "poolId": "juji-musubi",
+    "effect": "Attiva · [Costrutto][Solido] · Tier base 2 · CS 2 · 1/4. Tesse un Nodo a Croce e lo lancia su un bersaglio visibile entro 8 m, oppure lo appende su di sé. Appeso a un'arma, la riveste di un alone Energetico che le permette di colpire waza di qualunque Categoria; se vince un confronto d'Indice, un colpo contro una waza Proiettile, Raggio o Propagazione la rispedisce al mittente. Appeso a un individuo, genera uno Scudo Energetico che respinge attacchi di una Categoria scelta tra Proiettile, Raggio o Propagazione — se l'Hataori vince il confronto d'Indice la devia altrove, altrimenti la barriera"
+  },
+  {
+    "name": "Mitsuba-musubi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Due nodi, un solo filo: ciò che accade a uno, l'altro lo sente come fosse suo.",
+    "poolId": "mitsuba-musubi",
+    "effect": "Attiva · [Costrutto][Solido] · Tier base 1 · CS 2 · 1/4. Tesse e appende un Nodo a Trifoglio su 2 individui visibili entro 10 m. Finché entrambi i Nodi reggono (Resistenza scala-tier ciascuno), i due bersagli condividono — dividendolo a metà fra loro — ogni danno, ogni stack di status, e ogni cura o rigenerazione che subiscono; nessun altro effetto è condiviso. Con 1/4 si scioglie uno o entrambi i Nodi. Se sopravvive un solo Nodo, resta dormiente finché un secondo non viene appeso altrove, riattivando subito la connessione. Massimo 2 Nodi a Trifoglio attivi insieme: quelli in eccesso si sciolg"
+  },
+  {
+    "name": "Kiku-musubi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un nodo che non lega un bersaglio: lega lo spazio stesso, e lo svuota di ogni respiro.",
+    "poolId": "kiku-musubi",
+    "effect": "Attiva · [Costrutto][Solido] · Tier base 3 · CS 3 · 1/4, richiede immobilità totale per mantenersi. Tesse un Nodo a Crisantemo e lo appende su una superficie inanimata entro 8 m: attiva una barriera Energetica di 6 m, Resistenza scala-tier +1 (più coriaceo degli altri Sigilli). Chi è dentro la barriera non può guadagnare o rigenerare HP né CS, né essere bersaglio di waza Potenziamento. Per mantenerla, l'Hataori resta immobile e non può lanciare altri Sigilli Portafortuna o di Confinamento; se la barriera o il Nodo vengono distrutti, parte del danno si 68"
+  },
+  {
+    "name": "Sōsen-musubi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un cerchio di filo che premia chi già porta un suo segno: le tecniche di chi lo attraversa volano più dure, più veloci.",
+    "poolId": "sosen-musubi",
+    "effect": "Attiva · [Costrutto][Solido] · Tier base 2 · CS 2 · 1/4. Tesse un Nodo a Doppia Moneta e lo appende su una superficie inanimata entro 8 m: attiva una barriera Energetica intangibile, taglia Media. Solo le waza lanciate da bersagli Sigillati (Portafortuna) che attraversano la barriera ottengono +1 tier di danno e velocità. Si scioglie con 1/4, oppure si rompe (Resistenza scala-tier)."
+  },
+  {
+    "name": "Ai no Musubi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il legame fra l'Hataori e i propri Sigilli si fa così intenso da trascendere il semplice glifo: il Nodo dell'Amore pulsa contro il suo petto a ogni battito del cuore.",
+    "poolId": "ai-no-musubi",
+    "effect": "Attiva · [Costrutto][Solido] · Tier base 2 · CS 2 · 1/4, fino a 2 volte a turno. Tesse il Nodo dell'Amore al proprio petto (Resistenza scala-tier, dura 3 turni); finché intatto, permette di teletrasportarsi accanto a uno qualsiasi dei propri Sigilli presenti sul campo, entro 15 m. Se nei pressi di un bersaglio Sigillato (Portafortuna), può teletrasportarsi anche lì, lasciando comunque almeno 2 m di distanza dal bersaglio."
+  },
+  {
+    "name": "Ori no Mohō",
+    "rank": "T3",
+    "styleId": null,
+    "isPassive": false,
+    "description": "La mente dell'Hataori proietta un filo verso il cielo — un'unica connessione, sufficiente a far insinuare il proprio Ego nelle trame stesse dell'incubo.",
+    "poolId": "ori-no-moho",
+    "effect": "Attiva · [Propagazione][Solido] · Tier base 4 · CS 5 · 1/4. Fa piovere fili e funi su un'area di 10 m, che si ancorano al terreno come arpioni diventando Costrutti Solidi (Resistenza scala- tier). Con 1/4, l'Hataori terraforma il campo strappando frammenti dallo scenario per creare fino a 3 piattaforme Costrutto Solido, sospese fino a 8 m d'altezza, taglia Media, Resistenza scala- tier; con un altro 1/4 può lanciarne una come Proiettile (danno = tier). Ogni bersaglio Sigillato (Portafortuna) che si muove nell'area riceve sentieri e appigli artificiali dai fili. Dopo 3 turni i fili si ritirano"
+  },
+  {
+    "name": "Aku no Hana",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Quando rabbia, odio o anche il più piccolo fastidio mettono radici nella mente dell'Ikiryō, attorno a lui sbocciano fiori dagli steli color ombra, dai petali simili a ciocche di capelli, con un grande occhio sulla sommità del pistillo.",
+    "poolId": "aku-no-hana",
+    "effect": "Passiva · CS 0, keystone. Mentre è in preda a un'emozione torva, l'Ikiryō emana costantemente una coltre di polline nero — Emanazione Gassosa di 6 m — che lo segue ovunque si muova. Chi vi rimane dentro perde gradualmente convinzione: al 1° turno non succede nulla; all'inizio del 2° turno, perde gli status Beatitudine o Ira se ne è afflitto; all'inizio del 3° turno, chi è ancora presente viene afflitto da Tristezza. Il polline è vulnerabile alle waza Elementali Vento: se l'Ikiryō viene colpito da una di esse, a prescindere dalla potenza, la passiva si disattiva per 2 turni."
+  },
+  {
+    "name": "Dokushu",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Al tocco dell'Ikiryō, la vegetazione circostante si infetta del suo polline — e gli restituisce, in cambio, un po' della propria energia vitale.",
+    "poolId": "dokushu",
+    "effect": "Passiva · CS 0. A contatto con la natura, può spendere 1/4 per rigenerare 2 CS, fino a un massimo di 4/4 per 8 CS totali. Non utilizzabile più volte nella stessa zona, né durante il combattimento."
+  },
+  {
+    "name": "Jagan no Niwashi",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Ogni fiore che l'Ikiryō ha creato porta un occhio — e quell'occhio è anche il suo, se solo si concede di chiudere i propri.",
+    "poolId": "jagan-no-niwashi",
+    "effect": "Passiva · CS 0. Chiudendo gli occhi e concentrandosi per 1/4, può osservare il campo di battaglia attraverso gli occhi dei propri fiori, entro 15 m da ciascuno. Ogni bersaglio affetto da Tristezza o Disperazione risulta sempre visibile attraverso questi occhi, anche se nascosto da nubi gassose, ripari solidi o specchi d'acqua. Attive"
+  },
+  {
+    "name": "Chōkafun",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Concentrando la Jigo-Ka in bocca e saturandola di polline, l'Ikiryō esala davanti a sé una coltre funerea che si attacca ai polmoni di chi la respira.",
+    "poolId": "chokafun",
+    "effect": "Attiva · [Propagazione Conica][Gassosa] · Tier base 2 · CS 2 · 1/4. Cono di polline lungo 8 m: danno = tier a ogni bersaglio investito. Chi perde un confronto d'Indice contro l'Ikiryō viene afflitto da Tristezza."
+  },
+  {
+    "name": "Himawari no Kushi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il polline scava in silenzio sotto i piedi del bersaglio, e quando trova il punto giusto sboccia dal basso verso l'alto.",
+    "poolId": "himawari-no-kushi",
+    "effect": "Attiva · [Solido][Costrutto] · Tier base 2 · CS 2 · 1/4. Il polline scava sottoterra per 10 m verso un bersaglio: alla fine del tragitto sboccia in un macabro girasole, Costrutto Solido di taglia Media, Resistenza scala-tier, che impala il bersaglio dal basso (danno = tier). Se il bersaglio è affetto da Tristezza, il girasole apre l'occhio sul pistillo ed emette un'Emanazione a 71"
+  },
+  {
+    "name": "Ibara no Batsu",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il polline affonda nel terreno e ne risale come un groviglio di spine, deciso a far pagare a chiunque lo tocchi.",
+    "poolId": "ibara-no-batsu",
+    "effect": "Attiva · [Solido][Costrutto] · Tier base 2 · CS 2 · 1/4. Erge un muro di rovi, Costrutto Solido di taglia Media, Resistenza scala-tier, davanti a sé. Ogni attacco corpo a corpo o waza a Contatto diretti contro il muro rimanda danno = tier al mittente; lo stesso accade a chi viene bloccato dal muro nel movimento, o lo termina a ridosso di esso."
+  },
+  {
+    "name": "Bara no Shokei",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un campo di rose macabre sboccia dal nulla, e punisce chiunque osi attraversarne i confini.",
+    "poolId": "bara-no-shokei",
+    "effect": "Attiva · [Propagazione][Solido] · Tier base 2 · CS 2 · 1/4. Crea un campo di rose in un'area di 8 m attorno a sé, immobile, che non può essere spostata in alcun modo. Chiunque entri o esca dall'area diventa bersaglio, una volta a turno, di una tempesta di spine (Proiettile Solido, danno = tier). Se il bersaglio colpito è affetto da Tristezza, le spine restano conficcate e impongono −2 Nintai finché non vengono rimosse (1/4, o una waza Emanazione). Il campo dura al massimo 3 turni, poi marcisce."
+  },
+  {
+    "name": "Tanpopo no Noroi",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Centinaia di denti di leone fluttuano sospesi nell'aria, in attesa di un solo comando per abbattersi come pioggia.",
+    "poolId": "tanpopo-no-noroi",
+    "effect": "Attiva · [Propagazione][Solido] · Tier base 2 · CS 2 · 1/4. Fa sbocciare centinaia di denti di leone sospesi a 6 m da terra; a comando, si abbattono in un'area di 6 m davanti all'Ikiryō, infliggendo danno = tier. Se il bersaglio colpito è affetto da Tristezza, i fiori mettono radice nel suo corpo: −2 Kairyoku e 1 CS drenata a turno, finché non se ne libera (1/4, o una waza Emanazione)."
+  },
+  {
+    "name": "Chōkafunsō",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il polline viene espulso con violenza in ogni direzione, una burrasca color pece che cerca di travolgere tutto ciò che incontra.",
+    "poolId": "chokafunso",
+    "effect": "Attiva · [Emanazione][Gassosa] · Tier base 3 · CS 3 · 1/4. Burrasca di polline che investe un'area di 6 m attorno all'Ikiryō: danno = tier. Se colpisce un bersaglio affetto da Tristezza, il polline germoglia sulla sua pelle in fiori parassiti: −2 Shakai Kaikyū e 2 HP drenati a turno, finché non se ne libera (1/4, o una waza Emanazione)."
+  },
+  {
+    "name": "Bochi no Hasami",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Attingendo al proprio odio più ossessivo, l'Ikiryō compatta il polline in una forbice nera come il carbone e sfuggente come il fumo.",
+    "poolId": "bochi-no-hasami",
+    "effect": "Attiva · [Contatto][Gassoso] · Tier base 3 · CS 3 · 1/4. Plasma fra le mani un paio di cesoie, Costrutto Gassoso di taglia Media, Resistenza scala-tier — ma vulnerabile come tutto il polline dell'Ikiryō alle waza Elementali Vento, da cui subisce +1 tier di danno. Le lame infliggono danno = tier, +1 danno per ogni malus unico che affligge il bersaglio (fino a 5 malus, uno per Skiru 72"
+  },
+  {
+    "name": "Yume ga Saku",
+    "rank": "T4",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Nella mente dell'Ikiryō, fra le sue emozioni più irruenti, sboccia un fiore: il punto in cui psiche e Jigo-Ka smettono di essere due cose distinte. Una macabra corona di fiori adorna il suo capo — il simbolo della sua illuminazione.",
+    "poolId": "yume-ga-saku",
+    "effect": "Attiva · [Emanazione] · Tier base 5 · CS 6 · 1/4. Toccando il terreno, infesta un'area di 12 m attorno a sé: il campo di battaglia fiorisce per 3 turni. Individui e Costrutti altrui che perdono un confronto d'Indice contro l'Ikiryō diventano ospiti della sua prole floreale: danno = tier a turno, −2 CS a turno, liberabili con una waza Emanazione o 2/4. Finché il campo è in fiore, l'Ikiryō può lanciare le waza di questa Madoshō da qualunque punto dell'area, mantenendone pieno controllo a distanza. Ogni bersaglio affetto da Tristezza o Disperazione perde −1 a una Skiru primaria a scelta ogni volt"
+  },
+  {
+    "name": "Patto Sbagliato",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Il Komonoire non regala armi: le presta. Ogni mattina il dado demoniaco rotola nel piccolo scrigno e offre qualcosa da impugnare — finché non decidi se accettare il patto di quel turno o pagare il rifiuto.",
+    "poolId": "komonoire-patto-sbagliato",
+    "effect": "Passiva · CS 0, keystone. A inizio turno dichiari `[komonoire:tira:N]` (N 1–6) per ricevere l'arma del dado. Finché la impugni, le tue waza con arma a [Contatto] ottengono +1 tier. `[komonoire:accetta]` conferma il patto; `[komonoire:rifiuta]` o `[komonoire:opposizione]` ti affligge [Debitore] e l'arma svanisce."
+  },
+  {
+    "name": "Scrigno Chiuso",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Il reliquiario è più stretto di quanto sembri: ciò che entra non esce senza permesso, e le mani altrui scivolano quando cercano di strapparti ciò che il patto ti ha prestato.",
+    "poolId": "komonoire-scrigno-chiuso",
+    "effect": "Passiva · CS 0. Non puoi essere disarmato finché impugni l'arma del dado demoniaco. Se possiedi [Debitore], ottieni +1 all'Indice difensivo contro waza a [Contatto]."
+  },
+  {
+    "name": "Interesse Crescente",
+    "rank": null,
+    "styleId": null,
+    "isPassive": true,
+    "description": "Il debito non dorme: anche quando non lo guardi, continua a maturare interessi invisibili che si scaricano nel momento in cui finalmente colpisci.",
+    "poolId": "komonoire-interesse-crescente",
+    "effect": "Passiva · CS 0. Se possiedi almeno 1 stack di [Debitore], la tua prima waza offensiva di ogni turno ottiene +1 tier di danno (cumulabile una sola volta per turno)."
+  },
+  {
+    "name": "Kuchizuke Oni",
+    "rank": "T1",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Un bacio di Jigo-Ka demoniaca sul metallo prestato: l'arma sussurra il nome del bersaglio e corre a cercarlo.",
+    "poolId": "komonoire-kuchizuke-oni",
+    "effect": "Attiva · [Contatto][Energetica] · Tier base 1 · CS 1 · 1/4. Richiede l'arma del dado attiva. Colpo singolo a [Contatto] (danno = tier). Se il bersaglio possiede [Debitore], +1 tier."
+  },
+  {
+    "name": "Shibari del Debito",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Fili invisibili di patto si avvolgono al polso nemico: non stringono la carne, stringono l'obbligo.",
+    "poolId": "komonoire-shibari-debito",
+    "effect": "Attiva · [Contatto][Nessuna] · Tier base 2 · CS 2 · 1/4. Colpo a [Contatto] (danno = tier). Se colpisci un bersaglio con [Debitore], la sua prossima waza costa +1 CS."
+  },
+  {
+    "name": "Shihai della Lama",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "L'arma prestata non vuole restare ferma: l'analista la scaglia e il patto la richiama, già pronta per un secondo morso.",
+    "poolId": "komonoire-shihai-katana",
+    "effect": "Attiva · [Proiettile][Energetica] · Tier base 2 · CS 2 · 1/4. Richiede arma del dado. Lanci l'arma in linea retta per 12 m (danno = tier al primo bersaglio); l'arma torna in mano a fine waza."
+  },
+  {
+    "name": "Senrei Imposta",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Non si chiede favore: si impone una clausola. Il bersaglio può piegarsi o portare sulle spalle un debito che non aveva chiesto.",
+    "poolId": "komonoire-senrei-imposta",
+    "effect": "Attiva · [Nessuna][Contatto] · CS 2 · 1/4. A [Contatto], imponi un patto minore: il bersaglio accetta (nessun effetto meccanico) o rifiuta e ottiene 1 stack di [Debitore]. Una volta per bersaglio per combattimento."
+  },
+  {
+    "name": "Kaishū — Riscossione",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Quando riscuoti, non chiedi gentilezza: tratti il corpo del debitore come cauzione liquida.",
+    "poolId": "komonoire-kaishu-riscossione",
+    "effect": "Attiva · [Contatto][Energetica] · Tier base 3 · CS 3 · 1/4. Colpo a [Contatto] (danno = tier). Se il bersaglio ha [Debitore], il danno sale di 1 tier per stack (max +2 tier)."
+  },
+  {
+    "name": "Yakusoku Spezzato",
+    "rank": "T1",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Spezzare un patto costa sangue — ma a volte il sangue è più economico del debito.",
+    "poolId": "komonoire-yakusoku-spezza",
+    "effect": "Attiva · [Nessuna][Potenziamento] · CS 1 · 1/4. Rimuovi tutti i tuoi stack di [Debitore] e subisci 4 danno diretti (non mitigabile da Itami)."
+  },
+  {
+    "name": "Nemuri dello Scrigno",
+    "rank": "T2",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Il Komonoire si spalanca un istante e inghiotte un frammento di volontà altrui: non una prigione di carne, ma un sonno contrattuale.",
+    "poolId": "komonoire-nemuri-scrigno",
+    "effect": "Attiva · [Nessuna][Contatto] · Tier base 2 · CS 2 · 1/4. A [Contatto], se prevali nello scambio d'Indice, il bersaglio non può dichiarare waza offensive fino all'inizio del suo prossimo turno (può muoversi e difendersi)."
+  },
+  {
+    "name": "Deai con l'Akuma",
+    "rank": "T3",
+    "styleId": null,
+    "isPassive": false,
+    "description": "Per un battito il mondo si contrae nel volume del reliquiario: il demone mostra ciò che avrebbe preso se il patto fosse stato accettato senza riserve.",
+    "poolId": "komonoire-akuma-no-deai",
+    "effect": "Attiva · [Emanazione][Energetica] · Tier base 4 · CS 5 · 1/4. Emanazione 5 m attorno a te; danno = tier a ogni bersaglio nell'area (te escluso). I bersagli con [Debitore] subiscono +1 tier. Dopo la waza, l'arma del dado svanisce comunque."
   }
 ] as const
