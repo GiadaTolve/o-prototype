@@ -27,6 +27,8 @@ export type WazaLaunchExtras = {
   constructTaglia?: ConstructSizeId | null
   /** Sticker attivi sul costrutto evocato (Batteria/Personale/Tōrō). */
   constructSticker?: ConstructProprietaId[] | null
+  /** Trasformazione tag: `[trasforma:dimensione:from→to]` (Someito, Yugami, Igyō-Rensei…). */
+  trasformaTag?: { dimensione: 'consistenza' | 'categoria'; from: string; to: string } | null
 }
 
 export type MacchiatoSpendOption = {
@@ -59,6 +61,14 @@ export type WazaLaunchProfile = {
   masterOnlyCard?: boolean
   /** Waza con spesa counter Macchiato (Yobimodoshi): mostra pannello spesa. */
   needsMacchiatoSpend?: boolean
+  /** Waza che trasforma un tag (Someito, Yugami, Igyō-Rensei…): mostra selettore from→to. */
+  needsTrasformaTag?: boolean
+  /** Dimensione da trasformare: 'consistenza' o 'categoria'. */
+  trasformaDimensione?: 'consistenza' | 'categoria'
+  /** Opzioni FROM disponibili. Se assente = lista completa. */
+  trasformaFromOptions?: string[]
+  /** Opzioni TO disponibili. Se assente = lista completa. */
+  trasformaToOptions?: string[]
 }
 
 const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
@@ -148,6 +158,37 @@ const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
     poolId: 'yobimodoshi',
     needsMacchiatoSpend: true,
   },
+  // ── Waza trasforma tag (Itō / Tōka / Hensei) ──────────────────────────────
+  'someito-filo-tinto': {
+    poolId: 'someito-filo-tinto',
+    masterOnlyCard: true,
+    needsTrasformaTag: true,
+    trasformaDimensione: 'consistenza',
+    trasformaFromOptions: ['Solido', 'Liquido', 'Gassoso', 'Sonoro', 'Elementale', 'Energetico'],
+    trasformaToOptions: ['Solido', 'Liquido', 'Gassoso', 'Sonoro', 'Elementale', 'Energetico'],
+  },
+  'yugami-filo-deforme': {
+    poolId: 'yugami-filo-deforme',
+    masterOnlyCard: true,
+    needsTrasformaTag: true,
+    trasformaDimensione: 'categoria',
+    trasformaFromOptions: ['Emanazione', 'Propagazione', 'Propagazione Conica'],
+    trasformaToOptions: ['Emanazione', 'Propagazione', 'Propagazione Conica'],
+  },
+  'michishirube-luce-guida': {
+    poolId: 'michishirube-luce-guida',
+    needsTrasformaTag: true,
+    trasformaDimensione: 'categoria',
+    trasformaFromOptions: ['Contatto'],
+    trasformaToOptions: ['Proiettile'],
+  },
+  'igyo-rensei-insegnamenti-tucker': {
+    poolId: 'igyo-rensei-insegnamenti-tucker',
+    needsTrasformaTag: true,
+    trasformaDimensione: 'consistenza',
+    trasformaFromOptions: ['Solido', 'Liquido', 'Gassoso', 'Sonoro', 'Elementale', 'Energetico'],
+    trasformaToOptions: ['Solido', 'Liquido', 'Gassoso', 'Elementale'],
+  },
 }
 
 export function getWazaLaunchProfile(poolId?: string | null): WazaLaunchProfile | null {
@@ -219,6 +260,11 @@ export function buildWazaLaunchExtraTags(
 
   if (extras.constructSticker && extras.constructSticker.length > 0) {
     tags.push(`[sticker:${extras.constructSticker.join('+')}]`)
+  }
+
+  if (profile?.needsTrasformaTag && extras.trasformaTag) {
+    const { dimensione, from, to } = extras.trasformaTag
+    tags.push(`[trasforma:${dimensione}:${from}→${to}]`)
   }
 
   return tags

@@ -45,6 +45,12 @@ function extractSetupTag(text: string): boolean {
   return /\[setup:1\]/i.test(text);
 }
 
+function extractTrasformaTag(text: string): { dimensione: string; from: string; to: string } | null {
+  const m = /\[trasforma:([^:]+):([^→\]]+)→([^\]]+)\]/i.exec(text);
+  if (!m) return null;
+  return { dimensione: m[1]!.trim(), from: m[2]!.trim(), to: m[3]!.trim() };
+}
+
 function buildDescrizione(preview: WazaTagPreview): string {
   const parts: string[] = [];
   if (preview.styleLabel) parts.push(preview.styleLabel);
@@ -88,6 +94,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   const quartoTag = extractQuartoTag(messageContent);
   const kadenTag = extractKadenTag(messageContent);
   const setupPending = extractSetupTag(messageContent);
+  const trasformaTag = extractTrasformaTag(messageContent);
   const skiruName = launchSkiruId ? (getSkiruDef(launchSkiruId)?.name ?? launchSkiruId) : null;
   const riderLabel = launchSkiruId ? (getSkiruRider(launchSkiruId)?.label ?? null) : null;
   const targetName =
@@ -181,6 +188,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   else if (kadenTag === 'frattura') statusAttivi.push('Kaden Frattura (−5 HP, +1 tier)');
   else if (kadenTag) statusAttivi.push(`Kaden: ${kadenTag}`);
   if (setupPending) statusAttivi.push('Effetto rimandato — waza in attesa');
+  if (trasformaTag) statusAttivi.push(`Trasforma ${trasformaTag.dimensione}: ${trasformaTag.from} → ${trasformaTag.to}`);
   if (targetName) statusAttivi.push(`Bersaglio: ${targetName}`);
   if (hitDeclared) statusAttivi.push("Colpo dichiarato");
   if (!preview.found) statusAttivi.push("Non in catalogo");

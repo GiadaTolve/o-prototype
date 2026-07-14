@@ -109,6 +109,7 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
             </section>
           ) : (
             <>
+
           <section className="chat-waza-launch-post__detail-section">
             <h4 className="chat-waza-launch-post__detail-title">Skiru papabili (IR)</h4>
             <ul className="chat-waza-launch-post__steps">
@@ -212,6 +213,12 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
             </section>
           ) : null}
 
+          <p className="chat-waza-launch-post__verdict">
+            Entrato / mancato / stallo: <strong>valutazione Shinigami</strong>, non del sistema.
+          </p>
+            </>
+          )}
+
           {(data.expanded.statusAttivi?.length ?? 0) > 0 ? (
             <section className="chat-waza-launch-post__detail-section">
               <h4 className="chat-waza-launch-post__detail-title">Bonus, malus e status</h4>
@@ -222,12 +229,6 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
               </ul>
             </section>
           ) : null}
-
-          <p className="chat-waza-launch-post__verdict">
-            Entrato / mancato / stallo: <strong>valutazione Shinigami</strong>, non del sistema.
-          </p>
-            </>
-          )}
         </div>
       ) : null}
     </article>

@@ -42,6 +42,7 @@ type LwzRow = {
   styleId: string | null;
   tier: number | null;
   cs: number | null;
+  isPassive: boolean;
   tags: string[];
   poolId: string | null;
   effect: string | null;
@@ -136,6 +137,9 @@ export function LancioWazaPanel({
   const [kadenIntensity, setKadenIntensity] = useState<KadenIntensity | null>(null);
   const [quartoSelected, setQuartoSelected] = useState<1 | 2 | 3 | 4>(1);
   const [delayedEffect, setDelayedEffect] = useState(false);
+  // §4 trasforma tag (Someito, Yugami, Igyō-Rensei…)
+  const [trasformaFrom, setTrasformaFrom] = useState("");
+  const [trasformaTo, setTrasformaTo] = useState("");
   // blocco costrutto (solo se la waza evoca) — taglia + sticker
   const [constructTaglia, setConstructTaglia] = useState<ConstructSizeId>("media");
   const [constructSticker, setConstructSticker] = useState<Record<ConstructProprietaId, boolean>>({
@@ -185,7 +189,7 @@ export function LancioWazaPanel({
         if (cancelled || !mountedRef.current) return;
         const arr = (Array.isArray(d) ? d : []) as RawWaza[];
         const enriched: LwzRow[] = arr
-          .filter((w) => !w.isPassive && w.name)
+          .filter((w) => w.name)
           .map((w) => {
             const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(w.name ?? ""));
             const preview = resolveWazaTagPreview(w.name ?? "", WAZA_TAG_INDEX);
@@ -202,6 +206,7 @@ export function LancioWazaPanel({
             const displayTags = extractMechanicTagsFromEffect(effect)
               .filter((t) => !GRADE_ABBREV_TAGS.has(t))
               .slice(0, 4);
+            const isPassive = w.isPassive ?? preview.isPassive ?? false;
             return {
               id: w.id ?? "",
               name: w.name ?? "",
@@ -216,6 +221,7 @@ export function LancioWazaPanel({
               styleId: w.styleId ?? null,
               tier: preview.tier,
               cs: preview.csCost,
+              isPassive,
               tags: displayTags,
               poolId: entry?.poolId ?? w.poolId ?? null,
               effect,
@@ -224,8 +230,8 @@ export function LancioWazaPanel({
               gradeRequired,
             };
           })
-          // solo waza lanciabili in catalogo (tier+cs presenti)
-          .filter((r) => r.tier != null && r.cs != null);
+          // waza lanciabili in catalogo (tier+cs presenti) o passive con profilo trasforma
+          .filter((r) => (r.tier != null && r.cs != null) || (r.isPassive && r.poolId != null && getWazaLaunchProfile(r.poolId)?.needsTrasformaTag));
         setRows(enriched);
       })
       .catch(() => {
@@ -255,6 +261,8 @@ export function LancioWazaPanel({
 
   const lanciabile = useCallback(
     (r: LwzRow) => {
+      // Passive waza con profilo trasforma sono sempre "lanciabili" (dichiarazione al Master)
+      if (r.isPassive && r.poolId && getWazaLaunchProfile(r.poolId)?.needsTrasformaTag) return true;
       if (r.tier == null || r.cs == null) return false;
       if (currentCs != null && r.cs > currentCs) return false;
       if (gradeBlocked(r)) return false;
@@ -347,6 +355,9 @@ export function LancioWazaPanel({
       constructSticker: sel?.evocaCostrutto
         ? (CONSTRUCT_PROPRIETA_IDS.filter((p) => constructSticker[p]) as ConstructProprietaId[])
         : null,
+      trasformaTag: launchProfile?.needsTrasformaTag && trasformaFrom && trasformaTo
+        ? { dimensione: launchProfile.trasformaDimensione ?? 'consistenza', from: trasformaFrom, to: trasformaTo }
+        : null,
     }),
     [
       launchProfile,
@@ -363,6 +374,8 @@ export function LancioWazaPanel({
       delayedEffect,
       constructTaglia,
       constructSticker,
+      trasformaFrom,
+      trasformaTo,
     ],
   );
 
@@ -439,7 +452,7 @@ export function LancioWazaPanel({
     const target = targetId ? { characterId: targetId } : null;
     const line = buildFullWazaLaunchLine(sel.name, WAZA_TAG_INDEX, {
       skiruSheet: skiruSheet ?? null,
-      declaredSkiruId: skiruA || null,
+      declaredSkiruId: launchProfile?.masterOnlyCard ? null : (skiruA || null),
       irOverride: ir,
       poolId: sel.poolId,
       launchExtras,
@@ -448,7 +461,7 @@ export function LancioWazaPanel({
       ...wazaResolveExtras,
     });
     return narrative.trim() ? `${narrative.trim()}\n${line}` : line;
-  }, [sel, targetId, skiruSheet, skiruA, ir, launchExtras, currentCs, wazaResolveExtras, narrative]);
+  }, [sel, targetId, skiruSheet, skiruA, launchProfile, ir, launchExtras, currentCs, wazaResolveExtras, narrative]);
 
   const applyFrattura = useCallback(() => {
     if (kadenIntensity === "frattura") {
@@ -582,7 +595,7 @@ export function LancioWazaPanel({
                     </span>
                   </span>
                   <span className="lwz__row-meta">
-                    T{r.tier} · {r.cs} CS
+                    {r.isPassive ? "Passiva" : `T${r.tier} · ${r.cs} CS`}
                   </span>
                 </div>
                 <div className="lwz__row-tags">
@@ -798,6 +811,43 @@ export function LancioWazaPanel({
                 Aggiunge <code className="text-[8px]">[setup:1]</code> — waza in attesa, non agisce subito.
               </span>
             </label>
+          )}
+
+          {/* §4 — Trasforma tag (Someito, Yugami, Igyō-Rensei…) */}
+          {launchProfile?.needsTrasformaTag && (
+            <div className="lwz__card" style={{ borderColor: "color-mix(in srgb, var(--accent-gold) 30%, var(--border-color))" }}>
+              <div className="lwz__label" style={{ marginBottom: 6 }}>
+                Trasforma {launchProfile.trasformaDimensione === 'categoria' ? 'Categoria' : 'Consistenza'}
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  className="lwz__select flex-1"
+                  value={trasformaFrom}
+                  onChange={(e) => setTrasformaFrom(e.target.value)}
+                >
+                  <option value="">— da —</option>
+                  {(launchProfile.trasformaFromOptions ?? []).map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <span style={{ color: "var(--accent-gold)", fontSize: 12 }}>→</span>
+                <select
+                  className="lwz__select flex-1"
+                  value={trasformaTo}
+                  onChange={(e) => setTrasformaTo(e.target.value)}
+                >
+                  <option value="">— a —</option>
+                  {(launchProfile.trasformaToOptions ?? []).filter((o) => o !== trasformaFrom).map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+              {trasformaFrom && trasformaTo && (
+                <p className="text-[9px] mt-1" style={{ color: "var(--muted-foreground)" }}>
+                  Tag: <code className="text-[8px]">[trasforma:{launchProfile.trasformaDimensione}:{trasformaFrom}→{trasformaTo}]</code>
+                </p>
+              )}
+            </div>
           )}
 
           {/* §4 — Spesa counter Macchiato (Yobimodoshi) */}

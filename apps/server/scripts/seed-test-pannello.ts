@@ -62,6 +62,8 @@ const WAZA_POOL_IDS = [
   'generiche-shikigami-forma-spirito',// Generico T2, [Costrutto] → EVOCA_COSTRUTTO
   'yobimodoshi',                      // Rin'gai, needsMacchiatoSpend
   'uzu',                              // Generico T1, needsQuarto + masterOnlyCard
+  'someito-filo-tinto',               // Itō passiva, needsTrasformaTag (consistenza)
+  'yugami-filo-deforme',              // Itō passiva, needsTrasformaTag (categoria)
 ]
 
 async function main() {
