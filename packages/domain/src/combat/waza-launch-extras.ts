@@ -29,6 +29,19 @@ export type WazaLaunchExtras = {
   constructSticker?: ConstructProprietaId[] | null
 }
 
+export type MacchiatoSpendOption = {
+  cost: number
+  label: string
+  chatTag: string
+  detail: string
+}
+
+export const MACCHIATO_SPEND_OPTIONS: MacchiatoSpendOption[] = [
+  { cost: 1, label: "1 counter",   chatTag: "[macchiato-spend:1]", detail: "rigenera 2 CS" },
+  { cost: 2, label: "2 counter",   chatTag: "[macchiato-spend:2]", detail: "Proiettile Liquido (tier 2, danno 8) · gittata 12 m · macchia all'impatto" },
+  { cost: 5, label: "5+ counter",  chatTag: "[macchiato-spend:5]", detail: "Raggio Energetico (tier 4, danno 17) · gittata 15 m" },
+]
+
 export type WazaLaunchProfile = {
   poolId: string
   needsGiurisdizioneCategory?: boolean
@@ -44,6 +57,8 @@ export type WazaLaunchProfile = {
   needsDelayedEffect?: boolean
   /** Waza solo-narrazione: nasconde IR/danno, mostra solo note per il Master. */
   masterOnlyCard?: boolean
+  /** Waza con spesa counter Macchiato (Yobimodoshi): mostra pannello spesa. */
+  needsMacchiatoSpend?: boolean
 }
 
 const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
@@ -91,6 +106,10 @@ const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
   'shakkin-indebitamento': {
     poolId: 'shakkin-indebitamento',
     needsTarget: true,
+  },
+  'yobimodoshi': {
+    poolId: 'yobimodoshi',
+    needsMacchiatoSpend: true,
   },
 }
 

@@ -11,7 +11,7 @@ import {
   buildFullWazaLaunchLine,
   resolveRelevantLaunchSkiruCandidates,
 } from "@domain/combat/waza-launch";
-import { getWazaLaunchProfile } from "@domain/combat/waza-launch-extras";
+import { getWazaLaunchProfile, MACCHIATO_SPEND_OPTIONS } from "@domain/combat/waza-launch-extras";
 import {
   computeLaunchDamagePreview,
   extractMechanicTagsFromEffect,
@@ -796,6 +796,30 @@ export function LancioWazaPanel({
                 Aggiunge <code className="text-[8px]">[setup:1]</code> — waza in attesa, non agisce subito.
               </span>
             </label>
+          )}
+
+          {/* §4 — Spesa counter Macchiato (Yobimodoshi) */}
+          {launchProfile?.needsMacchiatoSpend && (
+            <div className="lwz__card" style={{ background: "color-mix(in srgb, var(--accent-violet) 8%, transparent)", borderColor: "color-mix(in srgb, var(--accent-violet) 35%, transparent)" }}>
+              <div className="lwz__label" style={{ marginBottom: 6 }}>Spendi Counter Macchiato</div>
+              <p className="text-[9px] italic mb-3" style={{ color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+                Azione separata — inserisce la spesa in chat senza lanciare la waza.
+              </p>
+              <div className="flex flex-col gap-2">
+                {MACCHIATO_SPEND_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.cost}
+                    type="button"
+                    className="lwz__chip"
+                    style={{ justifyContent: "flex-start", textAlign: "left", padding: "6px 8px", height: "auto", flexDirection: "column", alignItems: "flex-start", gap: 2 }}
+                    onClick={() => onInsertText(`${opt.chatTag} ${opt.detail}\n`)}
+                  >
+                    <span className="font-semibold" style={{ fontSize: "0.65rem", color: "var(--accent-violet-light)" }}>{opt.label}</span>
+                    <span style={{ fontSize: "0.6rem", color: "var(--foreground)", opacity: 0.75 }}>{opt.detail}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* anteprima card */}
