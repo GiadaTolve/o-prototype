@@ -129,10 +129,15 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
     irBreakdown?.successIndex ??
     (preview.isPassive ? 0 : null);
 
+  const kadenTierBonus =
+    kadenTag === 'overheat' ? 2
+    : (kadenTag === 'cs12' || kadenTag === 'frattura') ? 1
+    : 0;
+
   const dmg =
     !preview.isPassive && launchTier != null
       ? computeLaunchDamagePreview({
-          tier: launchTier,
+          tier: Math.min(5, launchTier + kadenTierBonus) as 1 | 2 | 3 | 4 | 5,
           attackerSheet: sheet,
           declaredSkiruId: launchSkiruId,
           wazaEffectText: effectText,
