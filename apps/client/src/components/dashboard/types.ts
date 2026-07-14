@@ -53,6 +53,8 @@ export type CharacterSummary = {
   bannerPg?: string | null;
   /** Banner level-up in attesa (Skiru v3). */
   pendingLevelUp?: PendingLevelUpBanner | null;
+  /** Grado gerarchico (es. "Hakyō", "Kanteikan"). */
+  grade?: string | null;
 } | null;
 
 export const WINDOW_LABELS: Record<WindowId, string> = {

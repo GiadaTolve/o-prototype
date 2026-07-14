@@ -47,7 +47,17 @@ type LwzRow = {
   effect: string | null;
   candidates: string[];
   evocaCostrutto: boolean;
+  /** Requisito grado dal testo meccanica (`[K]` = Kanteikan, `[SB]` = Sentatsu Bunsekikan). */
+  gradeRequired: "K" | "SB" | null;
 };
+
+/** Tag abbreviazione-grado da filtrare dalla vista — non sono meccaniche giocabili. */
+const GRADE_ABBREV_TAGS = new Set(["K", "SB"]);
+
+/** Gradi che soddisfano [K] (Kanteikan) o superiore. */
+const KANTEIKAN_PLUS = new Set(["Kanteikan", "Shin'enkan", "Akumu Zankyō"]);
+/** Gradi che soddisfano [SB] (Sentatsu Bunsekikan) o superiore. */
+const SENTATSU_PLUS = new Set(["Sentatsu Bunsekikan", "Kanteikan", "Shin'enkan", "Akumu Zankyō"]);
 
 import type { KadenIntensity } from "@domain/combat/waza-launch-extras";
 
@@ -77,6 +87,7 @@ const FAV_KEY = (cid?: string) => `lwz-fav:${cid ?? "anon"}`;
 export function LancioWazaPanel({
   characterId,
   skiruSheet,
+  grade,
   usersInRoom,
   currentCs,
   onInsertText,
@@ -85,6 +96,8 @@ export function LancioWazaPanel({
 }: {
   characterId?: string;
   skiruSheet?: Record<string, number>;
+  /** Grado gerarchico del PG (es. "Hakyō", "Kanteikan"). */
+  grade?: string | null;
   usersInRoom: Presente[];
   currentCs?: number | null;
   onInsertText: (text: string) => void;
@@ -181,6 +194,14 @@ export function LancioWazaPanel({
               entry && skiruSheet
                 ? resolveRelevantLaunchSkiruCandidates(skiruSheet, entry)
                 : [];
+            const gradeRequired: LwzRow["gradeRequired"] =
+              effect && /\[K\]/.test(effect) ? "K"
+              : effect && /\[SB\]/.test(effect) ? "SB"
+              : null;
+            // Filtra abbreviazioni grado dai tag visualizzati — non sono meccaniche giocabili.
+            const displayTags = extractMechanicTagsFromEffect(effect)
+              .filter((t) => !GRADE_ABBREV_TAGS.has(t))
+              .slice(0, 4);
             return {
               id: w.id ?? "",
               name: w.name ?? "",
@@ -195,11 +216,12 @@ export function LancioWazaPanel({
               styleId: w.styleId ?? null,
               tier: preview.tier,
               cs: preview.csCost,
-              tags: extractMechanicTagsFromEffect(effect).slice(0, 4),
+              tags: displayTags,
               poolId: entry?.poolId ?? w.poolId ?? null,
               effect,
               candidates,
               evocaCostrutto: wazaEffectDeclaresConstruct(effect),
+              gradeRequired,
             };
           })
           // solo waza lanciabili in catalogo (tier+cs presenti)
@@ -217,15 +239,28 @@ export function LancioWazaPanel({
     };
   }, [characterId, skiruSheet]);
 
-  // lanciabilità: per Tappa 1 = tier+cs presenti e CS sufficienti.
-  // (condizioni stack/grado §4 arriveranno con i dati strutturati.)
+  const gradeBlocked = useCallback(
+    (r: LwzRow): string | null => {
+      if (!r.gradeRequired || grade == null) return null;
+      if (r.gradeRequired === "K" && !KANTEIKAN_PLUS.has(grade)) {
+        return `Grado Kanteikan richiesto (attuale: ${grade})`;
+      }
+      if (r.gradeRequired === "SB" && !SENTATSU_PLUS.has(grade)) {
+        return `Grado Sentatsu Bunsekikan richiesto (attuale: ${grade})`;
+      }
+      return null;
+    },
+    [grade],
+  );
+
   const lanciabile = useCallback(
     (r: LwzRow) => {
       if (r.tier == null || r.cs == null) return false;
       if (currentCs != null && r.cs > currentCs) return false;
+      if (gradeBlocked(r)) return false;
       return true;
     },
-    [currentCs],
+    [currentCs, gradeBlocked],
   );
 
   const reason = useCallback(
@@ -233,9 +268,9 @@ export function LancioWazaPanel({
       if (currentCs != null && r.cs != null && r.cs > currentCs) {
         return `CS insufficienti (${currentCs}/${r.cs})`;
       }
-      return null;
+      return gradeBlocked(r);
     },
-    [currentCs],
+    [currentCs, gradeBlocked],
   );
 
   const lista = useMemo(() => {

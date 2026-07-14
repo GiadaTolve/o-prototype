@@ -266,6 +266,7 @@ export function PannelloCombattimentoWindow({
         <LancioWazaPanel
           characterId={characterId}
           skiruSheet={skiruSheet}
+          grade={char?.grade ?? null}
           usersInRoom={usersInRoom ?? []}
           currentCs={ownCs?.csCurrent ?? null}
           onInsertText={onInsertText}
