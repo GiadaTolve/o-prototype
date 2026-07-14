@@ -89,6 +89,8 @@ export function PannelloCombattimentoWindow({
   const vitals = useMemo(() => resolveCharacterComputed(char?.computed), [char?.computed]);
   const [ownHp, setOwnHp] = useState<{ current: number; max: number } | null>(null);
   const [ownCs, setOwnCs] = useState<ChronoVitals | null>(null);
+  // Once the API has loaded live CS from DB, don't let char.computed override it
+  const csFromApiRef = useRef(false);
 
   useEffect(() => {
     if (vitals.hpMax > 0) setOwnHp({ current: vitals.hpCurrent, max: vitals.hpMax });
@@ -96,6 +98,8 @@ export function PannelloCombattimentoWindow({
   }, [vitals.hpCurrent, vitals.hpMax]);
 
   useEffect(() => {
+    // Only use char.computed as fallback if API hasn't responded yet
+    if (csFromApiRef.current) return;
     const c = char?.computed as { csCurrent?: number; csCapacity?: number; csAccumulating?: boolean } | undefined;
     if (c?.csCapacity != null && c.csCurrent != null) {
       setOwnCs({
@@ -110,10 +114,14 @@ export function PannelloCombattimentoWindow({
   useEffect(() => {
     if (!characterId) return;
     let cancelled = false;
+    csFromApiRef.current = false;
     api.get(`/characters/${characterId}/status-effects`).then((data) => {
       if (cancelled || !mountedRef.current) return;
       const chrono = (data as { vitals?: { chronoStack?: ChronoVitals } }).vitals?.chronoStack;
-      if (chrono) setOwnCs(chrono);
+      if (chrono) {
+        csFromApiRef.current = true;
+        setOwnCs(chrono);
+      }
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [characterId]);
