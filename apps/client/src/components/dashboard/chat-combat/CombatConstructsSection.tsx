@@ -61,6 +61,54 @@ function ConstructAgisceRow({
   );
 }
 
+/** Mini-riga "cedi controllo" — per Ubaiito, Inversione di Proprietà, Dominazione Onirica. */
+function ConstructCediRow({
+  construct,
+  onInsertText,
+}: {
+  construct: FieldConstructRow;
+  onInsertText: (text: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [target, setTarget] = useState("");
+
+  const confirm = () => {
+    const name = target.trim();
+    if (!name) return;
+    onInsertText(`Cedo il controllo di ${construct.label} a ${name} [cedi-controllo:${construct.label}→${name}]`);
+    setTarget("");
+    setOpen(false);
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-[8px] text-[var(--accent-gold)]/70 hover:text-[var(--accent-gold)] transition-colors shrink-0"
+        title="Cedi controllo del costrutto (Ubaiito / Inversione / Dominazione)"
+      >
+        cedi →
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex gap-1 items-center flex-1">
+      <input
+        autoFocus
+        value={target}
+        onChange={(e) => setTarget(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") confirm(); if (e.key === "Escape") setOpen(false); }}
+        placeholder="Nuovo controllore…"
+        className="flex-1 rounded border border-[var(--border-color)] bg-black/40 px-1.5 py-0.5 text-[9px] text-white"
+      />
+      <button type="button" onClick={confirm} className="text-[8px] text-[var(--accent-gold)] shrink-0">↵</button>
+      <button type="button" onClick={() => setOpen(false)} className="text-[8px] text-gray-500 shrink-0">✕</button>
+    </div>
+  );
+}
+
 export function CombatConstructsSection({
   characterId,
   isMaster = false,
@@ -159,7 +207,10 @@ export function CombatConstructsSection({
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
                   {onInsertText && (
-                    <ConstructAgisceRow construct={c} onInsertText={onInsertText} />
+                    <>
+                      <ConstructAgisceRow construct={c} onInsertText={onInsertText} />
+                      <ConstructCediRow construct={c} onInsertText={onInsertText} />
+                    </>
                   )}
                   <button
                     type="button"
