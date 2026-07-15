@@ -78,6 +78,16 @@ export function calculateShieldResistanceFromTier(wazaTier: WazaTier | number): 
 /** @deprecated Usare calculateConstructResistance con rank Kongen */
 export const calculateConstructResistanceFromGugenka = calculateConstructResistance
 
+/** Resistenza costrutto = ⌊floor(hpMax / 2) × moltiplicatore taglia⌋. */
+export function calculateConstructResistanceFromHp(
+  creatorHpMax: number,
+  size: ConstructSizeId = 'media',
+): number {
+  const base = Math.floor(Math.max(0, creatorHpMax) / 2)
+  const mult = CONSTRUCT_SIZES[size]?.resistanceMult ?? 1
+  return Math.floor(base * mult)
+}
+
 /** Assorbimento danno da Scudo/Costrutto (Resistenza sottratta per prima). */
 export function absorbDamageWithResistance(
   resistance: number,

@@ -91,6 +91,7 @@ const FAV_KEY = (cid?: string) => `lwz-fav:${cid ?? "anon"}`;
 export function LancioWazaPanel({
   characterId,
   skiruSheet,
+  creatorHpMax,
   grade,
   usersInRoom,
   currentCs,
@@ -100,6 +101,8 @@ export function LancioWazaPanel({
 }: {
   characterId?: string;
   skiruSheet?: Record<string, number>;
+  /** HP massimi del PG — base resistenza costrutto (hpMax / 2 × mult taglia). */
+  creatorHpMax?: number | null;
   /** Grado gerarchico del PG (es. "Hakyō", "Kanteikan"). */
   grade?: string | null;
   usersInRoom: Presente[];
@@ -407,11 +410,11 @@ export function LancioWazaPanel({
       wazaTier: sel.tier,
       taglia: constructTaglia,
       proprieta: CONSTRUCT_PROPRIETA_IDS.filter((p) => constructSticker[p]) as ConstructProprietaId[],
-      creator: { sheet: skiruSheet },
+      creator: { sheet: skiruSheet, hpMax: creatorHpMax ?? undefined },
       resistenza: "DERIVATA",
       movimento_m: "DERIVATA",
     });
-  }, [sel?.evocaCostrutto, sel?.tier, skiruSheet, constructTaglia, constructSticker]);
+  }, [sel?.evocaCostrutto, sel?.tier, skiruSheet, creatorHpMax, constructTaglia, constructSticker]);
 
   // IR — §5: (Skiru A + Skiru B) / 2 + Σ modificatori (Meiju Sōkaiju via tag).
   const irBreakdown = useMemo(() => {
@@ -727,6 +730,9 @@ export function LancioWazaPanel({
                 >
                   <span>Resistenza <b style={{ color: "var(--foreground)" }}>{constructProfile.resistenza}</b></span>
                   <span>Mov <b style={{ color: "var(--foreground)" }}>{constructProfile.movimento_m != null ? `${constructProfile.movimento_m}m` : "—"}</b></span>
+                  {constructProfile.danno != null && (
+                    <span>Danno <b style={{ color: "var(--foreground)" }}>{constructProfile.danno}</b></span>
+                  )}
                   {constructSticker.BATTERIA && (
                     <span style={{ color: "var(--accent-ember, #e8763a)" }}>Batteria: {BATTERIA_CS_CAP} CS depositati nel costrutto (recuperabili)</span>
                   )}

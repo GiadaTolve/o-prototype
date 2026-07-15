@@ -2514,6 +2514,9 @@ function ChatView({
                 actorSkiruSheet={
                   m.characterId === char?.id ? char?.skiruSheet : undefined
                 }
+                actorHpMax={
+                  m.characterId === char?.id ? (char?.computed?.hpMax ?? null) : null
+                }
                 isPartychat={isPartychatRoom}
               />
             ))}
@@ -2819,23 +2822,25 @@ function GlobalMessageButton({ iconOnly = false }: { iconOnly?: boolean }) {
   );
 }
 
-function ChatMessageBlock({ 
-  message, 
+function ChatMessageBlock({
+  message,
   placeLabel,
   activeQuest,
   currentCharacterId,
   currentCharacterName,
   currentCharacterSurname,
   actorSkiruSheet,
+  actorHpMax,
   isPartychat = false,
-}: { 
-  message: ChatMessage; 
+}: {
+  message: ChatMessage;
   placeLabel: string;
   activeQuest?: { id: string; title?: string; creatorId?: string; createdAt?: string } | null;
   currentCharacterId?: string;
   currentCharacterName?: string;
   currentCharacterSurname?: string | null;
   actorSkiruSheet?: Record<string, number>;
+  actorHpMax?: number | null;
   isPartychat?: boolean;
 }) {
   const highlightNames = useMemo(() => {
@@ -2870,14 +2875,16 @@ function ChatMessageBlock({
         wazaName: name,
         wazaEffect: entry?.effect ?? entry?.description ?? null,
         actorSkiruSheet: actorSkiruSheet ?? null,
+        actorHpMax: actorHpMax ?? null,
       });
       if (post) return post;
     }
     return buildStandaloneConstructPostFromMessage({
       messageContent: message.content,
       actorSkiruSheet: actorSkiruSheet ?? null,
+      actorHpMax: actorHpMax ?? null,
     });
-  }, [message.content, actorSkiruSheet]);
+  }, [message.content, actorSkiruSheet, actorHpMax]);
   const narrativeBody = useMemo(
     () => removeWazaTagsFromText(message.content),
     [message.content],

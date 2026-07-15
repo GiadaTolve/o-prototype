@@ -8,10 +8,12 @@
 import {
   CONSTRUCT_SIZES,
   calculateConstructResistance,
+  calculateConstructResistanceFromHp,
   type ConstructSizeId,
 } from './constructs'
 import { calculateMovementMetersPerQuarterFromSkiru } from '../skiru/derived-stats'
 import { getSkiruPoints } from '../skiru/progression'
+import { calculateSokaijuShijuDamagePercentBonus } from '../skiru/sokaiju-face-effects'
 import { getTierValue, isWazaTier, type WazaTier } from './tier'
 import { calculateGosaMaxSimultaneousConstructs } from '../styles/genzai/gosa-construct-limit'
 
@@ -47,6 +49,8 @@ export type DeriveConstructInput = {
 
   creator: {
     sheet: import('../skiru/types').SkiruSheet
+    /** HP massimi del creatore — usati per calcolare la resistenza (hpMax / 2 × mult). */
+    hpMax?: number
     styleGenitore?: string | null
     isAnalystConscious?: boolean
   }
@@ -144,14 +148,19 @@ export function deriveConstructProfile(input: DeriveConstructInput): DerivedCons
       ? input.armaSorgente.taglia
       : normalizeSize(String(input.taglia))
 
+  const baseResistenza =
+    input.creator.hpMax != null && input.creator.hpMax > 0
+      ? calculateConstructResistanceFromHp(input.creator.hpMax, taglia_effettiva)
+      : calculateConstructResistance(0, tier, taglia_effettiva)
+
   const resistenza =
     input.resistenza === 'DERIVATA' || input.resistenza == null
-      ? calculateConstructResistance(0, tier, taglia_effettiva)
+      ? baseResistenza
       : typeof input.resistenza === 'object' &&
           input.resistenza !== null &&
           'tipo' in input.resistenza
-        ? resolveValoreDanno(input.resistenza, tier) ?? calculateConstructResistance(0, tier, taglia_effettiva)
-        : calculateConstructResistance(0, tier, taglia_effettiva)
+        ? resolveValoreDanno(input.resistenza, tier) ?? baseResistenza
+        : baseResistenza
 
   const mobile = input.comportamento !== 'STATICO'
   const sizeDef = CONSTRUCT_SIZES[taglia_effettiva]
@@ -163,13 +172,23 @@ export function deriveConstructProfile(input: DeriveConstructInput): DerivedCons
         ? Math.floor(movimentoBase * sizeDef.movementMult)
         : input.movimento_m
 
+  const shijuBonus = calculateSokaijuShijuDamagePercentBonus(sheet, ['Costrutto'])
+
   let danno: number | null = null
   if (hasToro && input.toro_da_arma !== false && input.armaSorgente) {
     danno = Math.max(0, Math.floor(input.armaSorgente.dannoBase))
-  } else if (input.danno !== null && input.danno !== 'DERIVATA') {
+  } else if (input.danno !== null && input.danno !== undefined && input.danno !== 'DERIVATA') {
     danno = resolveValoreDanno(input.danno, tier)
-  } else if (input.danno === 'DERIVATA' || (input.danno && typeof input.danno === 'object')) {
-    danno = resolveValoreDanno(input.danno, tier)
+    if (danno != null && shijuBonus > 0) danno = Math.round(danno * (1 + shijuBonus))
+  } else if (input.danno === 'DERIVATA') {
+    danno = Math.round(getTierValue(tier) * (1 + shijuBonus))
+  } else {
+    // input.danno == null → auto-calcolo da taglia (Grande +1 tier, Enorme +2 tier)
+    const bonus = sizeDef?.damageTierBonus ?? 0
+    if (bonus > 0) {
+      const effectiveTier = Math.min(5, tier + bonus) as WazaTier
+      danno = Math.round(getTierValue(effectiveTier) * (1 + shijuBonus))
+    }
   }
 
   const isGenzai = isGenzaiGenitore(input.creator.styleGenitore ?? null)

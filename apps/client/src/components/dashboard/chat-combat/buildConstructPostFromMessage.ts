@@ -25,6 +25,7 @@ export function extractStandaloneConstructName(text: string): string | null {
 export function buildStandaloneConstructPostFromMessage(input: {
   messageContent: string;
   actorSkiruSheet?: SkiruSheet | null;
+  actorHpMax?: number | null;
 }): ConstructResolutionPostData | null {
   const nome = extractStandaloneConstructName(input.messageContent);
   if (!nome) return null;
@@ -35,28 +36,29 @@ export function buildStandaloneConstructPostFromMessage(input: {
 
   let resistenza: number | null = null;
   let movimento: number | null = null;
+  let danno: number | null = null;
 
   if (tier != null && input.actorSkiruSheet) {
     const profile = deriveConstructProfile({
       wazaTier: tier,
       taglia,
       proprieta: stickers,
-      creator: { sheet: input.actorSkiruSheet },
+      creator: { sheet: input.actorSkiruSheet, hpMax: input.actorHpMax ?? undefined },
       resistenza: "DERIVATA",
       movimento_m: "DERIVATA",
     });
     resistenza = profile.resistenza ?? null;
     movimento = profile.movimento_m ?? null;
+    danno = profile.danno ?? null;
   }
 
   const sizeDef = CONSTRUCT_SIZES[taglia];
-  const hasDanno = sizeDef.resistanceMult >= 1.5;
 
   return {
     nome,
     taglia: SIZE_LABELS[taglia],
     movimentoM: movimento ?? 0,
-    ...(hasDanno && tier != null ? { dannoMedio: tier } : {}),
+    ...(danno != null ? { dannoMedio: danno } : {}),
     hpCurrent: resistenza ?? 0,
     hpMax: resistenza ?? 0,
     stickers: stickers.map((s) => STICKER_LABELS[s]),
@@ -66,7 +68,7 @@ export function buildStandaloneConstructPostFromMessage(input: {
         { label: "Taglia × resist.", value: `×${sizeDef.resistanceMult}` },
         ...(movimento != null ? [{ label: "Movimento", value: `${movimento} m/quarto` }] : []),
       ],
-      note: "Costrutto evocato direttamente. Resistenza derivata da tier × taglia.",
+      note: "Costrutto evocato direttamente. Resistenza: HP/2 × taglia.",
     },
   };
 }
@@ -103,8 +105,9 @@ export function buildConstructPostFromMessage(input: {
   wazaName: string;
   wazaEffect?: string | null;
   actorSkiruSheet?: SkiruSheet | null;
+  actorHpMax?: number | null;
 }): ConstructResolutionPostData | null {
-  const { messageContent, wazaName, wazaEffect, actorSkiruSheet } = input;
+  const { messageContent, wazaName, wazaEffect, actorSkiruSheet, actorHpMax } = input;
 
   // Verifica che la waza evochi davvero un costrutto
   if (!wazaEffectDeclaresConstruct(wazaEffect)) return null;
@@ -115,28 +118,29 @@ export function buildConstructPostFromMessage(input: {
 
   let resistenza: number | null = null;
   let movimento: number | null = null;
+  let danno: number | null = null;
 
   if (tier != null && actorSkiruSheet) {
     const profile = deriveConstructProfile({
       wazaTier: tier,
       taglia,
       proprieta: stickers,
-      creator: { sheet: actorSkiruSheet },
+      creator: { sheet: actorSkiruSheet, hpMax: actorHpMax ?? undefined },
       resistenza: "DERIVATA",
       movimento_m: "DERIVATA",
     });
     resistenza = profile.resistenza ?? null;
     movimento = profile.movimento_m ?? null;
+    danno = profile.danno ?? null;
   }
 
   const sizeDef = CONSTRUCT_SIZES[taglia];
-  const hasDanno = sizeDef.resistanceMult >= 1.5; // Grande/Enorme hanno danno
 
   return {
     nome: wazaName,
     taglia: SIZE_LABELS[taglia],
     movimentoM: movimento ?? 0,
-    ...(hasDanno && tier != null ? { dannoMedio: tier } : {}),
+    ...(danno != null ? { dannoMedio: danno } : {}),
     hpCurrent: resistenza ?? 0,
     hpMax: resistenza ?? 0,
     stickers: stickers.map((s) => STICKER_LABELS[s]),
@@ -146,7 +150,7 @@ export function buildConstructPostFromMessage(input: {
         { label: "Taglia × resist.", value: `×${sizeDef.resistanceMult}` },
         ...(movimento != null ? [{ label: "Movimento", value: `${movimento} m/quarto` }] : []),
       ],
-      note: "Resistenza derivata da tier × taglia. Danneggiabile con waza o attacco fisico.",
+      note: "Resistenza: HP/2 × taglia. Danneggiabile con waza o attacco fisico.",
     },
   };
 }
