@@ -54,6 +54,8 @@ export function buildStandaloneConstructPostFromMessage(input: {
 
   const sizeDef = CONSTRUCT_SIZES[taglia];
 
+  const hpBase = input.actorHpMax != null ? Math.floor(input.actorHpMax / 2) : null;
+
   return {
     nome,
     taglia: SIZE_LABELS[taglia],
@@ -64,11 +66,12 @@ export function buildStandaloneConstructPostFromMessage(input: {
     stickers: stickers.map((s) => STICKER_LABELS[s]),
     expanded: {
       bonusMalus: [
-        ...(tier != null ? [{ label: "Tier waza", value: `T${tier}` }] : []),
-        { label: "Taglia × resist.", value: `×${sizeDef.resistanceMult}` },
+        ...(resistenza != null ? [{ label: "Resistenza", value: `${resistenza}${hpBase != null ? ` (HP/2=${hpBase} × ${sizeDef.resistanceMult})` : ""}` }] : []),
+        ...(danno != null ? [{ label: "Danno", value: `${danno}` }] : []),
         ...(movimento != null ? [{ label: "Movimento", value: `${movimento} m/quarto` }] : []),
+        ...(tier != null ? [{ label: "Tier waza", value: `T${tier}` }] : []),
       ],
-      note: "Costrutto evocato direttamente. Resistenza: HP/2 × taglia.",
+      note: "Costrutto evocato direttamente.",
     },
   };
 }
@@ -136,6 +139,8 @@ export function buildConstructPostFromMessage(input: {
 
   const sizeDef = CONSTRUCT_SIZES[taglia];
 
+  const hpBase = input.actorHpMax != null ? Math.floor(input.actorHpMax / 2) : null;
+
   return {
     nome: wazaName,
     taglia: SIZE_LABELS[taglia],
@@ -146,9 +151,10 @@ export function buildConstructPostFromMessage(input: {
     stickers: stickers.map((s) => STICKER_LABELS[s]),
     expanded: {
       bonusMalus: [
-        ...(tier != null ? [{ label: "Tier waza", value: `T${tier}` }] : []),
-        { label: "Taglia × resist.", value: `×${sizeDef.resistanceMult}` },
+        ...(resistenza != null ? [{ label: "Resistenza", value: `${resistenza}${hpBase != null ? ` (HP/2=${hpBase} × ${sizeDef.resistanceMult})` : ""}` }] : []),
+        ...(danno != null ? [{ label: "Danno", value: `${danno}` }] : []),
         ...(movimento != null ? [{ label: "Movimento", value: `${movimento} m/quarto` }] : []),
+        ...(tier != null ? [{ label: "Tier waza", value: `T${tier}` }] : []),
       ],
       note: "Resistenza: HP/2 × taglia. Danneggiabile con waza o attacco fisico.",
     },

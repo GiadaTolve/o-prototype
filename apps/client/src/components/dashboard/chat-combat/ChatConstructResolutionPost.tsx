@@ -55,7 +55,7 @@ export function ChatConstructResolutionPost({ data }: { data: ConstructResolutio
 
       <div className="chat-resolution-post__hp" role="group" aria-label="Integrità costrutto">
         <div className="chat-resolution-post__hp-labels">
-          <span>HP</span>
+          <span>Resistenza</span>
           <span>
             {data.hpCurrent} / {data.hpMax}
           </span>
