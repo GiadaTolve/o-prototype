@@ -15,6 +15,8 @@ import {
   type DamagePipelineBreakdown,
 } from '@domain/combat';
 import { isWazaTier, type WazaTier } from '@domain/combat/tier';
+import { WAZA_TAG_CATALOG } from '@domain/combat/waza-tag-catalog.generated';
+import { WAZA_LAUNCH_PROFILE_DATA } from '@domain/combat/waza-launch-profile-data';
 import {
   normalizeStoredChronoStackState,
   processChronoChatMessage,
@@ -802,10 +804,14 @@ export class CharacterService {
         id: row.skill!.id,
         name: row.skill!.name,
         description: row.skill!.description,
+        effect: row.skill!.effect
+          ?? WAZA_TAG_CATALOG.find((e) => e.poolId === row.skill!.poolId)?.effect
+          ?? null,
         type: row.skill!.type,
         costJigoka: row.skill!.costJigoka,
         rank: row.skill!.rank,
         isPassive: row.skill!.isPassive ?? false,
+        isNarrativa: WAZA_LAUNCH_PROFILE_DATA[row.skill!.poolId ?? '']?.masterOnlyCard ?? false,
         level: row.level,
         styleId: this.resolveSkillStyleId(row.skill!),
         madoshoId: row.skill!.madoshoId ?? null,
@@ -977,6 +983,7 @@ export class CharacterService {
     return {
       primaryStyleId,
       unlockedStyleIds,
+      gokaonActive: (meta as { gokaonActive?: boolean }).gokaonActive === true,
       keys: char.keys ?? 0,
       unlockKeyCost: STYLE_UNLOCK_KEY_COST,
       styles,

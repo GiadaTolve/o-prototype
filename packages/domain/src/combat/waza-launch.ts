@@ -272,11 +272,9 @@ export function buildFullWazaLaunchLine(
   if (options?.declareHit) {
     parts.push('[hit:1]')
   }
-  const poolId =
-    options?.poolId ??
-    index.get(normalizeWazaLookupKey(wazaName.trim()))?.poolId ??
-    null
-  const extraTags = buildWazaLaunchExtraTags(poolId, options?.launchExtras ?? null, options?.target)
+  const entry = index.get(normalizeWazaLookupKey(wazaName.trim()))
+  const launchFlags = entry?.launchFlags ?? null
+  const extraTags = buildWazaLaunchExtraTags(launchFlags, options?.launchExtras ?? null, options?.target)
   parts.push(...extraTags)
   return parts.join(' ')
 }

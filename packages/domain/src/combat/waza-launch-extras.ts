@@ -7,6 +7,17 @@ import type { ConstructProprietaId } from './construct-profile'
 
 export type KadenIntensity = 'cs12' | 'overheat' | 'frattura'
 
+export const SENI_GAKE_FIBRE = ['bianche', 'neuromuscolari', 'rosse'] as const
+export type SeniGakeFibra = (typeof SENI_GAKE_FIBRE)[number]
+export const SENI_GAKE_SETTORI = ['gambe', 'braccia', 'torace'] as const
+export type SeniGakeSettore = (typeof SENI_GAKE_SETTORI)[number]
+
+export const SENI_GAKE_FIBRA_LABELS: Record<SeniGakeFibra, string> = {
+  bianche: 'Fibre Bianche → +2 Kairyoku',
+  neuromuscolari: 'Fibre Neuromuscolari → +2 Binshō',
+  rosse: 'Fibre Rosse → +2 Nintai',
+}
+
 export type WazaLaunchExtras = {
   giurisdizioneCategory?: GiurisdizioneCategory | null
   suturaKind?: HogosuturaKind | null
@@ -29,6 +40,8 @@ export type WazaLaunchExtras = {
   constructSticker?: ConstructProprietaId[] | null
   /** Trasformazione tag: `[trasforma:dimensione:from→to]` (Someito, Yugami, Igyō-Rensei…). */
   trasformaTag?: { dimensione: 'consistenza' | 'categoria'; from: string; to: string } | null
+  /** Sen'i-Gake (Naikan): tipo fibra + settore corporeo scelti al lancio. */
+  seniGakeChoice?: { fibra: SeniGakeFibra; settore: SeniGakeSettore } | null
 }
 
 export type MacchiatoSpendOption = {
@@ -44,158 +57,6 @@ export const MACCHIATO_SPEND_OPTIONS: MacchiatoSpendOption[] = [
   { cost: 5, label: "5+ counter",  chatTag: "[macchiato-spend:5]", detail: "Raggio Energetico (tier 4, danno 17) · gittata 15 m" },
 ]
 
-export type WazaLaunchProfile = {
-  poolId: string
-  needsGiurisdizioneCategory?: boolean
-  needsSuturaKind?: boolean
-  needsDecreto?: boolean
-  needsNagoriShift?: boolean
-  needsTarget?: boolean
-  allowsSurprise?: boolean
-  needsMeisakuLabel?: boolean
-  /** Waza multi-quarto (Rensa, Uzu): mostra selettore 1/4→4/4. */
-  needsQuarto?: boolean
-  /** Waza a effetto rimandato (Fuin no Hi, Rensa): toggle "setup". */
-  needsDelayedEffect?: boolean
-  /** Waza solo-narrazione: nasconde IR/danno, mostra solo note per il Master. */
-  masterOnlyCard?: boolean
-  /** Waza con spesa counter Macchiato (Yobimodoshi): mostra pannello spesa. */
-  needsMacchiatoSpend?: boolean
-  /** Waza che trasforma un tag (Someito, Yugami, Igyō-Rensei…): mostra selettore from→to. */
-  needsTrasformaTag?: boolean
-  /** Dimensione da trasformare: 'consistenza' o 'categoria'. */
-  trasformaDimensione?: 'consistenza' | 'categoria'
-  /** Opzioni FROM disponibili. Se assente = lista completa. */
-  trasformaFromOptions?: string[]
-  /** Opzioni TO disponibili. Se assente = lista completa. */
-  trasformaToOptions?: string[]
-}
-
-const LAUNCH_PROFILES: Record<string, WazaLaunchProfile> = {
-  // ── Waza solo-narrazione (nessun danno computabile) ────────────────────────
-  'kakucho-espansione-della-luce': {
-    poolId: 'kakucho-espansione-della-luce',
-    masterOnlyCard: true,
-  },
-  'gangushi-il-giocattolaio': {
-    poolId: 'gangushi-il-giocattolaio',
-    masterOnlyCard: true,
-  },
-  'shokushin-lettura-corpo': {
-    poolId: 'shokushin-lettura-corpo',
-    masterOnlyCard: true,
-  },
-  'generiche-ippuku-gestione-pressione': {
-    poolId: 'generiche-ippuku-gestione-pressione',
-    masterOnlyCard: true,
-  },
-  'generiche-ukenagashi-parata-perfetta': {
-    poolId: 'generiche-ukenagashi-parata-perfetta',
-    masterOnlyCard: true,
-  },
-  'generiche-shukuchi-scatto-potenziato': {
-    poolId: 'generiche-shukuchi-scatto-potenziato',
-    masterOnlyCard: true,
-  },
-  'generiche-choyaku-salto-potenziato': {
-    poolId: 'generiche-choyaku-salto-potenziato',
-    masterOnlyCard: true,
-  },
-  'uzu': {
-    poolId: 'uzu',
-    needsQuarto: true,
-    masterOnlyCard: true,
-  },
-  // ──────────────────────────────────────────────────────────────────────────
-  'fuin-no-hi-sigillo-della-fiamma': {
-    poolId: 'fuin-no-hi-sigillo-della-fiamma',
-    needsDelayedEffect: true,
-    masterOnlyCard: true,
-  },
-  'rensa-catena-fili': {
-    poolId: 'rensa-catena-fili',
-    needsQuarto: true,
-    needsDelayedEffect: true,
-  },
-  'rensa-baku-detonazione-catena': {
-    poolId: 'rensa-baku-detonazione-catena',
-    needsQuarto: true,
-  },
-  'kankatsu-giurisdizione': {
-    poolId: 'kankatsu-giurisdizione',
-    needsGiurisdizioneCategory: true,
-    allowsSurprise: true,
-  },
-  'nagori-principio-instabilita': {
-    poolId: 'nagori-principio-instabilita',
-    needsNagoriShift: true,
-    allowsSurprise: true,
-  },
-  'chokurei-decreto': {
-    poolId: 'chokurei-decreto',
-    needsDecreto: true,
-    allowsSurprise: true,
-  },
-  'hogo-sutura-ego': {
-    poolId: 'hogo-sutura-ego',
-    needsSuturaKind: true,
-    needsTarget: true,
-    masterOnlyCard: true,
-  },
-  'mugen-shihai-dominazione-onirica': {
-    poolId: 'mugen-shihai-dominazione-onirica',
-    allowsSurprise: true,
-  },
-  'meisaku-opera-prima': {
-    poolId: 'meisaku-opera-prima',
-    needsMeisakuLabel: true,
-  },
-  'shakkin-indebitamento': {
-    poolId: 'shakkin-indebitamento',
-    needsTarget: true,
-  },
-  'yobimodoshi': {
-    poolId: 'yobimodoshi',
-    needsMacchiatoSpend: true,
-  },
-  // ── Waza trasforma tag (Itō / Tōka / Hensei) ──────────────────────────────
-  'someito-filo-tinto': {
-    poolId: 'someito-filo-tinto',
-    masterOnlyCard: true,
-    needsTrasformaTag: true,
-    trasformaDimensione: 'consistenza',
-    trasformaFromOptions: ['Solido', 'Liquido', 'Gassoso', 'Sonoro', 'Elementale', 'Energetico'],
-    trasformaToOptions: ['Solido', 'Liquido', 'Gassoso', 'Sonoro', 'Elementale', 'Energetico'],
-  },
-  'yugami-filo-deforme': {
-    poolId: 'yugami-filo-deforme',
-    masterOnlyCard: true,
-    needsTrasformaTag: true,
-    trasformaDimensione: 'categoria',
-    trasformaFromOptions: ['Emanazione', 'Propagazione', 'Propagazione Conica'],
-    trasformaToOptions: ['Emanazione', 'Propagazione', 'Propagazione Conica'],
-  },
-  'michishirube-luce-guida': {
-    poolId: 'michishirube-luce-guida',
-    needsTrasformaTag: true,
-    trasformaDimensione: 'categoria',
-    trasformaFromOptions: ['Contatto'],
-    trasformaToOptions: ['Proiettile'],
-  },
-  'igyo-rensei-insegnamenti-tucker': {
-    poolId: 'igyo-rensei-insegnamenti-tucker',
-    needsTrasformaTag: true,
-    trasformaDimensione: 'consistenza',
-    trasformaFromOptions: ['Solido', 'Liquido', 'Gassoso', 'Sonoro', 'Elementale', 'Energetico'],
-    trasformaToOptions: ['Solido', 'Liquido', 'Gassoso', 'Elementale'],
-  },
-}
-
-export function getWazaLaunchProfile(poolId?: string | null): WazaLaunchProfile | null {
-  if (!poolId) return null
-  return LAUNCH_PROFILES[poolId] ?? null
-}
-
 function buildTargetNameForTag(target: WazaLaunchTargetSpec): string | null {
   if (target.characterId) return `id:${target.characterId}`
   if (target.nameQuery) return target.nameQuery
@@ -204,36 +65,35 @@ function buildTargetNameForTag(target: WazaLaunchTargetSpec): string | null {
 
 /** Tag aggiuntivi per waza avanzate (Giurisdizione, Hōgō, Decreto, Sorpresa…). */
 export function buildWazaLaunchExtraTags(
-  poolId: string | null | undefined,
+  flags: import('./waza-tag-preview').WazaLaunchFlags | null | undefined,
   extras: WazaLaunchExtras | null | undefined,
   target?: WazaLaunchTargetSpec | null,
 ): string[] {
-  if (!poolId || !extras) return []
+  if (!extras) return []
   const tags: string[] = []
-  const profile = getWazaLaunchProfile(poolId)
 
-  if (profile?.needsGiurisdizioneCategory && extras.giurisdizioneCategory) {
+  if (flags?.needsGiurisdizioneCategory && extras.giurisdizioneCategory) {
     tags.push(`[giurisdizione:${extras.giurisdizioneCategory}]`)
   }
 
-  if (profile?.needsNagoriShift && extras.nagoriShift) {
+  if (flags?.needsNagoriShift && extras.nagoriShift) {
     tags.push(`[yuragi:${extras.nagoriShift.from}→${extras.nagoriShift.to}]`)
   }
 
-  if (profile?.needsDecreto && extras.decretoText?.trim()) {
+  if (flags?.needsDecreto && extras.decretoText?.trim()) {
     tags.push(`[decreto:${extras.decretoText.trim()}]`)
   }
 
-  if (profile?.needsMeisakuLabel && extras.meisakuLabel?.trim()) {
+  if (flags?.needsMeisakuLabel && extras.meisakuLabel?.trim()) {
     tags.push(`[meisaku:${extras.meisakuLabel.trim()}]`)
   }
 
-  if (profile?.needsSuturaKind && extras.suturaKind && target) {
+  if (flags?.needsSuturaKind && extras.suturaKind && target) {
     const who = buildTargetNameForTag(target)
     if (who) tags.push(`[sutura:${who}:${extras.suturaKind}]`)
   }
 
-  if (profile?.poolId === 'shakkin-indebitamento' && target) {
+  if (flags?.needsDebitoTag && target) {
     const who = target.nameQuery ?? (target.characterId ? `id:${target.characterId}` : null)
     if (who) tags.push(`[debito:${who}]`)
   }
@@ -246,11 +106,11 @@ export function buildWazaLaunchExtraTags(
     tags.push(`[kaden:${extras.kadenIntensity}]`)
   }
 
-  if (profile?.needsQuarto && extras.quartoSelected != null) {
+  if (flags?.needsQuarto && extras.quartoSelected != null) {
     tags.push(`[quarto:${extras.quartoSelected}/4]`)
   }
 
-  if (profile?.needsDelayedEffect && extras.delayedEffect) {
+  if (flags?.needsDelayedEffect && extras.delayedEffect) {
     tags.push('[setup:1]')
   }
 
@@ -262,9 +122,14 @@ export function buildWazaLaunchExtraTags(
     tags.push(`[sticker:${extras.constructSticker.join('+')}]`)
   }
 
-  if (profile?.needsTrasformaTag && extras.trasformaTag) {
+  if (flags?.needsTrasformaTag && extras.trasformaTag) {
     const { dimensione, from, to } = extras.trasformaTag
     tags.push(`[trasforma:${dimensione}:${from}→${to}]`)
+  }
+
+  if (flags?.needsSeniGake && extras.seniGakeChoice) {
+    const { fibra, settore } = extras.seniGakeChoice
+    tags.push(`[seni-gake:${fibra}:${settore}]`)
   }
 
   return tags

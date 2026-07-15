@@ -13,7 +13,6 @@ import {
   buildFullWazaLaunchLine,
   resolveAutoLaunchSkiruId,
 } from "@domain/combat/waza-launch";
-import { getWazaLaunchProfile } from "@domain/combat/waza-launch-extras";
 import { computeDeclaredActionIr, computeLaunchDamagePreview, extractMechanicTagsFromEffect, getSkiruRider } from "@domain/combat/waza-skiru-riders";
 import { getSkiruDef } from "@domain/skiru/catalog";
 import { useDoMechanicsSnapshot } from "@/hooks/useDoMechanicsSnapshot";
@@ -148,10 +147,7 @@ export function WazaLaunchPanel({
   const wazaPreview = preview?.preview ?? null;
   const wazaEntry = preview?.entry;
 
-  const launchProfile = useMemo(
-    () => getWazaLaunchProfile(wazaEntry?.poolId),
-    [wazaEntry?.poolId],
-  );
+  const launchProfile = wazaEntry?.launchFlags ?? null;
 
   const launchExtras = useMemo(
     () => ({

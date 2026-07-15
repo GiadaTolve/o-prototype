@@ -171,7 +171,7 @@ describe('waza launch', () => {
 
   it('buildWazaLaunchExtraTags per Giurisdizione e Sorpresa', () => {
     const tags = buildWazaLaunchExtraTags(
-      'kankatsu-giurisdizione',
+      { needsGiurisdizioneCategory: true, allowsSurprise: true },
       { giurisdizioneCategory: 'raggio', surpriseAttack: true },
       null,
     )

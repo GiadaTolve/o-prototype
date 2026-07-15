@@ -11,7 +11,8 @@ import {
   buildFullWazaLaunchLine,
   resolveRelevantLaunchSkiruCandidates,
 } from "@domain/combat/waza-launch";
-import { getWazaLaunchProfile, MACCHIATO_SPEND_OPTIONS } from "@domain/combat/waza-launch-extras";
+import { MACCHIATO_SPEND_OPTIONS, SENI_GAKE_FIBRE, SENI_GAKE_SETTORI, SENI_GAKE_FIBRA_LABELS } from "@domain/combat/waza-launch-extras";
+import type { WazaLaunchFlags } from "@domain/combat/waza-tag-preview";
 import {
   computeLaunchDamagePreview,
   extractMechanicTagsFromEffect,
@@ -46,6 +47,7 @@ type LwzRow = {
   tags: string[];
   poolId: string | null;
   effect: string | null;
+  launchFlags: WazaLaunchFlags | null;
   candidates: string[];
   evocaCostrutto: boolean;
   /** Requisito grado dal testo meccanica (`[K]` = Kanteikan, `[SB]` = Sentatsu Bunsekikan). */
@@ -66,6 +68,7 @@ type RawWaza = {
   id?: string;
   name?: string;
   description?: string | null;
+  effect?: string | null;
   rank?: string | null;
   isPassive?: boolean;
   styleId?: string | null;
@@ -140,6 +143,9 @@ export function LancioWazaPanel({
   // §4 trasforma tag (Someito, Yugami, Igyō-Rensei…)
   const [trasformaFrom, setTrasformaFrom] = useState("");
   const [trasformaTo, setTrasformaTo] = useState("");
+  // §4 Sen'i-Gake — fibra + settore
+  const [seniGakeFibra, setSeniGakeFibra] = useState<"bianche" | "neuromuscolari" | "rosse">("bianche");
+  const [seniGakeSettore, setSeniGakeSettore] = useState<"gambe" | "braccia" | "torace">("gambe");
   // blocco costrutto (solo se la waza evoca) — taglia + sticker
   const [constructTaglia, setConstructTaglia] = useState<ConstructSizeId>("media");
   const [constructSticker, setConstructSticker] = useState<Record<ConstructProprietaId, boolean>>({
@@ -193,7 +199,7 @@ export function LancioWazaPanel({
           .map((w) => {
             const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(w.name ?? ""));
             const preview = resolveWazaTagPreview(w.name ?? "", WAZA_TAG_INDEX);
-            const effect = entry?.effect ?? entry?.description ?? w.description ?? null;
+            const effect = entry?.effect ?? entry?.description ?? w.effect ?? w.description ?? null;
             const candidates =
               entry && skiruSheet
                 ? resolveRelevantLaunchSkiruCandidates(skiruSheet, entry)
@@ -225,13 +231,14 @@ export function LancioWazaPanel({
               tags: displayTags,
               poolId: entry?.poolId ?? w.poolId ?? null,
               effect,
+              launchFlags: entry?.launchFlags ?? null,
               candidates,
               evocaCostrutto: wazaEffectDeclaresConstruct(effect),
               gradeRequired,
             };
           })
           // waza lanciabili in catalogo (tier+cs presenti) o passive con profilo trasforma
-          .filter((r) => (r.tier != null && r.cs != null) || (r.isPassive && r.poolId != null && getWazaLaunchProfile(r.poolId)?.needsTrasformaTag));
+          .filter((r) => (r.tier != null && r.cs != null) || (r.isPassive && r.launchFlags?.needsTrasformaTag));
         setRows(enriched);
       })
       .catch(() => {
@@ -262,7 +269,7 @@ export function LancioWazaPanel({
   const lanciabile = useCallback(
     (r: LwzRow) => {
       // Passive waza con profilo trasforma sono sempre "lanciabili" (dichiarazione al Master)
-      if (r.isPassive && r.poolId && getWazaLaunchProfile(r.poolId)?.needsTrasformaTag) return true;
+      if (r.isPassive && r.launchFlags?.needsTrasformaTag) return true;
       if (r.tier == null || r.cs == null) return false;
       if (currentCs != null && r.cs > currentCs) return false;
       if (gradeBlocked(r)) return false;
@@ -334,15 +341,14 @@ export function LancioWazaPanel({
     const storedQuarto = quartoKey ? sessionStorage.getItem(quartoKey) : null;
     setQuartoSelected((storedQuarto && [1,2,3,4].includes(Number(storedQuarto)) ? Number(storedQuarto) : 1) as 1|2|3|4);
     setDelayedEffect(false);
+    setSeniGakeFibra("bianche");
+    setSeniGakeSettore("gambe");
     setConstructTaglia("media");
     setConstructSticker({ BATTERIA: false, PERSONALE: false, TORO: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selId]);
 
-  const launchProfile = useMemo(
-    () => getWazaLaunchProfile(sel?.poolId ?? undefined),
-    [sel?.poolId],
-  );
+  const launchProfile = sel?.launchFlags ?? null;
 
   // Persiste il quarto selezionato in sessionStorage per waza multi-stadio
   useEffect(() => {
@@ -368,6 +374,9 @@ export function LancioWazaPanel({
       trasformaTag: launchProfile?.needsTrasformaTag && trasformaFrom && trasformaTo
         ? { dimensione: launchProfile.trasformaDimensione ?? 'consistenza', from: trasformaFrom, to: trasformaTo }
         : null,
+      seniGakeChoice: launchProfile?.needsSeniGake
+        ? { fibra: seniGakeFibra, settore: seniGakeSettore }
+        : null,
     }),
     [
       launchProfile,
@@ -386,6 +395,8 @@ export function LancioWazaPanel({
       constructSticker,
       trasformaFrom,
       trasformaTo,
+      seniGakeFibra,
+      seniGakeSettore,
     ],
   );
 
@@ -855,6 +866,50 @@ export function LancioWazaPanel({
                   Tag: <code className="text-[8px]">[trasforma:{launchProfile.trasformaDimensione}:{trasformaFrom}→{trasformaTo}]</code>
                 </p>
               )}
+            </div>
+          )}
+
+          {/* §4 — Sen'i-Gake: fibra + settore (Naikan) */}
+          {launchProfile?.needsSeniGake && (
+            <div className="lwz__card" style={{ borderColor: "color-mix(in srgb, var(--accent-violet) 35%, var(--border-color))" }}>
+              <div className="lwz__label" style={{ marginBottom: 6 }}>Potenziamento Fibre</div>
+              <div className="flex flex-col gap-2">
+                <div>
+                  <p className="text-[8px] mb-1" style={{ color: "var(--muted-foreground)" }}>Tipo fibra</p>
+                  <div className="flex gap-1 flex-wrap">
+                    {SENI_GAKE_FIBRE.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        className="lwz__chip"
+                        style={seniGakeFibra === f ? { borderColor: "var(--accent-violet)", color: "var(--accent-violet-light)", background: "color-mix(in srgb, var(--accent-violet) 12%, transparent)" } : {}}
+                        onClick={() => setSeniGakeFibra(f)}
+                      >
+                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[8px] mb-1" style={{ color: "var(--muted-foreground)" }}>Settore corporeo</p>
+                  <div className="flex gap-1 flex-wrap">
+                    {SENI_GAKE_SETTORI.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className="lwz__chip"
+                        style={seniGakeSettore === s ? { borderColor: "var(--accent-violet)", color: "var(--accent-violet-light)", background: "color-mix(in srgb, var(--accent-violet) 12%, transparent)" } : {}}
+                        onClick={() => setSeniGakeSettore(s)}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[8px] mt-1" style={{ color: "var(--accent-violet-light)" }}>
+                  {SENI_GAKE_FIBRA_LABELS[seniGakeFibra]} · Settore: {seniGakeSettore.charAt(0).toUpperCase() + seniGakeSettore.slice(1)}
+                </p>
+              </div>
             </div>
           )}
 

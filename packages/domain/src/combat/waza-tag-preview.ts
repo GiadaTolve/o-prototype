@@ -11,6 +11,29 @@ import {
 import { STYLE_LABELS, styleIdFromBranchLabel, type StyleId } from '../progression/style-hexagon'
 import type { SkiruSheet } from '../skiru/types'
 
+/** Flag UI per il pannello di lancio — derivati dal data file, mergiati nell'index. */
+export type WazaLaunchFlags = {
+  needsGiurisdizioneCategory?: boolean
+  needsSuturaKind?: boolean
+  needsDecreto?: boolean
+  needsNagoriShift?: boolean
+  needsTarget?: boolean
+  allowsSurprise?: boolean
+  needsMeisakuLabel?: boolean
+  needsQuarto?: boolean
+  needsDelayedEffect?: boolean
+  /** Card vai solo al Master (effetto mediato, nessun confronto IR/Danno visibile a tutti). */
+  masterOnlyCard?: boolean
+  needsMacchiatoSpend?: boolean
+  needsTrasformaTag?: boolean
+  trasformaDimensione?: 'consistenza' | 'categoria'
+  trasformaFromOptions?: string[]
+  trasformaToOptions?: string[]
+  needsSeniGake?: boolean
+  /** Waza bersaglio-debito: aggiunge `[debito:nome]` al lancio. */
+  needsDebitoTag?: boolean
+}
+
 export type WazaTagCatalogEntry = {
   name: string
   rank: string | null
@@ -21,6 +44,8 @@ export type WazaTagCatalogEntry = {
   poolId?: string
   /** Testo meccanico (effetto) per formule e confronti IR. */
   effect?: string
+  /** Flag UI pannello di lancio (mergiati dall'index, assenti nel file generato). */
+  launchFlags?: WazaLaunchFlags
 }
 
 export type WazaTagPreview = {
@@ -259,6 +284,7 @@ export function removeWazaTagsFromText(text: string): string {
     .replace(/\s*\[costrutto:[^\]]+\]/gi, '')
     .replace(/\s*\[cedi-controllo:[^\]]+\]/gi, '')
     .replace(/\s*\[macchiato-spend:[^\]]+\]/gi, '')
+    .replace(/\s*\[seni-gake:[^\]]+\]/gi, '')
     .replace(/^\s+/, '')
 }
 

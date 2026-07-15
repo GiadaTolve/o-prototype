@@ -51,6 +51,18 @@ function extractTrasformaTag(text: string): { dimensione: string; from: string; 
   return { dimensione: m[1]!.trim(), from: m[2]!.trim(), to: m[3]!.trim() };
 }
 
+function extractSeniGakeTag(text: string): { fibra: string; settore: string } | null {
+  const m = /\[seni-gake:([^:]+):([^\]]+)\]/i.exec(text);
+  if (!m) return null;
+  return { fibra: m[1]!.trim(), settore: m[2]!.trim() };
+}
+
+const SENI_GAKE_FIBRA_DISPLAY: Record<string, string> = {
+  bianche: '+2 Kairyoku',
+  neuromuscolari: '+2 Binshō',
+  rosse: '+2 Nintai',
+}
+
 function buildDescrizione(preview: WazaTagPreview): string {
   const parts: string[] = [];
   if (preview.styleLabel) parts.push(preview.styleLabel);
@@ -95,6 +107,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   const kadenTag = extractKadenTag(messageContent);
   const setupPending = extractSetupTag(messageContent);
   const trasformaTag = extractTrasformaTag(messageContent);
+  const seniGakeTag = extractSeniGakeTag(messageContent);
   const skiruName = launchSkiruId ? (getSkiruDef(launchSkiruId)?.name ?? launchSkiruId) : null;
   const riderLabel = launchSkiruId ? (getSkiruRider(launchSkiruId)?.label ?? null) : null;
   const targetName =
@@ -194,6 +207,11 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   else if (kadenTag) statusAttivi.push(`Kaden: ${kadenTag}`);
   if (setupPending) statusAttivi.push('Effetto rimandato — waza in attesa');
   if (trasformaTag) statusAttivi.push(`Trasforma ${trasformaTag.dimensione}: ${trasformaTag.from} → ${trasformaTag.to}`);
+  if (seniGakeTag) {
+    const fibraLabel = SENI_GAKE_FIBRA_DISPLAY[seniGakeTag.fibra] ?? seniGakeTag.fibra;
+    const settoreLabel = seniGakeTag.settore.charAt(0).toUpperCase() + seniGakeTag.settore.slice(1);
+    statusAttivi.push(`Fibre ${seniGakeTag.fibra} (${fibraLabel}) · Settore: ${settoreLabel}`);
+  }
   if (targetName) statusAttivi.push(`Bersaglio: ${targetName}`);
   if (hitDeclared) statusAttivi.push("Colpo dichiarato");
   if (!preview.found) statusAttivi.push("Non in catalogo");
@@ -225,11 +243,14 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
     dannoFinale,
     dannoLordo: dannoLordo ?? undefined,
     isPassive: preview.isPassive,
+    isNarrativa: preview.isPassive,
     notInCatalog: !preview.found,
     setupPending: setupPending || undefined,
     expanded: {
       irBase,
       irModifiers,
+      wazaDescription: entry?.description ?? null,
+      wazaEffect: effectText,
       dannoTier:
         launchTier != null && dmg
           ? { tier: launchTier, valore: dmg.tierValue }

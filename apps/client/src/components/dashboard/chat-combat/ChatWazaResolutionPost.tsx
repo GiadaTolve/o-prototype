@@ -13,6 +13,8 @@ export type WazaResolutionPostData = {
   dannoFinale: number;
   dannoLordo?: number;
   isPassive?: boolean;
+  /** Waza senza IR e senza Danno (percezioni, olfatti, dichiarazioni narrative). Card visibile a tutti, senza i numeri combat. */
+  isNarrativa?: boolean;
   notInCatalog?: boolean;
   /** Waza con effetto rimandato ([setup:1]): mostra badge "in attesa" nel collapsed card. */
   setupPending?: boolean;
@@ -20,6 +22,8 @@ export type WazaResolutionPostData = {
     irBase: { skiruA: string; valA: number; skiruB: string; valB: number; media: number };
     irModifiers: { label: string; value: number }[];
     irDifesa?: number;
+    wazaDescription?: string | null;
+    wazaEffect?: string | null;
     dannoTier?: { tier: number; valore: number };
     dannoModifiers?: { label: string; value: number }[];
     filtroDifesa?: {
@@ -39,7 +43,7 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
   const detailId = useId();
   const hasFiltro = data.expanded.filtroDifesa != null;
 
-  const showCombatStats = !data.isPassive;
+  const showCombatStats = !data.isPassive && !data.isNarrativa;
 
   return (
     <article
@@ -79,7 +83,7 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
             </span>
           ) : (
             <span className="chat-waza-launch-post__stats chat-waza-launch-post__stats--passive">
-              Passiva
+              {data.isNarrativa && !data.isPassive ? "Narrativa" : "Passiva"}
             </span>
           )}
         </div>
@@ -218,6 +222,22 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
           </p>
             </>
           )}
+
+          {(data.expanded.wazaDescription || data.expanded.wazaEffect) ? (
+            <section className="chat-waza-launch-post__detail-section">
+              <h4 className="chat-waza-launch-post__detail-title">Descrizione</h4>
+              {data.expanded.wazaDescription && (
+                <p className="chat-waza-launch-post__detail-text chat-waza-launch-post__detail-text--lore">
+                  {data.expanded.wazaDescription}
+                </p>
+              )}
+              {data.expanded.wazaEffect && (
+                <p className="chat-waza-launch-post__detail-text">
+                  {data.expanded.wazaEffect}
+                </p>
+              )}
+            </section>
+          ) : null}
 
           {(data.expanded.statusAttivi?.length ?? 0) > 0 ? (
             <section className="chat-waza-launch-post__detail-section">
