@@ -11,6 +11,7 @@ import { resolveKadenState, type KadenState } from './hado/kaden'
 import { readInvestimentoFromMeta, type InvestimentoState } from './hado/investimento'
 import { readShakkinDebts, type ShakkinDebtEntry } from './hado/debito-shakkin'
 import { readNagoriState, type ConsistencyKind } from './hensei/nagori'
+import { resolveGokaonPressioneState, PRESSIONE_MAX, type GokaonPressioneState } from './gokaon/pressione'
 import { isWazaTier, type WazaTier } from '../combat/tier'
 
 export type DoMechanicsUiMeta = {
@@ -76,6 +77,10 @@ export type DoMechanicsUiMeta = {
   komonoireWeapon?: import('./madosho/komonoire').KomonoireWeaponState | null
   /** Kyōshin · vibrazione sul bersaglio */
   genericheKyoshin?: import('./generiche/kyoshin').GenericheKyoshinState | null
+  /** Gōkaon · Pressione stack (0–12). */
+  gokaonPressione?: number
+  /** True se il pannello deve mostrare la meccanica Gōkaon. */
+  gokaonActive?: boolean
   /** Armi impugnate ora (dichiarazione d'uso, max 1 · max 2 con Ambidestria). InventoryItem ID → impugnata. */
   combatActiveWeaponIds?: string[]
   /** Oggetti dichiarati Tōrō ora (§2 Zona2 — liberi e multipli, nessun limite). InventoryItem ID → è Tōrō. */
@@ -91,6 +96,9 @@ export type DoMechanicsSnapshot = {
   hado: KadenState
   investimento: InvestimentoState
   shakkinDebts: ShakkinDebtEntry[]
+  gokaon: GokaonPressioneState
+  /** True se il personaggio ha Gōkaon attivo (letto da uiMetadata.gokaonActive). */
+  gokaonActive: boolean
   currentCs?: number
   lastReceivedHitTier?: WazaTier | null
   /** Ultimo shift Nagori (bonus collaterale al prossimo colpo). */
@@ -114,6 +122,8 @@ export function readDoMechanicsFromMeta(
     hado: resolveKadenState(meta?.kaden ?? 0, currentCs),
     investimento: readInvestimentoFromMeta(meta),
     shakkinDebts: readShakkinDebts(meta),
+    gokaon: resolveGokaonPressioneState(meta?.gokaonPressione ?? 0),
+    gokaonActive: meta?.gokaonActive === true,
     currentCs,
     lastReceivedHitTier,
     nagoriLastFrom: readNagoriState(meta)?.lastFrom ?? null,
@@ -149,6 +159,7 @@ export type DoMechanicsPatch =
   | { style: 'naikan'; action: 'reset' | 'advance' }
   | { style: 'hensei'; action: 'setPhase'; phase: YuragiPhase }
   | { style: 'hado'; action: 'vent' }
+  | { style: 'gokaon'; action: 'add' | 'remove' }
 
 export type ItoTensionPatchResult = {
   meta: DoMechanicsUiMeta
@@ -222,6 +233,10 @@ export function patchDoMechanicsMeta(
       break
     case 'hado':
       if (patch.action === 'vent') next.kaden = Math.max(0, (next.kaden ?? 0) - 4)
+      break
+    case 'gokaon':
+      if (patch.action === 'add') next.gokaonPressione = Math.min(PRESSIONE_MAX, (next.gokaonPressione ?? 0) + 1)
+      if (patch.action === 'remove') next.gokaonPressione = Math.max(0, (next.gokaonPressione ?? 0) - 1)
       break
   }
   return next

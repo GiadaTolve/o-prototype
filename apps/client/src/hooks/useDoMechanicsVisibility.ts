@@ -22,10 +22,12 @@ export function buildDoMechanicsSectionTitle(visibleStyles: readonly DoMechanics
 
 export function useDoMechanicsVisibility(enabled = true) {
   const [unlockedIds, setUnlockedIds] = useState<string[] | null>(null);
+  const [showGokaon, setShowGokaon] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
       setUnlockedIds([]);
+      setShowGokaon(false);
       return;
     }
     let cancelled = false;
@@ -33,11 +35,15 @@ export function useDoMechanicsVisibility(enabled = true) {
       .get("/characters/me/style-hexagon")
       .then((data) => {
         if (cancelled) return;
-        const ids = (data as { unlockedStyleIds?: string[] }).unlockedStyleIds ?? [];
-        setUnlockedIds(ids);
+        const d = data as { unlockedStyleIds?: string[]; gokaonActive?: boolean };
+        setUnlockedIds(d.unlockedStyleIds ?? []);
+        setShowGokaon(d.gokaonActive === true);
       })
       .catch(() => {
-        if (!cancelled) setUnlockedIds([]);
+        if (!cancelled) {
+          setUnlockedIds([]);
+          setShowGokaon(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -50,8 +56,8 @@ export function useDoMechanicsVisibility(enabled = true) {
   );
 
   const showHitTier = unlockedIds?.includes("naikan") ?? false;
-  const visible = visibleStyles.length > 0 || showHitTier;
+  const visible = visibleStyles.length > 0 || showHitTier || showGokaon;
   const loading = unlockedIds === null;
 
-  return { unlockedIds, visibleStyles, showHitTier, visible, loading };
+  return { unlockedIds, visibleStyles, showHitTier, showGokaon, visible, loading };
 }

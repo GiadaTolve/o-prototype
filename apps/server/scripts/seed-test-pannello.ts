@@ -64,6 +64,8 @@ const WAZA_POOL_IDS = [
   'uzu',                              // Generico T1, needsQuarto + masterOnlyCard
   'someito-filo-tinto',               // Itō passiva, needsTrasformaTag (consistenza)
   'yugami-filo-deforme',              // Itō passiva, needsTrasformaTag (categoria)
+  'seni-gake-avvolgimento-fibre',     // Naikan T2, needsSeniGake → potenziamento Skiru scelta
+  'oni-no-ago',                       // Gōkaon T2 → Pressione圧 (test multi-Dō)
 ]
 
 async function main() {
@@ -96,6 +98,12 @@ async function main() {
     where: eq(schema.characters.userId, userId),
   })
 
+  // uiMetadata: stili Dō sbloccati (hado per Kaden) + gokaonActive per Pressione
+  const TEST_UI_META = {
+    unlockedStyleIds: ['hado'],
+    gokaonActive: true,
+  }
+
   if (existingChar) {
     charId = existingChar.id
     await db.update(schema.characters)
@@ -103,6 +111,7 @@ async function main() {
         currentHp: 35,
         skiruSheet: TEST_SKIRU_SHEET,
         chronoStackState: { current: 18, accumulating: false, skipNextTurn: false, overheatTurns: 0 },
+        uiMetadata: TEST_UI_META,
       })
       .where(eq(schema.characters.id, charId))
     console.log(`Personaggio aggiornato: ${charId}`)
@@ -115,6 +124,7 @@ async function main() {
       currentHp: 35,
       skiruSheet: TEST_SKIRU_SHEET,
       chronoStackState: { current: 18, accumulating: false, skipNextTurn: false, overheatTurns: 0 },
+      uiMetadata: TEST_UI_META,
       baseSlots: 20,
       isRaw: false,
     }).returning({ id: schema.characters.id })

@@ -210,7 +210,7 @@ export function PannelloCombattimentoWindow({
   }, [characterId]);
 
   // ── Do-Mechanics ─────────────────────────────────────────────────────────
-  const { visibleStyles: doVisibleStyles, showHitTier: doShowHitTier, visible: doMechanicsVisible, loading: doMechanicsLoading } =
+  const { visibleStyles: doVisibleStyles, showHitTier: doShowHitTier, showGokaon: doShowGokaon, visible: doMechanicsVisible, loading: doMechanicsLoading } =
     useDoMechanicsVisibility(!!characterId);
 
   // ── IR base indicativo ────────────────────────────────────────────────────
@@ -303,6 +303,7 @@ export function PannelloCombattimentoWindow({
               currentCs={ownCs?.csCurrent ?? null}
               visibleStyles={doVisibleStyles}
               showHitTier={doShowHitTier}
+              showGokaon={doShowGokaon}
             />
           </div>
         )}

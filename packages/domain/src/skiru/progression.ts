@@ -214,6 +214,10 @@ export function normalizeSkiruSheet(sheet: SkiruSheet): SkiruSheet {
   const out: Record<string, number> = {}
   for (const [id, points] of Object.entries(sheet)) {
     if (!Number.isFinite(points) || points <= 0) continue
+    if (id === SOKAIJU_GATE_SKIRU_ID) {
+      if (points >= 1) out[id] = 1
+      continue
+    }
     if (isSokaijuFaceSheetKey(id)) {
       const capped = Math.min(SKIRU_MAX_POINTS, Math.max(0, Math.round(points)))
       if (capped > 0) out[id] = capped

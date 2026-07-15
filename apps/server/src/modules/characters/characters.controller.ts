@@ -606,6 +606,7 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           t.Literal('naikan'),
           t.Literal('hensei'),
           t.Literal('hado'),
+          t.Literal('gokaon'),
         ])),
         action: t.Optional(t.Union([
           t.Literal('release'),
@@ -615,6 +616,8 @@ export const charactersController = new Elysia({ prefix: '/characters' })
           t.Literal('advance'),
           t.Literal('setPhase'),
           t.Literal('vent'),
+          t.Literal('add'),
+          t.Literal('remove'),
         ])),
         threads: t.Optional(t.Union([t.Literal(1), t.Literal(2)])),
         phase: t.Optional(t.Union([

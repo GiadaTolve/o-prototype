@@ -9,7 +9,7 @@ import {
 } from "@/hooks/useDoMechanicsVisibility";
 import { TENSIONE_MAX } from "@domain/styles/ito/tensione";
 
-type StylePatch = DoMechanicsStyleId;
+type StylePatch = DoMechanicsStyleId | "gokaon";
 
 const YURAGI_PHASES = ["neutro", "solido", "fluido", "gassoso"] as const;
 const HIT_TIERS = [1, 2, 3, 4, 5] as const;
@@ -18,12 +18,14 @@ export function DoMechanicsPanel({
   currentCs: currentCsProp,
   visibleStyles,
   showHitTier = false,
+  showGokaon = false,
   embedded = false,
 }: {
   /** CS da Chrono Stack in chat; se assente usa 0. */
   currentCs?: number | null;
   visibleStyles: readonly DoMechanicsStyleId[];
   showHitTier?: boolean;
+  showGokaon?: boolean;
   /** In chat: senza bordo esterno (wrapper CombatSection). */
   embedded?: boolean;
 }) {
@@ -276,6 +278,57 @@ export function DoMechanicsPanel({
             Tag chat: <span className="text-[var(--accent-gold)]">[waza:Nagori…]</span> ·{" "}
             <span className="text-[var(--accent-gold)]">[yuragi:liquido→solido]</span>
           </p>
+        </div>
+      )}
+
+      {showGokaon && (
+        <div className="rounded border border-[var(--border-color)]/80 bg-black/25 p-3">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-[10px] font-display uppercase text-red-400">
+              Pressione圧 · Gōkaon
+            </span>
+            <span className="text-[9px] tabular-nums text-gray-400">
+              {state.gokaon.stacks}/12
+              {state.gokaon.threshold3 ? " · Soglia 3" : state.gokaon.threshold2 ? " · Soglia 2" : state.gokaon.threshold1 ? " · Soglia 1" : ""}
+            </span>
+          </div>
+          {state.gokaon.hasMetamorfosi && (
+            <p className="text-[9px] text-red-400/80 mb-2">Metamorfosi attiva</p>
+          )}
+          <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] font-display uppercase text-gray-500 mb-2">
+            <dt>Soglia 1 (≥2)</dt>
+            <dd className={`text-right tabular-nums ${state.gokaon.threshold1 ? "text-red-400" : "text-gray-600"}`}>
+              {state.gokaon.threshold1 ? "Attiva" : "—"}
+            </dd>
+            <dt>Soglia 2 (≥5)</dt>
+            <dd className={`text-right tabular-nums ${state.gokaon.threshold2 ? "text-red-400" : "text-gray-600"}`}>
+              {state.gokaon.threshold2 ? "Attiva" : "—"}
+            </dd>
+            <dt>Soglia 3 (≥9)</dt>
+            <dd className={`text-right tabular-nums ${state.gokaon.threshold3 ? "text-red-400" : "text-gray-600"}`}>
+              {state.gokaon.threshold3 ? "Attiva" : "—"}
+            </dd>
+          </dl>
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              disabled={saving || state.gokaon.stacks >= 12}
+              className={btnClass}
+              onClick={() => action("gokaon", "add")}
+            >
+              +1 Pressione
+            </button>
+            {state.gokaon.stacks > 0 && (
+              <button
+                type="button"
+                disabled={saving}
+                className={btnClass}
+                onClick={() => action("gokaon", "remove")}
+              >
+                −1
+              </button>
+            )}
+          </div>
         </div>
       )}
 
