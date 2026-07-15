@@ -138,7 +138,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   }
 
   const irFinale =
-    resolveLaunchIrFromMessage(messageContent, sheet, messageIr) ??
+    resolveLaunchIrFromMessage(messageContent, sheet, messageIr, effectText) ??
     irBreakdown?.successIndex ??
     (preview.isPassive ? 0 : null);
 

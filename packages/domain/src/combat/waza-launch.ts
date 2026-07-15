@@ -477,9 +477,10 @@ export function resolveLaunchIrFromMessage(
   text: string,
   sheet: SkiruSheet | null | undefined,
   fallbackIr: number | null,
+  wazaEffectText?: string | null,
 ): number | null {
   const declared = extractLaunchSkiruId(text)
-  if (declared && sheet) return computeDeclaredActionIr(sheet, declared)
+  if (declared && sheet) return computeDeclaredActionIr(sheet, declared, wazaEffectText)
   return fallbackIr
 }
 

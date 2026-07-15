@@ -343,7 +343,11 @@ export function buildWazaLaunchInsertLine(
   } else if (options?.skiruSheet) {
     let ir: number
     if (options.declaredSkiruId) {
-      ir = computeDeclaredActionIr(options.skiruSheet, options.declaredSkiruId)
+      ir = computeDeclaredActionIr(
+        options.skiruSheet,
+        options.declaredSkiruId,
+        entry?.effect ?? entry?.description ?? null,
+      )
     } else if (entry?.poolId) {
       ir = resolveWazaLaunchIr(
         buildResolveContext(entry, options.skiruSheet, resolveExtras),
