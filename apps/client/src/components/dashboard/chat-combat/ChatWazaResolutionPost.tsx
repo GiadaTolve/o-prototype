@@ -146,11 +146,16 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
               </li>
               {data.expanded.irModifiers.map((m) => (
                 <li key={m.label}>
-                  {m.label}{" "}
-                  <strong>
-                    {m.value >= 0 ? "+" : ""}
-                    {m.value}
-                  </strong>
+                  {m.label}
+                  {m.value !== 0 ? (
+                    <>
+                      {" "}
+                      <strong>
+                        {m.value >= 0 ? "+" : ""}
+                        {m.value}
+                      </strong>
+                    </>
+                  ) : null}
                 </li>
               ))}
               <li className="chat-waza-launch-post__steps-total">

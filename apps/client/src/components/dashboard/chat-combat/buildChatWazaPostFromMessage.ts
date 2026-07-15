@@ -23,6 +23,7 @@ import {
 } from "@domain/combat/waza-tag-preview";
 import { getSkiruDef } from "@domain/skiru/catalog";
 import { getSkiruPoints } from "@domain/skiru/progression";
+import { calculateSokaijuMeijuIrMultiplier } from "@domain/skiru/sokaiju-face-effects";
 import type { SkiruSheet } from "@domain/skiru/types";
 import type { WazaResolutionPostData } from "./ChatWazaResolutionPost";
 
@@ -165,11 +166,14 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   if (irBreakdown && irBreakdown.indexBonus !== 0) {
     irModifiers.push({ label: "Bonus indice", value: irBreakdown.indexBonus });
   }
-  if (irBreakdown && wazaTags.length > 0) {
+  if (irBreakdown && wazaTags.length > 0 && sheet) {
     const preMeiju = Math.round(irBreakdown.rawAverage + (irBreakdown.indexBonus ?? 0));
     const meijuDelta = irBreakdown.successIndex - preMeiju;
-    if (meijuDelta !== 0) {
-      irModifiers.push({ label: "Meiju Sōkaiju", value: meijuDelta });
+    const meijuMult = calculateSokaijuMeijuIrMultiplier(sheet, wazaTags);
+    const meijuPct = meijuMult - 1;
+    if (meijuPct > 0) {
+      const pctLabel = `+${Math.round(meijuPct * 1000) / 10}%`;
+      irModifiers.push({ label: `Meiju Sōkaiju ${pctLabel}`, value: meijuDelta });
     }
   }
   if (messageIr != null && irFinale != null && irBreakdown && messageIr !== irBreakdown.successIndex) {
