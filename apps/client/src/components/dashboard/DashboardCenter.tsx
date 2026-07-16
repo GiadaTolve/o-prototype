@@ -3020,23 +3020,30 @@ function ChatMessageBlock({
           dangerouslySetInnerHTML={{ __html: diceBodyHtml ?? "" }}
         />
       ) : (
-      <div className="flow-root">
-        {message.miniAvatar && (
-          <div className="float-left mr-4 mb-1">
-            <Image
-              src={message.miniAvatar}
-              alt={`${message.name}${message.surname ? ` ${message.surname}` : ""}`}
-              width={100}
-              height={100}
-              className="w-[100px] h-[100px] rounded border border-[var(--accent-gold)] object-cover shadow-[0_0_5px_rgba(201,168,74,0.3)]"
-            />
+      <>
+        <div className="flow-root">
+          {message.miniAvatar && (
+            <div className="float-left mr-4 mb-1">
+              <Image
+                src={message.miniAvatar}
+                alt={`${message.name}${message.surname ? ` ${message.surname}` : ""}`}
+                width={100}
+                height={100}
+                className="w-[100px] h-[100px] rounded border border-[var(--accent-gold)] object-cover shadow-[0_0_5px_rgba(201,168,74,0.3)]"
+              />
+            </div>
+          )}
+          <p
+            className="m-0 leading-relaxed whitespace-pre-wrap break-words font-sans text-[13px] text-[#7d7f7d] text-justify"
+            dangerouslySetInnerHTML={{ __html: formattedContent }}
+          />
+        </div>
+        {constructPost && (
+          <div className="mt-2">
+            <ChatConstructResolutionPost data={constructPost} />
           </div>
         )}
-        <p
-          className="m-0 leading-relaxed whitespace-pre-wrap break-words font-sans text-[13px] text-[#7d7f7d] text-justify"
-          dangerouslySetInnerHTML={{ __html: formattedContent }}
-        />
-      </div>
+      </>
       )}
     </div>
   );
