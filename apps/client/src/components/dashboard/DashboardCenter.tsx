@@ -50,7 +50,7 @@ import { ChatInfoPanel } from "./ChatInfoPanel";
 import { ChatWazaResolutionPost } from "./chat-combat/ChatWazaResolutionPost";
 import { ChatConstructResolutionPost } from "./chat-combat/ChatConstructResolutionPost";
 import { buildChatWazaPostFromMessage } from "./chat-combat/buildChatWazaPostFromMessage";
-import { buildConstructPostFromMessage, buildStandaloneConstructPostFromMessage } from "./chat-combat/buildConstructPostFromMessage";
+import { buildConstructPostFromMessage, buildStandaloneConstructPostFromMessage, extractStandaloneConstructName } from "./chat-combat/buildConstructPostFromMessage";
 
 /** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
 const MOBILE_CHAT_MAX_LENGTH = 500;
@@ -2866,6 +2866,8 @@ function ChatMessageBlock({
     });
   }, [message.content, message.name, message.surname, actorSkiruSheet]);
 
+  const characterName = [message.name, message.surname].filter(Boolean).join(" ");
+
   const constructPost = useMemo(() => {
     const wazaNames = extractWazaTagNames(message.content);
     for (const name of wazaNames) {
@@ -2883,8 +2885,10 @@ function ChatMessageBlock({
       messageContent: message.content,
       actorSkiruSheet: actorSkiruSheet ?? null,
       actorHpMax: actorHpMax ?? null,
+      characterName: characterName || undefined,
+      miniAvatar: message.miniAvatar ?? undefined,
     });
-  }, [message.content, actorSkiruSheet, actorHpMax]);
+  }, [message.content, message.miniAvatar, actorSkiruSheet, actorHpMax, characterName]);
   const narrativeBody = useMemo(
     () => removeWazaTagsFromText(message.content),
     [message.content],
@@ -2945,6 +2949,7 @@ function ChatMessageBlock({
   };
 
   const hasWazaAttack = wazaLaunches.length > 0 && !diceRollOnly;
+  const hasStandaloneConstruct = !hasWazaAttack && constructPost != null && extractStandaloneConstructName(message.content) != null;
   const hasNarrativeAfterWaza = narrativeBody.trim().length > 0;
 
   if (hasWazaAttack) {
@@ -2960,6 +2965,14 @@ function ChatMessageBlock({
             dangerouslySetInnerHTML={{ __html: formattedContent }}
           />
         )}
+      </div>
+    );
+  }
+
+  if (hasStandaloneConstruct && constructPost) {
+    return (
+      <div className="chat-waza-attack-message w-full mb-3">
+        <ChatConstructResolutionPost data={constructPost} />
       </div>
     );
   }

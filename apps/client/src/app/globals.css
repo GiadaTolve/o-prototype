@@ -2393,6 +2393,32 @@ html:has(.mobile-app-shell) body {
   box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.06);
 }
 
+.chat-resolution-post__caster-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.15);
+}
+
+.chat-resolution-post__caster-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  object-fit: cover;
+}
+
+.chat-resolution-post__caster-name {
+  font-family: var(--font-display, serif);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent-violet-light, #a78bfa);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .chat-resolution-post__head {
   display: flex;
   gap: 0.45rem;

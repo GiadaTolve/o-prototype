@@ -33,6 +33,8 @@ export function buildStandaloneConstructPostFromMessage(input: {
   messageContent: string;
   actorSkiruSheet?: SkiruSheet | null;
   actorHpMax?: number | null;
+  characterName?: string;
+  miniAvatar?: string;
 }): ConstructResolutionPostData | null {
   const nome = extractStandaloneConstructName(input.messageContent);
   if (!nome) return null;
@@ -75,6 +77,8 @@ export function buildStandaloneConstructPostFromMessage(input: {
     hpCurrent: hpMax,
     hpMax,
     stickers: stickers.map((s) => STICKER_LABELS[s]),
+    ...(input.characterName ? { characterName: input.characterName } : {}),
+    ...(input.miniAvatar ? { miniAvatar: input.miniAvatar } : {}),
     expanded: {
       bonusMalus: [
         ...(resistenza != null ? [{ label: "Resistenza", value: `${resistenza}${hpBase != null ? ` (HP/2=${hpBase} × ${sizeDef.resistanceMult})` : ""}` }] : []),

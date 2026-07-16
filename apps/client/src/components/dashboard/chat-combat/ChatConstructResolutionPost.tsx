@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 
@@ -15,6 +16,8 @@ export type ConstructResolutionPostData = {
   hpMax: number;
   stickers: ConstructSticker[];
   mei?: string;
+  characterName?: string;
+  miniAvatar?: string;
   expanded: {
     bonusMalus: { label: string; value: string }[];
     note?: string;
@@ -31,6 +34,21 @@ export function ChatConstructResolutionPost({ data }: { data: ConstructResolutio
       className="chat-resolution-post chat-resolution-post--construct"
       aria-label={`Costrutto ${data.nome}`}
     >
+      {data.characterName && (
+        <div className="chat-resolution-post__caster-row">
+          {data.miniAvatar && (
+            <Image
+              src={data.miniAvatar}
+              alt={data.characterName}
+              width={28}
+              height={28}
+              className="chat-resolution-post__caster-avatar"
+            />
+          )}
+          <span className="chat-resolution-post__caster-name">{data.characterName}</span>
+        </div>
+      )}
+
       <header className="chat-resolution-post__head">
         <FontAwesomeIcon icon={icons.shield} className="chat-resolution-post__icon" aria-hidden />
         <div className="chat-resolution-post__title-block">
