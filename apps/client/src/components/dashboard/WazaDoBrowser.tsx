@@ -17,6 +17,7 @@ import type { CatalogWaza, StyleHexState } from "./waza-catalog-types";
 import { filterCatalogByFamily } from "./waza-catalog-types";
 import type { SkiruSheet } from "@domain/skiru";
 import { useDoMechanicsSnapshot, type WazaResolveExtras } from "@/hooks/useDoMechanicsSnapshot";
+import { useSviluppoTaxonomy } from "@/hooks/useSviluppoTaxonomy";
 
 const STYLE_SHORT: Record<StyleId, string> = {
   toka: "Tōka",
@@ -171,6 +172,8 @@ export function WazaDoBrowser({
 
   const { extras: resolveExtrasFromHook } = useDoMechanicsSnapshot(csPreview, !resolveExtrasProp);
   const resolveExtras = resolveExtrasProp ?? resolveExtrasFromHook;
+
+  const { state: taxonomy } = useSviluppoTaxonomy();
 
   const { keystoneWaza, catalogWaza, wazaForStyle } = useMemo(() => {
     const items = catalog.filter((w) => w.styleId === selected);
@@ -382,7 +385,7 @@ export function WazaDoBrowser({
                     className="waza-do-statute-quote mb-1 block"
                   />
                   <p className="waza-description whitespace-pre-line pr-1">
-                    {STYLE_STATUTES[selected]}
+                    {taxonomy.do.find((e) => e.name === STYLE_LABELS[selected])?.statute || STYLE_STATUTES[selected]}
                   </p>
                 </div>
 

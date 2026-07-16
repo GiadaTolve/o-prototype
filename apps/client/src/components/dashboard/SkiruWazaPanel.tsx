@@ -117,8 +117,7 @@ export function DojoPanel({
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 p-4 md:p-5 gap-4 animate__animated animate__fadeIn">
-      <ExpKeysBanner char={char} />
+    <div className="flex flex-col h-full min-h-0 animate__animated animate__fadeIn">
       <div className="flex-1 min-h-0 overflow-y-auto px-2 md:px-3 py-3">
         <WazaCatalogPanel
           expSpendable={char.experienceSpendable ?? 0}
