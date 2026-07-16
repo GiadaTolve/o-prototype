@@ -199,10 +199,10 @@ export const STATUS_DEFINITIONS: Record<StatusId, StatusDefinition> = {
     tag: 'Emorragia',
     label: 'Emorragia',
     kind: 'atypical',
-    description: 'Madoshō — 2 danno/turno per stack, cap 5 stack.',
+    description: 'Nakigara — 2 danno/turno per stack, cap 5 stack. Persistente: non decade da sola (rimuovere con 1/4 narrativo).',
     defaultStacks: 1,
     maxStacks: 5,
-    decaysOnEndOfTurn: true,
+    decaysOnEndOfTurn: false,
     modifiers: {
       endOfTurnSelfDamagePerStack: 2,
     },
