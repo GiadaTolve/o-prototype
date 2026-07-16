@@ -1,6 +1,6 @@
-import { eq, and, gt, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, gt, gte, lte, desc, sql, inArray } from "drizzle-orm";
 import { db } from '../../plugins/db'
-import { gameSessions, gameSessionParticipants, zoneMessages, characters, fetches, quests, questRewards, ledgerEntries } from '../../db/schema'
+import { gameSessions, gameSessionParticipants, zoneMessages, characters, fetches, quests, questRewards, ledgerEntries, questParticipants } from '../../db/schema'
 import { isValidRoom } from '../chat/chat.service'
 import { createRem } from '@domain/types/money'
 import { earn } from '@domain/ledger/transaction'
@@ -652,40 +652,66 @@ export async function cancelGameSession(sessionId: string) {
 
 /**
  * Ottiene tutte le sessioni di un personaggio (per la scheda).
+ *
+ * Incluse:
+ * 1. Sessioni dove il PG è in gameSessionParticipants (partecipante diretto o creatore)
+ * 2. Sessioni legate a una quest dove il PG è in questParticipants (fix: evita che
+ *    messaggi brevi escludano dalla registrazione)
  */
 export async function getCharacterSessions(characterId: string, status?: 'ACTIVE' | 'FROZEN' | 'CLOSED' | 'CANCELLED') {
-  // Journal: tutte le registrazioni in cui il PG è coinvolto (come creatore o partecipante)
-  const conds = [eq(gameSessionParticipants.characterId, characterId)]
+  const byId = new Map<string, any>()
 
-  const rows = await db.query.gameSessionParticipants.findMany({
-    where: and(...conds),
+  // 1. Sessioni via gameSessionParticipants (comportamento originale)
+  const directRows = await db.query.gameSessionParticipants.findMany({
+    where: eq(gameSessionParticipants.characterId, characterId),
     with: {
       session: {
         with: {
           fetch: true,
           quest: true,
-          participants: {
-            with: {
-              character: true,
-            },
-          },
+          participants: { with: { character: true } },
         },
       },
     },
     orderBy: (p, { desc }) => [desc(p.joinedAt)],
   })
 
-  const sessions = rows
-    .map((r) => r.session)
-    .filter((s) => !!s && (!status || s.status === status))
-
-  // Rimuovi eventuali duplicati per sicurezza (per id)
-  const byId = new Map<string, (typeof sessions)[number]>()
-  for (const s of sessions) {
-    if (s && !byId.has(s.id)) {
+  for (const r of directRows) {
+    const s = r.session
+    if (s && (!status || s.status === status) && !byId.has(s.id)) {
       byId.set(s.id, s)
     }
   }
 
-  return Array.from(byId.values())
+  // 2. Sessioni via questParticipants → se il PG è registrato nella quest,
+  //    la giocata associata deve apparire nel suo Journal anche senza azioni lunghe.
+  const questRows = await db.query.questParticipants.findMany({
+    where: eq(questParticipants.characterId, characterId),
+    columns: { questId: true },
+  })
+
+  if (questRows.length > 0) {
+    const questIds = questRows.map((r) => r.questId)
+    const linkedSessions = await db.query.gameSessions.findMany({
+      where: and(
+        inArray(gameSessions.questId, questIds),
+        status ? eq(gameSessions.status, status) : undefined,
+      ),
+      with: {
+        fetch: true,
+        quest: true,
+        participants: { with: { character: true } },
+      },
+    })
+    for (const s of linkedSessions) {
+      if (!byId.has(s.id)) byId.set(s.id, s)
+    }
+  }
+
+  // Ordina per data chiusura/avvio decrescente
+  return Array.from(byId.values()).sort((a, b) => {
+    const dateA = new Date(a.closedAt ?? a.lastActiveAt ?? a.startedAt).getTime()
+    const dateB = new Date(b.closedAt ?? b.lastActiveAt ?? b.startedAt).getTime()
+    return dateB - dateA
+  })
 }
