@@ -12,6 +12,13 @@ const SIZE_LABELS: Record<ConstructSizeId, ConstructResolutionPostData["taglia"]
   enorme: "Enorme",
 };
 
+/** Estrae `[res:N]` dal testo (resistenza pre-calcolata lato mittente). */
+function extractResTagFromText(text: string): number | null {
+  const m = /\[res:(\d+)\]/i.exec(text);
+  const v = m?.[1] != null ? parseInt(m[1], 10) : NaN;
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
 /** Estrae il nome costrutto da `[costrutto:standalone:Nome]`. */
 export function extractStandaloneConstructName(text: string): string | null {
   const m = /\[costrutto:standalone:([^\]]+)\]/i.exec(text);
@@ -50,19 +57,23 @@ export function buildStandaloneConstructPostFromMessage(input: {
     resistenza = profile.resistenza ?? null;
     movimento = profile.movimento_m ?? null;
     danno = profile.danno ?? null;
+  } else {
+    // Fallback: legge [res:N] dal testo (pre-calcolato lato mittente)
+    resistenza = extractResTagFromText(input.messageContent);
   }
 
   const sizeDef = CONSTRUCT_SIZES[taglia];
 
   const hpBase = input.actorHpMax != null ? Math.floor(input.actorHpMax / 2) : null;
+  const hpMax = resistenza ?? 0;
 
   return {
     nome,
     taglia: SIZE_LABELS[taglia],
     movimentoM: movimento ?? 0,
     ...(danno != null ? { dannoMedio: danno } : {}),
-    hpCurrent: resistenza ?? 0,
-    hpMax: resistenza ?? 0,
+    hpCurrent: hpMax,
+    hpMax,
     stickers: stickers.map((s) => STICKER_LABELS[s]),
     expanded: {
       bonusMalus: [

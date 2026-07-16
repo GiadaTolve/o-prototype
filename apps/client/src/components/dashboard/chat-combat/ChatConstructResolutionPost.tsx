@@ -24,7 +24,7 @@ export type ConstructResolutionPostData = {
 export function ChatConstructResolutionPost({ data }: { data: ConstructResolutionPostData }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
-  const hpPct = Math.max(0, Math.min(100, Math.round((data.hpCurrent / data.hpMax) * 100)));
+  const hpPct = data.hpMax > 0 ? Math.max(0, Math.min(100, Math.round((data.hpCurrent / data.hpMax) * 100))) : 0;
 
   return (
     <article

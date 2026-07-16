@@ -129,8 +129,9 @@ export function CombatConstructsSection({
         constructs?: FieldConstructRow[];
       };
       setConstructs(data.constructs ?? []);
-    } catch {
-      setConstructs([]);
+    } catch (e) {
+      console.error("[CombatConstructsSection] load error:", e);
+      // Non svuotare la lista su errore temporaneo (es. auth/rete)
     } finally {
       setLoading(false);
     }
@@ -291,7 +292,7 @@ export function CombatConstructsSection({
                     : "";
                   onSendMessage(
                     `Evoco ${cLabel.trim()} (${cSize}, T${cTier}) — Res ${resistenzaPreview}` +
-                    ` [costrutto:standalone:${cLabel.trim()}] [taglia:${cSize}] [tier:${cTier}]${stickerTag}`
+                    ` [costrutto:standalone:${cLabel.trim()}] [taglia:${cSize}] [tier:${cTier}] [res:${resistenzaPreview}]${stickerTag}`
                   );
                 }
               }),
