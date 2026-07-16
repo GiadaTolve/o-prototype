@@ -327,7 +327,8 @@ export function DashboardMobileLayout({
             {[
               { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },
               { id: "banca" as WindowId, label: "Banca", icon: icons.banca },
-              { id: "waza" as WindowId, label: "Skiru & Waza", icon: icons.waza },
+              { id: "waza" as WindowId, label: "Sōkaiju", icon: icons.sokaiju },
+              { id: "dojo" as WindowId, label: "Dōjō", icon: icons.waza },
               { id: "ordine" as WindowId, label: "Ordine", icon: icons.ordine },
               { id: "bestiario" as WindowId, label: "Bestiario", icon: icons.trophy },
               { id: "presenti" as WindowId, label: "Presenti", icon: icons.presenti },
@@ -404,15 +405,16 @@ export function DashboardMobileLayout({
               openWindow === "scheda" ||
               openWindow === "mercato" ||
               openWindow === "banca" ||
-              openWindow === "waza"
+              openWindow === "waza" ||
+              openWindow === "dojo"
                 ? char
                 : undefined
             }
             presenti={openWindow === "presenti" ? presenti : undefined}
             profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}
-            smsTargetCharacterId={openWindow === "sms" ? smsTargetCharacterId : undefined}
+            smsTargetCharacterId={undefined}
             onCharUpdate={onCharUpdate}
-            onUnreadChange={openWindow === "sms" ? fetchSmsUnread : undefined}
+            onUnreadChange={undefined}
             onNotificationsUnreadChange={fetchNotificationsUnread}
             canAccessGestione={char?.canAccessGestione}
           />

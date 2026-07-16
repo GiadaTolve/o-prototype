@@ -554,6 +554,7 @@ export default function DashboardPage() {
           onOpenSms={() => open("sms")}
           onOpenBanca={() => open("banca")}
           onOpenWaza={() => open("waza")}
+          onOpenDojo={() => open("dojo")}
           onOpenOrdine={() => open("ordine")}
           onOpenBestiario={() => open("bestiario")}
           smsUnread={smsUnread}
@@ -603,6 +604,7 @@ export default function DashboardPage() {
             openWindow === "mercato" ||
             openWindow === "banca" ||
             openWindow === "waza" ||
+            openWindow === "dojo" ||
             openWindow === "combattimento"
               ? char
               : undefined

@@ -11,12 +11,22 @@ function stripEvocaDerivataPlaceholders(blocco: Record<string, unknown>): Record
   return next;
 }
 
+function repairDurata(durata: unknown): unknown {
+  if (!durata || typeof durata !== "object") return durata;
+  const d = durata as Record<string, unknown>;
+  if (d.tipo === "TURNI" && (d.n == null || typeof d.n !== "number")) {
+    return { ...d, n: 1 };
+  }
+  return d;
+}
+
 /** Rimuove hook zona incompleti (senza `tipo`) prima di validare o persistere. */
 export function normalizeEffettiPayload(effetti: unknown): unknown[] {
   if (!Array.isArray(effetti)) return [];
   return effetti.map((raw) => {
     if (!raw || typeof raw !== "object") return raw;
-    const blocco = stripEvocaDerivataPlaceholders(raw as Record<string, unknown>);
+    let blocco = stripEvocaDerivataPlaceholders(raw as Record<string, unknown>);
+    if ("durata" in blocco) blocco = { ...blocco, durata: repairDurata(blocco.durata) };
     if (blocco.tipo !== "ZONA") return blocco;
     if (!("effetti_zona" in blocco)) return blocco;
 

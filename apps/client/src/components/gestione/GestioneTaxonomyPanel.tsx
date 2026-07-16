@@ -12,7 +12,9 @@ function slugify(input: string) {
     .replace(/-+/g, "-");
 }
 
-const LABELS: Record<TaxonomyKind, string> = {
+type LegacyKind = "madosho" | "ordine" | "premio";
+
+const LABELS: Record<LegacyKind, string> = {
   madosho: "Madosho",
   ordine: "Ordini",
   premio: "Premi",
@@ -20,26 +22,26 @@ const LABELS: Record<TaxonomyKind, string> = {
 
 export function GestioneTaxonomyPanel() {
   const { state, setState } = useSviluppoTaxonomy();
-  const [openSection, setOpenSection] = useState<TaxonomyKind>("madosho");
-  const [showCreate, setShowCreate] = useState<Record<TaxonomyKind, boolean>>({
+  const [openSection, setOpenSection] = useState<LegacyKind>("madosho");
+  const [showCreate, setShowCreate] = useState<Record<LegacyKind, boolean>>({
     madosho: false,
     ordine: false,
     premio: false,
   });
-  const [newNames, setNewNames] = useState<Record<TaxonomyKind, string>>({
+  const [newNames, setNewNames] = useState<Record<LegacyKind, string>>({
     madosho: "",
     ordine: "",
     premio: "",
   });
 
-  const update = (kind: TaxonomyKind, id: string, patch: { name?: string; statute?: string }) => {
+  const update = (kind: LegacyKind, id: string, patch: { name?: string; statute?: string }) => {
     setState((prev) => ({
       ...prev,
       [kind]: prev[kind].map((e) => (e.id === id ? { ...e, ...patch } : e)),
     }));
   };
 
-  const add = (kind: TaxonomyKind) => {
+  const add = (kind: LegacyKind) => {
     const name = newNames[kind].trim();
     if (!name) return;
     const idBase = slugify(name);

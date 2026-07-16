@@ -17,12 +17,13 @@ type Props = {
   onOpenSms: () => void;
   onOpenBanca: () => void;
   onOpenWaza?: () => void;
+  onOpenDojo?: () => void;
   onOpenOrdine?: () => void;
   onOpenBestiario?: () => void;
   smsUnread?: number;
 };
 
-export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms, onOpenBanca, onOpenWaza, onOpenOrdine, onOpenBestiario, smsUnread = 0 }: Props) {
+export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms, onOpenBanca, onOpenWaza, onOpenDojo, onOpenOrdine, onOpenBestiario, smsUnread = 0 }: Props) {
   const avatarSrc = (char?.miniAvatar ?? char?.avatarUrl ?? char?.avatar) as string | undefined;
   const nome = (char?.name ?? "Nome PG") as string;
   const cognome = (char?.surname ?? "") as string;
@@ -93,7 +94,8 @@ export function DashboardLeftCol({ char, onOpenScheda, onOpenMercato, onOpenSms,
           {[
             { label: "Banca", icon: icons.banca, onClick: onOpenBanca },
             { label: "Mercato", icon: icons.mercato, onClick: onOpenMercato },
-            { label: "Skiru & Waza", icon: icons.waza, onClick: onOpenWaza },
+            { label: "Sōkaiju", icon: icons.sokaiju, onClick: onOpenWaza },
+            { label: "Dōjō", icon: icons.waza, onClick: onOpenDojo },
             { label: "Ordine", icon: icons.ordine, onClick: onOpenOrdine },
             { label: "Bestiario", icon: icons.trophy, onClick: onOpenBestiario },
           ].map(({ label, icon, onClick }) => (
