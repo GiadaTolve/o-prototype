@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { calculateConstructResistanceFromHp } from "@domain/combat/constructs";
+import type { SkiruSheet } from "@domain/skiru/types";
 import type { Presente } from "../types";
 
 const CONSTRUCT_SIZES = ["piccola", "media", "grande", "enorme"] as const;
@@ -100,12 +102,16 @@ export function CombatConstructsSection({
   masterTargetId,
   usersInRoom = [],
   onSendMessage,
+  skiruSheet,
+  creatorHpMax,
 }: {
   characterId?: string;
   isMaster?: boolean;
   masterTargetId?: string;
   usersInRoom?: Presente[];
   onSendMessage?: (text: string) => void;
+  skiruSheet?: SkiruSheet;
+  creatorHpMax?: number | null;
 }) {
   const targetId = isMaster ? masterTargetId : characterId;
   const [constructs, setConstructs] = useState<FieldConstructRow[]>([]);
@@ -173,9 +179,10 @@ export function CombatConstructsSection({
   if (cBatteria) proprieta.push("BATTERIA");
   if (cToro) proprieta.push("TORO");
 
-  // Resistenza derivata preview per il form
-  const sizeMultipliers: Record<string, number> = { piccola: 0.5, media: 1, grande: 1.5, enorme: 2 };
-  const resistenzaPreview = Math.floor(cTier * (sizeMultipliers[cSize] ?? 1));
+  // Resistenza reale (hpMax/2 × mult taglia), o formula tier-based come fallback
+  const resistenzaPreview = creatorHpMax != null && creatorHpMax > 0
+    ? calculateConstructResistanceFromHp(creatorHpMax, cSize)
+    : Math.floor(cTier * ({ piccola: 0.5, media: 1, grande: 1.5, enorme: 2 }[cSize] ?? 1));
 
   return (
     <div className="space-y-2">

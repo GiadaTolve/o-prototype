@@ -381,6 +381,8 @@ export function PannelloCombattimentoWindow({
               characterId={characterId}
               usersInRoom={usersInRoom}
               onSendMessage={onSendMessage}
+              skiruSheet={skiruSheet ?? undefined}
+              creatorHpMax={ownHp?.max ?? null}
             />
           </div>
         </div>
