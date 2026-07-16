@@ -1,5 +1,5 @@
 /**
- * Compila catalogo waza Rin'gai/Janjae sul database locale (DATABASE_URL).
+ * Compila catalogo waza Rin'gai sul database locale (DATABASE_URL).
  * Per Neon: bun run scripts/compile-ringai-waza.ts --neon
  */
 import { config } from "dotenv";
@@ -19,7 +19,7 @@ import {
 config({ path: resolve(import.meta.dir, "../../../.env") });
 
 const useNeon = process.argv.includes("--neon");
-const GENITORE = "Rin'gai/Janjae";
+const GENITORE = "Rin'gai";
 
 async function main() {
   const raw = useNeon ? process.env.NEON_DATABASE_URL : process.env.DATABASE_URL;

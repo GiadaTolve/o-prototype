@@ -1,6 +1,10 @@
 import { Elysia, t } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { forumService } from "./forum.service";
+import { db } from "../../db";
+import { forumPosts } from "../../db/schema";
+import { eq } from "drizzle-orm";
+import { userHasSviluppoAccess } from "../../lib/gestione-access";
 
 export const forumRoutes = new Elysia({ prefix: "/forum" })
   .use(authPlugin)
@@ -144,6 +148,25 @@ export const forumRoutes = new Elysia({ prefix: "/forum" })
             content: t.Optional(t.String()),
           }),
         }
+      )
+
+      /**
+       * PATCH /forum/posts/:id
+       * Modifica il contenuto di un post (autore o staff con accesso Sviluppo/Gestione).
+       */
+      .patch(
+        "/posts/:id",
+        async ({ params, body, user, set }) => {
+          if (!user?.characterId) { set.status = 401; return { error: "Non autenticato" } }
+          const post = await db.query.forumPosts.findFirst({ where: eq(forumPosts.id, params.id) });
+          if (!post) { set.status = 404; return { error: "Post non trovato" } }
+          const isAuthor = post.characterId === user.characterId;
+          const isStaff = await userHasSviluppoAccess(user.id, user.role);
+          if (!isAuthor && !isStaff) { set.status = 403; return { error: "Non autorizzato" } }
+          const updated = await forumService.updatePost(params.id, body.content);
+          return updated;
+        },
+        { body: t.Object({ content: t.String() }) }
       )
 
       /**

@@ -42,6 +42,7 @@ import { bestiarioRoutes } from './modules/bestiario/bestiario.routes'
 import { wazaRoutes } from './modules/waza/waza.routes'
 import { wazaAdminRoutes } from './modules/waza/waza-admin.routes'
 import { wikiRoutes } from './modules/wiki/wiki.routes'
+import { taxonomyStatutesRoutes } from './modules/system/taxonomy-statutes.routes'
 import { playerRequestsRoutes } from './modules/player-requests/player-requests.routes'
 import { notificationsRoutes } from './modules/notifications/notifications.routes'
 import { pushRoutes } from './modules/push/push.routes'
@@ -97,6 +98,7 @@ const app = new Elysia()
   .use(wazaRoutes)
   .use(wazaAdminRoutes)
   .use(wikiRoutes)
+  .use(taxonomyStatutesRoutes)
   .use(playerRequestsRoutes)
   .use(notificationsRoutes)
   .use(pushRoutes)

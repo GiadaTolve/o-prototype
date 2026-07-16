@@ -5,123 +5,10 @@ import { useRouter } from "next/navigation";
 import { CatalogoWaza } from "@/components/sviluppo/waza/CatalogoWaza";
 import { BestiarioManagement } from "@/components/gestione/BestiarioManagement";
 import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
+import { GestioneTaxonomyPanel } from "@/components/gestione/GestioneTaxonomyPanel";
 import { MarketCatalogManagement } from "@/components/gestione/MarketCatalogManagement";
 import { api } from "@/lib/api";
 import { canManageWaza } from "@/lib/waza-authoring-access";
-import { useSviluppoTaxonomy, type TaxonomyEntry } from "@/hooks/useSviluppoTaxonomy";
-
-/* ─── Pannello dropdown + campi editabili per Do/Madosho/Premi ─── */
-
-function PannelloTassonomia({
-  titolo,
-  voci,
-  onUpdate,
-  onAdd,
-  placeholderNuovo,
-}: {
-  titolo: string;
-  voci: TaxonomyEntry[];
-  onUpdate: (id: string, patch: Partial<TaxonomyEntry>) => void;
-  onAdd: (nome: string) => void;
-  placeholderNuovo?: string;
-}) {
-  const [selectedId, setSelectedId] = useState<string>(voci[0]?.id ?? "");
-  const [showNew, setShowNew] = useState(false);
-  const [newName, setNewName] = useState("");
-
-  const selected = voci.find((v) => v.id === selectedId) ?? voci[0];
-
-  return (
-    <div className="space-y-4 animate__animated animate__fadeIn">
-      <h2 className="text-lg font-display text-[var(--accent-gold)]">{titolo}</h2>
-
-      {/* Dropdown selezione */}
-      {voci.length > 0 ? (
-        <select
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="w-full max-w-xs px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
-        >
-          {voci.map((v) => (
-            <option key={v.id} value={v.id}>{v.name}</option>
-          ))}
-        </select>
-      ) : (
-        <p className="text-xs text-gray-500">Nessuna voce. Aggiungine una.</p>
-      )}
-
-      {/* Campi editabili per la voce selezionata */}
-      {selected && (
-        <div className="rounded border border-[var(--border-color)] bg-[var(--panel-bg)]/40 p-4 space-y-3">
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-[var(--accent-violet-light)] mb-1">Nome</label>
-            <input
-              value={selected.name}
-              onChange={(e) => onUpdate(selected.id, { name: e.target.value })}
-              className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-[var(--accent-violet-light)] mb-1">Spiegazione meccanica</label>
-            <textarea
-              value={selected.descrizione_meccanica ?? ""}
-              onChange={(e) => onUpdate(selected.id, { descrizione_meccanica: e.target.value })}
-              rows={4}
-              placeholder="Descrivi la meccanica di questa Dō/scuola..."
-              className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm resize-y"
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider text-[var(--accent-violet-light)] mb-1">Statuto</label>
-            <textarea
-              value={selected.statute}
-              onChange={(e) => onUpdate(selected.id, { statute: e.target.value })}
-              rows={4}
-              placeholder="Statuto..."
-              className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm resize-y"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Aggiungi nuova voce (solo per Premi che non hanno lista fissa) */}
-      {placeholderNuovo && (
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={() => setShowNew((v) => !v)}
-            className="px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] text-[10px] uppercase tracking-wider hover:bg-[var(--accent-violet)]/10"
-          >
-            {showNew ? "Annulla" : "Aggiungi voce"}
-          </button>
-          {showNew && (
-            <div className="mt-2 flex gap-2">
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder={placeholderNuovo}
-                className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (newName.trim()) {
-                    onAdd(newName.trim());
-                    setNewName("");
-                    setShowNew(false);
-                  }
-                }}
-                className="px-3 py-2 rounded border border-[var(--accent-gold)]/50 text-[var(--accent-gold)] text-xs uppercase tracking-wider"
-              >
-                Crea
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ─── Statistica ─── */
 
@@ -202,10 +89,6 @@ function PannelloStatistica() {
 
 /* ─── Pagina principale ─── */
 
-function slugify(input: string) {
-  return input.trim().toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
-}
-
 export default function SviluppoPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -213,35 +96,12 @@ export default function SviluppoPage() {
   const [canAuthoring, setCanAuthoring] = useState(false);
   const [activeTab, setActiveTab] = useState<
     | "catalogo-waza"
-    | "waza-do"
-    | "waza-madosho"
-    | "waza-premi"
+    | "statuti"
     | "status"
     | "bestiario"
     | "market"
     | "statistica"
   >("catalogo-waza");
-
-  const { state, setState } = useSviluppoTaxonomy();
-
-  const updateEntry = (kind: "do" | "madosho" | "ordine" | "premio", id: string, patch: Partial<TaxonomyEntry>) => {
-    setState((prev) => ({
-      ...prev,
-      [kind]: prev[kind].map((e) => (e.id === id ? { ...e, ...patch } : e)),
-    }));
-  };
-
-  const addEntry = (kind: "do" | "madosho" | "ordine" | "premio", nome: string) => {
-    const idBase = slugify(nome);
-    if (!idBase) return;
-    let id = idBase;
-    let n = 2;
-    while (state[kind].some((e) => e.id === id)) { id = `${idBase}-${n}`; n += 1; }
-    setState((prev) => ({
-      ...prev,
-      [kind]: [...prev[kind], { id, name: nome, statute: "", descrizione_meccanica: "" }],
-    }));
-  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -279,9 +139,7 @@ export default function SviluppoPage() {
         <div className="flex items-center gap-1 border-b border-[var(--border-color)] mb-6 flex-wrap">
           {[
             { id: "catalogo-waza" as const, label: "Catalogo Waza" },
-            { id: "waza-do" as const, label: "Dō" },
-            { id: "waza-madosho" as const, label: "Madoshō" },
-            { id: "waza-premi" as const, label: "Oni no Mori" },
+            { id: "statuti" as const, label: "Statuti" },
             { id: "status" as const, label: "Status" },
             { id: "bestiario" as const, label: "Bestiario" },
             { id: "market" as const, label: "Market" },
@@ -310,34 +168,7 @@ export default function SviluppoPage() {
               <p className="text-sm text-gray-400">Accesso al Catalogo Waza non disponibile.</p>
             ))}
 
-          {activeTab === "waza-do" && (
-            <PannelloTassonomia
-              titolo="Sei Vie (Dō)"
-              voci={state.do}
-              onUpdate={(id, patch) => updateEntry("do", id, patch)}
-              onAdd={(nome) => addEntry("do", nome)}
-            />
-          )}
-
-          {activeTab === "waza-madosho" && (
-            <PannelloTassonomia
-              titolo="Madoshō"
-              voci={state.madosho}
-              onUpdate={(id, patch) => updateEntry("madosho", id, patch)}
-              onAdd={(nome) => addEntry("madosho", nome)}
-              placeholderNuovo="Nuova Madoshō"
-            />
-          )}
-
-          {activeTab === "waza-premi" && (
-            <PannelloTassonomia
-              titolo="Oni no Mori (Premi)"
-              voci={state.premio}
-              onUpdate={(id, patch) => updateEntry("premio", id, patch)}
-              onAdd={(nome) => addEntry("premio", nome)}
-              placeholderNuovo="Nuovo premio"
-            />
-          )}
+          {activeTab === "statuti" && <GestioneTaxonomyPanel />}
 
           {activeTab === "status" && <GestioneStatusPanel />}
           {activeTab === "bestiario" && <BestiarioManagement />}

@@ -22,7 +22,7 @@ export const SYNC_GENITORI_DO = [
 ] as const;
 
 export const SYNC_GENITORI_MADOSHO = [
-  "Rin'gai/Janjae",
+  "Rin'gai",
   "Gōkaon",
   "Nakigara",
   "Hataori",
@@ -110,12 +110,11 @@ export function parseLegacyWazaName(name: string): ParsedWazaNames {
 
 /**
  * Madoshō → genitore canonico, identico ai valori in `vocabolari` (categoria
- * `genitore_madosho`). Evita disallineamenti di label (es. "Rin'gai / Janjae"
- * vs "Rin'gai/Janjae"). Komonoire volutamente ASSENTE: Madoshō in rework,
+ * `genitore_madosho`). Evita disallineamenti di label. Komonoire volutamente ASSENTE: Madoshō in rework,
  * esclusa dal sync finché il design non è completo.
  */
 const MADOSHO_GENITORE_BY_ID: Partial<Record<MadoshoId, (typeof SYNC_GENITORI_MADOSHO)[number]>> = {
-  "ringai-janjae": "Rin'gai/Janjae",
+  "ringai-janjae": "Rin'gai",
   gokaon: "Gōkaon",
   nakigara: "Nakigara",
   hataori: "Hataori",

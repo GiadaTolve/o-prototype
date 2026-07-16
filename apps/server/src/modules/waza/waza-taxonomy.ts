@@ -21,7 +21,7 @@ export const GENITORI_DO = [
 
 /** Vocabolario DB: genitori ammessi per categoria `madosho` (scuole ereditarie). */
 export const GENITORI_MADOSHO = [
-  "Rin'gai/Janjae",
+  "Rin'gai",
   "Gōkaon",
   "Nakigara",
   "Hataori",

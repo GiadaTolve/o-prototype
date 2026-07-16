@@ -393,18 +393,18 @@ export class CharacterService {
   /** Elenco personaggi (id, name, miniAvatar) per Nuova conversazione SMS. Esclude excludeCharacterId. */
   async listForSms(excludeCharacterId: string) {
     return db
-      .select({ id: characters.id, name: characters.name, miniAvatar: characters.miniAvatar })
+      .select({ id: characters.id, name: characters.name, surname: characters.surname, miniAvatar: characters.miniAvatar, uiMetadata: characters.uiMetadata, order: characters.order })
       .from(characters)
       .where(ne(characters.id, excludeCharacterId));
   }
 
-  /** Ricerca personaggi per nome (ILIKE parziale). Per Live Search SMS e invito ospiti. Esclude excludeCharacterId. */
+  /** Ricerca personaggi per nome (ILIKE parziale). Per Live Search SMS, invito ospiti e tab Anagrafica. Esclude excludeCharacterId. */
   async searchForSms(excludeCharacterId: string, query: string) {
     const q = String(query).trim();
     if (!q) return this.listForSms(excludeCharacterId);
     const pattern = `%${q}%`;
     return db
-      .select({ id: characters.id, name: characters.name, surname: characters.surname, miniAvatar: characters.miniAvatar })
+      .select({ id: characters.id, name: characters.name, surname: characters.surname, miniAvatar: characters.miniAvatar, uiMetadata: characters.uiMetadata, order: characters.order })
       .from(characters)
       .where(
         and(
@@ -415,7 +415,7 @@ export class CharacterService {
           )
         )
       )
-      .limit(50);
+      .limit(100);
   }
 
   /** Ottiene un character per ID. */

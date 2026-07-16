@@ -16,7 +16,7 @@ export const MADOSHO_RAMI_IDS = [
 export type MadoshoRamo = (typeof MADOSHO_RAMI_IDS)[number]
 
 export const MADOSHO_RAMO_LABELS: Record<MadoshoRamo, string> = {
-  'ringai-janjae': "Rin'gai / Janjae",
+  'ringai-janjae': "Rin'gai",
   gokaon: 'Gōkaon',
   komonoire: 'Komonoire',
   nakigara: 'Nakigara',

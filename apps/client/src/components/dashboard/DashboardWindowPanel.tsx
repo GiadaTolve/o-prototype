@@ -566,10 +566,109 @@ function NotificheContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
   );
 }
 
+type AnagraficaChar = {
+  id: string;
+  name: string;
+  surname?: string | null;
+  miniAvatar?: string | null;
+  uiMetadata?: { roleIcon?: string; orderIcon?: string } | null;
+  order?: string | null;
+};
+
+function AnagraficaTab() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<AnagraficaChar[]>([]);
+  const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchChars = (q: string) => {
+    setLoading(true);
+    api
+      .get(`/characters/search?q=${encodeURIComponent(q)}`)
+      .then((data) => setResults(Array.isArray(data) ? (data as AnagraficaChar[]) : []))
+      .catch(() => setResults([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchChars(""); }, []);
+
+  const handleSearch = (value: string) => {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchChars(value), 300);
+  };
+
+  const getPixelIconsForChar = (char: AnagraficaChar) => {
+    const meta = char.uiMetadata ?? {};
+    const roleIcon = (meta.roleIcon ?? "").toLowerCase();
+    const orderIcon = (meta.orderIcon ?? "").toLowerCase();
+    const pixelIcons: { ruolo?: string[]; ordine?: string[] } = {};
+    if (roleIcon && ["admin", "moderatore", "fixer", "capo-shinigami", "shinigami"].includes(roleIcon)) {
+      pixelIcons.ruolo = [roleIcon];
+    }
+    if (orderIcon && ["mugen-tai", "chisen-tai"].includes(orderIcon)) {
+      pixelIcons.ordine = [orderIcon];
+    } else if (char.order && char.order !== "NONE") {
+      pixelIcons.ordine = [char.order.toLowerCase()];
+    }
+    return pixelIcons;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <FontAwesomeIcon icon={icons.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => handleSearch(e.target.value)}
+          placeholder="Cerca personaggio…"
+          className="w-full pl-8 pr-3 py-2 rounded border border-[var(--border-color)] bg-black/30 font-sans text-sm placeholder:text-gray-600 focus:outline-none focus:border-[var(--accent-gold)]/40 transition-colors"
+        />
+      </div>
+      {loading ? (
+        <p className="text-xs text-gray-500 py-2">Caricamento…</p>
+      ) : results.length === 0 ? (
+        <p className="text-xs text-gray-500 py-2">Nessun personaggio trovato.</p>
+      ) : (
+        <ul className="divide-y divide-[var(--border-color)]">
+          {results.map((char) => {
+            const px = getPixelIconsForChar(char);
+            const fullName = `${char.name}${char.surname ? ` ${char.surname}` : ""}`;
+            return (
+              <li key={char.id} className="flex items-center gap-3 py-2.5 first:pt-0">
+                <div className="min-w-0 flex-1">
+                  <span className="font-display text-sm text-[var(--accent-gold)] flex items-center gap-1.5 flex-wrap">
+                    {fullName}
+                    {px.ruolo?.map((r) => {
+                      const url = getPixelIconUrlRuolo(r as PixelIconRuolo);
+                      return url ? <img key={r} src={url} alt={r} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} /> : null;
+                    })}
+                    {px.ordine?.map((o) => {
+                      const url = getPixelIconUrlOrdine(o as PixelIconOrdine);
+                      return url ? <img key={o} src={url} alt={o} width={PIXEL_ICON_SIZE} height={PIXEL_ICON_SIZE} className={PIXEL_ICON_DISPLAY_CLASS} /> : null;
+                    })}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("openProfileWindow", { detail: { characterId: char.id } }))}
+                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-[var(--accent-gold)] hover:bg-white/5 transition-colors"
+                  title="Vedi scheda"
+                >
+                  <FontAwesomeIcon icon={icons.user} className="w-4 h-4" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function PresentiEstesiContent({ presenti }: { presenti: Presente[] }) {
-  if (presenti.length === 0) {
-    return <p className="text-sm text-gray-500">Nessun presente al momento.</p>;
-  }
+  const [tab, setTab] = useState<"presenti" | "anagrafica">("presenti");
 
   const openProfile = (p: Presente) => {
     window.dispatchEvent(
@@ -580,54 +679,77 @@ function PresentiEstesiContent({ presenti }: { presenti: Presente[] }) {
   };
 
   return (
-    <div className="space-y-3">
-      <p className="text-[10px] uppercase tracking-widest text-gray-500 font-display mb-4">
-        Chi è online
-      </p>
-      <ul className="divide-y divide-[var(--border-color)]">
-        {presenti.map((p) => (
-          <li
-            key={p.id}
-            className="flex items-center gap-4 py-3 first:pt-0 cursor-pointer hover:bg-white/5"
-            onClick={() => openProfile(p)}
+    <div className="flex flex-col h-full gap-3">
+      {/* Tab selector */}
+      <div className="flex gap-1 border-b border-[var(--border-color)] pb-0 -mx-1 px-1">
+        {(["presenti", "anagrafica"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`px-3 py-1.5 font-display text-[10px] uppercase tracking-wider border-b-2 transition-colors ${
+              tab === t
+                ? "text-[var(--accent-gold)] border-[var(--accent-gold)]"
+                : "text-gray-500 border-transparent hover:text-gray-400"
+            }`}
           >
-            <span className={`w-2 h-2 rounded-full shrink-0 ${p.isShadow ? "bg-amber-500" : "bg-emerald-500"}`} aria-hidden />
-            <div className="min-w-0 flex-1">
-              <span className={`font-display text-sm flex items-center gap-1.5 flex-wrap ${presentiNameClass({ isMe: p.isMe, isShadow: p.isShadow, paragon: p.paragon })}`}>
-                {p.name}
-                {(p.paragon ?? 0) > 0 && (
-                  <span className="text-[10px] uppercase tracking-wider text-[var(--accent-violet-light)]/80">
-                    ★{p.paragon}
-                  </span>
-                )}
-                {p.isShadow && (
-                  <FontAwesomeIcon icon={icons.eyeSlash} className="w-3.5 h-3.5 text-amber-400/80" title="Shadowban" aria-hidden />
-                )}
-                <PixelIcons pixelIcons={p.pixelIcons} />
-                {p.isMe && " (Tu)"}
-              </span>
-              {p.zone && (
-                <p className="text-xs text-gray-500 truncate">{p.zone}</p>
-              )}
-            </div>
-            {!p.isMe && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.dispatchEvent(new CustomEvent("openProfileWindow", { detail: { characterId: p.id } }));
-                }}
-                className="shrink-0 w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-[var(--accent-gold)] hover:bg-white/5"
-                title="Vedi scheda"
-                aria-label="Vedi scheda"
-              >
-                <FontAwesomeIcon icon={icons.user} className="w-4 h-4" />
-              </button>
-            )}
-            <span className={`text-[10px] uppercase shrink-0 ${p.isShadow ? "text-amber-500/80" : "text-emerald-500/80"}`}>Online</span>
-          </li>
+            {t === "presenti" ? `Presenti (${presenti.length})` : "Anagrafica"}
+          </button>
         ))}
-      </ul>
+      </div>
+
+      {tab === "presenti" && (
+        presenti.length === 0 ? (
+          <p className="text-sm text-gray-500">Nessun presente al momento.</p>
+        ) : (
+          <ul className="divide-y divide-[var(--border-color)]">
+            {presenti.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-4 py-3 first:pt-0 cursor-pointer hover:bg-white/5"
+                onClick={() => openProfile(p)}
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${p.isShadow ? "bg-amber-500" : "bg-emerald-500"}`} aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <span className={`font-display text-sm flex items-center gap-1.5 flex-wrap ${presentiNameClass({ isMe: p.isMe, isShadow: p.isShadow, paragon: p.paragon })}`}>
+                    {p.name}
+                    {(p.paragon ?? 0) > 0 && (
+                      <span className="text-[10px] uppercase tracking-wider text-[var(--accent-violet-light)]/80">
+                        ★{p.paragon}
+                      </span>
+                    )}
+                    {p.isShadow && (
+                      <FontAwesomeIcon icon={icons.eyeSlash} className="w-3.5 h-3.5 text-amber-400/80" title="Shadowban" aria-hidden />
+                    )}
+                    <PixelIcons pixelIcons={p.pixelIcons} />
+                    {p.isMe && " (Tu)"}
+                  </span>
+                  {p.zone && (
+                    <p className="text-xs text-gray-500 truncate">{p.zone}</p>
+                  )}
+                </div>
+                {!p.isMe && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent("openProfileWindow", { detail: { characterId: p.id } }));
+                    }}
+                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-[var(--accent-gold)] hover:bg-white/5"
+                    title="Vedi scheda"
+                    aria-label="Vedi scheda"
+                  >
+                    <FontAwesomeIcon icon={icons.user} className="w-4 h-4" />
+                  </button>
+                )}
+                <span className={`text-[10px] uppercase shrink-0 ${p.isShadow ? "text-amber-500/80" : "text-emerald-500/80"}`}>Online</span>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+
+      {tab === "anagrafica" && <AnagraficaTab />}
     </div>
   );
 }

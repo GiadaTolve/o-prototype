@@ -337,6 +337,18 @@ export const forumService = {
   },
 
   /**
+   * Modifica il contenuto di un post.
+   */
+  async updatePost(postId: string, content: string) {
+    const [updated] = await db
+      .update(forumPosts)
+      .set({ content, updatedAt: new Date() })
+      .where(eq(forumPosts.id, postId))
+      .returning();
+    return updated;
+  },
+
+  /**
    * Elimina un post.
    */
   async deletePost(postId: string) {

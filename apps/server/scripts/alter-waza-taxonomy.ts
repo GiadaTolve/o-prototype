@@ -39,7 +39,7 @@ const SEI_VIE_BY_SLUG: Record<string, string> = {
 };
 
 const MADOSHO_BY_SLUG: Record<string, string> = {
-  "ringai-janjae": "Rin'gai/Janjae",
+  "ringai-janjae": "Rin'gai",
   gokaon: "Gōkaon",
   nakigara: "Nakigara",
   hataori: "Hataori",

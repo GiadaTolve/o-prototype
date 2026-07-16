@@ -1,5 +1,5 @@
 /**
- * Sorgente canonica Rin'gai/Janjae — Oyasumi_Guida_Codifica_Ringai.md
+ * Sorgente canonica Rin'gai — Oyasumi_Guida_Codifica_Ringai.md
  */
 
 export type RingaiCatalogEntry = {

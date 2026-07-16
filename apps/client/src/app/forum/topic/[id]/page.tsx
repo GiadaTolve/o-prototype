@@ -37,6 +37,7 @@ type ForumPost = {
   likeCount: number;
   userHasLiked: boolean;
   createdAt: string;
+  updatedAt: string;
   author: {
     id: string;
     name: string;
@@ -58,6 +59,10 @@ export default function TopicPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [canAccessGestione, setCanAccessGestione] = useState(false);
+  const [currentCharacterId, setCurrentCharacterId] = useState<string | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const replyFormRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -67,8 +72,9 @@ export default function TopicPage() {
       await fetchTopicData();
       // Verifica permessi admin
       try {
-        const char = (await api.get("/characters/me")) as { canAccessGestione?: boolean };
+        const char = (await api.get("/characters/me")) as { canAccessGestione?: boolean; id?: string };
         setCanAccessGestione(char?.canAccessGestione ?? false);
+        setCurrentCharacterId(char?.id ?? null);
       } catch (e) {
         console.error("Errore verifica permessi:", e);
       }
@@ -92,6 +98,25 @@ export default function TopicPage() {
       setTopic(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditStart = (post: ForumPost) => {
+    setEditingPostId(post.id);
+    setEditContent(post.content);
+  };
+
+  const handleSaveEdit = async (postId: string) => {
+    if (!editContent.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      await api.patch(`/forum/posts/${postId}`, { content: editContent });
+      setEditingPostId(null);
+      await fetchTopicData();
+    } catch (err) {
+      console.error("Errore modifica post:", err);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -272,31 +297,86 @@ export default function TopicPage() {
                 <div className="text-[11px] text-gray-600 mb-4 border-b border-dashed border-gray-600 pb-1">
                   {formatDate(post.createdAt)}
                 </div>
-                <div
-                  className="whitespace-pre-wrap leading-relaxed flex-grow font-sans text-[#dcdcdc] text-sm"
-                  dangerouslySetInnerHTML={{ __html: parseBBCode(post.content) }}
-                />
+
+                {editingPostId === post.id ? (
+                  /* ── Modalità modifica ── */
+                  <div className="flex-grow flex flex-col gap-2">
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      rows={6}
+                      className="w-full px-2.5 py-2 bg-black/30 border border-[var(--accent-violet)]/40 text-[#e6e0ff] font-sans text-sm resize-y focus:outline-none focus:border-[var(--accent-violet)]"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setEditingPostId(null)}
+                        className="px-3 py-1.5 border border-gray-600 rounded text-gray-400 text-xs hover:text-white transition-colors"
+                      >
+                        Annulla
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveEdit(post.id)}
+                        disabled={isSavingEdit}
+                        className="px-3 py-1.5 border border-[var(--accent-violet)] rounded text-[var(--accent-violet-light)] text-xs hover:bg-[var(--accent-violet)]/20 transition-colors disabled:opacity-50"
+                      >
+                        {isSavingEdit ? "Salvataggio…" : "Salva"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Visualizzazione normale ── */
+                  <>
+                    <div
+                      className="whitespace-pre-wrap leading-relaxed flex-grow font-sans text-[#dcdcdc] text-sm"
+                      dangerouslySetInnerHTML={{ __html: parseBBCode(post.content) }}
+                    />
+                    {/* Data ultima modifica */}
+                    {new Date(post.updatedAt).getTime() - new Date(post.createdAt).getTime() > 5000 && (
+                      <p className="mt-3 text-[10px] text-gray-600 italic font-sans">
+                        Ultima modifica: {formatDate(post.updatedAt)}
+                      </p>
+                    )}
+                  </>
+                )}
+
                 <div className="mt-5 flex justify-end items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuote(`${post.author.name}${post.author.surname ? ` ${post.author.surname}` : ""}`, post.content)}
-                    className="bg-transparent border border-gray-600 p-1.5 rounded cursor-pointer flex items-center justify-center transition-all hover:border-[var(--accent-violet)]"
-                    title="Cita"
-                  >
-                    <FontAwesomeIcon icon={icons.quote} className="w-4 h-4 text-gray-400" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleLike(post.id)}
-                    className={`bg-transparent border p-1.5 rounded cursor-pointer flex items-center justify-center transition-all gap-1 ${
-                      post.userHasLiked ? "border-[var(--accent-gold)] text-[var(--accent-gold)]" : "border-gray-600 text-gray-400 hover:border-[var(--accent-violet)]"
-                    }`}
-                    title="Mi piace"
-                  >
-                    <FontAwesomeIcon icon={icons.heart} className="w-4 h-4" />
-                    <span className="text-xs">{post.likeCount}</span>
-                  </button>
-                  {canAccessGestione && (
+                  {editingPostId !== post.id && (
+                    <button
+                      type="button"
+                      onClick={() => handleQuote(`${post.author.name}${post.author.surname ? ` ${post.author.surname}` : ""}`, post.content)}
+                      className="bg-transparent border border-gray-600 p-1.5 rounded cursor-pointer flex items-center justify-center transition-all hover:border-[var(--accent-violet)]"
+                      title="Cita"
+                    >
+                      <FontAwesomeIcon icon={icons.quote} className="w-4 h-4 text-gray-400" />
+                    </button>
+                  )}
+                  {editingPostId !== post.id && (
+                    <button
+                      type="button"
+                      onClick={() => handleLike(post.id)}
+                      className={`bg-transparent border p-1.5 rounded cursor-pointer flex items-center justify-center transition-all gap-1 ${
+                        post.userHasLiked ? "border-[var(--accent-gold)] text-[var(--accent-gold)]" : "border-gray-600 text-gray-400 hover:border-[var(--accent-violet)]"
+                      }`}
+                      title="Mi piace"
+                    >
+                      <FontAwesomeIcon icon={icons.heart} className="w-4 h-4" />
+                      <span className="text-xs">{post.likeCount}</span>
+                    </button>
+                  )}
+                  {/* Modifica: autore del post o staff */}
+                  {(currentCharacterId === post.author.id || canAccessGestione) && editingPostId !== post.id && (
+                    <button
+                      type="button"
+                      onClick={() => handleEditStart(post)}
+                      className="bg-transparent border border-gray-600 p-1.5 rounded cursor-pointer flex items-center justify-center transition-all hover:border-[var(--accent-gold)] text-gray-400 hover:text-[var(--accent-gold)]"
+                      title="Modifica post"
+                    >
+                      <FontAwesomeIcon icon={icons.edit} className="w-4 h-4" />
+                    </button>
+                  )}
+                  {canAccessGestione && editingPostId !== post.id && (
                     <button
                       type="button"
                       onClick={() => handleDeletePost(post.id)}

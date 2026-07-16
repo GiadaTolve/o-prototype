@@ -1414,3 +1414,16 @@ export const wikiSectionsRelations = relations(wikiSections, ({ one, many }) => 
   }),
   children: many(wikiSections, { relationName: 'wikiHierarchy' }),
 }))
+
+// ==========================================
+// TAXONOMY STATUTES (statuti Dō/Madoshō/Ordini persistiti lato server)
+// ==========================================
+export const taxonomyStatutes = pgTable('taxonomy_statutes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  kind: text('kind').notNull(),        // 'do' | 'madosho' | 'ordine' | 'premio'
+  entryId: text('entry_id').notNull(), // styleId, madoshoId, orderId…
+  statute: text('statute').notNull().default(''),
+  sottotitolo: text('sottotitolo').notNull().default(''),
+  descrizione_meccanica: text('descrizione_meccanica').notNull().default(''),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [unique().on(t.kind, t.entryId)])

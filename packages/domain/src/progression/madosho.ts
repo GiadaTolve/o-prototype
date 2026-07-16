@@ -24,7 +24,7 @@ export interface MadoshoDef {
 export const MADOSHO_CATALOG: MadoshoDef[] = [
   {
     id: 'ringai-janjae',
-    name: "Rin'gai / Janjae",
+    name: "Rin'gai",
     nameJa: '輪廻',
     tagline: 'Soglia tra vita e morte · Hyakki Yagyō',
   },
