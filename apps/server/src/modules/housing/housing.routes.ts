@@ -15,6 +15,7 @@ import {
   getHousingChatInfo,
   updateHousingChatCustomization,
   canAccessPrivateChat,
+  getHousingAccessForCharacter,
 } from './housing.service'
 import { getHousingArmadioForGuest, stealFromHousing } from '../inventory/inventory.service'
 
@@ -156,6 +157,26 @@ export const housingRoutes = new Elysia({ prefix: '/housing' })
           return { error: e instanceof Error ? e.message : 'Errore durante la rimozione' }
         }
       })
+
+      // Accesso alla casa di un personaggio specifico (per scheda altrui)
+      .get(
+        '/access/:characterId',
+        async ({ params, user, set }) => {
+          if (!user) { set.status = 401; return { error: 'Non autenticato' } }
+          try {
+            const char = await db.query.characters.findFirst({
+              where: eq(characters.userId, user.id),
+              columns: { id: true, uiMetadata: true },
+            })
+            if (!char) { set.status = 404; return { error: 'Personaggio non trovato' } }
+            return await getHousingAccessForCharacter(params.characterId, char.id, user, char)
+          } catch (e: unknown) {
+            set.status = 400
+            return { error: e instanceof Error ? e.message : 'Errore' }
+          }
+        },
+        { params: t.Object({ characterId: t.String() }) }
+      )
 
       // Ospiti: elenco
       .get('/guests', async ({ user, set }) => {

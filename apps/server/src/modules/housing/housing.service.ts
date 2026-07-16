@@ -268,6 +268,49 @@ export async function listMyGuests(ownerCharacterId: string) {
 }
 
 /**
+ * Controlla se il richiedente può entrare nella casa di targetCharacterId.
+ * Ritorna { canAccess, chatRoomId }.
+ * Può accedere: proprietario, ospite invitato, admin/master (via user.role), moderatore (via roleIcon).
+ */
+export async function getHousingAccessForCharacter(
+  targetCharacterId: string,
+  requestingCharacterId: string,
+  requestingUser: { role?: string },
+  requestingChar: { uiMetadata?: { roleIcon?: string } | null }
+): Promise<{ canAccess: boolean; chatRoomId: string | null }> {
+  const housing = await db.query.characterHousing.findFirst({
+    where: eq(characterHousing.characterId, targetCharacterId),
+  })
+  if (!housing?.chatRoomId) return { canAccess: false, chatRoomId: null }
+
+  // Proprietario
+  if (targetCharacterId === requestingCharacterId) {
+    return { canAccess: true, chatRoomId: housing.chatRoomId }
+  }
+
+  // Admin / Master / Moderatore
+  const userRole = (requestingUser.role ?? '').toUpperCase()
+  if (userRole === 'ADMIN' || userRole === 'MASTER') {
+    return { canAccess: true, chatRoomId: housing.chatRoomId }
+  }
+  const roleIcon = (requestingChar.uiMetadata as { roleIcon?: string } | null)?.roleIcon?.toLowerCase()
+  if (roleIcon === 'admin' || roleIcon === 'moderatore') {
+    return { canAccess: true, chatRoomId: housing.chatRoomId }
+  }
+
+  // Ospite invitato
+  const guestRow = await db.query.housingGuests.findFirst({
+    where: and(
+      eq(housingGuests.ownerCharacterId, targetCharacterId),
+      eq(housingGuests.guestCharacterId, requestingCharacterId)
+    ),
+  })
+  if (guestRow) return { canAccess: true, chatRoomId: housing.chatRoomId }
+
+  return { canAccess: false, chatRoomId: null }
+}
+
+/**
  * Verifica se un personaggio può accedere alla chat di un housing.
  * true se è il proprietario o un ospite invitato.
  */

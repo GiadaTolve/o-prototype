@@ -2488,17 +2488,24 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
     loadCharData();
   }, [loadCharData]);
 
-  // Carica housing per "Entra in Casa" (solo scheda propria)
+  // Carica housing per "Entra in Casa":
+  // - scheda propria → /housing/me
+  // - scheda altrui  → /housing/access/:id (se invitato, admin o moderatore)
   useEffect(() => {
-    if (isRemoteCharacter) {
+    if (isRemoteCharacter && viewingCharacterId) {
+      api
+        .get(`/housing/access/${viewingCharacterId}`)
+        .then((d: any) => setHousingChatRoomId(d?.canAccess ? (d.chatRoomId ?? null) : null))
+        .catch(() => setHousingChatRoomId(null));
+    } else if (!isRemoteCharacter) {
+      api
+        .get("/housing/me")
+        .then((d: any) => setHousingChatRoomId(d?.chatRoomId ?? null))
+        .catch(() => setHousingChatRoomId(null));
+    } else {
       setHousingChatRoomId(null);
-      return;
     }
-    api
-      .get("/housing/me")
-      .then((d: any) => setHousingChatRoomId(d?.chatRoomId ?? null))
-      .catch(() => setHousingChatRoomId(null));
-  }, [isRemoteCharacter]);
+  }, [isRemoteCharacter, viewingCharacterId]);
 
   // Funzione che ricarica i dati e chiama onCharUpdate del parent
   const handleCharUpdate = useCallback(() => {
