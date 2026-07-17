@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
-import { resolveWazaTagPreview, WAZA_TAG_INDEX } from "@domain/combat/waza-tag-index";
+import { resolveWazaTagPreview } from "@domain/combat/waza-tag-index";
+import { useWazaCatalog } from "@/hooks/useWazaCatalog";
 import {
   extractWazaTagNames,
   removeWazaTagsFromText,
@@ -116,6 +117,7 @@ export function DashboardCenter({
   onOpenCombattimento,
 }: Props) {
   const compact = variant === "mobile";
+  const { index: wazaTagIndex } = useWazaCatalog();
   const [view, setView] = useState<View>("root");
   const [gameMapId, setGameMapId] = useState<GameMapId | null>(null);
   const [zone, setZone] = useState<ZoneConfig | null>(null);
@@ -268,7 +270,7 @@ export function DashboardCenter({
     if (!input?.value.trim() || !chatConnected) return;
     
     const raw = input.value.trim();
-    const messageText = expandWazaLaunchInMessage(raw, WAZA_TAG_INDEX, {
+    const messageText = expandWazaLaunchInMessage(raw, wazaTagIndex, {
       skiruSheet: char?.skiruSheet ?? null,
     });
     const tag = tagInput?.value.trim() || undefined;
@@ -1993,6 +1995,7 @@ function ChatView({
   compact?: boolean;
   onOpenCombattimento?: () => void;
 }) {
+  const { index: wazaTagIndex } = useWazaCatalog();
   const [showMobileTools, setShowMobileTools] = useState(false);
   const place = getChatLocationByRoomId(roomId);
   const isPartychatRoom = isPartychat(roomId);
@@ -2033,12 +2036,12 @@ function ChatView({
   const sendLaunchFromPanel = useCallback(
     (text: string) => {
       const tag = tagLuogoRef.current?.value.trim() || undefined;
-      const expanded = expandWazaLaunchInMessage(text, WAZA_TAG_INDEX, {
+      const expanded = expandWazaLaunchInMessage(text, wazaTagIndex, {
         skiruSheet: char?.skiruSheet ?? null,
       });
       sendMessage(expanded, tag || undefined);
     },
-    [sendMessage, char?.skiruSheet, tagLuogoRef],
+    [sendMessage, char?.skiruSheet, tagLuogoRef, wazaTagIndex],
   );
 
   // Bridge eventi DOM → PannelloCombattimentoWindow (la finestra dock usa questi eventi)
@@ -2843,6 +2846,7 @@ function ChatMessageBlock({
   actorHpMax?: number | null;
   isPartychat?: boolean;
 }) {
+  const { index: wazaTagIndex } = useWazaCatalog();
   const highlightNames = useMemo(() => {
     if (!currentCharacterName?.trim()) return undefined;
     const names: string[] = [currentCharacterName.trim()];
@@ -2854,8 +2858,8 @@ function ChatMessageBlock({
   const wazaLaunches = useMemo(() => {
     const characterName = [message.name, message.surname].filter(Boolean).join(" ");
     return extractWazaTagNames(message.content).map((name) => {
-      const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(name));
-      const preview = resolveWazaTagPreview(name, WAZA_TAG_INDEX);
+      const entry = wazaTagIndex.get(normalizeWazaLookupKey(name));
+      const preview = resolveWazaTagPreview(name, wazaTagIndex);
       return buildChatWazaPostFromMessage({
         messageContent: message.content,
         characterName,
@@ -2864,14 +2868,14 @@ function ChatMessageBlock({
         actorSkiruSheet: actorSkiruSheet ?? null,
       });
     });
-  }, [message.content, message.name, message.surname, actorSkiruSheet]);
+  }, [message.content, message.name, message.surname, actorSkiruSheet, wazaTagIndex]);
 
   const characterName = [message.name, message.surname].filter(Boolean).join(" ");
 
   const constructPost = useMemo(() => {
     const wazaNames = extractWazaTagNames(message.content);
     for (const name of wazaNames) {
-      const entry = WAZA_TAG_INDEX.get(normalizeWazaLookupKey(name));
+      const entry = wazaTagIndex.get(normalizeWazaLookupKey(name));
       const post = buildConstructPostFromMessage({
         messageContent: message.content,
         wazaName: name,
