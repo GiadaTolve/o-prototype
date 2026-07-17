@@ -1,22 +1,14 @@
 import { Elysia, t } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { characterService } from "../characters/characters.service";
+import { userHasShinigamiAccess } from "../../lib/gestione-access";
 import * as masterNotes from "./master-notes.service";
 
-/**
- * Verifica se un character è Shinigami (ha ruolo shinigami o capo-shinigami).
- */
 async function isShinigami(characterId: string): Promise<boolean> {
   const char = await characterService.getCharacterById(characterId);
   if (!char) return false;
   const user = await characterService.getUserByCharacterId(characterId);
-  if (user?.role === "MASTER") return true;
-  const metadata = char.uiMetadata as { roleIcon?: string } | null;
-  if (metadata?.roleIcon) {
-    const role = metadata.roleIcon.toLowerCase();
-    return role === "shinigami" || role === "capo-shinigami";
-  }
-  return false;
+  return userHasShinigamiAccess(user?.id ?? "", user?.role);
 }
 
 export const masterNotesRoutes = new Elysia({ prefix: "/master-notes" })

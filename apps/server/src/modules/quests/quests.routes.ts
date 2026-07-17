@@ -2,25 +2,14 @@ import { Elysia, t } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { characterService } from "../characters/characters.service";
 import { canAccessPrivateChatAsync } from "../housing/housing.service";
+import { userHasShinigamiAccess } from "../../lib/gestione-access";
 import * as quests from "./quests.service";
 
-/**
- * Verifica se un character è Shinigami (ha ruolo shinigami o capo-shinigami).
- * Controlla il ruolo user (MASTER = Shinigami) o pixel-icons in uiMetadata.
- */
 async function isShinigami(characterId: string): Promise<boolean> {
   const char = await characterService.getCharacterById(characterId);
   if (!char) return false;
-  // Verifica ruolo user (MASTER = Shinigami)
   const user = await characterService.getUserByCharacterId(characterId);
-  if (user?.role === "MASTER") return true;
-  // Verifica pixel-icons (se presente in uiMetadata)
-  const metadata = char.uiMetadata as { roleIcon?: string } | null;
-  if (metadata?.roleIcon) {
-    const role = metadata.roleIcon.toLowerCase();
-    return role === "shinigami" || role === "capo-shinigami";
-  }
-  return false;
+  return userHasShinigamiAccess(user?.id ?? "", user?.role);
 }
 
 export const questsRoutes = new Elysia({ prefix: "/quests" })

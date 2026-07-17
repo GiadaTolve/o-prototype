@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { eq } from "drizzle-orm";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { characterService } from "../characters/characters.service";
-import { resolveShinigamiAccess } from "../../lib/gestione-access";
+import { resolveShinigamiAccess, userHasShinigamiAccess } from "../../lib/gestione-access";
 import * as fetches from "./fetches.service";
 import * as gameSessions from "../game-sessions/game-sessions.service";
 import { broadcastFetchResponso } from "../realtime/ws.routes";
@@ -14,10 +14,7 @@ async function isShinigami(characterId: string): Promise<boolean> {
   const char = await characterService.getCharacterById(characterId);
   if (!char) return false;
   const user = await characterService.getUserByCharacterId(characterId);
-  if (user?.role === "MASTER") return true;
-  const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {};
-  const r = (meta.roleIcon ?? "").toLowerCase();
-  return r === "shinigami" || r === "capo-shinigami";
+  return userHasShinigamiAccess(user?.id ?? "", user?.role);
 }
 
 async function canApproveFetch(characterId: string): Promise<boolean> {
