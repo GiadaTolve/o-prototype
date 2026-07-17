@@ -32,6 +32,7 @@ export interface InventoryItemRow {
     slotsBonus: number
     damage?: number | null
     resistance?: number | null
+    bonus?: number | null
     ammoKind?: string | null
   }
   economy?: InventoryEconomyFields
@@ -47,6 +48,8 @@ export interface InventorySlotsInfo {
   housingOccupied?: number
   housingAvailable?: number
   marketListed?: number
+  equipSlots?: number
+  equipSlotsUsed?: number
 }
 
 export interface CharacterInventoryResponse {

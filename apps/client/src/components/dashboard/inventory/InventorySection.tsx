@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { icons } from '@/lib/icons'
 import { api } from '@/lib/api'
@@ -29,12 +29,99 @@ function normalizeInventory(data: CharacterInventoryResponse): CharacterInventor
   }
 }
 
+// ─── Equipment Slot UI ───────────────────────────────────────────────────────
+
+function EquipSlot({
+  index,
+  item,
+  onUnequip,
+  onSelect,
+  onDrop,
+  isOver,
+  onDragOver,
+  onDragLeave,
+}: {
+  index: number
+  item: InventoryItemRow | null
+  onUnequip: (id: string) => void
+  onSelect: (inv: InventoryItemRow) => void
+  onDrop: (e: React.DragEvent, slotIndex: number) => void
+  isOver: boolean
+  onDragOver: (e: React.DragEvent, slotIndex: number) => void
+  onDragLeave: () => void
+}) {
+  return (
+    <div
+      onDragOver={(e) => { e.preventDefault(); onDragOver(e, index) }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, index)}
+      className={`relative rounded-lg border transition-all min-h-[64px] flex items-center p-2 gap-2 ${
+        item
+          ? 'border-[var(--accent-gold)] bg-[var(--accent-gold)]/10'
+          : isOver
+            ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 border-dashed'
+            : 'border-[var(--border-color)]/50 bg-black/20 border-dashed'
+      }`}
+    >
+      <span className="text-[9px] text-gray-600 font-display shrink-0 w-4 text-center">{index + 1}</span>
+      {item ? (
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-display text-white truncate">{item.item.name}</p>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              {item.item.damage != null && (
+                <span className="text-[8px] text-red-400">DMG {item.item.damage}</span>
+              )}
+              {item.item.resistance != null && (
+                <span className="text-[8px] text-blue-400">ARM {item.item.resistance}</span>
+              )}
+              {item.item.bonus != null && (
+                <span className="text-[8px] text-[var(--accent-gold)]">+{item.item.bonus} bonus</span>
+              )}
+              {item.economy?.integrityMax != null && item.economy.integrityMax > 0 && (
+                <span className={`text-[8px] ${item.economy.isBroken ? 'text-red-400' : 'text-gray-500'}`}>
+                  INT {item.economy.integrityCurrent ?? item.economy.integrityMax}/{item.economy.integrityMax}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => onSelect(item)}
+              className="p-1 rounded border border-[var(--border-color)] text-gray-400 hover:text-white transition-colors"
+              title="Dettaglio"
+            >
+              <FontAwesomeIcon icon={icons.info} className="w-2.5 h-2.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onUnequip(item.id)}
+              className="p-1 rounded border border-[var(--border-color)] text-gray-400 hover:text-red-400 transition-colors"
+              title="Rimuovi"
+            >
+              <FontAwesomeIcon icon={icons.close} className="w-2.5 h-2.5" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-[9px] text-gray-600 italic flex-1">slot vuoto — trascina un oggetto</p>
+      )}
+    </div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export function InventorySection({ characterId }: { characterId?: string }) {
   const [inventory, setInventory] = useState<CharacterInventoryResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [detailItem, setDetailItem] = useState<InventoryItemRow | null>(null)
   const [isMyCharacter, setIsMyCharacter] = useState(false)
   const [canStaffInventory, setCanStaffInventory] = useState(false)
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
+  const dragOverSlotRef = useRef<number | null>(null)
 
   const reloadInventory = useCallback(async () => {
     if (!characterId) return null
@@ -51,15 +138,9 @@ export function InventorySection({ characterId }: { characterId?: string }) {
   }, [characterId])
 
   useEffect(() => {
-    if (!characterId) {
-      setLoading(false)
-      return
-    }
+    if (!characterId) { setLoading(false); return }
     reloadInventory()
-      .catch((e) => {
-        console.error('Errore caricamento inventario:', e)
-        setInventory(null)
-      })
+      .catch((e) => { console.error('Errore caricamento inventario:', e); setInventory(null) })
       .finally(() => setLoading(false))
   }, [characterId, reloadInventory])
 
@@ -102,10 +183,44 @@ export function InventorySection({ characterId }: { characterId?: string }) {
     }
   }
 
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent, inventoryId: string) => {
+    setDraggedId(inventoryId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragEnd = () => {
+    setDraggedId(null)
+    setDragOverSlot(null)
+    dragOverSlotRef.current = null
+  }
+
+  const handleSlotDragOver = (e: React.DragEvent, slotIndex: number) => {
+    e.preventDefault()
+    if (dragOverSlotRef.current !== slotIndex) {
+      dragOverSlotRef.current = slotIndex
+      setDragOverSlot(slotIndex)
+    }
+  }
+
+  const handleSlotDragLeave = () => {
+    dragOverSlotRef.current = null
+    setDragOverSlot(null)
+  }
+
+  const handleSlotDrop = async (_e: React.DragEvent, _slotIndex: number) => {
+    setDragOverSlot(null)
+    dragOverSlotRef.current = null
+    if (!draggedId) return
+    const item = inventory?.carryItems?.find((i) => i.id === draggedId)
+    if (!item || item.isEquipped) return
+    await toggleEquip(draggedId)
+    setDraggedId(null)
+  }
+
   if (loading) {
     return <div className="text-sm text-gray-500 p-4 animate__animated animate__fadeIn motion-reduce:animate-none">Caricamento inventario…</div>
   }
-
   if (!inventory) {
     return <div className="text-sm text-gray-500 p-4">Errore nel caricamento inventario.</div>
   }
@@ -114,9 +229,18 @@ export function InventorySection({ characterId }: { characterId?: string }) {
   const housingItems = inventory.housingItems ?? []
   const marketItems = inventory.marketItems ?? []
 
-  const equippedGear = carryItems.filter((inv) => inv.isEquipped && isEquippableRow(inv))
-  const equippedBag = carryItems.find((inv) => inv.isEquipped && inv.item.type === 'BAG')
-  const carryStorageItems = carryItems.filter((inv) => !inv.isEquipped)
+  const equipSlots = inventory.slots.equipSlots ?? 3
+  const equipSlotsUsed = inventory.slots.equipSlotsUsed ?? 0
+
+  // Equipped non-bag items fill slots 0..N-1
+  const equippedGear = carryItems.filter((i) => i.isEquipped && i.item.type !== 'BAG')
+  const equippedBag = carryItems.find((i) => i.isEquipped && i.item.type === 'BAG')
+  const carryStorageItems = carryItems.filter((i) => !i.isEquipped)
+
+  // Build slot array
+  const slotItems: (InventoryItemRow | null)[] = Array.from({ length: equipSlots }, (_, idx) =>
+    equippedGear[idx] ?? null
+  )
 
   const cardActions = isMyCharacter
     ? {
@@ -131,20 +255,16 @@ export function InventorySection({ characterId }: { characterId?: string }) {
   return (
     <>
       <div className="space-y-6 animate__animated animate__fadeIn motion-reduce:animate-none">
+
+        {/* Slot info header */}
         <div className="bg-[var(--panel-bg)] rounded-lg border border-[var(--border-color)] p-4">
-          <div
-            className={`grid grid-cols-2 ${
-              inventory.slots.housingOccupied !== undefined ? 'md:grid-cols-3 lg:grid-cols-7' : 'md:grid-cols-4'
-            } gap-3 text-xs`}
-          >
-            <SlotStat label="Slot base" value={inventory.slots.baseSlots} accent="gold" />
-            <SlotStat label="Slot zaino" value={inventory.slots.bagSlots} accent="violet" />
-            <SlotStat
-              label="Occupati"
-              value={`${inventory.slots.occupied}/${inventory.slots.totalSlots}`}
-              accent="white"
-            />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
+            <SlotStat label="Slot zaino" value={`${inventory.slots.occupied}/${inventory.slots.totalSlots}`} accent="white" />
             <SlotStat label="Disponibili" value={inventory.slots.available} accent="gold" />
+            <SlotStat label="Slot equip." value={`${equipSlotsUsed}/${equipSlots}`} accent="violet" />
+            {inventory.slots.bagSlots > 0 && (
+              <SlotStat label="Bonus zaino" value={`+${inventory.slots.bagSlots}`} accent="gold" />
+            )}
             {inventory.slots.marketListed != null && inventory.slots.marketListed > 0 && (
               <SlotStat label="In vendita" value={inventory.slots.marketListed} accent="violet" />
             )}
@@ -157,57 +277,95 @@ export function InventorySection({ characterId }: { characterId?: string }) {
           </div>
         </div>
 
-        <InventoryPanel
-          title="Equipaggiamento attivo"
-          icon={icons.user}
-          count={equippedGear.length}
-          empty="Nessun oggetto equipaggiato."
-          items={equippedGear}
-          renderItem={(inv) => (
-            <InventoryItemCard key={inv.id} inv={inv} showEquipButton showLocationButtons={false} {...cardActions} />
-          )}
-        />
-
-        {equippedBag && (
-          <div className="text-[10px] text-[var(--accent-gold)] px-1 font-display uppercase tracking-wider">
-            Zaino attivo: {equippedBag.item.name} (+{inventory.slots.bagSlots} slot)
+        {/* Equipment slots (drag-and-drop) */}
+        <section>
+          <SectionHeader icon={icons.user} title="Equipaggiamento" count={`${equipSlotsUsed}/${equipSlots}`} />
+          <div className="space-y-2 mt-2">
+            {slotItems.map((item, idx) => (
+              <EquipSlot
+                key={idx}
+                index={idx}
+                item={item}
+                onUnequip={isMyCharacter ? toggleEquip : () => {}}
+                onSelect={setDetailItem}
+                onDrop={isMyCharacter ? handleSlotDrop : () => {}}
+                isOver={dragOverSlot === idx}
+                onDragOver={isMyCharacter ? handleSlotDragOver : () => {}}
+                onDragLeave={isMyCharacter ? handleSlotDragLeave : () => {}}
+              />
+            ))}
           </div>
-        )}
-
-        <InventoryPanel
-          title={`Zaino${equippedBag ? ` · ${equippedBag.item.name}` : ''}`}
-          icon={icons.shop}
-          count={carryStorageItems.length}
-          empty="Nessun oggetto nello zaino."
-          items={carryStorageItems}
-          renderItem={(inv) => (
-            <InventoryItemCard key={inv.id} inv={inv} showEquipButton={false} showLocationButtons {...cardActions} />
+          {equippedBag && (
+            <div className="mt-2 text-[10px] text-[var(--accent-gold)] px-1 font-display uppercase tracking-wider flex items-center gap-2">
+              <FontAwesomeIcon icon={icons.shop} className="w-3 h-3" />
+              Zaino: {equippedBag.item.name} (+{inventory.slots.bagSlots} slot)
+            </div>
           )}
-        />
+        </section>
 
-        {marketItems.length > 0 && (
-          <InventoryPanel
-            title="In vendita (Piazza)"
-            icon={icons.banca}
-            count={marketItems.length}
-            empty=""
-            items={marketItems}
-            renderItem={(inv) => (
-              <InventoryItemCard key={inv.id} inv={inv} readOnly onSelect={setDetailItem} />
-            )}
+        {/* Zaino */}
+        <section>
+          <SectionHeader
+            icon={icons.shop}
+            title={`Zaino${equippedBag ? ` · ${equippedBag.item.name}` : ''}`}
+            count={carryStorageItems.length}
           />
+          {carryStorageItems.length === 0 ? (
+            <p className="text-[11px] text-gray-600 italic px-1 mt-2">Nessun oggetto nello zaino.</p>
+          ) : (
+            <ul className="space-y-2 mt-2">
+              {carryStorageItems.map((inv) => (
+                <li
+                  key={inv.id}
+                  draggable={isMyCharacter && isEquippableRow(inv)}
+                  onDragStart={isMyCharacter ? (e) => handleDragStart(e, inv.id) : undefined}
+                  onDragEnd={isMyCharacter ? handleDragEnd : undefined}
+                  className={isMyCharacter && isEquippableRow(inv) ? 'cursor-grab active:cursor-grabbing' : ''}
+                >
+                  <InventoryItemCard
+                    inv={inv}
+                    showEquipButton={isMyCharacter && isEquippableRow(inv)}
+                    showLocationButtons={isMyCharacter}
+                    {...cardActions}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* In vendita */}
+        {marketItems.length > 0 && (
+          <section>
+            <SectionHeader icon={icons.banca} title="In vendita (Piazza)" count={marketItems.length} />
+            <ul className="space-y-2 mt-2">
+              {marketItems.map((inv) => (
+                <li key={inv.id}>
+                  <InventoryItemCard inv={inv} readOnly onSelect={setDetailItem} />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
-        <InventoryPanel
-          title="Inventario abitazione"
-          icon={icons.ordine}
-          count={housingItems.length}
-          empty="Nessun oggetto depositato in casa."
-          items={housingItems}
-          renderItem={(inv) => (
-            <InventoryItemCard key={inv.id} inv={inv} showEquipButton={false} showLocationButtons {...cardActions} />
-          )}
-        />
+        {/* Inventario abitazione */}
+        {housingItems.length > 0 && (
+          <section>
+            <SectionHeader icon={icons.ordine} title="Inventario abitazione" count={housingItems.length} />
+            <ul className="space-y-2 mt-2">
+              {housingItems.map((inv) => (
+                <li key={inv.id}>
+                  <InventoryItemCard
+                    inv={inv}
+                    showEquipButton={false}
+                    showLocationButtons={isMyCharacter}
+                    {...cardActions}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
 
       <InventoryItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} />
@@ -215,64 +373,27 @@ export function InventorySection({ characterId }: { characterId?: string }) {
   )
 }
 
-function SlotStat({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string | number
-  accent: 'gold' | 'violet' | 'white'
-}) {
-  const color =
-    accent === 'gold'
-      ? 'text-[var(--accent-gold)]'
-      : accent === 'violet'
-        ? 'text-[var(--accent-violet)]'
-        : 'text-white'
+function SlotStat({ label, value, accent }: { label: string; value: string | number; accent: 'gold' | 'violet' | 'white' }) {
   return (
-    <div className="bg-black/40 rounded-md border border-[var(--border-color)]/70 px-3 py-2">
-      <p className="text-[9px] uppercase tracking-[0.18em] text-gray-500 font-display mb-1">{label}</p>
-      <p className={`text-sm font-display ${color}`}>{value}</p>
+    <div className="text-center">
+      <p className={`font-display font-bold text-sm ${
+        accent === 'gold' ? 'text-[var(--accent-gold)]'
+        : accent === 'violet' ? 'text-[var(--accent-violet-light)]'
+        : 'text-white'
+      }`}>
+        {value}
+      </p>
+      <p className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">{label}</p>
     </div>
   )
 }
 
-function InventoryPanel<T extends InventoryItemRow>({
-  title,
-  icon,
-  count,
-  empty,
-  items,
-  renderItem,
-}: {
-  title: string
-  icon: (typeof icons)[keyof typeof icons]
-  count: number
-  empty: string
-  items: T[]
-  renderItem: (item: T) => ReactNode
-}) {
+function SectionHeader({ icon, title, count }: { icon: unknown; title: string; count: string | number }) {
   return (
-    <section className="bg-[var(--panel-bg)] rounded-lg border border-[var(--border-color)] overflow-hidden shadow-[0_0_16px_rgba(0,0,0,0.6)]">
-      <header className="px-4 py-2.5 border-b border-[var(--border-color)]/70 bg-black/60 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FontAwesomeIcon icon={icon} className="w-3.5 h-3.5 text-[var(--accent-gold)]" />
-          <p className="text-[9px] uppercase tracking-[0.24em] text-gray-400 font-display">{title}</p>
-        </div>
-        <p className="text-[9px] uppercase tracking-[0.18em] text-[var(--accent-violet)] font-display">
-          {count} oggetti
-        </p>
-      </header>
-      <div className="p-4">
-        {count === 0 ? (
-          empty ? (
-            <div className="text-sm text-gray-500 italic text-center py-6">{empty}</div>
-          ) : null
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">{items.map(renderItem)}</div>
-        )}
-      </div>
-    </section>
+    <div className="flex items-center gap-2 px-1">
+      <FontAwesomeIcon icon={icon as Parameters<typeof FontAwesomeIcon>[0]['icon']} className="w-3.5 h-3.5 text-[var(--accent-gold)]" />
+      <span className="text-xs font-display text-[var(--accent-gold)] uppercase tracking-wider">{title}</span>
+      <span className="text-[9px] text-gray-600 ml-auto">{count}</span>
+    </div>
   )
 }

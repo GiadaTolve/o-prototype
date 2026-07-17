@@ -390,6 +390,8 @@ export const items = pgTable('items', {
   damage: integer('damage'),
   /** Valore Scudo/DR dell'armatura (ARMOR). */
   resistance: integer('resistance'),
+  /** Bonus piatto automatico in chat: +IR se WEAPON, +mitigation/IR-def se ARMOR, altro se ACCESSORY. */
+  bonus: integer('bonus'),
   /** Tipo munizioni richieste (armi da fuoco/lancio con munizioni consumabili). */
   ammoKind: text('ammo_kind'),
   /** Slot inventario occupati da questa riga (default 1). */

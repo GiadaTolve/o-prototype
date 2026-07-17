@@ -121,6 +121,30 @@ export function InventoryItemDetailModal({ item, onClose }: Props) {
             />
           )}
 
+          {/* Statistiche combattimento */}
+          {(item.item.damage != null || item.item.resistance != null || item.item.bonus != null) && (
+            <div className="grid grid-cols-3 gap-2">
+              {item.item.damage != null && (
+                <div className="rounded border border-red-500/30 bg-red-950/20 px-2 py-1.5 text-center">
+                  <p className="text-[8px] uppercase tracking-wider text-red-400 font-display mb-0.5">Danno</p>
+                  <p className="text-sm font-bold text-red-300">{item.item.damage}</p>
+                </div>
+              )}
+              {item.item.resistance != null && (
+                <div className="rounded border border-blue-500/30 bg-blue-950/20 px-2 py-1.5 text-center">
+                  <p className="text-[8px] uppercase tracking-wider text-blue-400 font-display mb-0.5">Armatura</p>
+                  <p className="text-sm font-bold text-blue-300">{item.item.resistance}</p>
+                </div>
+              )}
+              {item.item.bonus != null && (
+                <div className="rounded border border-[var(--accent-gold)]/30 bg-[var(--accent-gold)]/5 px-2 py-1.5 text-center">
+                  <p className="text-[8px] uppercase tracking-wider text-[var(--accent-gold)] font-display mb-0.5">Bonus</p>
+                  <p className="text-sm font-bold text-[var(--accent-gold)]">+{item.item.bonus}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px]">
             {originLabel && (
               <>

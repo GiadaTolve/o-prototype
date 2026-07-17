@@ -15,6 +15,13 @@ import type { ItemCategory, ItemOrigin } from '@domain/economy/types'
 
 type InventoryLocation = 'CARRY' | 'HOUSING' | 'MARKET'
 
+/** Slot equipaggiamento = 3 base + somma punti ramo Kairyoku (bakuryoku + kairiki + goatsu). */
+function calculateEquipmentSlots(skiruSheet: unknown): number {
+  const sheet = (skiruSheet as Record<string, number> | null) ?? {}
+  const vigore = (sheet.bakuryoku ?? 0) + (sheet.kairiki ?? 0) + (sheet.goatsu ?? 0)
+  return 3 + vigore
+}
+
 /**
  * Calcola gli slot totali disponibili per un personaggio.
  * Formula: baseSlots (5) + slot bonus da zaini equipaggiati + slot bonus da housing
@@ -164,6 +171,7 @@ export async function getCharacterInventory(characterId: string) {
         item_isStackable: items.isStackable,
         item_damage: items.damage,
         item_resistance: items.resistance,
+        item_bonus: items.bonus,
         item_ammoKind: items.ammoKind,
         item_createdAt: items.createdAt,
         inv_integrityCurrent: inventory.integrityCurrent,
@@ -200,6 +208,7 @@ export async function getCharacterInventory(characterId: string) {
           isStackable: row.item_isStackable ?? true,
           damage: row.item_damage ?? null,
           resistance: row.item_resistance ?? null,
+          bonus: row.item_bonus ?? null,
           ammoKind: row.item_ammoKind ?? null,
         }
         const invRow = {
@@ -235,6 +244,7 @@ export async function getCharacterInventory(characterId: string) {
             createdAt: itemRow.createdAt,
             damage: itemRow.damage ?? null,
             resistance: itemRow.resistance ?? null,
+            bonus: itemRow.bonus ?? null,
             ammoKind: itemRow.ammoKind ?? null,
           },
           economy: mapItemEconomyFields(itemRow as ItemRow, invRow as InventoryRow),
@@ -242,6 +252,10 @@ export async function getCharacterInventory(characterId: string) {
       })
 
     const slotInfo = await calculateTotalSlots(characterId)
+    const equipSlots = calculateEquipmentSlots(char.skiruSheet)
+    const equipSlotsUsed = mappedItems.filter(
+      (i) => i.isEquipped && i.location === 'CARRY' && i.item.type !== 'BAG'
+    ).length
 
     const carryItems = mappedItems.filter((i) => i.location === 'CARRY')
     const housingItems = mappedItems.filter((i) => i.location === 'HOUSING')
@@ -277,6 +291,8 @@ export async function getCharacterInventory(characterId: string) {
         housingOccupied: occupiedHousingSlots,
         housingAvailable: availableHousingSlots,
         marketListed: marketItems.length,
+        equipSlots,
+        equipSlotsUsed,
       },
     }
   } catch (error) {
@@ -437,6 +453,26 @@ export async function toggleEquipItem(inventoryId: string, characterId: string) 
     throw new Error('Non puoi equipaggiare un oggetto rotto.')
   }
 
+  // Verifica limite slot equipaggiamento (3 + vigore) — solo quando si equipaggia, non zaini
+  if (!inv.isEquipped && inv.item.type !== 'BAG') {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { skiruSheet: true },
+    })
+    const equipSlots = calculateEquipmentSlots(char?.skiruSheet ?? null)
+    const equippedCount = await db.query.inventory.findMany({
+      where: and(
+        eq(inventory.characterId, characterId),
+        eq(inventory.isEquipped, true),
+        eq(inventory.location, 'CARRY')
+      ),
+      with: { item: { columns: { type: true } } },
+    }).then((rows) => rows.filter((r) => r.item.type !== 'BAG').length)
+    if (equippedCount >= equipSlots) {
+      throw new Error(`Slot equipaggiamento esauriti (${equippedCount}/${equipSlots}). Togli un oggetto o aumenta il ramo Kairyoku.`)
+    }
+  }
+
   // Se è uno zaino e lo stiamo equipaggiando, verifica che non ci siano altri zaini equipaggiati
   if (inv.item.type === 'BAG' && !inv.isEquipped) {
     const otherEquippedBags = await db.query.inventory.findMany({
@@ -528,6 +564,25 @@ export async function updateItemQuantity(
 }
 
 // ─── Rubare da casa altrui (solo ospiti) ───
+
+/**
+ * Diminuisce l'integrità di un oggetto inventario di `amount` unità (min 0).
+ * Se l'oggetto non ha integrità (integrityMax null/0), restituisce null senza errore.
+ */
+export async function decreaseItemIntegrity(
+  inventoryId: string,
+  amount: number = 1,
+): Promise<number | null> {
+  const inv = await db.query.inventory.findFirst({
+    where: eq(inventory.id, inventoryId),
+    with: { item: { columns: { integrityMax: true } } },
+  })
+  if (!inv || !inv.item.integrityMax) return null
+  const current = inv.integrityCurrent ?? inv.item.integrityMax
+  const next = Math.max(0, current - amount)
+  await db.update(inventory).set({ integrityCurrent: next }).where(eq(inventory.id, inventoryId))
+  return next
+}
 
 /**
  * Ottiene gli oggetti nell'armadio della casa del proprietario.

@@ -13,6 +13,7 @@ import {
   updateItemQuantity,
   calculateTotalSlots,
   moveItemLocation,
+  decreaseItemIntegrity,
 } from './inventory.service'
 
 export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
@@ -251,6 +252,33 @@ export const inventoryRoutes = new Elysia({ prefix: '/inventory' })
         },
         {
           params: t.Object({ inventoryId: t.String() }),
+        }
+      )
+
+      // Diminuisce integrità oggetto (usura in combat/waza)
+      .post(
+        '/me/:inventoryId/decrease-integrity',
+        async ({ params, body, user, set }) => {
+          if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+          try {
+            const char = await db.query.characters.findFirst({
+              where: eq(characters.userId, user.id),
+            })
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            const next = await decreaseItemIntegrity(params.inventoryId, (body as { amount?: number }).amount ?? 1)
+            broadcastInventoryUpdated(char.id)
+            return { integrityCurrent: next }
+          } catch (e: unknown) {
+            set.status = 400
+            return { error: e instanceof Error ? e.message : 'Errore integrità' }
+          }
+        },
+        {
+          params: t.Object({ inventoryId: t.String() }),
+          body: t.Object({ amount: t.Optional(t.Number()) }),
         }
       )
   )
