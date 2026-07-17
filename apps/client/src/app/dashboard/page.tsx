@@ -578,6 +578,7 @@ export default function DashboardPage() {
           canAccessSviluppo={char?.canAccessSviluppo}
           char={char}
           onOpenCombattimento={() => open("combattimento")}
+          onOpenNote={() => open("note")}
         />
         <DashboardRightCol
           presenti={presenti}

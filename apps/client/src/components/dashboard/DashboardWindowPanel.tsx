@@ -45,6 +45,7 @@ const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   notifiche: icons.bell,
   spazioEventi: icons.gamepad,
   combattimento: icons.waza,
+  note: icons.edit,
 };
 
 const STAT_LABELS: Record<string, string> = {
@@ -93,14 +94,25 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   const isMainAreaPanel = (MAIN_AREA_PANEL_IDS as readonly string[]).includes(windowId);
   const isUnifiedPanel = (UNIFIED_PANEL_IDS as readonly string[]).includes(windowId);
   const isCombattimento = windowId === "combattimento";
+  const isNote = windowId === "note";
 
-  // ── Draggable combat panel ───────────────────────────────────────────────
+  // ── Draggable panels (combat + note) ────────────────────────────────────
   const [showCampo, setShowCampo] = useState(false);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [noteDragPos, setNoteDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
   const isDraggingRef = useRef(false);
+  const draggingTargetRef = useRef<"combat" | "note" | null>(null);
   const COMBAT_W = showCampo ? 700 : 440;
   const COMBAT_H = 680;
+  const NOTE_W = 360;
+  const NOTE_H = 300;
+
+  // note localStorage
+  const [noteText, setNoteText] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("oyasumi-player-notes") ?? "";
+  });
 
   useEffect(() => {
     if (isCombattimento && !dragPos) {
@@ -113,14 +125,24 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   }, [isCombattimento]);
 
   useEffect(() => {
+    if (isNote && !noteDragPos) {
+      setNoteDragPos({
+        x: Math.max(8, Math.round((window.innerWidth - NOTE_W) / 2)),
+        y: Math.max(8, Math.round((window.innerHeight - NOTE_H) / 2)),
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNote]);
+
+  useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!isDraggingRef.current || !dragRef.current) return;
-      setDragPos({
-        x: dragRef.current.initX + (e.clientX - dragRef.current.startX),
-        y: dragRef.current.initY + (e.clientY - dragRef.current.startY),
-      });
+      const nx = dragRef.current.initX + (e.clientX - dragRef.current.startX);
+      const ny = dragRef.current.initY + (e.clientY - dragRef.current.startY);
+      if (draggingTargetRef.current === "combat") setDragPos({ x: nx, y: ny });
+      else if (draggingTargetRef.current === "note") setNoteDragPos({ x: nx, y: ny });
     };
-    const onUp = () => { isDraggingRef.current = false; };
+    const onUp = () => { isDraggingRef.current = false; draggingTargetRef.current = null; };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
@@ -132,9 +154,24 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   const handleCombatHeaderMouseDown = useCallback((e: React.MouseEvent) => {
     if (!(e.target as HTMLElement).closest(".combat-drag-handle")) return;
     isDraggingRef.current = true;
+    draggingTargetRef.current = "combat";
     dragRef.current = { startX: e.clientX, startY: e.clientY, initX: dragPos?.x ?? 0, initY: dragPos?.y ?? 0 };
     e.preventDefault();
   }, [dragPos]);
+
+  const handleNoteHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest(".note-drag-handle")) return;
+    isDraggingRef.current = true;
+    draggingTargetRef.current = "note";
+    dragRef.current = { startX: e.clientX, startY: e.clientY, initX: noteDragPos?.x ?? 0, initY: noteDragPos?.y ?? 0 };
+    e.preventDefault();
+  }, [noteDragPos]);
+
+  const handleNoteSend = useCallback(() => {
+    const text = noteText.trim();
+    if (!text) return;
+    window.dispatchEvent(new CustomEvent("oyasumi:chatSend", { detail: text }));
+  }, [noteText]);
   // ────────────────────────────────────────────────────────────────────────
 
   if (isCombattimento) {
@@ -185,6 +222,77 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
                 showCampo={showCampo}
                 setShowCampo={setShowCampo}
               />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (isNote) {
+    return (
+      <div
+        className="fixed inset-0 z-30 pointer-events-none"
+        role="dialog"
+        aria-label={WINDOW_LABELS[windowId]}
+        aria-modal="true"
+      >
+        {noteDragPos && (
+          <div
+            className="absolute flex flex-col overflow-hidden pointer-events-auto bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl shadow-[0_0_24px_rgba(165,131,224,0.15)]"
+            style={{ left: noteDragPos.x, top: noteDragPos.y, width: NOTE_W, height: NOTE_H }}
+            onMouseDown={handleNoteHeaderMouseDown}
+          >
+            {/* Header — drag handle */}
+            <div className="note-drag-handle flex items-center justify-between shrink-0 px-4 py-2.5 border-b border-[var(--border-color)] bg-black/40 select-none cursor-grab active:cursor-grabbing">
+              <h3 className="font-display text-xs uppercase tracking-widest text-[var(--accent-gold)] flex items-center gap-2 pointer-events-none">
+                <FontAwesomeIcon icon={PANEL_ICONS[windowId]} className="w-3.5 h-3.5" />
+                {WINDOW_LABELS[windowId]}
+              </h3>
+              <div className="flex items-center gap-1 pointer-events-auto" onMouseDown={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => onLower(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-[var(--accent-gold)] hover:bg-white/10 rounded transition-colors"
+                  title="Abbassa (in dock)"
+                >
+                  <FontAwesomeIcon icon={icons.minimize} className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onClose(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-white/10 rounded transition-colors"
+                  title="Chiudi"
+                >
+                  <FontAwesomeIcon icon={icons.close} className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="flex flex-col flex-1 min-h-0 p-3 gap-2">
+              <textarea
+                className="flex-1 min-h-0 resize-none bg-white/5 border border-white/10 text-[#e6e0ff] px-2.5 py-2 rounded text-sm font-sans leading-relaxed focus:outline-none focus:border-[var(--accent-violet)]/50"
+                placeholder="Scrivi qui le tue note..."
+                value={noteText}
+                onChange={(e) => {
+                  setNoteText(e.target.value);
+                  localStorage.setItem("oyasumi-player-notes", e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.stopPropagation();
+                }}
+              />
+              <div className="flex items-center justify-between shrink-0">
+                <span className="text-[10px] text-gray-500 font-mono">{noteText.length} caratteri</span>
+                <button
+                  type="button"
+                  onClick={handleNoteSend}
+                  disabled={!noteText.trim()}
+                  className="px-4 py-1.5 text-xs font-display uppercase tracking-wider rounded border border-[var(--accent-violet)] bg-[var(--accent-violet)]/20 text-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Invia in chat
+                </button>
+              </div>
             </div>
           </div>
         )}

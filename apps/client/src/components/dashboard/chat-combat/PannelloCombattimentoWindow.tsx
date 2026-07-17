@@ -323,7 +323,7 @@ export function PannelloCombattimentoWindow({
         style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
       >
         <ZoneHeader label="Equipaggiamento" />
-        <CombatWeaponsSection />
+        <CombatWeaponsSection char={char} onSendMessage={onSendMessage} />
       </section>
 
       {/* ── Z3 · LANCIO WAZA ─────────────────────────────────────────────── */}

@@ -58,6 +58,11 @@ function toCatalogEntry(row: typeof items.$inferSelect) {
     priceRem: row.price,
     isActiveInMarket: row.isActiveInMarket,
     category: row.category as ItemCategory,
+    type: row.type,
+    damage: row.damage,
+    resistance: row.resistance,
+    bonus: row.bonus,
+    ammoKind: row.ammoKind,
   }
 }
 
@@ -72,6 +77,11 @@ export type MarketCatalogInput = {
   priceRem: number
   category?: ItemCategory
   isActiveInMarket?: boolean
+  type?: 'GENERIC' | 'WEAPON' | 'ARMOR' | 'BAG'
+  damage?: number | null
+  resistance?: number | null
+  bonus?: number | null
+  ammoKind?: string | null
 }
 
 function assertValidInput(input: MarketCatalogInput) {
@@ -99,7 +109,7 @@ export async function createMarketCatalogItem(input: MarketCatalogInput) {
       description: input.description ?? null,
       iconUrl: input.iconUrl ?? null,
       category: input.category ?? 'equipaggiamento',
-      type: 'GENERIC',
+      type: input.type ?? 'GENERIC',
       integrityMax: input.integrityMax ?? null,
       effectText: input.effectText ?? null,
       inventorySlotCost: 1,
@@ -107,6 +117,10 @@ export async function createMarketCatalogItem(input: MarketCatalogInput) {
       marketCategory: input.marketCategory as MarketCategory,
       price: input.priceRem,
       isActiveInMarket: input.isActiveInMarket ?? true,
+      damage: input.damage ?? null,
+      resistance: input.resistance ?? null,
+      bonus: input.bonus ?? null,
+      ammoKind: input.ammoKind ?? null,
     })
     .returning()
 
@@ -136,6 +150,11 @@ export async function updateMarketCatalogItem(id: string, input: Partial<MarketC
       marketCategory: (input.marketCategory as MarketCategory) ?? existing.marketCategory,
       price: input.priceRem ?? existing.price,
       isActiveInMarket: input.isActiveInMarket ?? existing.isActiveInMarket,
+      type: input.type ?? existing.type,
+      damage: input.damage !== undefined ? input.damage : existing.damage,
+      resistance: input.resistance !== undefined ? input.resistance : existing.resistance,
+      bonus: input.bonus !== undefined ? input.bonus : existing.bonus,
+      ammoKind: input.ammoKind !== undefined ? input.ammoKind : existing.ammoKind,
     })
     .where(eq(items.id, id))
     .returning()

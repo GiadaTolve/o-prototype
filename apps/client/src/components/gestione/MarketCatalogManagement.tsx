@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { MARKET_CATEGORIES, MARKET_CATEGORY_LABELS, type MarketCategory } from "@domain/economy/market-catalog";
 
+type ItemType = "GENERIC" | "WEAPON" | "ARMOR" | "BAG";
+
 type CatalogItemAdmin = {
   id: string;
   marketCategory: MarketCategory;
@@ -17,6 +19,11 @@ type CatalogItemAdmin = {
   effectText: string | null;
   priceRem: number | null;
   isActiveInMarket: boolean;
+  type: ItemType | null;
+  damage: number | null;
+  resistance: number | null;
+  bonus: number | null;
+  ammoKind: string | null;
 };
 
 export function MarketCatalogManagement() {
@@ -47,6 +54,11 @@ export function MarketCatalogManagement() {
     effectText?: string;
     priceRem: number;
     isActiveInMarket: boolean;
+    type?: ItemType;
+    damage?: number | null;
+    resistance?: number | null;
+    bonus?: number | null;
+    ammoKind?: string | null;
   }) => {
     setLoading(true);
     try {
@@ -60,6 +72,11 @@ export function MarketCatalogManagement() {
         effectText: data.effectText || null,
         priceRem: data.priceRem,
         isActiveInMarket: data.isActiveInMarket,
+        type: data.type ?? "GENERIC",
+        damage: data.damage ?? null,
+        resistance: data.resistance ?? null,
+        bonus: data.bonus ?? null,
+        ammoKind: data.ammoKind || null,
       };
       if (editing?.id) {
         await api.put(`/market-catalog-admin/${editing.id}`, body);
@@ -195,6 +212,11 @@ function CatalogItemModal({
     effectText?: string;
     priceRem: number;
     isActiveInMarket: boolean;
+    type?: ItemType;
+    damage?: number | null;
+    resistance?: number | null;
+    bonus?: number | null;
+    ammoKind?: string | null;
   }) => void;
   onCancel: () => void;
   loading: boolean;
@@ -208,6 +230,11 @@ function CatalogItemModal({
   const [effectText, setEffectText] = useState(item.effectText ?? "");
   const [priceRem, setPriceRem] = useState<string>(item.priceRem?.toString() ?? "");
   const [isActiveInMarket, setIsActiveInMarket] = useState(item.isActiveInMarket ?? true);
+  const [itemType, setItemType] = useState<ItemType>(item.type ?? "GENERIC");
+  const [damage, setDamage] = useState<string>(item.damage?.toString() ?? "");
+  const [resistance, setResistance] = useState<string>(item.resistance?.toString() ?? "");
+  const [bonus, setBonus] = useState<string>(item.bonus?.toString() ?? "");
+  const [ammoKind, setAmmoKind] = useState<string>(item.ammoKind ?? "");
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -221,6 +248,11 @@ function CatalogItemModal({
       effectText: effectText || undefined,
       priceRem: priceRem ? Number(priceRem) : 0,
       isActiveInMarket,
+      type: itemType,
+      damage: damage !== "" ? Number(damage) : null,
+      resistance: resistance !== "" ? Number(resistance) : null,
+      bonus: bonus !== "" ? Number(bonus) : null,
+      ammoKind: ammoKind || null,
     });
   };
 
@@ -310,7 +342,7 @@ function CatalogItemModal({
             </div>
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Bonus / effetto</label>
+            <label className="block text-sm text-gray-400 mb-1">Effetto</label>
             <input
               type="text"
               value={effectText}
@@ -318,6 +350,70 @@ function CatalogItemModal({
               placeholder="es. Scudo 4 (T1)"
               className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
             />
+          </div>
+
+          {/* Parametri combattimento */}
+          <div className="border-t border-[var(--border-color)]/50 pt-3 space-y-3">
+            <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display">Parametri combattimento</p>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Tipo oggetto</label>
+              <select
+                value={itemType}
+                onChange={(e) => setItemType(e.target.value as ItemType)}
+                className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+              >
+                <option value="GENERIC">Generico</option>
+                <option value="WEAPON">Arma (WEAPON)</option>
+                <option value="ARMOR">Armatura (ARMOR)</option>
+                <option value="BAG">Zaino (BAG)</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Danno</label>
+                <input
+                  type="number"
+                  value={damage}
+                  onChange={(e) => setDamage(e.target.value)}
+                  placeholder="—"
+                  className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                  min={0}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Armatura</label>
+                <input
+                  type="number"
+                  value={resistance}
+                  onChange={(e) => setResistance(e.target.value)}
+                  placeholder="—"
+                  className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                  min={0}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Bonus</label>
+                <input
+                  type="number"
+                  value={bonus}
+                  onChange={(e) => setBonus(e.target.value)}
+                  placeholder="—"
+                  className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                />
+              </div>
+            </div>
+            {itemType === "WEAPON" && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Tipo munizioni (ammoKind)</label>
+                <input
+                  type="text"
+                  value={ammoKind}
+                  onChange={(e) => setAmmoKind(e.target.value)}
+                  placeholder="es. proiettili, frecce (vuoto = nessuna)"
+                  className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-black/50 text-sm text-white"
+                />
+              </div>
+            )}
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-400">
             <input

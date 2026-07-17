@@ -3,8 +3,30 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { InventoryItemRow } from "@/components/dashboard/inventory/types";
+import type { CharacterSummary } from "@/components/dashboard/types";
+import { resolveCharacterComputed } from "@/components/dashboard/character-computed";
+import { encodeAttackMessage } from "./ChatAttackCard";
 
 const MAX_WIELDED = 2; // Ambidestria — vincolo sulle armi IMPUGNATE, non sui Tōrō
+
+const TIER_VALUES: Record<number, number> = { 1: 4, 2: 8, 3: 12, 4: 17, 5: 23 };
+
+const GRADE_INDEX: Record<string, number> = {
+  "Nemuribito": 0,
+  "Hakyō": 1,
+  "Bunsekikan": 2,
+  "Sentatsu Bunsekikan": 3,
+  "Kanteikan": 4,
+  "Shin'enkan": 4,
+};
+
+function resolveGradeIndex(grade: string | null | undefined): number {
+  if (!grade) return 0;
+  for (const [key, val] of Object.entries(GRADE_INDEX)) {
+    if (grade.includes(key)) return val;
+  }
+  return 0;
+}
 
 type WeaponRow = {
   inventoryId: string;
@@ -25,11 +47,18 @@ type CombatWeaponsState = {
  * Zona 2 — "In uso ora": dichiarazione di cosa si impugna e cos'è Tōrō in questo momento.
  * L'equipaggiamento resta in scheda; qui si dichiara solo l'uso presente (spec §2 Zona2).
  */
-export function CombatWeaponsSection() {
+export function CombatWeaponsSection({
+  char,
+  onSendMessage,
+}: {
+  char?: CharacterSummary;
+  onSendMessage?: (text: string) => void;
+} = {}) {
   const [weapons, setWeapons] = useState<WeaponRow[]>([]);
   const [state, setState] = useState<CombatWeaponsState>({ activeIds: [], toroIds: [], ammo: {} });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fistTier, setFistTier] = useState<number>(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +156,63 @@ export function CombatWeaponsSection() {
     [state, patch],
   );
 
+  const attackWithWeapon = useCallback(
+    (w: WeaponRow) => {
+      if (!onSendMessage) return;
+      const computed = resolveCharacterComputed(char?.computed);
+      const isRanged = !!w.ammoKind;
+      const ammoVal = state.ammo[w.inventoryId] ?? 0;
+      if (isRanged && ammoVal <= 0) return;
+
+      const base = isRanged ? computed.cad : computed.cac;
+      const wepDmg = w.damage ?? 0;
+      const total = base + wepDmg;
+      const statLabel = isRanged ? `CAD (${base})` : `CAC (${base})`;
+      const formula = `${statLabel} + ${wepDmg}`;
+      const ammoNote = isRanged ? `−1 ${w.ammoKind}` : undefined;
+
+      onSendMessage(encodeAttackMessage({
+        weapon: w.name,
+        formula,
+        total,
+        kind: isRanged ? "ranged" : "melee",
+        ammoNote,
+      }));
+
+      if (isRanged) {
+        void patch({ ammo: { ...state.ammo, [w.inventoryId]: Math.max(0, ammoVal - 1) } });
+      }
+    },
+    [char, state, patch, onSendMessage],
+  );
+
+  const attackFist = useCallback(() => {
+    if (!onSendMessage) return;
+    const computed = resolveCharacterComputed(char?.computed);
+    const cac = computed.cac;
+    const grade = char?.grade ?? null;
+    const gradeIdx = resolveGradeIndex(grade);
+
+    if (gradeIdx === 0) {
+      onSendMessage(encodeAttackMessage({
+        weapon: "Colpo corpo a corpo",
+        formula: `CAC (${cac})`,
+        total: cac,
+        kind: "melee",
+      }));
+    } else {
+      const tierVal = TIER_VALUES[fistTier] ?? 4;
+      const bonus = tierVal * gradeIdx;
+      const total = cac + bonus;
+      onSendMessage(encodeAttackMessage({
+        weapon: "Colpo corpo a corpo",
+        formula: `CAC (${cac}) + T${fistTier} (${tierVal}) × Gr.${gradeIdx}`,
+        total,
+        kind: "melee",
+      }));
+    }
+  }, [char, fistTier, onSendMessage]);
+
   if (loading) {
     return <p className="text-[9px] text-gray-500">Caricamento armi…</p>;
   }
@@ -219,6 +305,24 @@ export function CombatWeaponsSection() {
                   {isToro ? "Tōrō ✓" : "Tōrō"}
                 </button>
               )}
+
+              {/* pulsante Colpisci — solo armi impugnate, non armature */}
+              {!isArmor && isActive && onSendMessage && (
+                <button
+                  type="button"
+                  disabled={saving || (needsAmmo && (state.ammo[w.inventoryId] ?? 0) <= 0)}
+                  className="text-[9px] px-2 py-0.5 rounded border shrink-0 transition-colors disabled:opacity-30"
+                  style={{
+                    background: "color-mix(in srgb, var(--accent-gold) 10%, transparent)",
+                    color: "var(--accent-gold)",
+                    borderColor: "color-mix(in srgb, var(--accent-gold) 35%, transparent)",
+                  }}
+                  onClick={() => attackWithWeapon(w)}
+                  title={needsAmmo && (state.ammo[w.inventoryId] ?? 0) <= 0 ? "Nessuna munizione" : "Colpisci (senza waza, senza CS)"}
+                >
+                  Colpisci
+                </button>
+              )}
             </div>
 
             {/* riga munizioni — solo armi con ammoKind */}
@@ -267,6 +371,44 @@ export function CombatWeaponsSection() {
       <p className="text-[8px] text-gray-600 leading-relaxed mt-1 italic">
         Più oggetti possono essere Tōrō insieme. Le munizioni contano solo per gli spari normali, non per le waza.
       </p>
+
+      {/* Attacco a mani nude */}
+      {onSendMessage && (
+        <div
+          className="rounded-lg p-2 mt-1"
+          style={{ background: "rgba(0,0,0,0.20)", border: "1px solid var(--border-color)" }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#4a4356" }} />
+            <span className="flex-1 text-[11px] leading-tight text-[var(--muted-foreground)]">Corpo a corpo</span>
+            {resolveGradeIndex(char?.grade) > 0 && (
+              <select
+                value={fistTier}
+                onChange={(e) => setFistTier(Number(e.target.value))}
+                className="text-[9px] bg-black/40 border border-[var(--border-color)] text-[var(--muted-foreground)] rounded px-1 py-0.5"
+                title="Tier attacco pugno"
+              >
+                {[1,2,3,4,5].map((t) => (
+                  <option key={t} value={t}>T{t}</option>
+                ))}
+              </select>
+            )}
+            <button
+              type="button"
+              onClick={attackFist}
+              className="text-[9px] px-2 py-0.5 rounded border shrink-0 transition-colors"
+              style={{
+                background: "color-mix(in srgb, var(--accent-gold) 10%, transparent)",
+                color: "var(--accent-gold)",
+                borderColor: "color-mix(in srgb, var(--accent-gold) 35%, transparent)",
+              }}
+              title="Pugno (senza waza, senza CS)"
+            >
+              Colpisci
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

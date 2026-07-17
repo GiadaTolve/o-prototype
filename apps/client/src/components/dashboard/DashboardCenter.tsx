@@ -52,6 +52,7 @@ import { ChatWazaResolutionPost } from "./chat-combat/ChatWazaResolutionPost";
 import { ChatConstructResolutionPost } from "./chat-combat/ChatConstructResolutionPost";
 import { buildChatWazaPostFromMessage } from "./chat-combat/buildChatWazaPostFromMessage";
 import { buildConstructPostFromMessage, buildStandaloneConstructPostFromMessage, extractStandaloneConstructName } from "./chat-combat/buildConstructPostFromMessage";
+import { ChatAttackCard, extractAttackData } from "./chat-combat/ChatAttackCard";
 
 /** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
 const MOBILE_CHAT_MAX_LENGTH = 500;
@@ -92,6 +93,8 @@ type Props = {
   onImmersiveChange?: (immersive: boolean) => void;
   /** Apre la finestra Pannello Combattimento nel dock. */
   onOpenCombattimento?: () => void;
+  /** Apre il Blocco Note nel dock. */
+  onOpenNote?: () => void;
 };
 
 export function DashboardCenter({
@@ -115,6 +118,7 @@ export function DashboardCenter({
   variant = "default",
   onImmersiveChange,
   onOpenCombattimento,
+  onOpenNote,
 }: Props) {
   const compact = variant === "mobile";
   const { index: wazaTagIndex } = useWazaCatalog();
@@ -579,6 +583,7 @@ export function DashboardCenter({
           char={char}
           compact={compact}
           onOpenCombattimento={onOpenCombattimento}
+          onOpenNote={onOpenNote}
         />
         </div>
       )}
@@ -1976,6 +1981,7 @@ function ChatView({
   char,
   compact = false,
   onOpenCombattimento,
+  onOpenNote,
 }: {
   roomId: RoomId;
   placeLabel: string;
@@ -1994,6 +2000,7 @@ function ChatView({
   char?: CharacterSummary;
   compact?: boolean;
   onOpenCombattimento?: () => void;
+  onOpenNote?: () => void;
 }) {
   const { index: wazaTagIndex } = useWazaCatalog();
   const [showMobileTools, setShowMobileTools] = useState(false);
@@ -2673,6 +2680,16 @@ function ChatView({
             <div className="flex justify-between items-center mt-2.5 pl-[160px] gap-3 flex-wrap">
               <div className="flex gap-2 flex-wrap items-center">
                 {!isPartychatRoom && canAccessShinigami && <RegistraQuestButton roomId={roomId} activeQuest={activeQuest} usersInRoom={usersInRoom} canAccessGestione={canAccessGestione} onQuestCreated={() => refreshQuest(true)} />}
+                {onOpenNote && (
+                  <button
+                    type="button"
+                    onClick={onOpenNote}
+                    className="px-3 py-1.5 text-[10px] uppercase tracking-wider rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 transition-colors"
+                    title="Apri blocco note"
+                  >
+                    Note
+                  </button>
+                )}
                 {!isPartychatRoom && <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} />}
                 {canAccessGestione && <GlobalMessageButton />}
               </div>
@@ -2893,6 +2910,8 @@ function ChatMessageBlock({
       miniAvatar: message.miniAvatar ?? undefined,
     });
   }, [message.content, message.miniAvatar, actorSkiruSheet, actorHpMax, characterName]);
+  const attackData = useMemo(() => extractAttackData(message.content), [message.content]);
+
   const narrativeBody = useMemo(
     () => removeWazaTagsFromText(message.content),
     [message.content],
@@ -2951,6 +2970,15 @@ function ChatMessageBlock({
     const date = new Date(isoString);
     return date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
   };
+
+  // Card attacco senza waza
+  if (attackData) {
+    return (
+      <div className="w-full mb-3">
+        <ChatAttackCard data={attackData} characterName={characterName} />
+      </div>
+    );
+  }
 
   const hasWazaAttack = wazaLaunches.length > 0 && !diceRollOnly;
   const hasStandaloneConstruct = !hasWazaAttack && constructPost != null && extractStandaloneConstructName(message.content) != null;

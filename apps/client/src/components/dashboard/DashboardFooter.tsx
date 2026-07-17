@@ -21,6 +21,7 @@ const DOCK_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   notifiche: icons.bell,
   spazioEventi: icons.gamepad,
   combattimento: icons.waza,
+  note: icons.edit,
 };
 
 type Props = {

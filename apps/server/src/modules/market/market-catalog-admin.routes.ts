@@ -36,6 +36,11 @@ const catalogItemBody = t.Object({
   effectText: t.Optional(t.Nullable(t.String())),
   priceRem: t.Number({ minimum: 0 }),
   isActiveInMarket: t.Optional(t.Boolean()),
+  type: t.Optional(t.Union([t.Literal('GENERIC'), t.Literal('WEAPON'), t.Literal('ARMOR'), t.Literal('BAG')])),
+  damage: t.Optional(t.Nullable(t.Number())),
+  resistance: t.Optional(t.Nullable(t.Number())),
+  bonus: t.Optional(t.Nullable(t.Number())),
+  ammoKind: t.Optional(t.Nullable(t.String())),
 })
 
 export const marketCatalogAdminRoutes = new Elysia({ prefix: '/market-catalog-admin' })
