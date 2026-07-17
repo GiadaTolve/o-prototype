@@ -1194,13 +1194,12 @@ function RegistraGiocataButton({
         className={
           iconOnly
             ? "inline-flex items-center justify-center p-2 rounded border border-[var(--border-color)] text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
-            : "inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+            : "inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[var(--border-color)] text-[10px] font-display tracking-wider uppercase text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
         }
         title="Registra giocata"
         aria-label="Registra giocata"
       >
-        <FontAwesomeIcon icon={icons.gamepad} className="w-3.5 h-3.5" />
-        {!iconOnly && "Registra Giocata"}
+        {iconOnly ? <FontAwesomeIcon icon={icons.gamepad} className="w-3.5 h-3.5" /> : "Registra Giocata"}
       </button>
       {dropdown}
       <ConfirmDialog
@@ -1949,13 +1948,12 @@ function RegistraQuestButton({
         className={
           iconOnly
             ? "inline-flex items-center justify-center p-2 rounded border border-[var(--border-color)] text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
-            : "inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
+            : "inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[var(--border-color)] text-[10px] font-display tracking-wider uppercase text-gray-400 hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)] transition-colors"
         }
         title="Registra Quest"
         aria-label="Registra Quest"
       >
-        <FontAwesomeIcon icon={icons.ordine} className="w-3.5 h-3.5" />
-        {!iconOnly && "Registra Quest"}
+        {iconOnly ? <FontAwesomeIcon icon={icons.ordine} className="w-3.5 h-3.5" /> : "Registra Quest"}
       </button>
       {modal}
     </>
@@ -2684,7 +2682,7 @@ function ChatView({
                   <button
                     type="button"
                     onClick={onOpenNote}
-                    className="px-3 py-1.5 text-[10px] uppercase tracking-wider rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 transition-colors"
+                    className="inline-flex items-center px-3 py-1.5 text-[10px] font-display tracking-wider uppercase rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 transition-colors"
                     title="Apri blocco note"
                   >
                     Note
@@ -2828,14 +2826,13 @@ function GlobalMessageButton({ iconOnly = false }: { iconOnly?: boolean }) {
         onClick={() => setShowModal(true)}
         className={
           iconOnly
-            ? "inline-flex items-center justify-center p-2 rounded border border-[var(--accent-violet)] text-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/10 transition-colors"
-            : "px-3 py-1.5 rounded border border-[var(--accent-violet)] text-[var(--accent-violet)] text-xs hover:bg-[var(--accent-violet)]/10 transition-colors"
+            ? "inline-flex items-center justify-center p-2 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 transition-colors"
+            : "inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[10px] font-display tracking-wider uppercase text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 transition-colors"
         }
         title="Invia messaggio globale (Admin)"
         aria-label="Messaggio globale"
       >
-        <FontAwesomeIcon icon={icons.bullhorn} className={iconOnly ? "w-3.5 h-3.5" : "w-3 h-3 mr-1"} />
-        {!iconOnly && "Global Message"}
+        {iconOnly ? <FontAwesomeIcon icon={icons.bullhorn} className="w-3.5 h-3.5" /> : "Messaggio Globale"}
       </button>
       {modal}
     </>

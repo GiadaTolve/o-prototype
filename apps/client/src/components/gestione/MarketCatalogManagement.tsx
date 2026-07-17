@@ -10,7 +10,7 @@ type ItemType = "GENERIC" | "WEAPON" | "ARMOR" | "BAG";
 
 type CatalogItemAdmin = {
   id: string;
-  marketCategory: MarketCategory;
+  marketCategory: MarketCategory | null;
   name: string;
   nameRomaji: string | null;
   description: string | null;
@@ -145,7 +145,7 @@ export function MarketCatalogManagement() {
                     {it.name}
                     {it.nameRomaji && <span className="text-gray-500 ml-1.5 text-xs">({it.nameRomaji})</span>}
                   </td>
-                  <td className="px-4 py-2 text-gray-400">{MARKET_CATEGORY_LABELS[it.marketCategory]}</td>
+                  <td className="px-4 py-2 text-gray-400">{it.marketCategory ? MARKET_CATEGORY_LABELS[it.marketCategory] : "—"}</td>
                   <td className="px-4 py-2 text-[var(--accent-gold)] tabular-nums">{it.priceRem ?? "—"} Rem</td>
                   <td className="px-4 py-2">
                     {it.isActiveInMarket ? (

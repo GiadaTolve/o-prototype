@@ -38,6 +38,7 @@ export function resolveShinigamiAccess(userRole?: string | null, roleIcon?: stri
   return (
     role === 'ADMIN' ||
     role === 'MASTER' ||
+    icon === 'admin' ||
     icon === 'shinigami' ||
     icon === 'capo-shinigami' ||
     icon === 'moderatore'
@@ -71,7 +72,7 @@ export async function userHasShinigamiAccess(
     columns: { uiMetadata: true },
   })
   const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
-  return icon === 'shinigami' || icon === 'capo-shinigami' || icon === 'moderatore'
+  return icon === 'admin' || icon === 'shinigami' || icon === 'capo-shinigami' || icon === 'moderatore'
 }
 
 /** Admin o pixel-icon staff dev (moderatore, admin, fixer) — pannello Sviluppo. */

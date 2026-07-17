@@ -740,7 +740,7 @@ body {
 
 .waza-tag-meta {
   font-size: 0.68em;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--accent-violet-light);
@@ -791,7 +791,7 @@ body {
 
 .waza-launch-strip__line {
   display: block;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.72rem;
   line-height: 1.35;
   letter-spacing: 0.03em;
@@ -822,7 +822,7 @@ body {
   padding: 0.4rem 0.5rem;
   text-align: left;
   font-size: 0.62rem;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--accent-violet-light);
@@ -865,7 +865,7 @@ body {
   background: rgba(201, 168, 74, 0.06);
   font-size: 0.65rem;
   color: var(--accent-gold);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -881,7 +881,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.45);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .waza-launch__input,
@@ -986,7 +986,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.45);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .waza-launch__details > summary::-webkit-details-marker {
@@ -1028,7 +1028,7 @@ body {
   padding: 0.45rem 0.5rem;
   border-radius: 4px;
   font-size: 0.62rem;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: background 0.15s ease, color 0.15s ease;
@@ -1076,7 +1076,7 @@ body {
   grid-template-columns: repeat(3, 1fr);
   gap: 0.35rem;
   font-size: 0.62rem;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1120,7 +1120,7 @@ body {
   font-size: 0.62rem;
   font-weight: 700;
   color: var(--accent-gold);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-combat-master-btn {
@@ -1181,7 +1181,7 @@ body {
 }
 
 .combat-event-strip__line {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   color: var(--accent-violet-light);
@@ -1232,7 +1232,7 @@ body {
 }
 
 .combat-hp-inline__label {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.58rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1241,7 +1241,7 @@ body {
 }
 
 .combat-hp-inline__values {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.68rem;
   color: var(--accent-gold);
   font-variant-numeric: tabular-nums;
@@ -1299,7 +1299,7 @@ body {
 }
 
 .combat-cs-inline__label {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.58rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1308,7 +1308,7 @@ body {
 }
 
 .combat-cs-inline__values {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.68rem;
   color: var(--accent-violet-light);
   font-variant-numeric: tabular-nums;
@@ -1413,7 +1413,7 @@ body {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 600;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--accent-violet-light);
@@ -1427,7 +1427,7 @@ body {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 600;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--accent-gold);
@@ -1443,7 +1443,7 @@ body {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 600;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 1px 6px;
@@ -1502,7 +1502,7 @@ body {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 600;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--accent-gold);
@@ -1517,7 +1517,7 @@ body {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 600;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   letter-spacing: 0.05em;
   color: var(--accent-violet-light);
   background: rgba(96, 81, 155, 0.18);
@@ -1543,7 +1543,7 @@ body {
 .action-state-summary__label {
   display: block;
   margin-bottom: 0.35rem;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -1583,7 +1583,7 @@ body {
 }
 
 .action-state-summary__chip-key {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1600,7 +1600,7 @@ body {
 }
 
 .action-state-summary__chip-stack {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-weight: 700;
   font-size: 0.68rem;
   color: var(--accent-gold);
@@ -2290,12 +2290,12 @@ html:has(.mobile-app-shell) body {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--accent-violet-light);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-resolution-preview__title {
   margin: 0 0 0.5rem;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 1.15rem;
   color: var(--accent-gold);
   letter-spacing: 0.04em;
@@ -2343,7 +2343,7 @@ html:has(.mobile-app-shell) body {
 }
 
 .chat-resolution-preview__actor {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-weight: 700;
   color: var(--accent-gold);
   letter-spacing: 0.03em;
@@ -2358,7 +2358,7 @@ html:has(.mobile-app-shell) body {
 
 .chat-resolution-preview__master-verdict {
   margin: 0.35rem 0 0;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -2451,7 +2451,7 @@ html:has(.mobile-app-shell) body {
 }
 
 .chat-resolution-post__romaji {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--accent-gold);
@@ -2527,11 +2527,11 @@ html:has(.mobile-app-shell) body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.4);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-resolution-post__metric-value {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 1rem;
   font-weight: 700;
   color: var(--accent-gold);
@@ -2549,7 +2549,7 @@ html:has(.mobile-app-shell) body {
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   border: 1px solid transparent;
 }
 
@@ -2583,7 +2583,7 @@ html:has(.mobile-app-shell) body {
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.4);
   margin-bottom: 0.2rem;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-resolution-post__hp-bar {
@@ -2623,7 +2623,7 @@ html:has(.mobile-app-shell) body {
   border: 1px solid rgba(124, 58, 237, 0.35);
   color: var(--accent-violet-light);
   background: rgba(124, 58, 237, 0.12);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-resolution-post__toggle {
@@ -2640,7 +2640,7 @@ html:has(.mobile-app-shell) body {
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   cursor: pointer;
   min-height: 44px;
 }
@@ -2677,7 +2677,7 @@ html:has(.mobile-app-shell) body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.42);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-resolution-post__steps {
@@ -2796,7 +2796,7 @@ html:has(.mobile-app-shell) body {
   background: rgba(201, 168, 74, 0.08);
   color: var(--accent-gold);
   font-size: 0.85rem;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   line-height: 1;
   cursor: pointer;
 }
@@ -2823,7 +2823,7 @@ html:has(.mobile-app-shell) body {
   max-width: 5.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-weight: 600;
   color: var(--accent-gold);
   letter-spacing: 0.02em;
@@ -2851,7 +2851,7 @@ html:has(.mobile-app-shell) body {
 }
 
 .chat-waza-launch-post__romaji {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-weight: 700;
   color: var(--accent-gold);
   letter-spacing: 0.03em;
@@ -2876,7 +2876,7 @@ html:has(.mobile-app-shell) body {
 .chat-waza-launch-post__stats strong {
   color: var(--accent-gold);
   font-weight: 700;
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-waza-launch-post__tooltip {
@@ -2935,7 +2935,7 @@ html:has(.mobile-app-shell) body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.42);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .chat-waza-launch-post__detail-text {
@@ -3076,7 +3076,7 @@ html:has(.mobile-app-shell) body {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
 }
 
 .lwz__fav-row {
@@ -3132,7 +3132,7 @@ html:has(.mobile-app-shell) body {
   gap: 0.5rem;
 }
 .lwz__row-name {
-  font-family: var(--font-display, Cinzel, serif);
+  font-family: var(--font-display, Philosopher, serif);
   font-size: 0.82rem;
 }
 .lwz__row-meta {

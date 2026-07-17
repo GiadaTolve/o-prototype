@@ -35,11 +35,10 @@ export async function listMarketCatalog() {
   return rows.map(toCatalogEntry)
 }
 
-/** Catalogo completo (incl. voci disattivate) per il pannello Sviluppo. */
+/** Tutti gli oggetti nel DB — per il pannello Sviluppo (nessun filtro categoria). */
 export async function listMarketCatalogAdmin() {
   const rows = await db.query.items.findMany({
-    where: isNotNull(items.marketCategory),
-    orderBy: (t, { asc }) => [asc(t.marketCategory), asc(t.name)],
+    orderBy: (t, { asc }) => [asc(t.name)],
   })
   return rows.map(toCatalogEntry)
 }
@@ -129,7 +128,7 @@ export async function createMarketCatalogItem(input: MarketCatalogInput) {
 
 export async function updateMarketCatalogItem(id: string, input: Partial<MarketCatalogInput>) {
   const existing = await db.query.items.findFirst({ where: eq(items.id, id) })
-  if (!existing || !existing.marketCategory) throw new Error('Voce catalogo non trovata.')
+  if (!existing) throw new Error('Oggetto non trovato.')
 
   if (input.marketCategory != null && !isMarketCategory(input.marketCategory)) {
     throw new Error('Categoria Market non valida.')
@@ -169,7 +168,7 @@ export async function updateMarketCatalogItem(id: string, input: Partial<MarketC
  */
 export async function deleteOrDeactivateMarketCatalogItem(id: string) {
   const existing = await db.query.items.findFirst({ where: eq(items.id, id) })
-  if (!existing || !existing.marketCategory) throw new Error('Voce catalogo non trovata.')
+  if (!existing) throw new Error('Oggetto non trovato.')
 
   const owned = await db.query.inventory.findFirst({ where: eq(inventory.itemId, id) })
   if (owned) {

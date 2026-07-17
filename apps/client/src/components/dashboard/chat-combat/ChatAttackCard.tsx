@@ -24,8 +24,6 @@ export function extractAttackData(content: string): AttackCardData | null {
 }
 
 export function ChatAttackCard({ data, characterName }: { data: AttackCardData; characterName: string }) {
-  const isRanged = data.kind === "ranged";
-
   return (
     <article
       className="flex items-stretch rounded overflow-hidden"
@@ -37,14 +35,12 @@ export function ChatAttackCard({ data, characterName }: { data: AttackCardData; 
       }}
       aria-label={`Attacco ${data.weapon} · ${characterName}`}
     >
-      {/* Icona laterale */}
+      {/* Barra laterale colorata (senza emoji) */}
       <div
-        className="flex items-center justify-center shrink-0 px-2.5 text-base select-none"
-        style={{ background: "rgba(232,118,58,0.10)", borderRight: "1px solid rgba(232,118,58,0.18)" }}
+        className="shrink-0 w-1"
+        style={{ background: "rgba(232,118,58,0.55)" }}
         aria-hidden
-      >
-        {isRanged ? "🎯" : "⚔️"}
-      </div>
+      />
 
       {/* Corpo */}
       <div className="flex items-center gap-3 flex-1 min-w-0 px-3 py-1.5 flex-wrap">
