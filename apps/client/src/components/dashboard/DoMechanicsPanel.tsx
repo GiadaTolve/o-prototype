@@ -238,11 +238,6 @@ export function DoMechanicsPanel({
               </button>
             )}
           </div>
-          <p className="text-[9px] text-gray-600 mt-2 leading-snug">
-            Tag chat: <span className="text-[var(--accent-gold)]">[waza:Kōmei…]</span> ·{" "}
-            <span className="text-[var(--accent-gold)]">[waza:Shokushin…]</span> +{" "}
-            <span className="text-[var(--accent-gold)]">[lettura:NomePG]</span>
-          </p>
         </div>
       )}
 
@@ -274,10 +269,6 @@ export function DoMechanicsPanel({
               </button>
             ))}
           </div>
-          <p className="text-[9px] text-gray-600 mt-2 leading-snug">
-            Tag chat: <span className="text-[var(--accent-gold)]">[waza:Nagori…]</span> ·{" "}
-            <span className="text-[var(--accent-gold)]">[yuragi:liquido→solido]</span>
-          </p>
         </div>
       )}
 

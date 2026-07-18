@@ -161,9 +161,6 @@ export function CombatItemsSection({
         );
       })}
 
-      <p className="text-[8px] text-gray-600 leading-relaxed italic mt-1">
-        Ogni utilizzo costa 1 integrità (equip) o 1 quantità (consumabile). Le armi si gestiscono sopra con Colpisci.
-      </p>
     </div>
   );
 }

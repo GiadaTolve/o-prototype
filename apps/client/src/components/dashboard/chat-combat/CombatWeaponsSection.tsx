@@ -9,8 +9,6 @@ import { resolveCharacterComputed } from "@/components/dashboard/character-compu
 import { encodeAttackMessage } from "@domain/combat/attack-message";
 import { isAmmoConsumable } from "@domain/economy/items";
 
-const MAX_WIELDED = 2; // Ambidestria — vincolo sulle armi IMPUGNATE, non sui Tōrō
-
 const TIER_VALUES: Record<number, number> = { 1: 4, 2: 8, 3: 12, 4: 17, 5: 23 };
 
 const GRADE_INDEX: Record<string, number> = {
@@ -59,8 +57,7 @@ function countCarryAmmo(items: InventoryItemRow[], ammoKind: string): number {
 }
 
 type CombatWeaponsState = {
-  activeIds: string[]; // armi impugnate ora (max 1, 2 con Ambidestria)
-  toroIds: string[]; // oggetti dichiarati Tōrō ora — liberi e multipli, nessun limite
+  toroIds: string[];
   ammo: Record<string, number>;
 };
 
@@ -78,7 +75,7 @@ export function CombatWeaponsSection({
   const [weapons, setWeapons] = useState<WeaponRow[]>([]);
   const [inventoryAmmo, setInventoryAmmo] = useState<Record<string, number>>({});
   const [equippedAmmo, setEquippedAmmo] = useState<Record<string, number>>({});
-  const [state, setState] = useState<CombatWeaponsState>({ activeIds: [], toroIds: [], ammo: {} });
+  const [state, setState] = useState<CombatWeaponsState>({ toroIds: [], ammo: {} });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fistTier, setFistTier] = useState<number>(1);
@@ -89,7 +86,6 @@ export function CombatWeaponsSection({
     Promise.all([
       api.get("/inventory/me") as Promise<{ carryItems?: InventoryItemRow[]; items?: InventoryItemRow[] }>,
       api.get("/characters/me/do-mechanics") as Promise<{
-        combatActiveWeaponIds?: string[];
         combatToroWeaponIds?: string[];
         combatAmmo?: Record<string, number>;
       }>,
@@ -124,7 +120,6 @@ export function CombatWeaponsSection({
           })),
         );
         setState({
-          activeIds: mechanics.combatActiveWeaponIds ?? [],
           toroIds: mechanics.combatToroWeaponIds ?? [],
           ammo: mechanics.combatAmmo ?? {},
         });
@@ -146,17 +141,14 @@ export function CombatWeaponsSection({
       setSaving(true);
       try {
         const payload = {
-          activeWeaponIds: next.activeIds ?? state.activeIds,
           toroWeaponIds: next.toroIds ?? state.toroIds,
           ammo: next.ammo !== undefined ? next.ammo : undefined,
         };
         const res = (await api.patch("/characters/me/combat-weapons", payload)) as {
-          combatActiveWeaponIds: string[];
           combatToroWeaponIds: string[];
           combatAmmo: Record<string, number>;
         };
         setState({
-          activeIds: res.combatActiveWeaponIds,
           toroIds: res.combatToroWeaponIds,
           ammo: res.combatAmmo,
         });
@@ -164,21 +156,6 @@ export function CombatWeaponsSection({
       finally { setSaving(false); }
     },
     [state],
-  );
-
-  const toggleActive = useCallback(
-    (id: string) => {
-      const isActive = state.activeIds.includes(id);
-      let nextIds: string[];
-      if (isActive) {
-        nextIds = state.activeIds.filter((x) => x !== id);
-      } else {
-        if (state.activeIds.length >= MAX_WIELDED) return;
-        nextIds = [...state.activeIds, id];
-      }
-      void patch({ activeIds: nextIds });
-    },
-    [state, patch],
   );
 
   const toggleToro = useCallback(
@@ -209,10 +186,6 @@ export function CombatWeaponsSection({
       if (intCurrent < 1) return;
       if (isRanged && invAmmo <= 0) return;
 
-      if (!state.activeIds.includes(w.inventoryId) && state.activeIds.length < MAX_WIELDED) {
-        void patch({ activeIds: [...state.activeIds, w.inventoryId] });
-      }
-
       const base = isRanged ? computed.cad : computed.cac;
       const wepDmg = w.damage ?? 0;
       const total = base + wepDmg;
@@ -227,7 +200,7 @@ export function CombatWeaponsSection({
         inventoryId: w.inventoryId,
       }));
     },
-    [char, state.activeIds, equippedAmmo, patch, onSendMessage],
+    [char, equippedAmmo, onSendMessage],
   );
 
   const attackFist = useCallback(() => {
@@ -272,7 +245,6 @@ export function CombatWeaponsSection({
   return (
     <div className="space-y-1.5">
       {weapons.map((w) => {
-        const isActive = state.activeIds.includes(w.inventoryId);
         const isToro = state.toroIds.includes(w.inventoryId);
         const needsAmmo = !!w.ammoKind;
         const ammoVal = state.ammo[w.inventoryId];
@@ -305,18 +277,8 @@ export function CombatWeaponsSection({
                 style={{ background: isToro ? "var(--accent-ember, #e8763a)" : "#4a4356" }}
               />
 
-              <input
-                type="checkbox"
-                checked={isActive}
-                disabled={saving || (!isActive && state.activeIds.length >= MAX_WIELDED)}
-                onChange={() => toggleActive(w.inventoryId)}
-                title="Impugnata / indossata ora"
-                className="accent-[var(--accent-gold)] shrink-0"
-              />
-
               <span
-                className="flex-1 text-[11px] leading-tight truncate"
-                style={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
+                className="flex-1 text-[11px] leading-tight truncate text-[var(--foreground)]"
               >
                 {w.name}
               </span>
@@ -370,7 +332,7 @@ export function CombatWeaponsSection({
 
             {/* munizioni equipaggiate — consumo automatico su Colpisci/Spara */}
             {needsAmmo && (
-              <div className="mt-1.5 flex items-center gap-1.5 pl-5">
+              <div className="mt-1.5 flex items-center gap-1.5 pl-3.5">
                 <span
                   className="inline-flex items-center gap-1 text-[9px] font-mono rounded border px-1.5 py-0.5"
                   style={{
@@ -386,11 +348,11 @@ export function CombatWeaponsSection({
 
             {/* Spara / Colpisci — direttamente sull'arma (−1 INT, munizioni auto) */}
             {!isArmor && onSendMessage && (
-              <div className="mt-2 pl-5 pr-1">
+              <div className="mt-1.5 pl-3.5 pr-1">
                 <button
                   type="button"
                   disabled={saving || !canStrike}
-                  className="w-full min-h-[44px] rounded border text-xs font-display tracking-wide transition-colors disabled:opacity-30"
+                  className="w-full py-1 rounded border text-[11px] font-display tracking-wide transition-colors disabled:opacity-30"
                   style={{
                     background: "color-mix(in srgb, var(--accent-gold) 12%, transparent)",
                     color: "var(--accent-gold)",
@@ -413,7 +375,7 @@ export function CombatWeaponsSection({
             )}
             {/* munizioni manuali per armi non classificate */}
             {!needsAmmo && hasAmmoCounter && (
-              <div className="mt-1.5 flex items-center gap-1.5 pl-5">
+              <div className="mt-1.5 flex items-center gap-1.5 pl-3.5">
                 <span
                   className="inline-flex items-center gap-1 text-[9px] font-mono rounded border px-1"
                   style={{ borderColor: "var(--border-color)", color: "var(--muted-foreground)" }}
@@ -427,11 +389,6 @@ export function CombatWeaponsSection({
           </div>
         );
       })}
-
-      <p className="text-[8px] text-gray-600 leading-relaxed mt-1 italic">
-        Casella = impugnata in scena (max {MAX_WIELDED}). Usa <strong className="text-[var(--accent-gold)] font-normal">Spara</strong> o{" "}
-        <strong className="text-[var(--accent-gold)] font-normal">Colpisci</strong> sull&apos;arma: −1 INT e munizioni addosso in automatico. Tōrō e waza restano separati.
-      </p>
 
       {/* Attacco a mani nude */}
       {onSendMessage && (
