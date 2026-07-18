@@ -6,7 +6,7 @@ import {
   validateItemUseInChat,
   type ItemUseCardData,
 } from '@domain/economy/item-use-chat'
-import { isEquippableItem, usesIntegrity } from '@domain/economy/items'
+import { isAmmoConsumable, isEquippableItem, usesIntegrity } from '@domain/economy/items'
 import type { ItemCategory } from '@domain/economy/types'
 import { db } from '../../plugins/db'
 import { inventory } from '../../db/schema'
@@ -22,9 +22,14 @@ type IntegrityDeductResult = {
   ammoLabel: string | null
 }
 
-async function countAmmoInCarry(characterId: string, ammoKind: string): Promise<number> {
+async function countEquippedAmmo(characterId: string, ammoKind: string): Promise<number> {
   const rows = await db.query.inventory.findMany({
-    where: and(eq(inventory.characterId, characterId), eq(inventory.location, 'CARRY'), gt(inventory.quantity, 0)),
+    where: and(
+      eq(inventory.characterId, characterId),
+      eq(inventory.location, 'CARRY'),
+      eq(inventory.isEquipped, true),
+      gt(inventory.quantity, 0),
+    ),
     with: { item: { columns: { ammoKind: true, category: true } } },
   })
   return rows
@@ -32,11 +37,16 @@ async function countAmmoInCarry(characterId: string, ammoKind: string): Promise<
     .reduce((sum, r) => sum + (r.quantity ?? 0), 0)
 }
 
-async function consumeAmmo(characterId: string, ammoKind: string): Promise<{ name: string } | null> {
+async function consumeEquippedAmmo(characterId: string, ammoKind: string): Promise<{ name: string } | null> {
   const rows = await db.query.inventory.findMany({
-    where: and(eq(inventory.characterId, characterId), eq(inventory.location, 'CARRY'), gt(inventory.quantity, 0)),
+    where: and(
+      eq(inventory.characterId, characterId),
+      eq(inventory.location, 'CARRY'),
+      eq(inventory.isEquipped, true),
+      gt(inventory.quantity, 0),
+    ),
     with: { item: true },
-    orderBy: (inv, { desc }) => [desc(inv.isEquipped), desc(inv.quantity)],
+    orderBy: (inv, { desc }) => [desc(inv.quantity)],
   })
   const ammoRow = rows.find(
     (r) => r.item.category === 'consumabile' && r.item.ammoKind === ammoKind && (r.quantity ?? 0) > 0,
@@ -83,8 +93,10 @@ async function deductIntegrityAndAmmo(
       .where(eq(inventory.id, inv.id))
 
     if (ammoKindRequired) {
-      const consumed = await consumeAmmo(characterId, ammoKindRequired)
-      if (!consumed) throw new Error(`Servono munizioni (${ammoKindRequired}) nello zaino.`)
+      const consumed = await consumeEquippedAmmo(characterId, ammoKindRequired)
+      if (!consumed) {
+        throw new Error(`Equipaggia munizioni (${ammoKindRequired}) addosso prima di sparare.`)
+      }
       ammoLabel = `${consumed.name} ×1`
     }
   }
@@ -102,7 +114,9 @@ export async function executeItemUseByInventoryId(
 
   const ammoKindRequired =
     item.ammoKind && (category === 'equipaggiamento' || item.type === 'WEAPON') ? item.ammoKind : null
-  const ammoAvailable = ammoKindRequired ? await countAmmoInCarry(characterId, ammoKindRequired) : undefined
+  const ammoAvailable = ammoKindRequired
+    ? await countEquippedAmmo(characterId, ammoKindRequired)
+    : undefined
 
   const check = validateItemUseInChat({
     category,
@@ -175,7 +189,9 @@ export async function applyWeaponStrikeInventory(
 
   const ammoKindRequired =
     item.ammoKind && (category === 'equipaggiamento' || item.type === 'WEAPON') ? item.ammoKind : null
-  const ammoAvailable = ammoKindRequired ? await countAmmoInCarry(characterId, ammoKindRequired) : undefined
+  const ammoAvailable = ammoKindRequired
+    ? await countEquippedAmmo(characterId, ammoKindRequired)
+    : undefined
 
   const check = validateItemUseInChat({
     category,

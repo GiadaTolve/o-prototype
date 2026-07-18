@@ -7,6 +7,7 @@ import type { InventoryItemRow } from "@/components/dashboard/inventory/types";
 import type { CharacterSummary } from "@/components/dashboard/types";
 import { resolveCharacterComputed } from "@/components/dashboard/character-computed";
 import { encodeAttackMessage } from "@domain/combat/attack-message";
+import { isAmmoConsumable } from "@domain/economy/items";
 
 const MAX_WIELDED = 2; // Ambidestria — vincolo sulle armi IMPUGNATE, non sui Tōrō
 
@@ -40,6 +41,17 @@ type WeaponRow = {
   integrityMax: number | null;
 };
 
+function countEquippedAmmo(items: InventoryItemRow[], ammoKind: string): number {
+  return items
+    .filter(
+      (it) =>
+        it.isEquipped &&
+        isAmmoConsumable(it.economy?.category, it.item.ammoKind) &&
+        it.item.ammoKind === ammoKind,
+    )
+    .reduce((sum, it) => sum + (it.quantity ?? 0), 0);
+}
+
 function countCarryAmmo(items: InventoryItemRow[], ammoKind: string): number {
   return items
     .filter((it) => it.economy?.category === "consumabile" && it.item.ammoKind === ammoKind)
@@ -65,14 +77,15 @@ export function CombatWeaponsSection({
 } = {}) {
   const [weapons, setWeapons] = useState<WeaponRow[]>([]);
   const [inventoryAmmo, setInventoryAmmo] = useState<Record<string, number>>({});
+  const [equippedAmmo, setEquippedAmmo] = useState<Record<string, number>>({});
   const [state, setState] = useState<CombatWeaponsState>({ activeIds: [], toroIds: [], ammo: {} });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fistTier, setFistTier] = useState<number>(1);
 
-  const reload = useCallback(() => {
+  const reload = useCallback((opts?: { silent?: boolean }) => {
     let cancelled = false;
-    setLoading(true);
+    if (!opts?.silent) setLoading(true);
     Promise.all([
       api.get("/inventory/me") as Promise<{ carryItems?: InventoryItemRow[]; items?: InventoryItemRow[] }>,
       api.get("/characters/me/do-mechanics") as Promise<{
@@ -91,10 +104,13 @@ export function CombatWeaponsSection({
           weaponItems.map((it) => it.item.ammoKind).filter((k): k is string => !!k),
         );
         const ammoCounts: Record<string, number> = {};
+        const equippedCounts: Record<string, number> = {};
         for (const kind of ammoKinds) {
           ammoCounts[kind] = countCarryAmmo(items, kind);
+          equippedCounts[kind] = countEquippedAmmo(items, kind);
         }
         setInventoryAmmo(ammoCounts);
+        setEquippedAmmo(equippedCounts);
         setWeapons(
           weaponItems.map((it) => ({
             inventoryId: it.id,
@@ -114,7 +130,7 @@ export function CombatWeaponsSection({
         });
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .finally(() => { if (!cancelled && !opts?.silent) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
 
@@ -123,7 +139,7 @@ export function CombatWeaponsSection({
     return cleanup;
   }, [reload]);
 
-  useInventoryUpdatedListener(char?.id, reload);
+  useInventoryUpdatedListener(char?.id, () => reload({ silent: true }));
 
   const patch = useCallback(
     async (next: Partial<CombatWeaponsState>) => {
@@ -188,11 +204,14 @@ export function CombatWeaponsSection({
       if (!onSendMessage) return;
       const computed = resolveCharacterComputed(char?.computed);
       const isRanged = !!w.ammoKind;
-      const ammoVal = state.ammo[w.inventoryId] ?? 0;
-      const invAmmo = w.ammoKind ? (inventoryAmmo[w.ammoKind] ?? 0) : 0;
+      const invAmmo = w.ammoKind ? (equippedAmmo[w.ammoKind] ?? 0) : 0;
       const intCurrent = w.integrityCurrent ?? w.integrityMax ?? 0;
       if (intCurrent < 1) return;
-      if (isRanged && (ammoVal <= 0 || invAmmo <= 0)) return;
+      if (isRanged && invAmmo <= 0) return;
+
+      if (!state.activeIds.includes(w.inventoryId) && state.activeIds.length < MAX_WIELDED) {
+        void patch({ activeIds: [...state.activeIds, w.inventoryId] });
+      }
 
       const base = isRanged ? computed.cad : computed.cac;
       const wepDmg = w.damage ?? 0;
@@ -207,12 +226,8 @@ export function CombatWeaponsSection({
         kind: isRanged ? "ranged" : "melee",
         inventoryId: w.inventoryId,
       }));
-
-      if (isRanged) {
-        void patch({ ammo: { ...state.ammo, [w.inventoryId]: Math.max(0, ammoVal - 1) } });
-      }
     },
-    [char, state, inventoryAmmo, patch, onSendMessage],
+    [char, state.activeIds, equippedAmmo, patch, onSendMessage],
   );
 
   const attackFist = useCallback(() => {
@@ -259,16 +274,17 @@ export function CombatWeaponsSection({
       {weapons.map((w) => {
         const isActive = state.activeIds.includes(w.inventoryId);
         const isToro = state.toroIds.includes(w.inventoryId);
+        const needsAmmo = !!w.ammoKind;
         const ammoVal = state.ammo[w.inventoryId];
         const hasAmmoCounter = ammoVal !== undefined;
-        const needsAmmo = !!w.ammoKind;
         const isArmor = w.type === "ARMOR";
         const intCurrent = w.integrityCurrent ?? w.integrityMax ?? null;
         const intMax = w.integrityMax;
-        const invAmmo = w.ammoKind ? (inventoryAmmo[w.ammoKind] ?? 0) : 0;
+        const invAmmo = w.ammoKind ? (equippedAmmo[w.ammoKind] ?? 0) : 0;
+        const stashAmmo = w.ammoKind ? (inventoryAmmo[w.ammoKind] ?? 0) : 0;
         const canStrike =
           intCurrent != null
-            ? intCurrent >= 1 && (!needsAmmo || ((state.ammo[w.inventoryId] ?? 0) > 0 && invAmmo > 0))
+            ? intCurrent >= 1 && (!needsAmmo || invAmmo > 0)
             : true;
 
         return (
@@ -339,7 +355,7 @@ export function CombatWeaponsSection({
                 <button
                   type="button"
                   disabled={saving}
-                  className="text-[10px] px-2 py-0.5 rounded border shrink-0 transition-colors"
+                  className="text-[10px] px-2 py-0.5 rounded border shrink-0 transition-colors min-h-[44px] sm:min-h-0"
                   style={{
                     background: isToro ? "#3a2519" : "transparent",
                     color: isToro ? "var(--accent-ember, #e8763a)" : "var(--muted-foreground)",
@@ -350,58 +366,49 @@ export function CombatWeaponsSection({
                   {isToro ? "Tōrō ✓" : "Tōrō"}
                 </button>
               )}
+            </div>
 
-              {/* pulsante Colpisci — solo armi impugnate, non armature */}
-              {!isArmor && isActive && onSendMessage && (
+            {/* munizioni equipaggiate — consumo automatico su Colpisci/Spara */}
+            {needsAmmo && (
+              <div className="mt-1.5 flex items-center gap-1.5 pl-5">
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] font-mono rounded border px-1.5 py-0.5"
+                  style={{
+                    borderColor: invAmmo > 0 ? "var(--border-color)" : "color-mix(in srgb, red 40%, var(--border-color))",
+                    color: invAmmo > 0 ? "var(--muted-foreground)" : "#f87171",
+                  }}
+                >
+                  {w.ammoKind} · {invAmmo} addosso
+                  {stashAmmo > invAmmo ? ` · ${stashAmmo - invAmmo} in zaino` : ""}
+                </span>
+              </div>
+            )}
+
+            {/* Spara / Colpisci — direttamente sull'arma (−1 INT, munizioni auto) */}
+            {!isArmor && onSendMessage && (
+              <div className="mt-2 pl-5 pr-1">
                 <button
                   type="button"
                   disabled={saving || !canStrike}
-                  className="text-[9px] px-2 py-0.5 rounded border shrink-0 transition-colors disabled:opacity-30"
+                  className="w-full min-h-[44px] rounded border text-xs font-display tracking-wide transition-colors disabled:opacity-30"
                   style={{
-                    background: "color-mix(in srgb, var(--accent-gold) 10%, transparent)",
+                    background: "color-mix(in srgb, var(--accent-gold) 12%, transparent)",
                     color: "var(--accent-gold)",
-                    borderColor: "color-mix(in srgb, var(--accent-gold) 35%, transparent)",
+                    borderColor: "color-mix(in srgb, var(--accent-gold) 40%, transparent)",
                   }}
                   onClick={() => attackWithWeapon(w)}
                   title={
                     intCurrent != null && intCurrent < 1
                       ? "Integrità esaurita"
                       : needsAmmo && invAmmo <= 0
-                        ? "Nessuna munizione nello zaino"
-                        : needsAmmo && (state.ammo[w.inventoryId] ?? 0) <= 0
-                          ? "Nessuna munizione caricata"
-                          : "Colpisci (−1 INT · senza waza, senza CS)"
+                        ? "Equipaggia munizioni addosso (Scheda → Inventario)"
+                        : needsAmmo
+                          ? "Spara — −1 INT, −1 munizione addosso, senza waza"
+                          : "Colpisci — −1 INT, senza waza"
                   }
                 >
-                  Colpisci
+                  {needsAmmo ? "Spara" : "Colpisci"}
                 </button>
-              )}
-            </div>
-
-            {/* riga munizioni — solo armi con ammoKind */}
-            {needsAmmo && (
-              <div className="mt-1.5 flex items-center gap-1.5 pl-5">
-                {hasAmmoCounter ? (
-                  <span
-                    className="inline-flex items-center gap-1 text-[9px] font-mono rounded border px-1"
-                    style={{ borderColor: "var(--border-color)", color: "var(--muted-foreground)" }}
-                  >
-                    <button type="button" disabled={saving} className="disabled:opacity-40" onClick={() => adjustAmmo(w.inventoryId, -1)}>−</button>
-                    <span>{w.ammoKind} · {ammoVal} caricate · {invAmmo} in zaino</span>
-                    <button type="button" disabled={saving} onClick={() => adjustAmmo(w.inventoryId, +1)}>+</button>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={saving}
-                    className="text-[8px] opacity-50 hover:opacity-100 rounded border px-1.5 py-0.5"
-                    style={{ borderColor: "var(--border-color)", color: "var(--muted-foreground)" }}
-                    onClick={() => adjustAmmo(w.inventoryId, 0)}
-                    title="Attiva conteggio munizioni"
-                  >
-                    + carica {w.ammoKind}
-                  </button>
-                )}
               </div>
             )}
             {/* munizioni manuali per armi non classificate */}
@@ -422,7 +429,8 @@ export function CombatWeaponsSection({
       })}
 
       <p className="text-[8px] text-gray-600 leading-relaxed mt-1 italic">
-        Più oggetti possono essere Tōrō insieme. Le munizioni contano solo per gli spari normali, non per le waza.
+        Casella = impugnata in scena (max {MAX_WIELDED}). Usa <strong className="text-[var(--accent-gold)] font-normal">Spara</strong> o{" "}
+        <strong className="text-[var(--accent-gold)] font-normal">Colpisci</strong> sull&apos;arma: −1 INT e munizioni addosso in automatico. Tōrō e waza restano separati.
       </p>
 
       {/* Attacco a mani nude */}

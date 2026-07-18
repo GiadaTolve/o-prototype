@@ -7,6 +7,7 @@ import {
   materialCatalogKey,
   resolveDismantleYields,
   resolveJunkDismantleYields,
+  parseDismantleCatalogYields,
   yieldFromBrokenEquipment,
 } from './dismantle'
 
@@ -65,7 +66,47 @@ describe('resolveJunkDismantleYields', () => {
   })
 })
 
+describe('parseDismantleCatalogYields', () => {
+  it('parses junk + materials', () => {
+    expect(
+      parseDismantleCatalogYields({
+        junkCatalogKey: 'junk-flaconi',
+        junkQuantity: 2,
+        materials: { reagente: 1 },
+      }),
+    ).toEqual({
+      junkCatalogKey: 'junk-flaconi',
+      junkQuantity: 2,
+      materials: { reagente: 1 },
+    })
+  })
+
+  it('rejects invalid material ids', () => {
+    expect(parseDismantleCatalogYields({ materials: { foo: 1 } })).toBeNull()
+  })
+})
+
 describe('resolveDismantleYields', () => {
+  it('uses catalog override for junk materials', () => {
+    const r = resolveDismantleYields({
+      category: 'junk',
+      junkTemplateId: 'junk-abiti',
+      catalogYields: { materials: { stoffa: 5 } },
+    })
+    expect(r.materials).toEqual([{ materialId: 'stoffa', quantity: 5 }])
+  })
+
+  it('uses catalog override for consumable', () => {
+    const r = resolveDismantleYields({
+      category: 'consumabile',
+      catalogYields: {
+        junkCatalogKey: 'junk-batterie',
+        materials: { reagente: 3 },
+      },
+    })
+    expect(r.junk).toEqual([{ catalogKey: 'junk-batterie', quantity: 1 }])
+    expect(r.materials).toEqual([{ materialId: 'reagente', quantity: 3 }])
+  })
   it('returns materials only for junk', () => {
     const r = resolveDismantleYields({
       category: 'junk',

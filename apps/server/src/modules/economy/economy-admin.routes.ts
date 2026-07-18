@@ -87,6 +87,19 @@ export const economyAdminRoutes = new Elysia({ prefix: '/economy-admin' })
               resistance: t.Optional(t.Nullable(t.Number())),
               bonus: t.Optional(t.Nullable(t.Number())),
               ammoKind: t.Optional(t.Nullable(t.String())),
+              dismantleYields: t.Optional(
+                t.Nullable(
+                  t.Object({
+                    junkCatalogKey: t.Optional(t.Nullable(t.String())),
+                    junkQuantity: t.Optional(t.Nullable(t.Number({ minimum: 1 }))),
+                    materials: t.Optional(
+                      t.Nullable(
+                        t.Record(t.String(), t.Number({ minimum: 1 })),
+                      ),
+                    ),
+                  }),
+                ),
+              ),
             }),
           ),
         },

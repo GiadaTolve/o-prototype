@@ -1,5 +1,6 @@
 import { and, eq, isNotNull } from 'drizzle-orm'
 import { isMarketCategory, type MarketCategory } from '@domain/economy/market-catalog'
+import { parseDismantleCatalogYields, type DismantleCatalogYields } from '@domain/economy/dismantle'
 import type { ItemCategory } from '@domain/economy/types'
 import { db } from '../../plugins/db'
 import { characters, inventory, items } from '../../db/schema'
@@ -62,6 +63,7 @@ function toCatalogEntry(row: typeof items.$inferSelect) {
     resistance: row.resistance,
     bonus: row.bonus,
     ammoKind: row.ammoKind,
+    dismantleYields: parseDismantleCatalogYields(row.dismantleYields),
   }
 }
 
@@ -81,6 +83,7 @@ export type MarketCatalogInput = {
   resistance?: number | null
   bonus?: number | null
   ammoKind?: string | null
+  dismantleYields?: DismantleCatalogYields | null
 }
 
 function assertValidInput(input: MarketCatalogInput) {
@@ -92,6 +95,10 @@ function assertValidInput(input: MarketCatalogInput) {
   }
   if (!Number.isFinite(input.priceRem) || input.priceRem < 0) {
     throw new Error('Prezzo Rem non valido.')
+  }
+  if (input.dismantleYields !== undefined && input.dismantleYields !== null) {
+    const parsed = parseDismantleCatalogYields(input.dismantleYields)
+    if (!parsed) throw new Error('Resa smantellamento non valida.')
   }
 }
 
@@ -120,6 +127,7 @@ export async function createMarketCatalogItem(input: MarketCatalogInput) {
       resistance: input.resistance ?? null,
       bonus: input.bonus ?? null,
       ammoKind: input.ammoKind ?? null,
+      dismantleYields: input.dismantleYields ?? null,
     })
     .returning()
 
@@ -135,6 +143,14 @@ export async function updateMarketCatalogItem(id: string, input: Partial<MarketC
   }
   if (input.priceRem != null && (!Number.isFinite(input.priceRem) || input.priceRem < 0)) {
     throw new Error('Prezzo Rem non valido.')
+  }
+  if (input.dismantleYields !== undefined) {
+    if (input.dismantleYields === null) {
+      // ok — reset
+    } else {
+      const parsed = parseDismantleCatalogYields(input.dismantleYields)
+      if (!parsed) throw new Error('Resa smantellamento non valida.')
+    }
   }
 
   const [row] = await db
@@ -158,6 +174,8 @@ export async function updateMarketCatalogItem(id: string, input: Partial<MarketC
       resistance: input.resistance !== undefined ? input.resistance : existing.resistance,
       bonus: input.bonus !== undefined ? input.bonus : existing.bonus,
       ammoKind: input.ammoKind !== undefined ? input.ammoKind : existing.ammoKind,
+      dismantleYields:
+        input.dismantleYields !== undefined ? input.dismantleYields : existing.dismantleYields,
     })
     .where(eq(items.id, id))
     .returning()

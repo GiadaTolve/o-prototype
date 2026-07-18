@@ -4,6 +4,7 @@ import {
   DISMANTLE_DAILY_MAX,
   isArtigianoFromSkiruSheet,
   materialCatalogKey,
+  parseDismantleCatalogYields,
   resolveDismantleYields,
   type EconomyMaterialCost,
 } from '@domain/economy/dismantle'
@@ -163,6 +164,8 @@ export async function dismantleInventoryItems(
     const category = (inv.item.category ?? 'junk') as ItemCategory
     const blueprintId = inv.blueprintId ?? inv.item.blueprintId
 
+    const catalogYields = parseDismantleCatalogYields(inv.item.dismantleYields)
+
     const check = canDismantleInventoryItem({
       category,
       junkTemplateId: inv.item.junkTemplateId,
@@ -171,6 +174,7 @@ export async function dismantleInventoryItems(
       integrityMax: inv.item.integrityMax,
       isEquipped: inv.isEquipped ?? false,
       itemType: inv.item.type,
+      catalogYields,
     })
     if (!check.ok) {
       throw new Error(`${inv.item.name}: ${check.reason ?? 'non smantellabile.'}`)
@@ -183,6 +187,7 @@ export async function dismantleInventoryItems(
       integrityCurrent: inv.integrityCurrent,
       integrityMax: inv.item.integrityMax,
       itemType: inv.item.type,
+      catalogYields,
     })
     if (yields.junk.length === 0 && yields.materials.length === 0) {
       throw new Error(`${inv.item.name}: nessuna resa recuperabile.`)
@@ -216,6 +221,7 @@ export async function getArtigianoDismantleInventory(characterId: string) {
   const inv = await getCharacterInventory(characterId)
   const itemsWithFlag = inv.items.map((row) => {
     const eco = row.economy
+    const catalogYields = parseDismantleCatalogYields(row.item.dismantleYields)
     const input = {
       category: eco.category,
       junkTemplateId: eco.junkTemplateId,
@@ -224,6 +230,7 @@ export async function getArtigianoDismantleInventory(characterId: string) {
       integrityMax: eco.integrityMax,
       isEquipped: row.isEquipped,
       itemType: row.item.type,
+      catalogYields,
     }
     const check = canDismantleInventoryItem(input)
     const preview = check.ok ? resolveDismantleYields(input) : null

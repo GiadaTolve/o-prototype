@@ -10,11 +10,13 @@ config({ path: resolve(import.meta.dir, '../../../.env') })
 
 const AMMO_GRANTS: { catalogKey: string; quantity: number }[] = [
   { catalogKey: 'ammo-pistola', quantity: 30 },
+  { catalogKey: 'ammo-fucile', quantity: 20 },
+  { catalogKey: 'ammo-balestra', quantity: 15 },
 ]
 
 async function main() {
   const { db } = await import('../src/plugins/db')
-  const { characters } = await import('../src/db/schema')
+  const { characters, inventory } = await import('../src/db/schema')
   const { addItemByCatalogKey } = await import('../src/modules/inventory/inventory.service')
 
   const char = await db.query.characters.findFirst({
@@ -43,10 +45,11 @@ async function main() {
       origin: 'comprato',
       location: 'CARRY',
     })
-    console.log(`✅ ${grant.catalogKey} ×${row.quantity ?? grant.quantity} → zaino di ${label}`)
+    await db.update(inventory).set({ isEquipped: true }).where(eq(inventory.id, row.id))
+    console.log(`✅ ${grant.catalogKey} ×${row.quantity ?? grant.quantity} → addosso (${label})`)
   }
 
-  console.log('\n   Ricarica inventario in dashboard (o riapri pannello combattimento).\n')
+  console.log('\n   Munizioni equipaggiate — pronte per Colpisci con armi da fuoco.\n')
   process.exit(0)
 }
 

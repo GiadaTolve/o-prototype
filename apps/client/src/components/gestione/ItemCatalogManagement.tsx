@@ -10,6 +10,12 @@ import { formatItemCategory } from "@/components/dashboard/inventory/labels";
 
 type ItemType = "GENERIC" | "WEAPON" | "ARMOR" | "BAG";
 
+type DismantleYieldsAdmin = {
+  junkCatalogKey?: string | null;
+  junkQuantity?: number | null;
+  materials?: Record<string, number> | null;
+} | null;
+
 type CatalogItemAdmin = {
   id: string;
   catalogKey?: string | null;
@@ -28,6 +34,7 @@ type CatalogItemAdmin = {
   resistance: number | null;
   bonus: number | null;
   ammoKind: string | null;
+  dismantleYields?: DismantleYieldsAdmin;
 };
 
 const ITEM_CATEGORIES: ItemCategory[] = [
@@ -100,6 +107,7 @@ export function ItemCatalogManagement() {
         resistance: data.resistance,
         bonus: data.bonus,
         ammoKind: data.ammoKind,
+        dismantleYields: data.dismantleYields ?? null,
       });
       setEditing(null);
       fetchItems();
@@ -155,6 +163,9 @@ export function ItemCatalogManagement() {
                           Market · {MARKET_CATEGORY_LABELS[it.marketCategory]}
                         </span>
                       )}
+                      {it.dismantleYields && (
+                        <span className="text-[var(--accent-violet-light)]">Resa smantellamento custom</span>
+                      )}
                     </div>
                   </div>
                   <button
@@ -208,9 +219,45 @@ function ItemEditModal({
   const [resistance, setResistance] = useState(item.resistance?.toString() ?? "");
   const [bonus, setBonus] = useState(item.bonus?.toString() ?? "");
   const [ammoKind, setAmmoKind] = useState(item.ammoKind ?? "");
+  const [dismantleJunkKey, setDismantleJunkKey] = useState(item.dismantleYields?.junkCatalogKey ?? "");
+  const [dismantleJunkQty, setDismantleJunkQty] = useState(
+    item.dismantleYields?.junkQuantity?.toString() ?? "",
+  );
+  const [dismantleMaterials, setDismantleMaterials] = useState(
+    item.dismantleYields?.materials ? JSON.stringify(item.dismantleYields.materials, null, 2) : "",
+  );
+
+  const buildDismantleYields = (): DismantleYieldsAdmin => {
+    const junkCatalogKey = dismantleJunkKey.trim() || null;
+    const junkQuantity = dismantleJunkQty.trim() ? Number(dismantleJunkQty) : null;
+    let materials: Record<string, number> | null = null;
+    const rawMaterials = dismantleMaterials.trim();
+    if (rawMaterials) {
+      const parsed = JSON.parse(rawMaterials) as unknown;
+      if (typeof parsed !== "object" || parsed == null || Array.isArray(parsed)) {
+        throw new Error("Materiali smantellamento: JSON oggetto non valido.");
+      }
+      materials = {};
+      for (const [key, qty] of Object.entries(parsed)) {
+        if (typeof qty !== "number" || qty < 1) {
+          throw new Error(`Materiale «${key}»: quantità non valida.`);
+        }
+        materials[key] = Math.floor(qty);
+      }
+    }
+    if (!junkCatalogKey && junkQuantity == null && !materials) return null;
+    return { junkCatalogKey, junkQuantity, materials };
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    let dismantleYields: DismantleYieldsAdmin = null;
+    try {
+      dismantleYields = buildDismantleYields();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Resa smantellamento non valida.");
+      return;
+    }
     onSave({
       id: item.id,
       category,
@@ -227,6 +274,7 @@ function ItemEditModal({
       resistance: resistance !== "" ? Number(resistance) : null,
       bonus: bonus !== "" ? Number(bonus) : null,
       ammoKind: ammoKind || null,
+      dismantleYields,
     });
   };
 
@@ -294,6 +342,42 @@ function ItemEditModal({
           <Field label="Prezzo Rem">
             <input type="number" inputMode="numeric" min={0} value={priceRem} onChange={(e) => setPriceRem(e.target.value)} className="field-input" />
           </Field>
+          <div className="rounded border border-[var(--border-color)]/60 p-3 space-y-2 bg-black/20">
+            <p className="text-[10px] uppercase tracking-wider text-[var(--accent-violet-light)] font-display">
+              Resa smantellamento (Artigiano)
+            </p>
+            <p className="text-[10px] text-gray-500">
+              Opzionale — sovrascrive le regole default. Lascia vuoto per junklist / ricetta / fallback.
+            </p>
+            <Field label="Junk catalog key">
+              <input
+                type="text"
+                value={dismantleJunkKey}
+                onChange={(e) => setDismantleJunkKey(e.target.value)}
+                placeholder="es. junk-flaconi"
+                className="field-input font-mono text-xs"
+              />
+            </Field>
+            <Field label="Quantità junk">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={dismantleJunkQty}
+                onChange={(e) => setDismantleJunkQty(e.target.value)}
+                placeholder="1"
+                className="field-input"
+              />
+            </Field>
+            <Field label="Materiali (JSON)">
+              <textarea
+                value={dismantleMaterials}
+                onChange={(e) => setDismantleMaterials(e.target.value)}
+                placeholder='{"reagente": 2, "stoffa": 1}'
+                className="field-input min-h-[72px] font-mono text-xs"
+              />
+            </Field>
+          </div>
           <label className="flex items-center gap-2 min-h-[44px] text-sm text-gray-400">
             <input type="checkbox" checked={isActiveInMarket} onChange={(e) => setIsActiveInMarket(e.target.checked)} />
             Attivo in vetrina Market

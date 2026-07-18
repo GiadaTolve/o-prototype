@@ -5,6 +5,7 @@ import {
   canFitInSlots,
   canStackCategory,
   getInventorySlotCost,
+  isAmmoConsumable,
   isEquippableItem,
   isItemBroken,
   sumInventorySlotUsage,
@@ -254,7 +255,11 @@ export async function getCharacterInventory(characterId: string) {
     const slotInfo = await calculateTotalSlots(characterId)
     const equipSlots = calculateEquipmentSlots(char.skiruSheet)
     const equipSlotsUsed = mappedItems.filter(
-      (i) => i.isEquipped && i.location === 'CARRY' && i.item.type !== 'BAG'
+      (i) =>
+        i.isEquipped &&
+        i.location === 'CARRY' &&
+        i.item.type !== 'BAG' &&
+        !isAmmoConsumable(i.economy.category, i.item.ammoKind),
     ).length
 
     const carryItems = mappedItems.filter((i) => i.location === 'CARRY')
@@ -442,9 +447,11 @@ export async function toggleEquipItem(inventoryId: string, characterId: string) 
   }
 
   const category = (inv.item.category ?? 'junk') as ItemCategory
-  if (!isEquippableItem(inv.item.type, category)) {
+  if (!isEquippableItem(inv.item.type, category, inv.item.ammoKind)) {
     throw new Error('Questo oggetto non può essere equipaggiato.')
   }
+
+  const equippingAmmo = isAmmoConsumable(category, inv.item.ammoKind)
 
   if (
     usesIntegrity(category) &&
@@ -453,8 +460,29 @@ export async function toggleEquipItem(inventoryId: string, characterId: string) 
     throw new Error('Non puoi equipaggiare un oggetto rotto.')
   }
 
-  // Verifica limite slot equipaggiamento (3 + vigore) — solo quando si equipaggia, non zaini
-  if (!inv.isEquipped && inv.item.type !== 'BAG') {
+  // Munizioni: una sola pila equipaggiata per ammoKind, non occupa slot armi
+  if (equippingAmmo && !inv.isEquipped && inv.item.ammoKind) {
+    const otherEquippedAmmo = await db.query.inventory.findMany({
+      where: and(
+        eq(inventory.characterId, characterId),
+        eq(inventory.isEquipped, true),
+        eq(inventory.location, 'CARRY'),
+      ),
+      with: { item: { columns: { category: true, ammoKind: true } } },
+    })
+    for (const row of otherEquippedAmmo) {
+      if (
+        row.id !== inventoryId &&
+        isAmmoConsumable(row.item.category, row.item.ammoKind) &&
+        row.item.ammoKind === inv.item.ammoKind
+      ) {
+        await db.update(inventory).set({ isEquipped: false }).where(eq(inventory.id, row.id))
+      }
+    }
+  }
+
+  // Verifica limite slot equipaggiamento (3 + vigore) — escluse munizioni e zaini
+  if (!inv.isEquipped && inv.item.type !== 'BAG' && !equippingAmmo) {
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
       columns: { skiruSheet: true },
@@ -467,7 +495,13 @@ export async function toggleEquipItem(inventoryId: string, characterId: string) 
         eq(inventory.location, 'CARRY')
       ),
       with: { item: { columns: { type: true } } },
-    }).then((rows) => rows.filter((r) => r.item.type !== 'BAG').length)
+    }).then((rows) =>
+      rows.filter(
+        (r) =>
+          r.item.type !== 'BAG' &&
+          !isAmmoConsumable(r.item.category, r.item.ammoKind),
+      ).length,
+    )
     if (equippedCount >= equipSlots) {
       throw new Error(`Slot equipaggiamento esauriti (${equippedCount}/${equipSlots}). Togli un oggetto o aumenta il ramo Kairyoku.`)
     }

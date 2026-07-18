@@ -88,6 +88,7 @@ async function main() {
   }
 
   for (const equip of MARKET_EQUIPMENT_CATALOG) {
+    const isAmmoItem = equip.id.startsWith('ammo-')
     await upsertCatalogItem({
       catalogKey: equip.id,
       name: equip.nameItalian,
@@ -100,9 +101,9 @@ async function main() {
       isStackable: equip.isStackable,
       type: equip.type,
       blueprintId: equip.blueprintId,
-      marketCategory: marketEquipmentCategory(equip.kind),
-      price: equip.priceRem,
-      isActiveInMarket: true,
+      marketCategory: isAmmoItem ? null : marketEquipmentCategory(equip.kind),
+      price: isAmmoItem ? null : equip.priceRem,
+      isActiveInMarket: isAmmoItem ? false : true,
       damage: equip.damage,
       resistance: equip.resistance,
       ammoKind: equip.ammoKind,

@@ -8,6 +8,7 @@ import { useInventoryUpdatedListener } from '@/hooks/useInventoryUpdatedListener
 import { InventoryItemCard } from './InventoryItemCard'
 import { InventoryItemDetailModal } from './InventoryItemDetailModal'
 import type { CharacterInventoryResponse, InventoryItemRow } from './types'
+import { isAmmoConsumable } from '@domain/economy/items'
 
 function isLegacyEquipType(type: string): boolean {
   return type === 'WEAPON' || type === 'ARMOR' || type === 'ACCESSORY'
@@ -15,7 +16,16 @@ function isLegacyEquipType(type: string): boolean {
 
 function isEquippableRow(inv: InventoryItemRow): boolean {
   if (inv.item.type === 'BAG' || isLegacyEquipType(inv.item.type)) return true
+  if (isAmmoConsumable(inv.economy?.category, inv.item.ammoKind)) return true
   return inv.economy?.category === 'equipaggiamento'
+}
+
+function isGearEquippedRow(inv: InventoryItemRow): boolean {
+  return (
+    inv.isEquipped &&
+    inv.item.type !== 'BAG' &&
+    !isAmmoConsumable(inv.economy?.category, inv.item.ammoKind)
+  )
 }
 
 function normalizeInventory(data: CharacterInventoryResponse): CharacterInventoryResponse {
@@ -233,7 +243,10 @@ export function InventorySection({ characterId }: { characterId?: string }) {
   const equipSlotsUsed = inventory.slots.equipSlotsUsed ?? 0
 
   // Equipped non-bag items fill slots 0..N-1
-  const equippedGear = carryItems.filter((i) => i.isEquipped && i.item.type !== 'BAG')
+  const equippedGear = carryItems.filter(isGearEquippedRow)
+  const equippedAmmo = carryItems.filter(
+    (i) => i.isEquipped && isAmmoConsumable(i.economy?.category, i.item.ammoKind),
+  )
   const equippedBag = carryItems.find((i) => i.isEquipped && i.item.type === 'BAG')
   const carryStorageItems = carryItems.filter((i) => !i.isEquipped)
 
@@ -302,6 +315,24 @@ export function InventorySection({ characterId }: { characterId?: string }) {
             </div>
           )}
         </section>
+
+        {equippedAmmo.length > 0 && (
+          <section>
+            <SectionHeader icon={icons.waza} title="Munizioni addosso" count={equippedAmmo.length} />
+            <ul className="space-y-2 mt-2">
+              {equippedAmmo.map((inv) => (
+                <li key={inv.id}>
+                  <InventoryItemCard
+                    inv={inv}
+                    showEquipButton={isMyCharacter}
+                    showLocationButtons={false}
+                    {...cardActions}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Zaino */}
         <section>

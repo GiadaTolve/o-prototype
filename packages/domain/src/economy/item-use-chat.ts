@@ -112,7 +112,7 @@ export function validateItemUseInChat(input: ItemUseValidationInput): { ok: true
     if ((input.ammoAvailable ?? 0) < 1) {
       return {
         ok: false,
-        reason: `Servono munizioni (${input.ammoKindRequired}) nello zaino.`,
+        reason: `Equipaggia munizioni (${input.ammoKindRequired}) addosso prima di sparare.`,
       }
     }
   }

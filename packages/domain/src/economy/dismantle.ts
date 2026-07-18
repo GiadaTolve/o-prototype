@@ -1,4 +1,4 @@
-import { getJunkItemDef } from './junklist'
+import { getJunkItemDef, ECONOMY_MATERIAL_LABELS } from './junklist'
 import { isItemBroken, usesIntegrity } from './items'
 import type { EconomyMaterialCost, EconomyMaterialId, ItemCategory } from './types'
 import { getSocialBlueprint } from '../shakai-kaikyu/blueprint-catalog'
@@ -31,6 +31,7 @@ export function isArtigianoFromSkiruSheet(skiruSheet: Readonly<Record<string, nu
 
 export interface DismantleCatalogYields {
   readonly junkCatalogKey?: string | null
+  readonly junkQuantity?: number | null
   readonly materials?: Readonly<Partial<Record<EconomyMaterialId, number>>>
 }
 
@@ -120,6 +121,61 @@ export function materialCatalogKey(materialId: EconomyMaterialId): string {
   return `mat-${materialId}`
 }
 
+const VALID_MATERIAL_IDS = new Set(Object.keys(ECONOMY_MATERIAL_LABELS) as EconomyMaterialId[])
+
+/** Normalizza JSON catalogo/DB → regole smantellamento. */
+export function parseDismantleCatalogYields(raw: unknown): DismantleCatalogYields | null {
+  if (raw == null) return null
+  if (typeof raw !== 'object' || Array.isArray(raw)) return null
+
+  const source = raw as Record<string, unknown>
+  const junkCatalogKey =
+    typeof source.junkCatalogKey === 'string' && source.junkCatalogKey.trim()
+      ? source.junkCatalogKey.trim()
+      : source.junkCatalogKey === null
+        ? null
+        : undefined
+
+  let junkQuantity: number | null | undefined
+  if (source.junkQuantity == null) {
+    junkQuantity = undefined
+  } else if (typeof source.junkQuantity === 'number' && Number.isFinite(source.junkQuantity)) {
+    junkQuantity = Math.max(1, Math.floor(source.junkQuantity))
+  } else {
+    return null
+  }
+
+  const materials: Partial<Record<EconomyMaterialId, number>> = {}
+  if (source.materials != null) {
+    if (typeof source.materials !== 'object' || Array.isArray(source.materials)) return null
+    for (const [key, qty] of Object.entries(source.materials as Record<string, unknown>)) {
+      if (!VALID_MATERIAL_IDS.has(key as EconomyMaterialId)) return null
+      if (typeof qty !== 'number' || !Number.isFinite(qty) || qty <= 0) return null
+      materials[key as EconomyMaterialId] = Math.floor(qty)
+    }
+  }
+
+  if (
+    junkCatalogKey === undefined &&
+    junkQuantity === undefined &&
+    Object.keys(materials).length === 0
+  ) {
+    return null
+  }
+
+  return {
+    junkCatalogKey,
+    junkQuantity,
+    materials: Object.keys(materials).length > 0 ? materials : undefined,
+  }
+}
+
+function junkFromCatalog(catalog: DismantleCatalogYields | null | undefined, fallbackKey: string) {
+  const key = catalog?.junkCatalogKey?.trim() || fallbackKey
+  const quantity = Math.max(1, Math.floor(catalog?.junkQuantity ?? 1))
+  return [{ catalogKey: key, quantity }]
+}
+
 function materialsFromPartial(
   partial: Readonly<Partial<Record<EconomyMaterialId, number>>> | undefined,
 ): EconomyMaterialCost[] {
@@ -143,6 +199,10 @@ export function resolveDismantleYields(item: DismantleItemInput): DismantleResol
   const catalog = item.catalogYields
 
   if (item.category === 'junk' && item.junkTemplateId) {
+    const catalogMaterials = materialsFromPartial(catalog?.materials)
+    if (catalogMaterials.length > 0) {
+      return { junk: [], materials: catalogMaterials }
+    }
     return {
       junk: [],
       materials: [...resolveJunkDismantleYields(item.junkTemplateId)],
@@ -150,20 +210,18 @@ export function resolveDismantleYields(item: DismantleItemInput): DismantleResol
   }
 
   if (item.category === 'consumabile') {
-    const junkKey = catalog?.junkCatalogKey?.trim() || CONSUMABLE_SCRAP_JUNK
     const materials =
       materialsFromPartial(catalog?.materials).length > 0
         ? materialsFromPartial(catalog?.materials)
         : [{ materialId: 'reagente' as EconomyMaterialId, quantity: 1 }]
     return {
-      junk: [{ catalogKey: junkKey, quantity: 1 }],
+      junk: junkFromCatalog(catalog, CONSUMABLE_SCRAP_JUNK),
       materials,
     }
   }
 
   if (item.category === 'equipaggiamento' || item.category === 'costrutto_materiale') {
-    const junkKey = catalog?.junkCatalogKey?.trim() || BROKEN_EQUIP_SCRAP_JUNK
-    const junk = [{ catalogKey: junkKey, quantity: 1 }]
+    const junk = junkFromCatalog(catalog, BROKEN_EQUIP_SCRAP_JUNK)
 
     const catalogMaterials = materialsFromPartial(catalog?.materials)
     if (catalogMaterials.length > 0) {

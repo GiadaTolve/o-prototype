@@ -48,7 +48,7 @@ describe('validateItemUseInChat', () => {
     expect(r.ok).toBe(false)
   })
 
-  it('requires ammo when weapon has ammoKind', () => {
+  it('requires equipped ammo when weapon has ammoKind', () => {
     const r = validateItemUseInChat({
       category: 'equipaggiamento',
       type: 'WEAPON',
@@ -61,6 +61,7 @@ describe('validateItemUseInChat', () => {
       ammoAvailable: 0,
     })
     expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reason).toContain('addosso')
   })
 
   it('allows consumable in carry', () => {

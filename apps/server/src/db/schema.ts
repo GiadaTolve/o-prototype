@@ -413,6 +413,13 @@ export const items = pgTable('items', {
   /** Visibile/acquistabile nel catalogo Market — permette allo staff di ritirare una voce senza eliminarla. */
   isActiveInMarket: boolean('is_active_in_market').default(true).notNull(),
 
+  /** Resa smantellamento custom (junk catalog key + materiali). Null = regole default domain. */
+  dismantleYields: jsonb('dismantle_yields').$type<{
+    junkCatalogKey?: string | null
+    junkQuantity?: number | null
+    materials?: Record<string, number> | null
+  } | null>(),
+
   createdAt: timestamp('created_at').defaultNow()
 })
 

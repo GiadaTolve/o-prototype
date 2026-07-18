@@ -39,11 +39,21 @@ export function isEquippableLegacyType(type: string): boolean {
   return type === 'WEAPON' || type === 'ARMOR' || type === 'BAG'
 }
 
-/** Equipaggiamento indossabile (legacy type o categoria economy). */
+/** Munizioni in zaino — stack consumabile con ammoKind (es. pistola). */
+export function isAmmoConsumable(
+  category: ItemCategory | string | null | undefined,
+  ammoKind: string | null | undefined,
+): boolean {
+  return category === 'consumabile' && Boolean(ammoKind?.trim())
+}
+
+/** Equipaggiamento indossabile (legacy type, categoria economy o munizioni). */
 export function isEquippableItem(
   type: string,
   category: ItemCategory | string | null | undefined,
+  ammoKind?: string | null,
 ): boolean {
+  if (isAmmoConsumable(category, ammoKind)) return true
   if (type === 'ACCESSORY') return true
   if (isEquippableLegacyType(type)) return true
   return category === 'equipaggiamento'

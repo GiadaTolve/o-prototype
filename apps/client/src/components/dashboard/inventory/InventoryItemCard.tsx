@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { icons } from '@/lib/icons'
 import type { InventoryItemRow } from './types'
 import { categoryAccentClass, formatItemCategory } from './labels'
+import { isAmmoConsumable } from '@domain/economy/items'
 
 type Props = {
   inv: InventoryItemRow
@@ -23,6 +24,7 @@ function isLegacyEquipType(type: string): boolean {
 
 function canShowEquipButton(inv: InventoryItemRow): boolean {
   if (inv.item.type === 'BAG' || isLegacyEquipType(inv.item.type)) return true
+  if (isAmmoConsumable(inv.economy?.category, inv.item.ammoKind)) return true
   return inv.economy?.category === 'equipaggiamento'
 }
 
@@ -64,7 +66,12 @@ export function InventoryItemCard({
             <p className="text-xs font-display text-white truncate">{inv.item.name}</p>
             {inv.isEquipped && (
               <span className="text-[8px] uppercase tracking-wider text-[var(--accent-gold)] bg-[var(--accent-gold)]/20 px-1.5 py-0.5 rounded">
-                EQP
+                {isAmmoConsumable(economy?.category, inv.item.ammoKind) ? 'ADD' : 'EQP'}
+              </span>
+            )}
+            {inv.item.ammoKind && economy?.category === 'consumabile' && (
+              <span className="text-[8px] uppercase tracking-wider text-[var(--accent-violet-light)] bg-[var(--accent-violet)]/15 px-1.5 py-0.5 rounded">
+                {inv.item.ammoKind}
               </span>
             )}
             {inv.location === 'MARKET' && (
