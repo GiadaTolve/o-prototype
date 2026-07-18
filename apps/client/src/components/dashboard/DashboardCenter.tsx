@@ -65,7 +65,7 @@ function isDiceOnlyDraft(draft: string): boolean {
   return /^\s*\/?(?:d|dado)\s+\d+\s*$/i.test(draft.trim());
 }
 
-type View = "root" | "game-map" | "zone-list" | "chat" | "shinigami" | "guida" | "ambientazione" | "forum" | "gestione" | "sviluppo";
+type View = "root" | "game-map" | "zone-list" | "chat" | "shinigami" | "guida" | "ambientazione" | "forum" | "gestione" | "sviluppo" | "dojo" | "sokaiju";
 
 type Props = {
   mapTrigger?: number;
@@ -75,6 +75,9 @@ type Props = {
   forumTrigger?: number;
   gestioneTrigger?: number;
   sviluppoTrigger?: number;
+  dojoTrigger?: number;
+  sokaijuTrigger?: number;
+  sokaijuTab?: string;
   onRoomChange: (room: RoomId | null) => void;
   messages: ChatMessage[];
   sendMessage: (text: string, locationTag?: string | null) => void;
@@ -110,6 +113,9 @@ export function DashboardCenter({
   forumTrigger = 0,
   gestioneTrigger = 0,
   sviluppoTrigger = 0,
+  dojoTrigger = 0,
+  sokaijuTrigger = 0,
+  sokaijuTab,
   onRoomChange,
   messages,
   sendMessage,
@@ -188,6 +194,18 @@ export function DashboardCenter({
       setView("sviluppo");
     }
   }, [sviluppoTrigger, canAccessSviluppo]);
+
+  useEffect(() => {
+    if (dojoTrigger > 0) {
+      setView("dojo");
+    }
+  }, [dojoTrigger]);
+
+  useEffect(() => {
+    if (sokaijuTrigger > 0) {
+      setView("sokaiju");
+    }
+  }, [sokaijuTrigger]);
 
   const goRoot = () => {
     setView("root");
@@ -564,6 +582,78 @@ export function DashboardCenter({
               src="/sviluppo"
               className="w-full h-full min-h-[600px] border-0"
               title="Sviluppo"
+            />
+          </div>
+        </div>
+      )}
+
+      {view === "dojo" && (
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <h2 className="font-display text-lg text-[var(--accent-gold)] uppercase tracking-wide">Dōjō</h2>
+            <button
+              type="button"
+              onClick={goRoot}
+              className="text-sm text-gray-400 hover:text-[var(--accent-gold)]"
+            >
+              ← Torna alla Mappa
+            </button>
+          </div>
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src="/dojo"
+              className="w-full h-full min-h-[600px] border-0"
+              title="Dōjō"
+            />
+          </div>
+        </div>
+      )}
+
+      {view === "sokaiju" && (
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <h2 className="font-display text-lg text-[var(--accent-gold)]">Sōkaiju</h2>
+            <button
+              type="button"
+              onClick={goRoot}
+              className="text-sm text-gray-400 hover:text-[var(--accent-gold)]"
+            >
+              ← Torna alla Mappa
+            </button>
+          </div>
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <iframe
+              src={sokaijuTab ? `/sokaiju?tab=${encodeURIComponent(sokaijuTab)}` : "/sokaiju"}
+              className="w-full h-full min-h-[600px] border-0"
+              title="Sōkaiju"
             />
           </div>
         </div>

@@ -14,6 +14,7 @@ import { sortWazaByKindAndName } from "@domain/progression";
 import { useDoMechanicsSnapshot } from "@/hooks/useDoMechanicsSnapshot";
 import { findStatutiEntry, useStatuti } from "@/hooks/useStatuti";
 import { WazaEditorialHeader } from "./WazaEditorialHeader";
+import { MadoshoStatuteModal } from "./MadoshoStatuteModal";
 import { WazaCatalogRow } from "./WazaCatalogRow";
 import type { CatalogWaza, StyleHexState } from "./waza-catalog-types";
 import { api } from "@/lib/api";
@@ -42,6 +43,7 @@ export function WazaMadoshoBrowser({
     playerMadosho?.id ?? MADOSHO_IDS[0],
   );
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
+  const [statuteOpen, setStatuteOpen] = useState(false);
 
   const normalizedSkiruSheet = useMemo(
     () => (skiruSheet && Object.keys(skiruSheet).length > 0 ? (skiruSheet as SkiruSheet) : null),
@@ -131,9 +133,17 @@ export function WazaMadoshoBrowser({
           <WazaEditorialHeader
             title={madoshoDef?.name ?? selected}
             subtitle={madoshoEntry?.sottotitolo ?? madoshoDef?.tagline}
-            statute={madoshoEntry?.statute}
             mechanics={madoshoEntry?.descrizione_meccanica}
-            statuteLabel="Lignaggio"
+            titleAction={
+              <button
+                type="button"
+                onClick={() => setStatuteOpen(true)}
+                className="inline-flex items-center py-1 px-2 rounded border border-[var(--accent-violet)]/35 text-[var(--accent-violet-light)] hover:border-[var(--accent-gold)]/45 hover:text-[var(--accent-gold)] transition-colors text-[9px] font-display uppercase tracking-[0.12em]"
+                aria-label={`Apri statuto di ${madoshoDef?.name ?? selected}`}
+              >
+                Statuto
+              </button>
+            }
             footer={
               <>
                 {!charMadoshoId && (
@@ -149,6 +159,14 @@ export function WazaMadoshoBrowser({
                 )}
               </>
             }
+          />
+
+          <MadoshoStatuteModal
+            open={statuteOpen}
+            onClose={() => setStatuteOpen(false)}
+            madoshoName={madoshoDef?.name ?? selected}
+            statute={madoshoEntry?.statute}
+            atto={madoshoEntry?.atto}
           />
 
           <div className="shrink-0 px-4 py-2 border-b border-[var(--border-color)]/40 bg-black/30 text-xs font-display uppercase tracking-[0.14em] text-[var(--foreground)]/60">

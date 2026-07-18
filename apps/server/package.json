@@ -32,6 +32,7 @@
         "add-economy-drop-tables": "bun run scripts/add-economy-drop-tables.ts",
         "add-items-bonus-column": "bun run scripts/add-items-bonus-column.ts",
         "add-items-dismantle-yields-column": "bun run scripts/add-items-dismantle-yields-column.ts",
+        "add-statuti-atto-column": "bun run scripts/add-statuti-atto-column.ts",
         "seed-social-blueprints": "bun run scripts/seed-social-blueprints.ts",
         "smoke-shakai-combat": "bun run scripts/smoke-shakai-combat.ts",
         "smoke-economy-phase2": "bun run scripts/smoke-economy-phase2.ts",

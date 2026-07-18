@@ -8,7 +8,7 @@ function slugify(input: string) {
 }
 
 type EditableKind = "do" | "madosho" | "ordine" | "premio";
-const LABELS: Record<EditableKind, string> = { do: "Dō", madosho: "Madosho", ordine: "Ordini", premio: "Premi" };
+const LABELS: Record<EditableKind, string> = { do: "Dō", madosho: "Madoshō", ordine: "Ordini", premio: "Premi" };
 const CREATABLE: EditableKind[] = ["madosho", "ordine", "premio"];
 
 export function GestioneStatutiPanel() {
@@ -21,7 +21,7 @@ export function GestioneStatutiPanel() {
   const update = (
     kind: EditableKind,
     id: string,
-    patch: { name?: string; sottotitolo?: string; statute?: string; descrizione_meccanica?: string },
+    patch: { name?: string; sottotitolo?: string; statute?: string; atto?: string; descrizione_meccanica?: string },
   ) => {
     setState((prev) => ({
       ...prev,
@@ -37,6 +37,7 @@ export function GestioneStatutiPanel() {
       setSaving((prev) => ({ ...prev, [key]: true }));
       await updateAndSave(kind, id, {
         statute: entry.statute,
+        atto: entry.atto,
         sottotitolo: entry.sottotitolo,
         descrizione_meccanica: entry.descrizione_meccanica,
       });
@@ -58,10 +59,10 @@ export function GestioneStatutiPanel() {
     }
     setState((prev) => ({
       ...prev,
-      [kind]: [...prev[kind], { id, name, statute: "", sottotitolo: "", descrizione_meccanica: "" }],
+      [kind]: [...prev[kind], { id, name, statute: "", atto: "", sottotitolo: "", descrizione_meccanica: "" }],
     }));
     setNewNames((prev) => ({ ...prev, [kind]: "" }));
-    updateAndSave(kind, id, { statute: "", sottotitolo: "", descrizione_meccanica: "" });
+    updateAndSave(kind, id, { statute: "", atto: "", sottotitolo: "", descrizione_meccanica: "" });
   };
 
   return (
@@ -69,7 +70,7 @@ export function GestioneStatutiPanel() {
       <div className="mb-6">
         <h2 className="font-display text-xl text-[var(--accent-gold)] tracking-wide">Statuti</h2>
         <p className="font-sans text-xs text-[var(--accent-violet-light)] mt-1 leading-relaxed">
-          Modifica statuti, sottotitoli e meccaniche. Il salvataggio è automatico all&apos;uscita dal campo — visibile a tutti.
+          Modifica statuti, sottotitoli, atti (Madoshō) e meccaniche. Il salvataggio è automatico all&apos;uscita dal campo — visibile a tutti.
         </p>
       </div>
 
@@ -127,7 +128,13 @@ export function GestioneStatutiPanel() {
                   <div key={entry.id} className="px-5 py-5 space-y-4 hover:bg-white/[0.015] transition-colors">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="font-display text-base text-[var(--accent-gold)] leading-tight">{entry.name}</p>
+                        <p
+                          className={`font-display text-base text-[var(--accent-gold)] leading-tight ${
+                            kind === "do" ? "uppercase" : ""
+                          }`}
+                        >
+                          {entry.name}
+                        </p>
                         {entry.sottotitolo ? (
                           <p className="font-accent italic text-sm text-[var(--accent-violet-light)]/70 mt-0.5 leading-snug">
                             {entry.sottotitolo}
@@ -169,6 +176,22 @@ export function GestioneStatutiPanel() {
                         className="w-full px-3 py-2.5 rounded border border-[var(--border-color)] bg-[var(--background)] font-sans text-sm leading-relaxed resize-y placeholder:text-gray-600 focus:outline-none focus:border-[var(--accent-gold)]/40 transition-colors"
                       />
                     </div>
+
+                    {kind === "madosho" && (
+                      <div className="space-y-1">
+                        <label className="font-sans text-[10px] uppercase tracking-widest text-[var(--accent-violet-light)]/60">
+                          Atto
+                        </label>
+                        <textarea
+                          value={entry.atto ?? ""}
+                          onChange={(e) => update(kind, entry.id, { atto: e.target.value })}
+                          onBlur={() => save(kind, entry.id)}
+                          rows={4}
+                          placeholder="Testo dell'atto del lignaggio…"
+                          className="w-full px-3 py-2.5 rounded border border-[var(--border-color)] bg-[var(--background)] font-sans text-sm leading-relaxed resize-y placeholder:text-gray-600 focus:outline-none focus:border-[var(--accent-gold)]/40 transition-colors"
+                        />
+                      </div>
+                    )}
 
                     <div className="space-y-1">
                       <label className="font-sans text-[10px] uppercase tracking-widest text-[var(--accent-violet-light)]/60">

@@ -30,6 +30,9 @@ type Props = {
   forumTrigger: number;
   gestioneTrigger: number;
   sviluppoTrigger: number;
+  dojoTrigger: number;
+  sokaijuTrigger: number;
+  sokaijuTab?: string;
   messages: Array<{ id: string; zone: string; characterId: string; name: string; surname?: string | null; content: string; createdAt: string }>;
   sendMessage: (text: string, locationTag?: string | null) => void;
   chatConnected: boolean;
@@ -49,6 +52,8 @@ type Props = {
   onCharUpdate?: () => Promise<void>;
   onOpenGestione: () => void;
   onOpenSviluppo: () => void;
+  onOpenDojo: () => void;
+  onOpenSokaiju: (tab?: string) => void;
 };
 
 export function DashboardMobileLayout({
@@ -62,6 +67,9 @@ export function DashboardMobileLayout({
   forumTrigger,
   gestioneTrigger,
   sviluppoTrigger,
+  dojoTrigger,
+  sokaijuTrigger,
+  sokaijuTab,
   messages,
   sendMessage,
   chatConnected,
@@ -81,6 +89,8 @@ export function DashboardMobileLayout({
   onCharUpdate,
   onOpenGestione,
   onOpenSviluppo,
+  onOpenDojo,
+  onOpenSokaiju,
 }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MobileTab>("mappa");
@@ -180,6 +190,16 @@ export function DashboardMobileLayout({
     onOpenSviluppo();
   };
 
+  const handleOpenDojo = () => {
+    setActiveTab("mappa");
+    onOpenDojo();
+  };
+
+  const handleOpenSokaiju = () => {
+    setActiveTab("mappa");
+    onOpenSokaiju();
+  };
+
   return (
     <div className="mobile-app-shell md:h-screen md:max-h-none">
       {/* Header globale nascosto in chat immersiva (più spazio, meno scroll) */}
@@ -277,6 +297,9 @@ export function DashboardMobileLayout({
               forumTrigger={forumTrigger}
               gestioneTrigger={gestioneTrigger}
               sviluppoTrigger={sviluppoTrigger}
+              dojoTrigger={dojoTrigger}
+              sokaijuTrigger={sokaijuTrigger}
+              sokaijuTab={sokaijuTab}
               onRoomChange={onRoomChange}
               messages={messages}
               sendMessage={sendMessage}
@@ -324,11 +347,25 @@ export function DashboardMobileLayout({
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={handleOpenSokaiju}
+              className="py-4 px-3 rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)] flex flex-col items-center gap-2 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_85%,black)] transition-colors"
+            >
+              <FontAwesomeIcon icon={icons.sokaiju} className="w-6 h-6 text-[var(--accent-gold)]" />
+              <span className="text-xs text-[var(--accent-violet-light)]">Sōkaiju</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenDojo}
+              className="py-4 px-3 rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)] flex flex-col items-center gap-2 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_85%,black)] transition-colors"
+            >
+              <FontAwesomeIcon icon={icons.waza} className="w-6 h-6 text-[var(--accent-gold)]" />
+              <span className="text-xs text-[var(--accent-violet-light)] uppercase tracking-wide">Dōjō</span>
+            </button>
             {[
               { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },
               { id: "banca" as WindowId, label: "Banca", icon: icons.banca },
-              { id: "waza" as WindowId, label: "Sōkaiju", icon: icons.sokaiju },
-              { id: "dojo" as WindowId, label: "Dōjō", icon: icons.waza },
               { id: "ordine" as WindowId, label: "Ordine", icon: icons.ordine },
               { id: "bestiario" as WindowId, label: "Bestiario", icon: icons.trophy },
               { id: "presenti" as WindowId, label: "Presenti", icon: icons.presenti },
@@ -404,9 +441,7 @@ export function DashboardMobileLayout({
             char={
               openWindow === "scheda" ||
               openWindow === "mercato" ||
-              openWindow === "banca" ||
-              openWindow === "waza" ||
-              openWindow === "dojo"
+              openWindow === "banca"
                 ? char
                 : undefined
             }

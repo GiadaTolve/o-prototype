@@ -12,6 +12,7 @@ export type StatutiEntry = {
   id: string;
   name: string;
   statute: string;
+  atto?: string;
   sottotitolo?: string;
   descrizione_meccanica?: string;
 };
@@ -33,6 +34,7 @@ const DEFAULT_STATE: StatutiState = {
     id: m.id,
     name: m.name,
     statute: "",
+    atto: "",
     sottotitolo: m.tagline,
     descrizione_meccanica: "",
   })),
@@ -49,6 +51,7 @@ type DbRow = {
   kind: string;
   entryId: string;
   statute: string;
+  atto: string;
   sottotitolo: string;
   descrizione_meccanica: string;
 };
@@ -66,6 +69,7 @@ function mergeDbRows(base: StatutiState, rows: DbRow[]): StatutiState {
     const idx = result[kind].findIndex((e) => e.id === row.entryId);
     if (idx !== -1) {
       if (row.statute) result[kind][idx].statute = row.statute;
+      if (row.atto) result[kind][idx].atto = row.atto;
       if (row.sottotitolo) result[kind][idx].sottotitolo = row.sottotitolo;
       if (row.descrizione_meccanica) result[kind][idx].descrizione_meccanica = row.descrizione_meccanica;
     } else if (kind === "premio" && row.entryId) {
@@ -73,6 +77,7 @@ function mergeDbRows(base: StatutiState, rows: DbRow[]): StatutiState {
         id: row.entryId,
         name: row.entryId,
         statute: row.statute,
+        atto: row.atto,
         descrizione_meccanica: row.descrizione_meccanica,
       });
     }
@@ -146,6 +151,7 @@ export function useStatuti() {
       patch: {
         name?: string;
         statute?: string;
+        atto?: string;
         sottotitolo?: string;
         descrizione_meccanica?: string;
       },
@@ -161,6 +167,7 @@ export function useStatuti() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             statute: patch.statute,
+            atto: patch.atto,
             sottotitolo: patch.sottotitolo,
             descrizione_meccanica: patch.descrizione_meccanica,
           }),

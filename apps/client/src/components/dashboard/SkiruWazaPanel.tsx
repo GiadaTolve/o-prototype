@@ -4,37 +4,37 @@ import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { SchedaSkiruPage } from "./SchedaSkiruPage";
-import { SchedaWazaPage } from "./SchedaWazaPage";
 import { PassiveSlotsPanel } from "./PassiveSlotsPanel";
 import { StyleHexagonPanel } from "./StyleHexagonPanel";
 import { WazaCatalogPanel } from "./WazaCatalogPanel";
 import type { CharacterSummary } from "./types";
+import "./fetch/fetch-pager.css";
 
 type TabId = "skiru" | "indice" | "sokaiju";
 
+function parseInitialTab(value: string | null | undefined): TabId {
+  if (value === "skiru" || value === "indice" || value === "sokaiju") return value;
+  return "indice";
+}
+
 function ExpKeysBanner({ char }: { char: CharacterSummary }) {
+  const exp = char.experienceSpendable ?? 0;
+  const keys = char.keys ?? 0;
+
   return (
-    <div className="shrink-0 rounded-lg border border-[var(--border-color)] bg-black/40 px-4 py-3 flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h2 className="font-display text-sm uppercase tracking-wider text-[var(--accent-gold)]">
-          Skiru &amp; Waza
-        </h2>
-        <p className="text-sm text-[var(--accent-violet-light)]/80 mt-0.5 max-w-md">
-          EXP spendibile condivisa: investi nodi Skiru o acquista skill/Waza. Il Market usa solo REM.
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-6 text-right">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-gray-500 font-display">EXP spendibile</p>
-          <p className="font-display text-2xl text-[var(--accent-gold)] tabular-nums">
-            {char.experienceSpendable ?? 0}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-widest text-gray-500 font-display">Keys</p>
-          <p className="font-display text-2xl text-[var(--accent-violet-light)] tabular-nums">
-            {char.keys ?? 0}
-          </p>
+    <div className="skiru-exp-hud shrink-0" aria-label={`EXP ${exp}, Keys ${keys}`}>
+      <div className="fetch-pager__top skiru-exp-hud__top">
+        <span className="fetch-pager__brand skiru-exp-hud__brand">OYASUMI · SŌKAIJU</span>
+        <div className="fetch-pager__status skiru-exp-hud__stats">
+          <span>
+            EXP <strong className="skiru-exp-hud__exp">{exp}</strong>
+          </span>
+          <span className="skiru-exp-hud__sep" aria-hidden>
+            ·
+          </span>
+          <span>
+            KEYS <strong className="skiru-exp-hud__keys">{keys}</strong>
+          </span>
         </div>
       </div>
     </div>
@@ -44,11 +44,13 @@ function ExpKeysBanner({ char }: { char: CharacterSummary }) {
 export function SkiruWazaPanel({
   char,
   onCharUpdate,
+  initialTab,
 }: {
   char?: CharacterSummary;
   onCharUpdate?: () => void;
+  initialTab?: string | null;
 }) {
-  const [tab, setTab] = useState<TabId>("indice");
+  const [tab, setTab] = useState<TabId>(() => parseInitialTab(initialTab));
 
   if (!char?.id) {
     return <p className="text-sm text-gray-500 p-4">Personaggio non disponibile.</p>;
@@ -62,7 +64,7 @@ export function SkiruWazaPanel({
     }`;
 
   return (
-    <div className="flex flex-col h-full min-h-0 p-4 md:p-5 gap-4 animate__animated animate__fadeIn">
+    <div className="flex flex-col h-full min-h-0 p-3 md:p-4 gap-2 animate__animated animate__fadeIn">
       <ExpKeysBanner char={char} />
 
       <div className="shrink-0 flex border-b border-[var(--border-color)] bg-black/30 rounded-t-lg overflow-hidden overflow-x-auto">
@@ -92,12 +94,9 @@ export function SkiruWazaPanel({
           </div>
         )}
         {tab === "indice" && (
-          <div className="h-full overflow-y-auto">
-            <SchedaWazaPage isOwnCharacter embedded activeOnly />
-            <div className="px-4 md:px-5 pb-5 space-y-6 border-t border-[var(--border-color)]/50 pt-4">
-              <StyleHexagonPanel onCharUpdate={onCharUpdate} />
-              <PassiveSlotsPanel onCharUpdate={onCharUpdate} />
-            </div>
+          <div className="h-full overflow-y-auto px-4 md:px-5 py-4 space-y-6">
+            <StyleHexagonPanel onCharUpdate={onCharUpdate} />
+            <PassiveSlotsPanel onCharUpdate={onCharUpdate} />
           </div>
         )}
       </div>

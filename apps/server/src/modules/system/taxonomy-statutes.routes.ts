@@ -5,6 +5,7 @@ import { userHasSviluppoAccess } from '../../lib/gestione-access'
 
 const upsertBody = t.Object({
   statute: t.Optional(t.String()),
+  atto: t.Optional(t.String()),
   sottotitolo: t.Optional(t.String()),
   descrizione_meccanica: t.Optional(t.String()),
 })

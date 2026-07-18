@@ -1447,6 +1447,7 @@ export const taxonomyStatutes = pgTable('taxonomy_statutes', {
   kind: text('kind').notNull(),        // 'do' | 'madosho' | 'ordine' | 'premio'
   entryId: text('entry_id').notNull(), // styleId, madoshoId, orderId…
   statute: text('statute').notNull().default(''),
+  atto: text('atto').notNull().default(''),
   sottotitolo: text('sottotitolo').notNull().default(''),
   descrizione_meccanica: text('descrizione_meccanica').notNull().default(''),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

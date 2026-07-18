@@ -21,7 +21,6 @@ import { SocialClassChoiceBanner } from "./professione/SocialClassChoiceBanner";
 import { SOCIAL_CLASS_ICON } from "./professione/social-class-ui";
 import type { SocialClassState } from "./professione/types";
 import { InventorySection } from "./inventory/InventorySection";
-import { SkiruWazaPanel, DojoPanel } from "./SkiruWazaPanel";
 import { MercatoPanel } from "./mercato/MercatoPanel";
 import { PannelloCombattimentoWindow } from "./chat-combat/PannelloCombattimentoWindow";
 import { CediDropWindow } from "./chat-loot/CediDropWindow";
@@ -87,7 +86,7 @@ type Props = {
 const UNIFIED_PANEL_IDS = ["sms", "banca", "mercato", "ordine", "bestiario", "notifiche", "spazioEventi", "fetch"] as const;
 
 /** Stesse dimensioni della colonna centrale (chat / main area) */
-const MAIN_AREA_PANEL_IDS = ["scheda", "profilo", "waza", "dojo"] as const;
+const MAIN_AREA_PANEL_IDS = ["scheda", "profilo"] as const;
 
 export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione, chatConnected = true, roomUsers = [] }: Props) {
   const isSms = windowId === "sms";
@@ -460,16 +459,6 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
           {windowId === "banca" && <BancaContent char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "mercato" && <MercatoPanel char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "housing" && <HousingContent char={char} onCharUpdate={onCharUpdate} />}
-          {windowId === "waza" && (
-            <div className="h-full">
-              <SkiruWazaPanel char={char} onCharUpdate={onCharUpdate} />
-            </div>
-          )}
-          {windowId === "dojo" && (
-            <div className="h-full">
-              <DojoPanel char={char} onCharUpdate={onCharUpdate} />
-            </div>
-          )}
           {windowId === "ordine" && <OrdineContent char={char} />}
           {windowId === "bestiario" && <BestiarioContent char={char} />}
           {windowId === "notifiche" && <NotificheContent onUnreadChange={onNotificationsUnreadChange} />}

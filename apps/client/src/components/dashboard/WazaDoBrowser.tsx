@@ -347,6 +347,7 @@ export function WazaDoBrowser({
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
               <WazaEditorialHeader
                 title={STYLE_LABELS[selected]}
+                titleUppercase
                 subtitle={doEntry?.sottotitolo}
                 statute={doEntry?.statute || STYLE_STATUTES[selected]}
                 mechanics={doEntry?.descrizione_meccanica}

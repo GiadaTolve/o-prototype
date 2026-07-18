@@ -9,6 +9,8 @@ type Props = {
   mechanics?: string | null;
   statuteLabel?: string;
   mechanicsLabel?: string;
+  titleUppercase?: boolean;
+  titleAction?: ReactNode;
   badges?: ReactNode;
   footer?: ReactNode;
 };
@@ -23,6 +25,8 @@ export function WazaEditorialHeader({
   mechanics,
   statuteLabel = "Statuto",
   mechanicsLabel = "Meccaniche",
+  titleUppercase = false,
+  titleAction,
   badges,
   footer,
 }: Props) {
@@ -30,9 +34,16 @@ export function WazaEditorialHeader({
     <header className="shrink-0 sticky top-0 z-10 border-b border-[var(--border-color)]/70 bg-black/85 backdrop-blur-md px-4 py-4">
       <div className="flex flex-col lg:flex-row lg:flex-wrap gap-4 lg:gap-6 mb-3">
         <div className="flex-1 min-w-[200px]">
-          <h2 className="font-display text-xl md:text-2xl text-[var(--accent-gold)] tracking-wide leading-tight">
-            {title}
-          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2
+              className={`font-display text-xl md:text-2xl text-[var(--accent-gold)] tracking-wide leading-tight ${
+                titleUppercase ? "uppercase" : ""
+              }`}
+            >
+              {title}
+            </h2>
+            {titleAction}
+          </div>
           {subtitle ? (
             <p className="font-accent italic text-sm md:text-base text-[var(--accent-violet-light)]/85 mt-1.5 leading-snug">
               {subtitle}

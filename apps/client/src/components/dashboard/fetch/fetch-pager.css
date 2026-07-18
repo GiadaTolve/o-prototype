@@ -749,3 +749,94 @@
   outline: 2px solid var(--accent-violet);
   outline-offset: 2px;
 }
+
+/* ─── Sōkaiju · strip EXP / Keys (stile Beeper) ─── */
+
+.skiru-exp-hud {
+  --pager-lcd-bg: color-mix(in srgb, var(--background) 88%, var(--accent-gold) 12%);
+  --pager-lcd-text: var(--accent-gold);
+  --pager-lcd-dim: color-mix(in srgb, var(--accent-gold) 55%, var(--border-color));
+
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, var(--accent-gold) 15%);
+  background: var(--pager-lcd-bg);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.45);
+  font-family: var(--font-workbench), ui-monospace, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pager-lcd-dim);
+}
+
+.skiru-exp-hud__top {
+  padding: 0 !important;
+  border-bottom: none !important;
+  min-height: 0;
+}
+
+.skiru-exp-hud .fetch-pager__brand,
+.skiru-exp-hud__brand {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.1em;
+  color: var(--pager-lcd-dim);
+}
+
+.skiru-exp-hud .fetch-pager__status,
+.skiru-exp-hud__stats {
+  gap: 0.5rem;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.08em;
+  color: var(--pager-lcd-dim);
+}
+
+.skiru-exp-hud .fetch-pager__status strong,
+.skiru-exp-hud__stats strong {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 0.9rem;
+}
+
+.skiru-exp-hud__exp {
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.skiru-exp-hud__keys {
+  color: var(--accent-violet-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.skiru-exp-hud__sep {
+  opacity: 0.45;
+}
+
+.skiru-exp-hud__dim {
+  color: var(--pager-lcd-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.skiru-exp-hud--stats .skiru-exp-hud__stats--wrap {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.skiru-exp-hud__chip {
+  display: inline-flex;
+  align-items: baseline;
+  position: relative;
+  z-index: 1;
+}
+
+.skiru-exp-hud__chip:hover,
+.skiru-exp-hud__chip:focus-within {
+  z-index: 200;
+}
+
+.skiru-exp-hud--stats {
+  overflow: visible;
+}

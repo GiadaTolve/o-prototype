@@ -32,6 +32,7 @@ import { api } from "@/lib/api";
 import { icons } from "@/lib/icons";
 import { isSkiruApiResponse, type SkiruApiResponse } from "@/lib/skiru-api";
 import { resolveCharacterComputed, formatMovementMeters } from "./character-computed";
+import "./fetch/fetch-pager.css";
 import type { CharacterSummary } from "./types";
 
 const DOMAIN_ORDER: SkiruDomain[] = ["ten", "chi", "jin"];
@@ -68,37 +69,38 @@ const DOMAIN_ACCENT: Record<
   },
 };
 
-function SkiruStatWithTooltip({
+function SkiruHudStat({
   label,
   value,
   tooltip,
-  valueClass = "text-[var(--accent-violet-light)]",
+  accent = "dim",
 }: {
   label: string;
   value: string | number;
   tooltip?: string;
-  valueClass?: string;
+  accent?: "gold" | "violet" | "dim";
 }) {
+  const valueClass =
+    accent === "gold"
+      ? "skiru-exp-hud__exp"
+      : accent === "violet"
+        ? "skiru-exp-hud__keys"
+        : "skiru-exp-hud__dim";
+
   return (
-    <span className={tooltip ? "relative group" : undefined}>
-      <span
-        className={`text-[10px] uppercase tracking-widest text-gray-500 block mb-0.5 ${
-          tooltip ? "border-b border-dotted border-gray-600/60 cursor-help w-fit" : ""
-        }`}
-      >
-        {label}
+    <span className={tooltip ? "relative group skiru-exp-hud__chip" : "skiru-exp-hud__chip"}>
+      <span>
+        {label}{" "}
+        <strong className={valueClass} title={tooltip}>
+          {value}
+        </strong>
       </span>
-      <strong className={`font-display tabular-nums ${valueClass}`}>{value}</strong>
       {tooltip ? (
         <span
           role="tooltip"
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2.5 py-1.5 rounded-md border border-[var(--border-color)] bg-[var(--panel-bg)] text-[10px] text-[var(--accent-violet-light)] whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-30 shadow-[var(--shadow-violet)]"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1.5 rounded-md border border-[var(--border-color)] bg-[var(--panel-bg)] text-[10px] text-[var(--accent-violet-light)] whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-[200] shadow-[var(--shadow-violet)] font-sans normal-case tracking-normal"
         >
           {tooltip}
-          <span
-            className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-[var(--border-color)]"
-            aria-hidden
-          />
         </span>
       ) : null}
     </span>
@@ -124,51 +126,58 @@ function SkiruStatsBar({
   };
 }) {
   return (
-    <div className="rounded-lg border border-[var(--border-color)] bg-black/30 px-4 py-3 flex flex-wrap items-center gap-4 text-sm">
-      <span>
-        <span className="text-[10px] uppercase tracking-widest text-gray-500 block mb-0.5">Punti investiti</span>
-        <strong className="font-display text-[var(--accent-gold)] tabular-nums">{totalInvested}</strong>
-      </span>
-      <span className="h-8 w-px bg-[var(--border-color)] hidden sm:block" aria-hidden />
-      <span>
-        <span className="text-[10px] uppercase tracking-widest text-gray-500 block mb-0.5">Exp spendibile</span>
-        <strong className="font-display text-[var(--accent-violet-light)] tabular-nums">{expSpendable}</strong>
-      </span>
-      <span className="h-8 w-px bg-[var(--border-color)] hidden sm:block" aria-hidden />
-      <SkiruStatWithTooltip
-        label="HP"
-        value={`${derived.hpCurrent}/${derived.hpMax}`}
-        valueClass="text-[var(--accent-gold)]"
-      />
-      <SkiruStatWithTooltip label="Mitigazione" value={`${derived.mitigationPercent}%`} />
-      <SkiruStatWithTooltip
-        label="Movimento"
-        value={formatMovementMeters(derived.movementMetersPerQuarter)}
-      />
-      <SkiruStatWithTooltip
-        label="CAC"
-        value={derived.cac}
-        tooltip="Danno corpo a corpo"
-        valueClass="text-[var(--accent-gold)]"
-      />
-      <SkiruStatWithTooltip
-        label="CAD"
-        value={derived.cad}
-        tooltip="Danno colpo a distanza"
-        valueClass="text-[var(--accent-gold)]"
-      />
-      <SkiruStatWithTooltip
-        label="Schivata"
-        value={derived.dodgeIr}
-        tooltip="IR schivata · Hansha + 0,5 × Chōkaku"
-        valueClass="text-[var(--accent-gold)]"
-      />
-      <SkiruStatWithTooltip
-        label="Parata"
-        value={derived.parryIr}
-        tooltip="IR parata · Konjō + 0,5 × Kairiki"
-        valueClass="text-[var(--accent-gold)]"
-      />
+    <div
+      className="skiru-exp-hud skiru-exp-hud--stats"
+      aria-label={`Punti ${totalInvested}, EXP ${expSpendable}, HP ${derived.hpCurrent}/${derived.hpMax}`}
+    >
+      <div className="fetch-pager__status skiru-exp-hud__stats skiru-exp-hud__stats--wrap">
+        <SkiruHudStat label="PTS" value={totalInvested} accent="gold" />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat label="EXP" value={expSpendable} accent="violet" />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat label="HP" value={`${derived.hpCurrent}/${derived.hpMax}`} accent="gold" />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat label="MIT" value={`${derived.mitigationPercent}%`} />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat
+          label="MOV"
+          value={formatMovementMeters(derived.movementMetersPerQuarter)}
+        />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat label="CAC" value={derived.cac} tooltip="Danno corpo a corpo" accent="gold" />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat label="CAD" value={derived.cad} tooltip="Danno colpo a distanza" accent="gold" />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat
+          label="SCH"
+          value={derived.dodgeIr}
+          tooltip="IR schivata · Hansha + 0,5 × Chōkaku"
+          accent="gold"
+        />
+        <span className="skiru-exp-hud__sep" aria-hidden>
+          ·
+        </span>
+        <SkiruHudStat
+          label="PAR"
+          value={derived.parryIr}
+          tooltip="IR parata · Konjō + 0,5 × Kairiki"
+          accent="gold"
+        />
+      </div>
     </div>
   );
 }
@@ -1193,14 +1202,7 @@ export function SchedaSkiruPage({
 
   return (
     <div className="flex flex-col h-full min-h-0 animate__animated animate__fadeIn">
-      <div className="shrink-0 z-20 border-b border-[var(--border-color)] bg-[var(--background)]/95 backdrop-blur-sm px-4 md:px-6 pt-4 md:pt-6 pb-4 space-y-4">
-        <div>
-          <h2 className="font-display text-xl text-[var(--accent-gold)] mb-1">Skiru</h2>
-          <p className="text-[11px] text-[var(--accent-violet-light)]/70 max-w-xl">
-            Albero competenze Ten · Chi · Jin. Max 10 punti per nodo standard; passive a punto unico.
-          </p>
-        </div>
-
+      <div className="shrink-0 z-20 overflow-visible border-b border-[var(--border-color)] bg-[var(--background)]/95 backdrop-blur-sm px-3 md:px-4 pt-3 pb-3 space-y-2">
         <SkiruStatsBar totalInvested={totalInvested} expSpendable={expSpendable} derived={derived} />
 
         {loadingApi && canEdit && (

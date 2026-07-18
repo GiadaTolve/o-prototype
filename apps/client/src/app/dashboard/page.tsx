@@ -41,6 +41,9 @@ export default function DashboardPage() {
   const [forumTrigger, setForumTrigger] = useState(0);
   const [gestioneTrigger, setGestioneTrigger] = useState(0);
   const [sviluppoTrigger, setSviluppoTrigger] = useState(0);
+  const [dojoTrigger, setDojoTrigger] = useState(0);
+  const [sokaijuTrigger, setSokaijuTrigger] = useState(0);
+  const [sokaijuTab, setSokaijuTab] = useState<string | undefined>();
   const [smsUnread, setSmsUnread] = useState(0);
   const [smsNotificationVisible, setSmsNotificationVisible] = useState(false);
   const [notificheUnread, setNotificheUnread] = useState(0);
@@ -224,13 +227,14 @@ export default function DashboardPage() {
       await api.patch("/characters/me/level-up-banner", { action: "ack" });
       setChar((prev) => (prev ? { ...prev, pendingLevelUp: null } : prev));
       setLevelUpDismissed(true);
-      open("waza");
+      setSokaijuTab("skiru");
+      setSokaijuTrigger((t) => t + 1);
       await reloadChar();
     } catch (e) {
       console.error("Errore acknowledge level-up:", e);
       toast.error("Impossibile confermare il level-up.");
     }
-  }, [open, reloadChar]);
+  }, [reloadChar]);
 
   const handleLevelUpSalta = useCallback(async () => {
     try {
@@ -499,6 +503,9 @@ export default function DashboardPage() {
         forumTrigger={forumTrigger}
         gestioneTrigger={gestioneTrigger}
         sviluppoTrigger={sviluppoTrigger}
+        dojoTrigger={dojoTrigger}
+        sokaijuTrigger={sokaijuTrigger}
+        sokaijuTab={sokaijuTab}
         messages={messages}
         sendMessage={sendMessage}
         chatConnected={chatConnected}
@@ -518,6 +525,11 @@ export default function DashboardPage() {
         onCharUpdate={reloadChar}
         onOpenGestione={() => setGestioneTrigger((t) => t + 1)}
         onOpenSviluppo={() => setSviluppoTrigger((t) => t + 1)}
+        onOpenDojo={() => setDojoTrigger((t) => t + 1)}
+        onOpenSokaiju={(tab?: string) => {
+          setSokaijuTab(tab);
+          setSokaijuTrigger((t) => t + 1);
+        }}
       />
       {char?.pendingLevelUp && (
         <LevelUpOverlay
@@ -553,8 +565,11 @@ export default function DashboardPage() {
           onOpenMercato={() => open("mercato")}
           onOpenSms={() => open("sms")}
           onOpenBanca={() => open("banca")}
-          onOpenWaza={() => open("waza")}
-          onOpenDojo={() => open("dojo")}
+          onOpenWaza={() => {
+            setSokaijuTab(undefined);
+            setSokaijuTrigger((t) => t + 1);
+          }}
+          onOpenDojo={() => setDojoTrigger((t) => t + 1)}
           onOpenOrdine={() => open("ordine")}
           onOpenBestiario={() => open("bestiario")}
           smsUnread={smsUnread}
@@ -567,6 +582,9 @@ export default function DashboardPage() {
           forumTrigger={forumTrigger}
           gestioneTrigger={gestioneTrigger}
           sviluppoTrigger={sviluppoTrigger}
+          dojoTrigger={dojoTrigger}
+          sokaijuTrigger={sokaijuTrigger}
+          sokaijuTab={sokaijuTab}
           onRoomChange={setRoomId}
           messages={messages}
           sendMessage={sendMessage}
@@ -609,8 +627,6 @@ export default function DashboardPage() {
             openWindow === "scheda" ||
             openWindow === "mercato" ||
             openWindow === "banca" ||
-            openWindow === "waza" ||
-            openWindow === "dojo" ||
             openWindow === "combattimento"
               ? char
               : undefined
