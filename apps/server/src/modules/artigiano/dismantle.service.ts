@@ -4,12 +4,10 @@ import {
   DISMANTLE_DAILY_MAX,
   isArtigianoFromSkiruSheet,
   materialCatalogKey,
-  resolveJunkDismantleYields,
-  yieldFromBrokenEquipment,
+  resolveDismantleYields,
   type EconomyMaterialCost,
 } from '@domain/economy/dismantle'
 import type { ItemCategory } from '@domain/economy/types'
-import { getSocialBlueprint } from '@domain/shakai-kaikyu/blueprint-catalog'
 import { db } from '../../plugins/db'
 import { characters, dismantleDailyUsage, inventory } from '../../db/schema'
 import { addItemByCatalogKey, getCharacterInventory } from '../inventory/inventory.service'
@@ -79,24 +77,6 @@ export async function getDismantleStatus(characterId: string) {
   }
 }
 
-function resolveYieldsForItem(
-  category: ItemCategory,
-  junkTemplateId: string | null | undefined,
-  blueprintId: string | null | undefined,
-): EconomyMaterialCost[] {
-  if (category === 'junk' && junkTemplateId) {
-    return [...resolveJunkDismantleYields(junkTemplateId)]
-  }
-  if (category === 'equipaggiamento' || category === 'costrutto_materiale') {
-    const bpId = blueprintId
-    if (!bpId) return []
-    const blueprint = getSocialBlueprint(bpId)
-    if (!blueprint?.materials?.length) return []
-    return yieldFromBrokenEquipment(blueprint.materials)
-  }
-  return []
-}
-
 async function grantMaterials(
   characterId: string,
   yields: readonly EconomyMaterialCost[],
@@ -107,6 +87,19 @@ async function grantMaterials(
     const catalogKey = materialCatalogKey(y.materialId)
     await addItemByCatalogKey(characterId, catalogKey, y.quantity, { origin: 'craftato' })
     granted.push({ materialId: y.materialId, quantity: y.quantity, catalogKey })
+  }
+  return granted
+}
+
+async function grantJunk(
+  characterId: string,
+  junk: ReadonlyArray<{ catalogKey: string; quantity: number }>,
+): Promise<Array<{ catalogKey: string; quantity: number; name?: string }>> {
+  const granted: Array<{ catalogKey: string; quantity: number; name?: string }> = []
+  for (const row of junk) {
+    if (row.quantity <= 0) continue
+    await addItemByCatalogKey(characterId, row.catalogKey, row.quantity, { origin: 'craftato' })
+    granted.push({ catalogKey: row.catalogKey, quantity: row.quantity })
   }
   return granted
 }
@@ -128,6 +121,7 @@ async function consumeInventoryUnit(inventoryId: string, characterId: string): P
 export interface DismantleResultLine {
   inventoryId: string
   itemName: string
+  junk: Array<{ catalogKey: string; quantity: number }>
   materials: Array<{ materialId: string; quantity: number; catalogKey: string }>
 }
 
@@ -176,21 +170,31 @@ export async function dismantleInventoryItems(
       integrityCurrent: inv.integrityCurrent,
       integrityMax: inv.item.integrityMax,
       isEquipped: inv.isEquipped ?? false,
+      itemType: inv.item.type,
     })
     if (!check.ok) {
       throw new Error(`${inv.item.name}: ${check.reason ?? 'non smantellabile.'}`)
     }
 
-    const yields = resolveYieldsForItem(category, inv.item.junkTemplateId, blueprintId)
-    if (yields.length === 0) {
-      throw new Error(`${inv.item.name}: nessun materiale recuperabile.`)
+    const yields = resolveDismantleYields({
+      category,
+      junkTemplateId: inv.item.junkTemplateId,
+      blueprintId,
+      integrityCurrent: inv.integrityCurrent,
+      integrityMax: inv.item.integrityMax,
+      itemType: inv.item.type,
+    })
+    if (yields.junk.length === 0 && yields.materials.length === 0) {
+      throw new Error(`${inv.item.name}: nessuna resa recuperabile.`)
     }
 
     await consumeInventoryUnit(inventoryId, characterId)
-    const materials = await grantMaterials(characterId, yields)
+    const junk = await grantJunk(characterId, yields.junk)
+    const materials = await grantMaterials(characterId, yields.materials)
     results.push({
       inventoryId,
       itemName: inv.item.name,
+      junk,
       materials,
     })
   }
@@ -212,15 +216,32 @@ export async function getArtigianoDismantleInventory(characterId: string) {
   const inv = await getCharacterInventory(characterId)
   const itemsWithFlag = inv.items.map((row) => {
     const eco = row.economy
-    const check = canDismantleInventoryItem({
+    const input = {
       category: eco.category,
       junkTemplateId: eco.junkTemplateId,
       blueprintId: eco.blueprintId,
       integrityCurrent: eco.integrityCurrent,
       integrityMax: eco.integrityMax,
       isEquipped: row.isEquipped,
-    })
-    return { ...row, canDismantle: check.ok, dismantleBlockReason: check.ok ? undefined : check.reason }
+      itemType: row.item.type,
+    }
+    const check = canDismantleInventoryItem(input)
+    const preview = check.ok ? resolveDismantleYields(input) : null
+    return {
+      ...row,
+      canDismantle: check.ok,
+      dismantleBlockReason: check.ok ? undefined : check.reason,
+      dismantlePreview: preview
+        ? {
+            junk: preview.junk.map((j) => ({ catalogKey: j.catalogKey, quantity: j.quantity })),
+            materials: preview.materials.map((m) => ({
+              materialId: m.materialId,
+              quantity: m.quantity,
+              catalogKey: materialCatalogKey(m.materialId),
+            })),
+          }
+        : undefined,
+    }
   })
   const status = await getDismantleStatus(characterId)
   return { ...inv, items: itemsWithFlag, dismantle: status }

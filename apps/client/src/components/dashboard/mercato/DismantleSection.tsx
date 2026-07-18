@@ -26,12 +26,25 @@ function formatCategory(category: string): string {
 }
 
 
+function previewLabel(row: DismantleInventoryRow): string | null {
+  const preview = row.dismantlePreview
+  if (!preview) return null
+  const parts: string[] = []
+  if (preview.junk.length > 0) parts.push(`+${preview.junk.reduce((n, j) => n + j.quantity, 0)} junk`)
+  if (preview.materials.length > 0) {
+    parts.push(`+${preview.materials.reduce((n, m) => n + m.quantity, 0)} mat.`)
+  }
+  return parts.length > 0 ? `Resa: ${parts.join(', ')}` : null
+}
+
 function itemSubtitle(row: DismantleInventoryRow): string {
   const parts = [formatCategory(row.economy.category)]
   if (row.economy.isBroken) parts.push('rotto')
   if (row.economy.integrityMax != null && row.economy.integrityCurrent != null) {
     parts.push(`INT ${row.economy.integrityCurrent}/${row.economy.integrityMax}`)
   }
+  const preview = previewLabel(row)
+  if (preview) parts.push(preview)
   return parts.join(' · ')
 }
 
@@ -97,8 +110,8 @@ export function DismantleSection({ char, onCharUpdate }: Props) {
       const result = await artigianoApi.dismantle(inventoryIds)
       toast.success(
         result.dismantled.length === 1
-          ? `Smantellato. Materiali in zaino.`
-          : `Smantellati ${result.dismantled.length} oggetti. Materiali in zaino.`,
+          ? `Smantellato. Junk e materiali in zaino.`
+          : `Smantellati ${result.dismantled.length} oggetti. Junk e materiali in zaino.`,
       )
       onCharUpdate?.()
       await load()
@@ -135,7 +148,7 @@ export function DismantleSection({ char, onCharUpdate }: Props) {
 
       <MercatoSection
         title="Smantellamento"
-        hint={`Junk e oggetti rotti (integrità 0) → materiali. Limite ${dailyMax}/giorno — oggi ${usedToday} usati, ${remainingToday} rimasti.`}
+        hint={`Junk, consumabili e oggetti rotti → junk di scarto + materiali. Limite ${dailyMax}/giorno — oggi ${usedToday} usati, ${remainingToday} rimasti.`}
       >
         {dismantlable.length === 0 ? (
           <MercatoEmpty>Nessun oggetto smantellabile nello zaino.</MercatoEmpty>

@@ -1721,6 +1721,8 @@ export class CharacterService {
       descriptionChars?: number;
       isNewForm?: boolean;
       proprieta?: string[];
+      /** Costrutto creato da automazione waza (es. Meisaku/Shinryaku): taglia da spec, non tetto Media PG. */
+      wazaGranted?: boolean;
     },
   ) {
     const char = await db.query.characters.findFirst({
@@ -1741,7 +1743,7 @@ export class CharacterService {
     }
 
     const size = input.size && isConstructSizeId(input.size) ? input.size : 'media';
-    if (!isConstructSizeAllowedForCreator(size, skiruSheet)) {
+    if (!input.wazaGranted && !isConstructSizeAllowedForCreator(size, skiruSheet)) {
       const maxSize = getMaxAllowedConstructSizeId(skiruSheet);
       throw new Error(`Taglia costrutto non consentita: massimo «${maxSize}».`);
     }
@@ -2217,6 +2219,7 @@ export class CharacterService {
           size: SHINRYAKU_CONSTRUCT_SIZE,
           stationary: true,
           isNewForm: true,
+          wazaGranted: true,
         });
       }
       if (effect.kind === 'meisaku_construct') {
@@ -2226,6 +2229,7 @@ export class CharacterService {
           size: MEISAKU_CONSTRUCT_SIZE,
           stationary: true,
           isNewForm: true,
+          wazaGranted: true,
         });
       }
       if (effect.kind === 'eden_regen') {
@@ -2238,6 +2242,7 @@ export class CharacterService {
             size,
             stationary: snap.stationary,
             isNewForm: false,
+            wazaGranted: true,
           });
         }
       }

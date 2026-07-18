@@ -94,8 +94,8 @@ describe('waza tag preview', () => {
   })
 
   it('catalogo generato ha poolId ed effect', () => {
-    expect(WAZA_TAG_CATALOG.length).toBe(146)
-    expect(buildWazaTagIndex(WAZA_TAG_CATALOG).size).toBe(146)
+    expect(WAZA_TAG_CATALOG.length).toBe(216)
+    expect(buildWazaTagIndex(WAZA_TAG_CATALOG).size).toBe(216)
     const hari = WAZA_TAG_CATALOG.find((w) => w.poolId === 'hari-tsume-carico-trattenuto')
     expect(hari?.effect).toContain('Potenziamento')
   })

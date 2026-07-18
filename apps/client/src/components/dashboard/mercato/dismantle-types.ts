@@ -11,6 +11,10 @@ export type DismantleStatusResponse = {
 export type DismantleInventoryRow = MercatoInventoryRow & {
   canDismantle?: boolean
   dismantleBlockReason?: string
+  dismantlePreview?: {
+    junk: Array<{ catalogKey: string; quantity: number }>
+    materials: Array<{ materialId: string; quantity: number; catalogKey: string }>
+  }
 }
 
 export type DismantleInventoryResponse = {
@@ -22,6 +26,7 @@ export type DismantleResultResponse = {
   dismantled: Array<{
     inventoryId: string
     itemName: string
+    junk: Array<{ catalogKey: string; quantity: number }>
     materials: Array<{ materialId: string; quantity: number; catalogKey: string }>
   }>
   usedToday: number

@@ -417,6 +417,42 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "effect": "Attiva · [Nessuna][Potenziamento] · CS 7 · 1/4 · grado richiesto: Kanteikan [K]. Per 3 turni, ogni oggetto che possedevi da prima dello scontro (indossato, in tasca, nell'inventario) diventa [Tōrō] simultaneamente, senza bisogno di impugnarlo, finché resta addosso a te. Ognuno funge da [Tōrō]: per ogni waza scegli liberamente da quale oggetto-origine parte (angoli e direzioni multiple). Se un oggetto lascia il tuo corpo — lanciato, strappato, fatto cadere — perde lo status."
   },
   {
+    "name": "Hi o Tsumugu (火を紡ぐ) — Filatura della Fiamma",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "Non si colpisce: si aspetta. L'analista tiene il Tōrō immobile e fila Jigo-Ka nel vaso, quarto dopo quarto, come chi versa olio nelle lanterne dei defunti senza fretta.",
+    "poolId": "hi-o-tsumugu-filatura-della-fiamma",
+    "effect": "Attiva · [Energetico][Contatto] · Tier 2 · CS 2 · 1/4 (fino a +2 quarti immobile in carica). Colpo a contatto: danno = tier [Energetico][Contatto]. Se [Arma Psichica]: +1 tier. Per ogni quarto extra passato immobile a caricare: +1 tier (max 2 quarti). Dopo il colpo l'arma non può lanciare waza per 1 turno."
+  },
+  {
+    "name": "Kaeribi (帰り火) — Fiamma del Ritorno",
+    "rank": "T1",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "Come le lanterne che il fiume restituisce alla riva, l'analista chiama a sé ciò che ha già acceso in battaglia. Un filo d'Ego tira attraverso l'aria il Tōrō perduto verso il palmo.",
+    "poolId": "kaeribi-fiamma-del-ritorno",
+    "effect": "Attiva · [Nessuna] · CS 1 · 1/4. Richiami un'arma che hai impugnato in precedenza durante il combattimento, entro 8 m, se è ancora un tuo [Costrutto] integro. L'arma vola verso di te e torna in mano. Se [Arma Psichica]: gittata del richiamo raddoppiata (16 m)."
+  },
+  {
+    "name": "Tomoshibi no Ato (灯し火の跡) — Traccia della Luce",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "Il fendente passa e non si chiude. Lungo la traiettoria resta una linea sottile di luce morente — il solco che una lanterna lascia sull'acqua quando è già scivolata via.",
+    "poolId": "tomoshibi-no-ato-traccia-della-luce",
+    "effect": "Attiva · [Propagazione][Energetica] · Tier 2 · CS 2 · 1/4. Fendente con l'arma impugnata: lascia una cicatrice energetica linea 8 m per 3 turni. Chi la attraversa subisce danno = tier [Energetico]. La lunghezza può variare con la taglia dell'arma (Master). Una cicatrice attiva alla volta (base)."
+  },
+  {
+    "name": "Tōrō Nagashi (灯籠流し) — Lanterna alla Corrente",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "L'analista allenta la presa e il Tōrō scivola via come nel rito delle acque: una brace lasciata alla corrente che non chiede più di essere portata, solo di trovare chi accenderà il prossimo passo.",
+    "poolId": "toro-nagashi-lanterna-alla-corrente",
+    "effect": "Attiva · [Proiettile][Energetica] · Tier 2 · CS 2 · 1/4. Scagli la tua [Arma Psichica] in linea retta (12 m): danno = tier al primo bersaglio colpito; l'arma si conficca nella prima superficie solida. Finché è conficcata conta come tuo [Costrutto]: puoi lanciare waza dal punto dell'arma (gittata e direzione dalla posizione dell'arma)."
+  },
+  {
     "name": "Nikutai-Mei (肉体銘) — Carne Iscritta",
     "rank": null,
     "styleId": "genzai",
