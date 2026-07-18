@@ -153,8 +153,7 @@
 | UI sezione MARKET in inventario | ✅ | WS `inventory_updated` |
 | **Pannello Mercato** (Banco + Piazza + Immobiliare) | ✅ | `MercatoPanel` nel dock |
 | **Pannello Smantellamento** Artigiano | ✅ | Tab Officina in Mercato + sezione Strumento in Scheda Professione |
-| Catalogo mercato da DB + CRUD Gestione | ✅ | `GET /market/catalog`, `MarketCatalogManagement` in Sviluppo |
-| Baratto Piazza | 🔲 | Rimandato |
+| Catalogo mercato da DB + CRUD Gestione | ✅ | `GET /market/catalog`, Sviluppo → Market |
 
 ---
 

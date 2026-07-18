@@ -173,7 +173,7 @@ Rapporto **1:3** sui comuni: comprare al Banco sempre possibile ma antieconomico
 
 ### B. La Piazza (tra giocatori)
 
-- **Inserzioni:** oggetto + prezzo Rem (o baratto oggetto↔oggetto)
+- **Inserzioni:** oggetto + prezzo Rem (solo Rem — niente baratto oggetto↔oggetto)
 - Oggetto inserito sulla **bancarella** — `location: MARKET`, **non** conta negli slot zaino (D-E1)
 - Accettazione → scambio automatico + evento canale-bacheca pubblico
 - **Commissione 10%** sui Rem (assorbe valuta, anti lavaggio)
@@ -198,7 +198,7 @@ Vedi `packages/domain/src/economy/junklist.ts`. Tutte le voci sono **Junk**; sol
 | ID | Decisione |
 |----|-----------|
 | **E1** | In vendita = sulla bancarella, **fuori zaino** (slot CARRY liberi) |
-| **E2** | Baratto Piazza **rimandato**; solo Rem |
+| **E2** | Piazza: **solo Rem** — baratto oggetto↔oggetto **non previsto** |
 | **E3** | Rimozione oggetto inventario: **solo staff** |
 | **E4** | Equip: categoria `equipaggiamento` (+ legacy WEAPON/ARMOR/BAG) |
 | **E5** | Drop tabella: **nessun cap giornaliero**; Master/quest/fetch |

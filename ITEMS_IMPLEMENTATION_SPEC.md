@@ -12,7 +12,7 @@
 | 3 Smantellamento | ✅ | `POST /artigiano/me/dismantle` (solo Artigiano) |
 | 4 Mercato | ✅ | `GET/POST /market/banco/*`, `GET/POST/DELETE /market/piazza/*` |
 
-**Fuori scope (prossimo blocco):** tool Artigiano smantellamento UI, baratto Piazza, craft da blueprint.
+**Fuori scope (prossimo blocco):** craft da blueprint (allineamento UI tool).
 
 **UI Mercato (Step 3):** finestra `mercato` nel dashboard — Il Banco (vendi/compra) + La Piazza (inserzioni, feed).
 
