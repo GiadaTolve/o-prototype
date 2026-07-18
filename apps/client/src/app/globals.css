@@ -3294,3 +3294,755 @@ html:has(.mobile-app-shell) body {
 }
 .lwz__cs-after--warn { color: #d9556b; }
 
+/* ── Card uso oggetto in chat (pannello combattimento) ── */
+.chat-item-use-post {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 35%, var(--border-color));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-bg) 88%, black);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-gold) 8%, transparent);
+  overflow: hidden;
+  min-height: 44px;
+}
+
+.chat-item-use-post__bar {
+  flex-shrink: 0;
+  width: 4px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-gold) 70%, transparent),
+    color-mix(in srgb, var(--accent-violet) 55%, transparent)
+  );
+}
+
+.chat-item-use-post__body {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.85rem;
+}
+
+.chat-item-use-post__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.chat-item-use-post__actor {
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+}
+
+.chat-item-use-post__sep {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.65rem;
+}
+
+.chat-item-use-post__verb {
+  font-family: var(--font-sans, "Source Sans 3", sans-serif);
+  font-size: 0.72rem;
+  color: var(--accent-violet-light);
+  text-transform: lowercase;
+}
+
+.chat-item-use-post__name {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.92rem;
+  line-height: 1.25;
+  color: #ececf1;
+}
+
+.chat-item-use-post__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.chat-item-use-post__label {
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.chat-item-use-post__label--gold {
+  color: var(--accent-gold);
+  border-color: color-mix(in srgb, var(--accent-gold) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-gold) 10%, transparent);
+}
+
+.chat-item-use-post__label--violet {
+  color: var(--accent-violet-light);
+  border-color: color-mix(in srgb, var(--accent-violet) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-violet) 10%, transparent);
+}
+
+.chat-item-use-post__label--broken {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.chat-item-use-post__effect {
+  margin: 0;
+  font-family: var(--font-accent, "EB Garamond", Georgia, serif);
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--accent-gold);
+  padding-left: 0.55rem;
+  border-left: 2px solid color-mix(in srgb, var(--accent-violet) 45%, transparent);
+}
+
+/* Righe oggetti nel pannello combattimento */
+.chat-combat-item-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 420px) {
+  .chat-combat-item-row {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.chat-combat-item-row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-combat-item-row__name {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.82rem;
+  line-height: 1.25;
+  color: #ececf1;
+}
+
+.chat-combat-item-row__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+}
+
+.chat-combat-item-row__label {
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.chat-combat-item-row__label--gold {
+  color: var(--accent-gold);
+  border-color: color-mix(in srgb, var(--accent-gold) 35%, var(--border-color));
+}
+
+.chat-combat-item-row__hint {
+  margin: 0;
+  font-family: var(--font-accent, "EB Garamond", Georgia, serif);
+  font-size: 0.72rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--accent-gold) 80%, var(--accent-violet-light));
+}
+
+.chat-combat-item-row__btn {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 72px;
+  padding: 0.45rem 1rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 35%, var(--border-color));
+  border-radius: 2px;
+  background: var(--button-bg);
+  color: var(--accent-gold);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.chat-combat-item-row__btn:hover:not(:disabled) {
+  border-color: var(--accent-gold);
+  background: color-mix(in srgb, var(--accent-gold) 10%, var(--button-bg));
+}
+
+.chat-combat-item-row__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Loot a terra (pannello chat) ── */
+.chat-ground-loot-panel {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent-violet) 35%, var(--border-color));
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.chat-ground-loot-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-ground-loot-panel__title {
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-violet-light);
+}
+
+.chat-ground-loot-panel__count {
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.58rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  color: var(--accent-gold);
+}
+
+.chat-ground-loot-panel__empty {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted-foreground, #9ca3af);
+  font-style: italic;
+}
+
+.chat-ground-loot-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.chat-ground-loot-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+@media (min-width: 420px) {
+  .chat-ground-loot-panel__row {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.chat-ground-loot-panel__row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.chat-ground-loot-panel__name {
+  margin: 0;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.78rem;
+  color: #ececf1;
+}
+
+.chat-ground-loot-panel__label {
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.chat-ground-loot-panel__btn {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 72px;
+  padding: 0.45rem 0.85rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--accent-violet) 40%, var(--border-color));
+  border-radius: 2px;
+  background: var(--button-bg);
+  color: var(--accent-violet-light);
+}
+
+.chat-ground-loot-panel__btn:hover:not(:disabled) {
+  border-color: var(--accent-violet-light);
+  background: color-mix(in srgb, var(--accent-violet) 12%, var(--button-bg));
+}
+
+.chat-ground-loot-panel__btn:disabled {
+  opacity: 0.35;
+}
+
+.chat-ground-loot-panel__hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.62rem;
+  line-height: 1.45;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+/* Drop Master — sidebar chat (staff) */
+.chat-master-drop-panel {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--panel-bg) 90%, black);
+}
+
+.chat-master-drop-panel__head {
+  margin-bottom: 0.55rem;
+}
+
+.chat-master-drop-panel__title {
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+}
+
+.chat-master-drop-panel__tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.chat-master-drop-panel__tab {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--button-bg);
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground, #9ca3af);
+  cursor: pointer;
+}
+
+.chat-master-drop-panel__tab--active {
+  border-color: color-mix(in srgb, var(--accent-gold) 45%, var(--border-color));
+  color: var(--accent-gold);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent-gold) 18%, transparent);
+}
+
+.chat-master-drop-panel__field {
+  display: block;
+  margin: 0 0 0.55rem;
+  border: none;
+  padding: 0;
+}
+
+.chat-master-drop-panel__legend {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.chat-master-drop-panel__targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chat-master-drop-panel__target {
+  flex: 1 1 calc(33% - 0.35rem);
+  min-height: 44px;
+  min-width: 72px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--button-bg);
+  font-size: 0.68rem;
+  color: var(--muted-foreground, #9ca3af);
+  cursor: pointer;
+}
+
+.chat-master-drop-panel__target--active {
+  border-color: color-mix(in srgb, var(--accent-violet) 45%, var(--border-color));
+  color: var(--accent-violet-light);
+}
+
+.chat-master-drop-panel__target:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chat-master-drop-panel__input,
+.chat-master-drop-panel__select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--panel-bg) 70%, black);
+  color: inherit;
+  font-size: 0.78rem;
+}
+
+.chat-master-drop-panel__input--qty {
+  max-width: 5.5rem;
+}
+
+.chat-master-drop-panel__junk-list {
+  list-style: none;
+  margin: 0 0 0.45rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.chat-master-drop-panel__junk {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--panel-bg) 75%, black);
+  font-size: 0.72rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chat-master-drop-panel__junk--active {
+  border-color: color-mix(in srgb, var(--accent-gold) 45%, var(--border-color));
+  color: var(--accent-gold);
+}
+
+.chat-master-drop-panel__selected {
+  margin: 0 0 0.45rem;
+  font-size: 0.68rem;
+  color: var(--accent-violet-light);
+}
+
+.chat-master-drop-panel__error {
+  margin: 0 0 0.45rem;
+  font-size: 0.68rem;
+  color: color-mix(in srgb, #c44 80%, var(--accent-violet-light));
+}
+
+.chat-master-drop-panel__submit {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.15rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-gold) 12%, var(--button-bg));
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  cursor: pointer;
+}
+
+.chat-master-drop-panel__submit:disabled {
+  opacity: 0.45;
+}
+
+.chat-master-drop-panel__submit:hover:not(:disabled) {
+  box-shadow: var(--shadow-gold, 0 0 10px color-mix(in srgb, var(--accent-gold) 25%, transparent));
+}
+
+/* Cedi Drop — finestra dock Master */
+.cedi-drop-window {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 100%;
+}
+
+.cedi-drop-window__tabs,
+.cedi-drop-window__targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.cedi-drop-window__tab,
+.cedi-drop-window__target,
+.cedi-drop-window__item,
+.cedi-drop-window__submit {
+  min-height: 44px;
+}
+
+.cedi-drop-window__tab {
+  flex: 1;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--button-bg);
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground, #9ca3af);
+  cursor: pointer;
+}
+
+.cedi-drop-window__tab--active {
+  border-color: color-mix(in srgb, var(--accent-gold) 45%, var(--border-color));
+  color: var(--accent-gold);
+}
+
+.cedi-drop-window__field {
+  display: block;
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.cedi-drop-window__legend {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.cedi-drop-window__target {
+  flex: 1 1 calc(33% - 0.35rem);
+  min-width: 72px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--button-bg);
+  font-size: 0.68rem;
+  color: var(--muted-foreground, #9ca3af);
+  cursor: pointer;
+}
+
+.cedi-drop-window__target--active {
+  border-color: color-mix(in srgb, var(--accent-violet) 45%, var(--border-color));
+  color: var(--accent-violet-light);
+}
+
+.cedi-drop-window__target:disabled {
+  opacity: 0.35;
+}
+
+.cedi-drop-window__input,
+.cedi-drop-window__select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--panel-bg) 70%, black);
+  color: inherit;
+  font-size: 0.78rem;
+}
+
+.cedi-drop-window__input--qty {
+  max-width: 5.5rem;
+}
+
+.cedi-drop-window__item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.cedi-drop-window__item {
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--panel-bg) 75%, black);
+  cursor: pointer;
+}
+
+.cedi-drop-window__item--active {
+  border-color: color-mix(in srgb, var(--accent-gold) 45%, var(--border-color));
+}
+
+.cedi-drop-window__item-name {
+  display: block;
+  font-size: 0.72rem;
+  color: inherit;
+}
+
+.cedi-drop-window__item-meta {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.cedi-drop-window__preview {
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent-violet) 30%, var(--border-color));
+  background: color-mix(in srgb, var(--panel-bg) 80%, black);
+}
+
+.cedi-drop-window__preview-name {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.78rem;
+  color: var(--accent-gold);
+}
+
+.cedi-drop-window__preview-desc {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--accent-violet-light);
+  line-height: 1.4;
+}
+
+.cedi-drop-window__table-entries {
+  margin: 0.45rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.65rem;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.cedi-drop-window__empty,
+.cedi-drop-window__error {
+  font-size: 0.72rem;
+  color: var(--muted-foreground, #9ca3af);
+}
+
+.cedi-drop-window__error {
+  color: color-mix(in srgb, #c44 80%, var(--accent-violet-light));
+}
+
+.cedi-drop-window__submit {
+  width: 100%;
+  margin-top: auto;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-gold) 12%, var(--button-bg));
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  cursor: pointer;
+}
+
+.cedi-drop-window__submit:disabled {
+  opacity: 0.45;
+}
+
+/* Input comuni pannelli Sviluppo economia */
+.field-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--panel-bg) 70%, black);
+  color: inherit;
+  font-size: 0.82rem;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent-violet) 50%, var(--border-color));
+}
+
+/* Card evento drop/prendi in chat */
+.chat-drop-event-post {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid color-mix(in srgb, var(--accent-violet) 35%, var(--border-color));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-bg) 88%, black);
+  overflow: hidden;
+  min-height: 44px;
+}
+
+.chat-drop-event-post__bar {
+  flex-shrink: 0;
+  width: 4px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-violet) 70%, transparent),
+    color-mix(in srgb, var(--accent-gold) 45%, transparent)
+  );
+}
+
+.chat-drop-event-post__body {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.85rem;
+}
+
+.chat-drop-event-post__kicker {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-violet-light);
+}
+
+.chat-drop-event-post__headline {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display, Philosopher, serif);
+  font-size: 0.88rem;
+  color: var(--accent-gold);
+}
+
+.chat-drop-event-post__detail {
+  margin: 0;
+  font-family: var(--font-accent, "EB Garamond", Georgia, serif);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #c9c9d4;
+}

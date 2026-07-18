@@ -10,6 +10,8 @@ import {
   createGameSession,
   getGameSession,
   getActiveSessionInRoom,
+  getOpenSessionInRoom,
+  setSessionParticipants,
   freezeGameSession,
   resumeGameSession,
   closeGameSession,
@@ -53,7 +55,8 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               roomId,
               body.fetchId || null,
               body.title || null,
-              body.questId || null
+              body.questId || null,
+              body.participantIds ?? null,
             )
             return session
           } catch (e: unknown) {
@@ -67,7 +70,33 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
             fetchId: t.Optional(t.String()),
             title: t.Optional(t.String()),
             questId: t.Optional(t.String()),
+            participantIds: t.Optional(t.Array(t.String())),
           }),
+        }
+      )
+
+      // Sessione aperta in room (ACTIVE o FROZEN — per ripresa registrazione congelata)
+      .get(
+        '/room/:roomId/open',
+        async ({ params, user, set }) => {
+          try {
+            const roomId = params.roomId
+            if (roomId.startsWith('housing_')) {
+              const char = await characterService.getCharacterByUserId(user!.id)
+              if (!char || !(await canAccessPrivateChatAsync(char.id, roomId, user!, char))) {
+                set.status = 403
+                return { error: 'Accesso negato a questa chat privata' }
+              }
+            }
+            const session = await getOpenSessionInRoom(roomId)
+            return session || null
+          } catch (e: unknown) {
+            set.status = 400
+            return { error: e instanceof Error ? e.message : 'Errore durante il recupero' }
+          }
+        },
+        {
+          params: t.Object({ roomId: t.String() }),
         }
       )
 
@@ -117,7 +146,8 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
             }
             const isCreator = session.creatorId === char.id
             const isParticipant = session.participants?.some((p: { characterId: string }) => p.characterId === char.id)
-            if (!isCreator && !isParticipant) {
+            const isFetchCreator = !!session.fetch?.creatorId && session.fetch.creatorId === char.id
+            if (!isCreator && !isParticipant && !isFetchCreator) {
               set.status = 403
               return { error: 'Puoi leggere solo le tue giocate' }
             }
@@ -157,6 +187,52 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         },
         {
           params: t.Object({ id: t.String() }),
+        }
+      )
+
+      // Dichiara partecipanti alla registrazione (merge, senza rimuovere azioni da chat)
+      .post(
+        '/:id/participants',
+        async ({ params, body, user, set }) => {
+          try {
+            const char = await characterService.getCharacterByUserId(user!.id)
+            if (!char) {
+              set.status = 404
+              return { error: 'Personaggio non trovato' }
+            }
+            const session = await getGameSession(params.id)
+            if (!session) {
+              set.status = 404
+              return { error: 'Sessione non trovata' }
+            }
+            const meta = (char.uiMetadata as { roleIcon?: string } | null) ?? {}
+            const roleIcon = (meta.roleIcon ?? '').toLowerCase()
+            const canManage = canManageGameSession(
+              user!.role,
+              roleIcon,
+              session.creatorId,
+              char.id,
+            )
+            if (!canManage) {
+              set.status = 403
+              return { error: 'Solo il creatore o cariche superiori possono aggiornare i partecipanti' }
+            }
+            if (session.status !== 'ACTIVE' && session.status !== 'FROZEN') {
+              set.status = 400
+              return { error: 'Sessione non modificabile' }
+            }
+            const updated = await setSessionParticipants(params.id, body.participantIds)
+            return updated
+          } catch (e: unknown) {
+            set.status = 400
+            return { error: e instanceof Error ? e.message : 'Errore durante l\'aggiornamento' }
+          }
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object({
+            participantIds: t.Array(t.String()),
+          }),
         }
       )
 

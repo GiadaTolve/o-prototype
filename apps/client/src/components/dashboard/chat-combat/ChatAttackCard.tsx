@@ -1,27 +1,18 @@
 "use client";
 
-export type AttackCardData = {
-  weapon: string;
-  formula: string;
-  total: number;
-  kind: "ranged" | "melee";
-  ammoNote?: string;
-};
+import {
+  encodeAttackMessage,
+  parseAttackMessage,
+  type AttackCardData,
+} from "@domain/combat/attack-message";
 
-const ATTACK_PREFIX = "[ATTACCO]";
-
-export function encodeAttackMessage(data: AttackCardData): string {
-  return ATTACK_PREFIX + JSON.stringify(data);
-}
+export type { AttackCardData };
 
 export function extractAttackData(content: string): AttackCardData | null {
-  if (!content.startsWith(ATTACK_PREFIX)) return null;
-  try {
-    return JSON.parse(content.slice(ATTACK_PREFIX.length)) as AttackCardData;
-  } catch {
-    return null;
-  }
+  return parseAttackMessage(content);
 }
+
+export { encodeAttackMessage };
 
 export function ChatAttackCard({ data, characterName }: { data: AttackCardData; characterName: string }) {
   return (
@@ -72,20 +63,8 @@ export function ChatAttackCard({ data, characterName }: { data: AttackCardData; 
             {data.total}
           </strong>
           <span className="text-[9px] uppercase tracking-wider" style={{ color: "rgba(232,118,58,0.7)" }}>
-            IR
+            DMG
           </span>
-          {data.ammoNote && (
-            <span
-              className="text-[9px] font-mono px-1.5 py-0.5 rounded"
-              style={{
-                background: "rgba(232,118,58,0.10)",
-                border: "1px solid rgba(232,118,58,0.25)",
-                color: "rgba(232,118,58,0.8)",
-              }}
-            >
-              {data.ammoNote}
-            </span>
-          )}
         </div>
       </div>
     </article>

@@ -190,6 +190,23 @@ export function ChatInfoPanel({ compact = false }: { compact?: boolean }) {
               </ul>
             </section>
 
+            <section className="mb-2">
+              <p className="font-display text-[9px] uppercase text-gray-500 mb-1">Oggetti &amp; loot</p>
+              <ul className="space-y-1 text-[10px] text-gray-400 list-none m-0 p-0">
+                <li>
+                  <span className="text-[var(--accent-gold)]">Combattimento → Oggetti → Usa</span> — card in chat, −1 INT o quantità
+                </li>
+                <li>
+                  Pannello <span className="text-[var(--accent-gold)]">A terra</span> in chat —{" "}
+                  <span className="text-[var(--accent-gold)]">Prendi</span> raccoglie loot lasciato in scena
+                </li>
+                <li>
+                  Master: finestra <span className="text-[var(--accent-gold)]">Cedi Drop</span> in chat
+                  (oggetto, tabella loot, a terra / PG / gruppo)
+                </li>
+              </ul>
+            </section>
+
             <section className="mb-1">
               <p className="font-display text-[9px] uppercase text-gray-500 mb-1">Tempo &amp; Tenkan</p>
               <p className="text-[10px] text-gray-400">

@@ -8,7 +8,7 @@
 | Fase | Stato | Surface |
 |------|-------|---------|
 | 1 Oggetti | ✅ | schema, seed, slot cost, `GET /inventory/me` |
-| 2 Drop chat | ✅ | WS `/drop`, `/prendi`, `GET /drop/ground/:roomId` |
+| 2 Drop chat | ✅ | Pannelli Cedi Drop + A terra/Prendi; `GET /drop/ground/:roomId`, `GET /drop/panel-data` |
 | 3 Smantellamento | ✅ | `POST /artigiano/me/dismantle` (solo Artigiano) |
 | 4 Mercato | ✅ | `GET/POST /market/banco/*`, `GET/POST/DELETE /market/piazza/*` |
 
@@ -89,11 +89,12 @@ Oggetti con `location: MARKET` sono in vendita sulla Piazza (non contano negli s
 
 | Surface | Descrizione |
 |---------|-------------|
-| WS `/drop @player item xN` | Master → inventario destinatario |
-| WS `/drop @gruppo tabella:id` | Tabella pesata, tetto 3/giorno UTC per PG |
-| WS `/drop @aterra item` | Loot a terra nella stanza |
-| WS `/prendi item` | PG raccoglie da terra (primo arrivato) |
+| WS `[DROP]{…}` | Master — drop oggetto/tabella (pannello **Cedi Drop**) |
+| WS `[PRENDI]{catalogKey}` | PG — raccoglie da terra (pannello **A terra**) |
 | `GET /drop/ground/:roomId` | Stato loot scena |
+| `GET /drop/panel-data` | Catalogo + tabelle per Cedi Drop (staff) |
+| `GET/PUT /economy-admin/drop-tables` | Liste loot in Sviluppo |
+| `GET/PUT /economy-admin/drop-pools` | Pool → catalog key |
 
 ## API Fase 3 — Smantellamento (solo Artigiano)
 
@@ -130,6 +131,8 @@ Oggetti con `location: MARKET` sono in vendita sulla Piazza (non contano negli s
 | Tabella | Uso |
 |---------|-----|
 | `scene_ground_loot` | Loot a terra per stanza |
+| `economy_drop_tables` | Tabelle drop pesate (runtime, Sviluppo) |
+| `economy_drop_pools` | Pool → catalog key (runtime, Sviluppo) |
 | `drop_table_daily_usage` | Anti-farming tabella drop |
 | `dismantle_daily_usage` | Tetto smantellamento Artigiano |
 | `market_listings` | Inserzioni Piazza |

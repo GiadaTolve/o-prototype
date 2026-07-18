@@ -25,6 +25,8 @@
         "migrate-locations": "bun run scripts/migrate-locations-from-config.ts",
         "seed-bestiario": "bun run scripts/seed-bestiario.ts",
         "seed-item-catalog": "bun run scripts/seed-item-catalog.ts",
+        "seed-drop-tables": "bun run scripts/seed-drop-tables.ts",
+        "add-economy-drop-tables": "bun run scripts/add-economy-drop-tables.ts",
         "seed-social-blueprints": "bun run scripts/seed-social-blueprints.ts",
         "smoke-shakai-combat": "bun run scripts/smoke-shakai-combat.ts",
         "seed-skills": "bun run scripts/seed-skills.ts",

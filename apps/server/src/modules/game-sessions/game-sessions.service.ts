@@ -5,6 +5,8 @@ import { isValidRoom } from '../chat/chat.service'
 import { createRem } from '@domain/types/money'
 import { earn } from '@domain/ledger/transaction'
 import { characterService } from '../characters/characters.service'
+import { createSystemNotification } from '../notifications/notifications.service'
+import { broadcastFetchGiocataCompleted } from '../realtime/ws.routes'
 
 const ACTION_THRESHOLD = 500 // 1 azione = messaggio con >500 caratteri totali
 
@@ -55,27 +57,84 @@ export async function createClosedCircusEvent(
  * Crea una nuova registrazione giocata.
  * questId: se fornito, la giocata è in contesto quest → messaggi del creator della quest = masterscreen.
  */
+export type SessionKind = 'EVENTO' | 'QUEST' | 'FETCH' | 'LIBERA'
+
+export function resolveSessionKind(session: {
+  sessionType?: string | null
+  fetchId?: string | null
+  questId?: string | null
+}): SessionKind {
+  if (session.sessionType === 'EVENTO') return 'EVENTO'
+  if (session.fetchId) return 'FETCH'
+  if (session.questId) return 'QUEST'
+  return 'LIBERA'
+}
+
+/** Inserisce o mantiene partecipanti dichiarati (actionCount aggiornato altrove). */
+export async function ensureSessionParticipants(
+  sessionId: string,
+  characterIds: readonly string[],
+) {
+  const unique = [...new Set(characterIds.filter(Boolean))]
+  for (const characterId of unique) {
+    const existing = await db.query.gameSessionParticipants.findFirst({
+      where: and(
+        eq(gameSessionParticipants.sessionId, sessionId),
+        eq(gameSessionParticipants.characterId, characterId),
+      ),
+    })
+    if (!existing) {
+      await db.insert(gameSessionParticipants).values({
+        sessionId,
+        characterId,
+        actionCount: 0,
+      })
+    }
+  }
+}
+
+export async function setSessionParticipants(
+  sessionId: string,
+  characterIds: readonly string[],
+) {
+  const session = await db.query.gameSessions.findFirst({
+    where: eq(gameSessions.id, sessionId),
+    columns: { creatorId: true },
+  })
+  if (!session) {
+    throw new Error('Sessione non trovata')
+  }
+  const ids = new Set([session.creatorId, ...characterIds.filter(Boolean)])
+  await ensureSessionParticipants(sessionId, [...ids])
+  return getGameSession(sessionId)
+}
+
 export async function createGameSession(
   creatorId: string,
   roomId: string,
   fetchId?: string | null,
   title?: string | null,
-  questId?: string | null
+  questId?: string | null,
+  participantIds?: readonly string[] | null,
 ) {
   if (!isValidRoom(roomId)) {
     throw new Error('Invalid room ID')
   }
 
-  // Verifica che non ci sia già una sessione attiva nella stessa room
+  // Verifica che non ci sia già una sessione aperta (attiva o congelata) nella stessa room
   const existing = await db.query.gameSessions.findFirst({
     where: and(
       eq(gameSessions.roomId, roomId),
-      eq(gameSessions.status, 'ACTIVE')
+      inArray(gameSessions.status, ['ACTIVE', 'FROZEN']),
     ),
   })
 
   if (existing) {
-    throw new Error('Esiste già una registrazione attiva in questa chat')
+    throw new Error(
+      existing.status === 'FROZEN'
+        ? 'Esiste già una registrazione in attesa in questa chat. Scongela o chiudila prima di avviarne una nuova.'
+        : 'Esiste già una registrazione attiva in questa chat',
+    )
   }
 
   // Verifica fetch se fornita
@@ -107,23 +166,18 @@ export async function createGameSession(
     status: 'ACTIVE',
   }).returning()
 
-  // Leggi automaticamente i partecipanti dalla chat (chi ha fatto azioni)
-  await refreshSessionParticipants(session.id, roomId)
+  const declared = new Set<string>([creatorId, ...(participantIds ?? [])])
 
-  // Aggiungi il creatore come partecipante (così appare nella Scheda → Registrazioni anche prima di avere azioni)
-  const existingCreator = await db.query.gameSessionParticipants.findFirst({
-    where: and(
-      eq(gameSessionParticipants.sessionId, session.id),
-      eq(gameSessionParticipants.characterId, creatorId)
-    ),
-  })
-  if (!existingCreator) {
-    await db.insert(gameSessionParticipants).values({
-      sessionId: session.id,
-      characterId: creatorId,
-      actionCount: 0,
+  if (questId) {
+    const qp = await db.query.questParticipants.findMany({
+      where: eq(questParticipants.questId, questId),
+      columns: { characterId: true },
     })
+    for (const row of qp) declared.add(row.characterId)
   }
+
+  await ensureSessionParticipants(session.id, [...declared])
+  await refreshSessionParticipants(session.id, roomId)
 
   return session
 }
@@ -193,6 +247,7 @@ export async function getGameSession(sessionId: string) {
     with: {
       creator: true,
       fetch: true,
+      quest: true,
       participants: {
         with: {
           character: true,
@@ -216,6 +271,7 @@ export async function getActiveSessionInRoom(roomId: string) {
     with: {
       creator: true,
       fetch: true,
+      quest: true,
       participants: {
         with: {
           character: true,
@@ -225,6 +281,127 @@ export async function getActiveSessionInRoom(roomId: string) {
   })
 
   return session
+}
+
+/** Sessione aperta in room: ACTIVE o FROZEN (in attesa di ripresa/chiusura). */
+export async function getOpenSessionInRoom(roomId: string) {
+  const session = await db.query.gameSessions.findFirst({
+    where: and(
+      eq(gameSessions.roomId, roomId),
+      inArray(gameSessions.status, ['ACTIVE', 'FROZEN']),
+    ),
+    orderBy: (s, { desc }) => [desc(s.lastActiveAt)],
+    with: {
+      creator: true,
+      fetch: true,
+      quest: true,
+      participants: {
+        with: {
+          character: true,
+        },
+      },
+    },
+  })
+
+  return session ?? null
+}
+
+/** Sessione aperta legata a una quest (ACTIVE o FROZEN). */
+export async function getOpenGameSessionForQuest(questId: string) {
+  return db.query.gameSessions.findFirst({
+    where: and(
+      eq(gameSessions.questId, questId),
+      inArray(gameSessions.status, ['ACTIVE', 'FROZEN']),
+    ),
+    orderBy: (s, { desc }) => [desc(s.lastActiveAt)],
+  })
+}
+
+/**
+ * Avvia o riprende la registrazione giocata quando parte una quest in chat.
+ * I partecipanti quest finiscono nel Journal a chiusura (senza «Registra Giocata» manuale).
+ */
+export async function ensureGameSessionForQuest(quest: {
+  id: string
+  creatorId: string
+  roomId: string | null
+  title: string
+}) {
+  if (!quest.roomId) return null
+
+  const participantRows = await db.query.questParticipants.findMany({
+    where: eq(questParticipants.questId, quest.id),
+    columns: { characterId: true },
+  })
+  const participantIds = participantRows.map((r) => r.characterId)
+
+  const existing = await getOpenGameSessionForQuest(quest.id)
+  if (existing) {
+    if (existing.status === 'FROZEN') {
+      await resumeGameSession(existing.id)
+    }
+    await setSessionParticipants(existing.id, participantIds)
+    await refreshSessionParticipants(existing.id, quest.roomId)
+    return getGameSession(existing.id)
+  }
+
+  try {
+    const session = await createGameSession(
+      quest.creatorId,
+      quest.roomId,
+      null,
+      quest.title,
+      quest.id,
+      participantIds,
+    )
+    return getGameSession(session.id)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (msg.includes('registrazione') && msg.includes('chat')) {
+      const roomSession = await getOpenSessionInRoom(quest.roomId)
+      if (roomSession && !roomSession.questId) {
+        await db
+          .update(gameSessions)
+          .set({ questId: quest.id, title: quest.title?.trim() || roomSession.title })
+          .where(eq(gameSessions.id, roomSession.id))
+        await setSessionParticipants(roomSession.id, participantIds)
+        await refreshSessionParticipants(roomSession.id, quest.roomId)
+        return getGameSession(roomSession.id)
+      }
+    }
+    throw e
+  }
+}
+
+/** Chiude la registrazione automatica alla chiusura quest → voce Journal per i partecipanti. */
+export async function closeGameSessionForQuest(questId: string) {
+  const session = await getOpenGameSessionForQuest(questId)
+  if (!session) return null
+  return closeGameSession(session.id)
+}
+
+/** Congela la registrazione quando la quest va in pausa. */
+export async function freezeGameSessionForQuest(questId: string) {
+  const session = await db.query.gameSessions.findFirst({
+    where: and(eq(gameSessions.questId, questId), eq(gameSessions.status, 'ACTIVE')),
+  })
+  if (!session) return null
+  return freezeGameSession(session.id)
+}
+
+/** Annulla la registrazione se la quest viene eliminata prima della chiusura. */
+export async function cancelGameSessionForQuest(questId: string) {
+  const session = await getOpenGameSessionForQuest(questId)
+  if (!session) return null
+  return cancelGameSession(session.id)
+}
+
+/** Aggiunge un PG alla registrazione aperta della quest (es. nuovo partecipante quest). */
+export async function syncQuestParticipantToGameSession(questId: string, characterId: string) {
+  const session = await getOpenGameSessionForQuest(questId)
+  if (!session) return null
+  await ensureSessionParticipants(session.id, [characterId])
+  return getGameSession(session.id)
 }
 
 /**
@@ -242,6 +419,8 @@ export async function freezeGameSession(sessionId: string) {
   if (session.status !== 'ACTIVE') {
     throw new Error('Solo le sessioni attive possono essere congelate')
   }
+
+  await refreshSessionParticipants(sessionId, session.roomId)
 
   const [updated] = await db
     .update(gameSessions)
@@ -361,6 +540,23 @@ export async function closeGameSession(sessionId: string) {
           completedAt: new Date(),
         })
         .where(eq(fetches.id, updatedSession.fetchId))
+    }
+
+    const fetchRow = await db.query.fetches.findFirst({
+      where: eq(fetches.id, updatedSession.fetchId),
+      columns: { id: true, title: true, creatorId: true },
+    })
+    if (fetchRow?.creatorId) {
+      const payload = {
+        sessionId: updatedSession.id,
+        fetchId: fetchRow.id,
+        fetchTitle: fetchRow.title,
+      }
+      await createSystemNotification(fetchRow.creatorId, 'fetch_giocata_completed', {
+        title: `Giocata completata: ${fetchRow.title}`,
+        content: JSON.stringify(payload),
+      })
+      broadcastFetchGiocataCompleted(fetchRow.creatorId, payload)
     }
   }
 

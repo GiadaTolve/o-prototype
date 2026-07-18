@@ -144,7 +144,8 @@
 | Voce | Stato | Note |
 |------|-------|------|
 | Schema oggetti (6 categorie, integrità, firma) | ✅ | Domain + DB |
-| Drop in chat (`/drop`, `/prendi`) | ✅ | `drop` module |
+| Drop in chat (`/drop`, `/prendi`) | ✅ → **pannelli** | Cedi Drop (Master) + A terra/Prendi; payload `[DROP]`/`[PRENDI]` — comandi testuali disabilitati |
+| Liste loot + catalogo oggetti (Sviluppo) | ✅ | Market tab: Catalogo Oggetti · Liste Loot · Blueprint (`/economy-admin/*`, `economy_drop_*`) |
 | Inventario 5 slot + zaini + housing | ✅ | |
 | API mercato (Banco + Piazza 10%) | ✅ | `market` module |
 | API smantellamento Artigiano | ✅ | Gate `social_class === shokunin` o Skiru `shokunin ≥ 1` (legacy) |

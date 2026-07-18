@@ -1,17 +1,17 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import {
   formatDropEventMessage,
-  getDropTable,
   parseDropCommand,
   parsePrendiCommand,
   resolveCatalogKeyFromQuery,
-  rollDropTableJunk,
   type DropCommand,
+  type DropPanelPayload,
 } from '@domain/economy'
 import { getJunkItemDef } from '@domain/economy/junklist'
 import { db } from '../../plugins/db'
 import { characters, items, sceneGroundLoot } from '../../db/schema'
 import { addItemByCatalogKey } from '../inventory/inventory.service'
+import { rollDropTableJunkRuntime, getDropTablesRuntime } from './drop-tables.service'
 
 export interface RoomParticipant {
   characterId: string
@@ -44,18 +44,23 @@ function resolvePlayersInRoom(
   return []
 }
 
+async function resolveCatalogDisplayName(catalogKey: string): Promise<string> {
+  const item = await db.query.items.findFirst({
+    where: eq(items.catalogKey, catalogKey),
+    columns: { name: true },
+  })
+  if (item?.name) return item.name
+  const junk = getJunkItemDef(catalogKey)
+  return junk?.name ?? catalogKey
+}
+
 async function grantCatalogLoot(
   characterId: string,
   catalogKey: string,
   quantity: number,
 ): Promise<{ name: string; quantity: number }> {
   await addItemByCatalogKey(characterId, catalogKey, quantity, { origin: 'droppato' })
-  const junk = getJunkItemDef(catalogKey)
-  const item = await db.query.items.findFirst({
-    where: eq(items.catalogKey, catalogKey),
-    columns: { name: true },
-  })
-  return { name: item?.name ?? junk?.name ?? catalogKey, quantity }
+  return { name: await resolveCatalogDisplayName(catalogKey), quantity }
 }
 
 async function addGroundLoot(
@@ -64,7 +69,6 @@ async function addGroundLoot(
   quantity: number,
   createdByCharacterId: string,
 ): Promise<{ name: string; quantity: number }> {
-  const junk = getJunkItemDef(catalogKey)
   const existing = await db.query.sceneGroundLoot.findFirst({
     where: and(eq(sceneGroundLoot.roomId, roomId), eq(sceneGroundLoot.catalogKey, catalogKey)),
   })
@@ -81,28 +85,31 @@ async function addGroundLoot(
       createdByCharacterId,
     })
   }
-  const item = await db.query.items.findFirst({
-    where: eq(items.catalogKey, catalogKey),
-    columns: { name: true },
-  })
-  return { name: item?.name ?? junk?.name ?? catalogKey, quantity }
+  return { name: await resolveCatalogDisplayName(catalogKey), quantity }
 }
 
 export async function listGroundLoot(roomId: string) {
   const rows = await db.query.sceneGroundLoot.findMany({
     where: eq(sceneGroundLoot.roomId, roomId),
   })
-  return rows
-    .filter((r) => (r.quantity ?? 0) > 0)
-    .map((r) => {
-      const junk = getJunkItemDef(r.catalogKey)
-      return {
-        id: r.id,
-        catalogKey: r.catalogKey,
-        quantity: r.quantity ?? 1,
-        name: junk?.name ?? r.catalogKey,
-      }
-    })
+  const active = rows.filter((r) => (r.quantity ?? 0) > 0)
+  if (active.length === 0) return []
+
+  const keys = [...new Set(active.map((r) => r.catalogKey))]
+  const itemRows = await db.query.items.findMany({
+    where: inArray(items.catalogKey, keys),
+    columns: { catalogKey: true, name: true },
+  })
+  const nameByKey = new Map(
+    itemRows.filter((r) => r.catalogKey).map((r) => [r.catalogKey!, r.name] as const),
+  )
+
+  return active.map((r) => ({
+    id: r.id,
+    catalogKey: r.catalogKey,
+    quantity: r.quantity ?? 1,
+    name: nameByKey.get(r.catalogKey) ?? getJunkItemDef(r.catalogKey)?.name ?? r.catalogKey,
+  }))
 }
 
 export interface DropExecutionResult {
@@ -154,7 +161,8 @@ async function executeTableDrop(
   cmd: Extract<DropCommand, { kind: 'table' }>,
   participants: readonly RoomParticipant[],
 ): Promise<DropExecutionResult> {
-  if (!getDropTable(cmd.tableId)) {
+  const runtime = await getDropTablesRuntime()
+  if (!runtime.tables.find((t) => t.id === cmd.tableId)) {
     throw new Error(`Tabella drop «${cmd.tableId}» sconosciuta.`)
   }
 
@@ -171,7 +179,7 @@ async function executeTableDrop(
   const affected: string[] = []
 
   for (const t of targets) {
-    const junkId = rollDropTableJunk(cmd.tableId)
+    const junkId = await rollDropTableJunkRuntime(cmd.tableId)
     if (!junkId) {
       lines.push(`📦 ${t.name}: estrazione fallita.`)
       continue
@@ -194,9 +202,7 @@ export async function executeDropCommand(
 ): Promise<DropExecutionResult> {
   const cmd = parseDropCommand(text)
   if (!cmd) {
-    throw new Error(
-      'Comando /drop non valido. Es: `/drop @Nome Abiti del vecchio mondo x2` o `/drop @gruppo tabella:rovine_urbane`',
-    )
+    throw new Error('Drop non valido.')
   }
 
   if (cmd.kind === 'direct') {
@@ -205,21 +211,66 @@ export async function executeDropCommand(
   return executeTableDrop(cmd, participants)
 }
 
-export async function executePrendiCommand(
-  text: string,
+function resolveParticipantName(
+  targetCharacterId: string | undefined,
+  participants: readonly RoomParticipant[],
+): string {
+  if (!targetCharacterId) {
+    throw new Error('Seleziona un destinatario.')
+  }
+  const match = participants.find((p) => p.characterId === targetCharacterId)
+  if (!match) {
+    throw new Error('Destinatario non trovato nella room.')
+  }
+  return match.name
+}
+
+export async function executeDropPanelAction(
+  payload: DropPanelPayload,
+  roomId: string,
+  actorCharacterId: string,
+  participants: readonly RoomParticipant[],
+): Promise<DropExecutionResult> {
+  if (payload.kind === 'table') {
+    const targetName =
+      payload.target === 'player'
+        ? resolveParticipantName(payload.targetCharacterId, participants)
+        : undefined
+    return executeTableDrop(
+      {
+        kind: 'table',
+        target: payload.target,
+        targetName,
+        tableId: payload.tableId,
+      },
+      participants,
+    )
+  }
+
+  const targetName =
+    payload.target === 'player'
+      ? resolveParticipantName(payload.targetCharacterId, participants)
+      : undefined
+
+  return executeDirectDrop(
+    {
+      kind: 'direct',
+      target: payload.target,
+      targetName,
+      catalogKey: payload.catalogKey,
+      quantity: payload.quantity,
+    },
+    roomId,
+    actorCharacterId,
+    participants,
+  )
+}
+
+export async function executePrendiByCatalogKey(
   roomId: string,
   characterId: string,
+  catalogKey: string,
 ): Promise<DropExecutionResult> {
-  const cmd = parsePrendiCommand(text)
-  if (!cmd) {
-    throw new Error('Comando /prendi non valido. Es: `/prendi Abiti del vecchio mondo`')
-  }
-
-  const catalogKey = resolveCatalogKeyFromQuery(cmd.query)
-  if (!catalogKey) {
-    throw new Error('Oggetto non riconosciuto.')
-  }
-
   const row = await db.query.sceneGroundLoot.findFirst({
     where: and(eq(sceneGroundLoot.roomId, roomId), eq(sceneGroundLoot.catalogKey, catalogKey)),
   })
@@ -238,15 +289,28 @@ export async function executePrendiCommand(
   }
 
   const label = await getCharacterDisplayName(characterId)
-  const junk = getJunkItemDef(catalogKey)
-  const item = await db.query.items.findFirst({
-    where: eq(items.catalogKey, catalogKey),
-    columns: { name: true },
-  })
-  const name = item?.name ?? junk?.name ?? catalogKey
+  const name = await resolveCatalogDisplayName(catalogKey)
 
   return {
     eventMessage: `📦 ${label} raccoglie: ${name} ×1`,
     affectedCharacterIds: [characterId],
   }
+}
+
+export async function executePrendiCommand(
+  text: string,
+  roomId: string,
+  characterId: string,
+): Promise<DropExecutionResult> {
+  const cmd = parsePrendiCommand(text)
+  if (!cmd) {
+    throw new Error('Raccolta non valida.')
+  }
+
+  const catalogKey = resolveCatalogKeyFromQuery(cmd.query)
+  if (!catalogKey) {
+    throw new Error('Oggetto non riconosciuto.')
+  }
+
+  return executePrendiByCatalogKey(roomId, characterId, catalogKey)
 }

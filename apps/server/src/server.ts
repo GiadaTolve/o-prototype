@@ -33,6 +33,7 @@ import { sacerdoteRoutes } from './modules/sacerdote/sacerdote.routes'
 import { shakaiRoutes } from './modules/shakai/shakai.routes'
 import { marketRoutes } from './modules/market/market.routes'
 import { marketCatalogAdminRoutes } from './modules/market/market-catalog-admin.routes'
+import { economyAdminRoutes } from './modules/economy/economy-admin.routes'
 import { shopRoutes } from './modules/shop/shop.routes'
 import { bancaRoutes } from './modules/banca/banca.routes'
 import { adminRoutes } from './modules/admin/admin.routes'
@@ -89,6 +90,7 @@ const app = new Elysia()
   .use(shakaiRoutes)
   .use(marketRoutes)
   .use(marketCatalogAdminRoutes)
+  .use(economyAdminRoutes)
   .use(shopRoutes)
   .use(bancaRoutes)
   .use(adminRoutes)

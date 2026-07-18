@@ -6,7 +6,7 @@ import { CatalogoWaza } from "@/components/sviluppo/waza/CatalogoWaza";
 import { BestiarioManagement } from "@/components/gestione/BestiarioManagement";
 import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
 import { GestioneTaxonomyPanel } from "@/components/gestione/GestioneTaxonomyPanel";
-import { MarketCatalogManagement } from "@/components/gestione/MarketCatalogManagement";
+import { MarketSviluppoPanel } from "@/components/sviluppo/MarketSviluppoPanel";
 import { api } from "@/lib/api";
 import { canManageWaza } from "@/lib/waza-authoring-access";
 
@@ -172,7 +172,7 @@ export default function SviluppoPage() {
 
           {activeTab === "status" && <GestioneStatusPanel />}
           {activeTab === "bestiario" && <BestiarioManagement />}
-          {activeTab === "market" && <MarketCatalogManagement />}
+          {activeTab === "market" && <MarketSviluppoPanel />}
           {activeTab === "statistica" && <PannelloStatistica />}
         </div>
       </div>

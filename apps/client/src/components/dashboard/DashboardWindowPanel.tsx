@@ -24,6 +24,7 @@ import { InventorySection } from "./inventory/InventorySection";
 import { SkiruWazaPanel, DojoPanel } from "./SkiruWazaPanel";
 import { MercatoPanel } from "./mercato/MercatoPanel";
 import { PannelloCombattimentoWindow } from "./chat-combat/PannelloCombattimentoWindow";
+import { CediDropWindow } from "./chat-loot/CediDropWindow";
 import { resolveCharacterComputed, formatMovementMeters } from "./character-computed";
 import { getMadoshoDef } from "@domain/progression/madosho";
 import { resolveLevelFromExp, presentiNameClass } from "@/lib/leveling";
@@ -45,6 +46,7 @@ const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   notifiche: icons.bell,
   spazioEventi: icons.gamepad,
   combattimento: icons.waza,
+  cediDrop: icons.mercato,
   note: icons.edit,
 };
 
@@ -76,6 +78,8 @@ type Props = {
   canAccessGestione?: boolean;
   /** Stato connessione chat WebSocket (per pannello combattimento). */
   chatConnected?: boolean;
+  /** Presenti nella room chat corrente (Cedi Drop). */
+  roomUsers?: Presente[];
   presentiAreMock?: boolean;
 };
 
@@ -85,7 +89,7 @@ const UNIFIED_PANEL_IDS = ["sms", "banca", "mercato", "ordine", "bestiario", "no
 /** Stesse dimensioni della colonna centrale (chat / main area) */
 const MAIN_AREA_PANEL_IDS = ["scheda", "profilo", "waza", "dojo"] as const;
 
-export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione, chatConnected = true }: Props) {
+export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione, chatConnected = true, roomUsers = [] }: Props) {
   const isSms = windowId === "sms";
   const isFetch = windowId === "fetch";
   const isScheda = windowId === "scheda";
@@ -94,17 +98,21 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   const isMainAreaPanel = (MAIN_AREA_PANEL_IDS as readonly string[]).includes(windowId);
   const isUnifiedPanel = (UNIFIED_PANEL_IDS as readonly string[]).includes(windowId);
   const isCombattimento = windowId === "combattimento";
+  const isCediDrop = windowId === "cediDrop";
   const isNote = windowId === "note";
 
-  // ── Draggable panels (combat + note) ────────────────────────────────────
+  // ── Draggable panels (combat + cedi drop + note) ─────────────────────────
   const [showCampo, setShowCampo] = useState(false);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [cediDropDragPos, setCediDropDragPos] = useState<{ x: number; y: number } | null>(null);
   const [noteDragPos, setNoteDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
   const isDraggingRef = useRef(false);
-  const draggingTargetRef = useRef<"combat" | "note" | null>(null);
+  const draggingTargetRef = useRef<"combat" | "cediDrop" | "note" | null>(null);
   const COMBAT_W = showCampo ? 700 : 440;
   const COMBAT_H = 680;
+  const CEDI_DROP_W = 460;
+  const CEDI_DROP_H = 680;
   const NOTE_W = 360;
   const NOTE_H = 300;
 
@@ -125,6 +133,16 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   }, [isCombattimento]);
 
   useEffect(() => {
+    if (isCediDrop && !cediDropDragPos) {
+      setCediDropDragPos({
+        x: Math.max(8, Math.round((window.innerWidth - CEDI_DROP_W) / 2)),
+        y: Math.max(8, Math.round((window.innerHeight - CEDI_DROP_H) / 2)),
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCediDrop]);
+
+  useEffect(() => {
     if (isNote && !noteDragPos) {
       setNoteDragPos({
         x: Math.max(8, Math.round((window.innerWidth - NOTE_W) / 2)),
@@ -140,6 +158,7 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
       const nx = dragRef.current.initX + (e.clientX - dragRef.current.startX);
       const ny = dragRef.current.initY + (e.clientY - dragRef.current.startY);
       if (draggingTargetRef.current === "combat") setDragPos({ x: nx, y: ny });
+      else if (draggingTargetRef.current === "cediDrop") setCediDropDragPos({ x: nx, y: ny });
       else if (draggingTargetRef.current === "note") setNoteDragPos({ x: nx, y: ny });
     };
     const onUp = () => { isDraggingRef.current = false; draggingTargetRef.current = null; };
@@ -158,6 +177,14 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
     dragRef.current = { startX: e.clientX, startY: e.clientY, initX: dragPos?.x ?? 0, initY: dragPos?.y ?? 0 };
     e.preventDefault();
   }, [dragPos]);
+
+  const handleCediDropHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest(".cedi-drop-drag-handle")) return;
+    isDraggingRef.current = true;
+    draggingTargetRef.current = "cediDrop";
+    dragRef.current = { startX: e.clientX, startY: e.clientY, initX: cediDropDragPos?.x ?? 0, initY: cediDropDragPos?.y ?? 0 };
+    e.preventDefault();
+  }, [cediDropDragPos]);
 
   const handleNoteHeaderMouseDown = useCallback((e: React.MouseEvent) => {
     if (!(e.target as HTMLElement).closest(".note-drag-handle")) return;
@@ -222,6 +249,53 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
                 showCampo={showCampo}
                 setShowCampo={setShowCampo}
               />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (isCediDrop) {
+    return (
+      <div
+        className="fixed inset-0 z-30 pointer-events-none"
+        role="dialog"
+        aria-label={WINDOW_LABELS[windowId]}
+        aria-modal="true"
+      >
+        {cediDropDragPos && (
+          <div
+            className="absolute flex flex-col overflow-hidden pointer-events-auto bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl shadow-[0_0_32px_rgba(201,168,74,0.15)]"
+            style={{ left: cediDropDragPos.x, top: cediDropDragPos.y, width: CEDI_DROP_W, height: CEDI_DROP_H }}
+            onMouseDown={handleCediDropHeaderMouseDown}
+          >
+            <div className="cedi-drop-drag-handle flex items-center justify-between shrink-0 px-4 py-2.5 border-b border-[var(--border-color)] bg-black/40 select-none cursor-grab active:cursor-grabbing">
+              <h3 className="font-display text-xs uppercase tracking-widest text-[var(--accent-gold)] flex items-center gap-2 pointer-events-none">
+                <FontAwesomeIcon icon={PANEL_ICONS[windowId]} className="w-3.5 h-3.5" />
+                {WINDOW_LABELS[windowId]}
+              </h3>
+              <div className="flex items-center gap-1 pointer-events-auto" onMouseDown={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => onLower(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-[var(--accent-gold)] hover:bg-white/10 rounded transition-colors"
+                  title="Abbassa (in dock)"
+                >
+                  <FontAwesomeIcon icon={icons.minimize} className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onClose(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-white/10 rounded transition-colors"
+                  title="Chiudi"
+                >
+                  <FontAwesomeIcon icon={icons.close} className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <CediDropWindow usersInRoom={roomUsers.map((u) => ({ id: u.id, name: u.name }))} />
             </div>
           </div>
         )}
@@ -594,6 +668,16 @@ function SpazioEventiContent({ canAccessGestione }: { canAccessGestione?: boolea
   );
 }
 
+function parseFetchGiocataPayload(content: string | null): { sessionId?: string; fetchTitle?: string } | null {
+  if (!content) return null;
+  try {
+    const parsed = JSON.parse(content) as { sessionId?: string; fetchTitle?: string };
+    return parsed?.sessionId ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function NotificheContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
   const [list, setList] = useState<SystemNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -633,7 +717,17 @@ function NotificheContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
         <p className="text-sm text-gray-500">Nessuna notifica.</p>
       ) : (
         <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
-          {list.map((n) => (
+          {list.map((n) => {
+            const fetchGiocata = n.type === "fetch_giocata_completed" ? parseFetchGiocataPayload(n.content) : null;
+            const displayContent =
+              fetchGiocata?.fetchTitle
+                ? `La giocata registrata per la fetch «${fetchGiocata.fetchTitle}» è stata completata con successo.`
+                : n.content && !fetchGiocata
+                  ? n.content
+                  : fetchGiocata
+                    ? "La giocata associata alla tua fetch è stata completata."
+                    : null;
+            return (
             <li
               key={n.id}
               className={`p-3 rounded border bg-black/20 ${
@@ -645,29 +739,39 @@ function NotificheContent({ onUnreadChange }: { onUnreadChange?: () => void }) {
                   {n.title && (
                     <p className="text-sm font-display text-[var(--accent-gold)]">{n.title}</p>
                   )}
-                  {n.content && (
-                    <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{n.content}</p>
+                  {displayContent && (
+                    <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{displayContent}</p>
                   )}
                   <p className="text-[10px] text-gray-500 mt-1">
                     {new Date(n.createdAt).toLocaleString("it-IT")}
                     {n.type === "fetch_responso" && " · Responso Fetch"}
+                    {n.type === "fetch_giocata_completed" && " · Giocata Fetch completata"}
                     {n.type === "rent_reminder" && " · Affitto"}
                     {n.type === "rent_eviction" && " · Sfratto"}
                     {n.type === "new_registration" && " · Nuova iscrizione"}
                   </p>
+                  {fetchGiocata?.sessionId && (
+                    <div className="mt-2">
+                      <RegistrazioneLeggiButton
+                        sessionId={fetchGiocata.sessionId}
+                        title={n.title || fetchGiocata.fetchTitle || "Giocata Fetch"}
+                      />
+                    </div>
+                  )}
                 </div>
                 {!n.readAt && (
                   <button
                     type="button"
                     onClick={() => markAsRead(n.id)}
-                    className="shrink-0 px-2 py-1 rounded border border-[var(--accent-gold)]/50 text-[10px] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10"
+                    className="shrink-0 px-2 py-1 rounded border border-[var(--accent-gold)]/50 text-[10px] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 min-h-[44px]"
                   >
                     Segna letto
                   </button>
                 )}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
@@ -1975,11 +2079,22 @@ function RegistrazioneMessageBlock({ message }: { message: any }) {
   );
 }
 
+function resolveRegistrationKind(s: {
+  sessionType?: string | null;
+  fetchId?: string | null;
+  questId?: string | null;
+}): "Evento" | "Fetch" | "Quest" | "Libera" {
+  if (s.sessionType === "EVENTO") return "Evento";
+  if (s.fetchId) return "Fetch";
+  if (s.questId) return "Quest";
+  return "Libera";
+}
+
 // Pagina Registrazioni
 function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "quest" | "free" | "evento">("all");
+  const [filter, setFilter] = useState<"all" | "quest" | "fetch" | "free" | "evento">("all");
 
   useEffect(() => {
     if (!characterId) {
@@ -1987,27 +2102,38 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
       return;
     }
     api
-      .get(`/game-sessions/character/${characterId}?status=CLOSED`)
+      .get(`/game-sessions/character/${characterId}`)
       .then((d) => {
-        const sessions = Array.isArray(d) ? d : [];
-        // Mappa i dati per renderli più leggibili
+        const sessions = (Array.isArray(d) ? d : []).filter(
+          (s: { status?: string }) => s.status === "CLOSED" || s.status === "FROZEN",
+        );
         const mapped = sessions.map((s: any) => {
           const fetch = s.fetch || null;
           const quest = s.quest || null;
-          const isQuest = !!fetch || !!s.fetchId || !!quest || !!s.questId;
-          const isEvento = s.sessionType === "EVENTO";
+          const kind = resolveRegistrationKind(s);
           const closedDate = s.closedAt || s.lastActiveAt || s.startedAt;
           const questTitle = quest?.title || fetch?.title;
           return {
             id: s.id,
             date: closedDate,
-            type: isEvento ? "Evento" : isQuest ? "Quest" : "Sessione Libera",
-            title: s.title || questTitle || (isQuest ? `Quest ${s.roomId}` : isEvento ? "Evento" : `Sessione ${s.roomId}`),
+            type: kind,
+            title: s.title || questTitle || (kind === "Evento" ? "Evento" : kind === "Libera" ? `Sessione ${s.roomId}` : questTitle || kind),
             questName: questTitle,
-            outcome: s.status === "CLOSED" ? "Completata" : s.status === "CANCELLED" ? "Annullata" : s.status,
-            isQuest,
-            isEvento,
+            outcome:
+              s.status === "CLOSED"
+                ? "Completata"
+                : s.status === "FROZEN"
+                  ? "In attesa"
+                  : s.status === "CANCELLED"
+                    ? "Annullata"
+                    : s.status,
+            status: s.status,
+            kind,
             fetchId: s.fetchId,
+            isQuest: kind === "Quest",
+            isFetch: kind === "Fetch",
+            isEvento: kind === "Evento",
+            isLibera: kind === "Libera",
           };
         });
         setRegistrations(mapped);
@@ -2017,9 +2143,10 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
   }, [characterId]);
 
   const filteredRegistrations = registrations.filter((r) => {
-    if (filter === "quest") return r.isQuest;
-    if (filter === "free") return !r.isQuest && !r.isEvento;
-    if (filter === "evento") return r.isEvento;
+    if (filter === "quest") return r.kind === "Quest";
+    if (filter === "fetch") return r.kind === "Fetch";
+    if (filter === "free") return r.kind === "Libera";
+    if (filter === "evento") return r.kind === "Evento";
     return true;
   });
 
@@ -2064,6 +2191,17 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
                 }`}
               >
                 Quest
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilter("fetch")}
+                className={`px-2 py-1 rounded text-[9px] uppercase tracking-wider transition-colors ${
+                  filter === "fetch"
+                    ? "bg-[var(--accent-gold)]/20 text-[var(--accent-gold)] border border-[var(--accent-gold)]/50"
+                    : "bg-black/40 text-gray-400 border border-[var(--border-color)]/50 hover:border-gray-600"
+                }`}
+              >
+                Fetch
               </button>
               <button
                 type="button"
@@ -2136,7 +2274,9 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
                       <td className="px-3 py-2 text-[11px]">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] uppercase tracking-wider ${
                           r.isEvento
-                            ? "text-amber-400 bg-amber-500/20 border border-amber-500/40"
+                            ? "text-[var(--accent-gold)] bg-[var(--accent-gold)]/20 border border-[var(--accent-gold)]/40"
+                            : r.isFetch
+                            ? "text-[var(--accent-violet-light)] bg-[var(--accent-violet)]/20 border border-[var(--accent-violet)]/40"
                             : r.isQuest
                             ? "text-[var(--accent-violet)] bg-[var(--accent-violet)]/20 border border-[var(--accent-violet)]/40"
                             : "text-gray-400 bg-gray-500/20 border border-gray-500/40"
@@ -2149,6 +2289,8 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
                         <span className={`font-display ${
                           r.outcome === "Completata" 
                             ? "text-[var(--accent-gold)]" 
+                            : r.outcome === "In attesa"
+                            ? "text-[var(--accent-violet-light)]"
                             : r.outcome === "Annullata"
                             ? "text-red-400"
                             : "text-gray-400"
@@ -2159,6 +2301,9 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
                       <td className="px-3 py-2">
                         {r.outcome === "Completata" && (
                           <RegistrazioneLeggiButton sessionId={r.id} title={r.title} />
+                        )}
+                        {r.outcome === "In attesa" && (
+                          <span className="text-[9px] uppercase tracking-wider text-[var(--accent-violet-light)]">Congelata</span>
                         )}
                       </td>
                     </tr>

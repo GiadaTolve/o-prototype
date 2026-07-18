@@ -458,6 +458,21 @@ export const dropTableDailyUsage = pgTable(
   (t) => [primaryKey({ columns: [t.characterId, t.dayKey] })],
 )
 
+/** Pool loot → catalog_key junk (runtime, modificabile in Sviluppo). */
+export const economyDropPools = pgTable('economy_drop_pools', {
+  id: text('id').primaryKey(),
+  junkCatalogKeys: jsonb('junk_catalog_keys').$type<string[]>().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+/** Tabelle drop pesate (runtime, modificabile in Sviluppo). */
+export const economyDropTables = pgTable('economy_drop_tables', {
+  id: text('id').primaryKey(),
+  label: text('label').notNull(),
+  entries: jsonb('entries').$type<Array<{ pool: string; weight: number }>>().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
 /** Smantellamento Artigiano — max 10/giorno UTC. */
 export const dismantleDailyUsage = pgTable(
   'dismantle_daily_usage',

@@ -130,7 +130,7 @@ export async function updateMarketCatalogItem(id: string, input: Partial<MarketC
   const existing = await db.query.items.findFirst({ where: eq(items.id, id) })
   if (!existing) throw new Error('Oggetto non trovato.')
 
-  if (input.marketCategory != null && !isMarketCategory(input.marketCategory)) {
+  if (input.marketCategory != null && input.marketCategory !== '' && !isMarketCategory(input.marketCategory)) {
     throw new Error('Categoria Market non valida.')
   }
   if (input.priceRem != null && (!Number.isFinite(input.priceRem) || input.priceRem < 0)) {
@@ -146,9 +146,13 @@ export async function updateMarketCatalogItem(id: string, input: Partial<MarketC
       iconUrl: input.iconUrl !== undefined ? input.iconUrl : existing.iconUrl,
       integrityMax: input.integrityMax !== undefined ? input.integrityMax : existing.integrityMax,
       effectText: input.effectText !== undefined ? input.effectText : existing.effectText,
-      marketCategory: (input.marketCategory as MarketCategory) ?? existing.marketCategory,
+      marketCategory:
+        input.marketCategory !== undefined
+          ? (input.marketCategory as MarketCategory | null)
+          : existing.marketCategory,
       price: input.priceRem ?? existing.price,
       isActiveInMarket: input.isActiveInMarket ?? existing.isActiveInMarket,
+      category: input.category ?? existing.category,
       type: input.type ?? existing.type,
       damage: input.damage !== undefined ? input.damage : existing.damage,
       resistance: input.resistance !== undefined ? input.resistance : existing.resistance,

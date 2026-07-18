@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { useInventoryUpdatedListener } from "@/hooks/useInventoryUpdatedListener";
 import type { InventoryItemRow } from "@/components/dashboard/inventory/types";
 import type { CharacterSummary } from "@/components/dashboard/types";
 import { resolveCharacterComputed } from "@/components/dashboard/character-computed";
-import { encodeAttackMessage } from "./ChatAttackCard";
+import { encodeAttackMessage } from "@domain/combat/attack-message";
 
 const MAX_WIELDED = 2; // Ambidestria — vincolo sulle armi IMPUGNATE, non sui Tōrō
 
@@ -35,7 +36,15 @@ type WeaponRow = {
   resistance: number | null;
   ammoKind: string | null;
   type: string;
+  integrityCurrent: number | null;
+  integrityMax: number | null;
 };
+
+function countCarryAmmo(items: InventoryItemRow[], ammoKind: string): number {
+  return items
+    .filter((it) => it.economy?.category === "consumabile" && it.item.ammoKind === ammoKind)
+    .reduce((sum, it) => sum + (it.quantity ?? 0), 0);
+}
 
 type CombatWeaponsState = {
   activeIds: string[]; // armi impugnate ora (max 1, 2 con Ambidestria)
@@ -55,12 +64,13 @@ export function CombatWeaponsSection({
   onSendMessage?: (text: string) => void;
 } = {}) {
   const [weapons, setWeapons] = useState<WeaponRow[]>([]);
+  const [inventoryAmmo, setInventoryAmmo] = useState<Record<string, number>>({});
   const [state, setState] = useState<CombatWeaponsState>({ activeIds: [], toroIds: [], ammo: {} });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fistTier, setFistTier] = useState<number>(1);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     let cancelled = false;
     setLoading(true);
     Promise.all([
@@ -77,6 +87,14 @@ export function CombatWeaponsSection({
         const weaponItems = items.filter(
           (it) => it.item.type === "WEAPON" && it.isEquipped,
         );
+        const ammoKinds = new Set(
+          weaponItems.map((it) => it.item.ammoKind).filter((k): k is string => !!k),
+        );
+        const ammoCounts: Record<string, number> = {};
+        for (const kind of ammoKinds) {
+          ammoCounts[kind] = countCarryAmmo(items, kind);
+        }
+        setInventoryAmmo(ammoCounts);
         setWeapons(
           weaponItems.map((it) => ({
             inventoryId: it.id,
@@ -85,6 +103,8 @@ export function CombatWeaponsSection({
             resistance: it.item.resistance ?? null,
             ammoKind: it.item.ammoKind ?? null,
             type: it.item.type,
+            integrityCurrent: it.economy?.integrityCurrent ?? it.economy?.integrityMax ?? null,
+            integrityMax: it.economy?.integrityMax ?? null,
           })),
         );
         setState({
@@ -97,6 +117,13 @@ export function CombatWeaponsSection({
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const cleanup = reload();
+    return cleanup;
+  }, [reload]);
+
+  useInventoryUpdatedListener(char?.id, reload);
 
   const patch = useCallback(
     async (next: Partial<CombatWeaponsState>) => {
@@ -162,28 +189,30 @@ export function CombatWeaponsSection({
       const computed = resolveCharacterComputed(char?.computed);
       const isRanged = !!w.ammoKind;
       const ammoVal = state.ammo[w.inventoryId] ?? 0;
-      if (isRanged && ammoVal <= 0) return;
+      const invAmmo = w.ammoKind ? (inventoryAmmo[w.ammoKind] ?? 0) : 0;
+      const intCurrent = w.integrityCurrent ?? w.integrityMax ?? 0;
+      if (intCurrent < 1) return;
+      if (isRanged && (ammoVal <= 0 || invAmmo <= 0)) return;
 
       const base = isRanged ? computed.cad : computed.cac;
       const wepDmg = w.damage ?? 0;
       const total = base + wepDmg;
       const statLabel = isRanged ? `CAD (${base})` : `CAC (${base})`;
       const formula = `${statLabel} + ${wepDmg}`;
-      const ammoNote = isRanged ? `−1 ${w.ammoKind}` : undefined;
 
       onSendMessage(encodeAttackMessage({
         weapon: w.name,
         formula,
         total,
         kind: isRanged ? "ranged" : "melee",
-        ammoNote,
+        inventoryId: w.inventoryId,
       }));
 
       if (isRanged) {
         void patch({ ammo: { ...state.ammo, [w.inventoryId]: Math.max(0, ammoVal - 1) } });
       }
     },
-    [char, state, patch, onSendMessage],
+    [char, state, inventoryAmmo, patch, onSendMessage],
   );
 
   const attackFist = useCallback(() => {
@@ -234,6 +263,13 @@ export function CombatWeaponsSection({
         const hasAmmoCounter = ammoVal !== undefined;
         const needsAmmo = !!w.ammoKind;
         const isArmor = w.type === "ARMOR";
+        const intCurrent = w.integrityCurrent ?? w.integrityMax ?? null;
+        const intMax = w.integrityMax;
+        const invAmmo = w.ammoKind ? (inventoryAmmo[w.ammoKind] ?? 0) : 0;
+        const canStrike =
+          intCurrent != null
+            ? intCurrent >= 1 && (!needsAmmo || ((state.ammo[w.inventoryId] ?? 0) > 0 && invAmmo > 0))
+            : true;
 
         return (
           <div
@@ -288,6 +324,15 @@ export function CombatWeaponsSection({
                   Sc {w.resistance}
                 </span>
               )}
+              {intMax != null && intCurrent != null && (
+                <span
+                  className="text-[9px] font-mono px-1.5 py-0.5 rounded shrink-0"
+                  style={{ background: "color-mix(in srgb, var(--accent-gold) 12%, transparent)", color: "var(--accent-gold)", border: "1px solid color-mix(in srgb, var(--accent-gold) 30%, transparent)" }}
+                  title="Integrità arma"
+                >
+                  INT {intCurrent}/{intMax}
+                </span>
+              )}
 
               {/* pulsante Tōrō — solo su armi, non armature */}
               {!isArmor && (
@@ -310,7 +355,7 @@ export function CombatWeaponsSection({
               {!isArmor && isActive && onSendMessage && (
                 <button
                   type="button"
-                  disabled={saving || (needsAmmo && (state.ammo[w.inventoryId] ?? 0) <= 0)}
+                  disabled={saving || !canStrike}
                   className="text-[9px] px-2 py-0.5 rounded border shrink-0 transition-colors disabled:opacity-30"
                   style={{
                     background: "color-mix(in srgb, var(--accent-gold) 10%, transparent)",
@@ -318,7 +363,15 @@ export function CombatWeaponsSection({
                     borderColor: "color-mix(in srgb, var(--accent-gold) 35%, transparent)",
                   }}
                   onClick={() => attackWithWeapon(w)}
-                  title={needsAmmo && (state.ammo[w.inventoryId] ?? 0) <= 0 ? "Nessuna munizione" : "Colpisci (senza waza, senza CS)"}
+                  title={
+                    intCurrent != null && intCurrent < 1
+                      ? "Integrità esaurita"
+                      : needsAmmo && invAmmo <= 0
+                        ? "Nessuna munizione nello zaino"
+                        : needsAmmo && (state.ammo[w.inventoryId] ?? 0) <= 0
+                          ? "Nessuna munizione caricata"
+                          : "Colpisci (−1 INT · senza waza, senza CS)"
+                  }
                 >
                   Colpisci
                 </button>
@@ -334,7 +387,7 @@ export function CombatWeaponsSection({
                     style={{ borderColor: "var(--border-color)", color: "var(--muted-foreground)" }}
                   >
                     <button type="button" disabled={saving} className="disabled:opacity-40" onClick={() => adjustAmmo(w.inventoryId, -1)}>−</button>
-                    <span>{w.ammoKind} · {ammoVal}</span>
+                    <span>{w.ammoKind} · {ammoVal} caricate · {invAmmo} in zaino</span>
                     <button type="button" disabled={saving} onClick={() => adjustAmmo(w.inventoryId, +1)}>+</button>
                   </span>
                 ) : (

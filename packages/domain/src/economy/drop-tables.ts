@@ -75,12 +75,14 @@ export function getDropTable(id: string): DropTableDef | undefined {
   return DROP_TABLES.find((t) => t.id === id)
 }
 
-/** Estrae un junk id da tabella (pesi fissi; `rng` iniettabile per test). */
-export function rollDropTableJunk(
+/** Roll con definizioni esplicite (DB runtime o domain fallback). */
+export function rollDropTableJunkFromDefs(
+  tables: readonly DropTableDef[],
+  poolJunkIds: Readonly<Record<string, readonly string[]>>,
   tableId: string,
   rng: () => number = Math.random,
 ): JunkItemDef['id'] | null {
-  const table = getDropTable(tableId)
+  const table = tables.find((t) => t.id === tableId)
   if (!table?.entries.length) return null
 
   const total = table.entries.reduce((s, e) => s + e.weight, 0)
@@ -88,13 +90,21 @@ export function rollDropTableJunk(
   for (const entry of table.entries) {
     roll -= entry.weight
     if (roll <= 0) {
-      const pool = DROP_POOL_JUNK_IDS[entry.pool]
-      if (!pool.length) return null
+      const pool = poolJunkIds[entry.pool]
+      if (!pool?.length) return null
       const idx = Math.floor(rng() * pool.length)
       return pool[idx] ?? null
     }
   }
-  const last = table.entries[table.entries.length - 1]
-  const pool = DROP_POOL_JUNK_IDS[last.pool]
-  return pool[0] ?? null
+  const last = table.entries[table.entries.length - 1]!
+  const pool = poolJunkIds[last.pool]
+  return pool?.[0] ?? null
+}
+
+/** Estrae un junk id da tabella (pesi fissi; `rng` iniettabile per test). */
+export function rollDropTableJunk(
+  tableId: string,
+  rng: () => number = Math.random,
+): JunkItemDef['id'] | null {
+  return rollDropTableJunkFromDefs(DROP_TABLES, DROP_POOL_JUNK_IDS, tableId, rng)
 }

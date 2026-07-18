@@ -9,7 +9,19 @@ import { JWT_SECRET } from "../../config";
 import { characterService } from "../characters/characters.service";
 import { insertMessage, isValidRoom } from "../chat/chat.service";
 import { userCanExecuteDrop } from "../../lib/gestione-access";
-import { executeDropCommand, executePrendiCommand } from "../drop/drop.service";
+import { executeDropPanelAction, executePrendiByCatalogKey } from "../drop/drop.service";
+import { isItemUsePanelMessage } from "@domain/economy/item-use-chat";
+import {
+  isDropPanelMessage,
+  isPrendiPanelMessage,
+  parseDropPanelRequest,
+  parsePrendiPanelRequest,
+} from "@domain/economy/drop-panel-message";
+import { parseAttackMessage } from "@domain/combat/attack-message";
+import {
+  applyWeaponStrikeInventory,
+  resolveItemUsePanelMessage,
+} from "../inventory/item-use.service";
 import { getActiveQuestForRoom } from "../quests/quests.service";
 import { resolveDiceInMessage, messageNeedsDiceResolution } from "../../lib/dice-resolver";
 import { canAccessPrivateChatAsync } from "../housing/housing.service";
@@ -206,6 +218,28 @@ export function broadcastFetchResponso(
   }
 }
 
+/** Notifica al creatore della fetch che la giocata registrata è stata completata. */
+export function broadcastFetchGiocataCompleted(
+  characterId: string,
+  payload: { sessionId: string; fetchId: string; fetchTitle: string }
+): void {
+  const ws = characterSockets.get(characterId);
+  if (!ws) return;
+  try {
+    ws.send(
+      JSON.stringify({
+        type: "fetch_giocata_completed",
+        sessionId: payload.sessionId,
+        fetchId: payload.fetchId,
+        fetchTitle: payload.fetchTitle,
+        timestamp: new Date().toISOString(),
+      })
+    );
+  } catch (e) {
+    console.error("[realtime] fetch_giocata_completed broadcast error:", e);
+  }
+}
+
 /**
  * Invia un evento SMS al destinatario (se connesso via WebSocket).
  * Chiamata da sms.routes.ts quando viene inviato un messaggio.
@@ -363,9 +397,9 @@ export const realtimeRoutes = new Elysia()
         if (senderUser?.banState === "SHADOW") return;
 
         const lowerCmd = text.toLowerCase();
-        if (lowerCmd.startsWith("/drop ") || lowerCmd.startsWith("/prendi ")) {
+        if (isPrendiPanelMessage(text) || isDropPanelMessage(text)) {
           try {
-            if (lowerCmd.startsWith("/drop ")) {
+            if (isDropPanelMessage(text)) {
               const canDrop = await userCanExecuteDrop(
                 user.userId,
                 senderUser?.role,
@@ -375,7 +409,7 @@ export const realtimeRoutes = new Elysia()
                 ws.send(
                   JSON.stringify({
                     type: "error",
-                    message: "Solo Master/Moderazione può usare /drop.",
+                    message: "Solo Master/Moderazione può eseguire drop.",
                   }),
                 );
                 return;
@@ -387,9 +421,18 @@ export const realtimeRoutes = new Elysia()
               name: p.name,
             }));
 
-            const dropResult = lowerCmd.startsWith("/drop ")
-              ? await executeDropCommand(text, roomId, user.characterId, roomParticipants)
-              : await executePrendiCommand(text, roomId, user.characterId);
+            const dropResult = isDropPanelMessage(text)
+              ? await executeDropPanelAction(
+                  parseDropPanelRequest(text)!,
+                  roomId,
+                  user.characterId,
+                  roomParticipants,
+                )
+              : await executePrendiByCatalogKey(
+                  roomId,
+                  user.characterId,
+                  parsePrendiPanelRequest(text)!.catalogKey,
+                );
 
             const participant =
               roomId === PARADISE_ROOM ? await getParticipant(roomId, user.characterId) : null;
@@ -401,7 +444,7 @@ export const realtimeRoutes = new Elysia()
               false,
               participant?.animalName ?? undefined,
               participant?.color ?? undefined,
-              true,
+              false,
               true,
             );
 
@@ -424,7 +467,7 @@ export const realtimeRoutes = new Elysia()
               content: row.content,
               locationTag: row.locationTag ?? undefined,
               createdAt: row.createdAt,
-              isMasterscreen: true,
+              isMasterscreen: false,
               isDropEvent: true,
             });
             const m = roomSockets.get(roomId);
@@ -438,7 +481,73 @@ export const realtimeRoutes = new Elysia()
               ws.send(
                 JSON.stringify({
                   type: "error",
-                  message: e instanceof Error ? e.message : "Errore comando drop/prendi",
+                  message: e instanceof Error ? e.message : "Errore drop/raccolta",
+                }),
+              );
+            } catch (_) {}
+          }
+          return;
+        }
+
+        if (lowerCmd.startsWith("/drop ") || lowerCmd.startsWith("/prendi ")) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Usa i pannelli A terra e Drop Master in chat — i comandi testuali non sono disponibili.",
+            }),
+          );
+          return;
+        }
+
+        if (isItemUsePanelMessage(text)) {
+          try {
+            const cardContent = await resolveItemUsePanelMessage(user.characterId, text);
+            const participant =
+              roomId === PARADISE_ROOM ? await getParticipant(roomId, user.characterId) : null;
+            const { row } = await insertMessage(
+              roomId,
+              user.characterId,
+              cardContent,
+              locationTag,
+              false,
+              participant?.animalName ?? undefined,
+              participant?.color ?? undefined,
+              false,
+            );
+            const char = await db.query.characters.findFirst({
+              where: eq(characters.id, user.characterId),
+              columns: { surname: true, miniAvatar: true, uiMetadata: true, order: true },
+            });
+            const isPartychat = roomId === PARTYCHAT_ROOM;
+            const displayName =
+              isPartychat && row.anonymousAnimalName ? row.anonymousAnimalName : user.name;
+            const meta = (char?.uiMetadata as { roleIcon?: string; orderIcon?: string; premioSpeciale?: string } | null) ?? {};
+            const pixelIcons = isPartychat
+              ? undefined
+              : buildCharacterPixelIcons(meta, char?.order);
+            const payload = JSON.stringify({
+              type: "chat_message",
+              id: row.id,
+              zone: roomId,
+              characterId: user.characterId,
+              name: displayName,
+              surname: isPartychat ? undefined : char?.surname,
+              miniAvatar: isPartychat ? "/anonymous/mask.svg" : char?.miniAvatar ?? undefined,
+              anonymousColor: isPartychat ? row.anonymousColor ?? undefined : undefined,
+              pixelIcons,
+              content: row.content,
+              locationTag: row.locationTag ?? undefined,
+              createdAt: row.createdAt,
+              isMasterscreen: false,
+            });
+            const m = roomSockets.get(roomId);
+            if (m) for (const [, w] of m) try { w.send(payload); } catch (_) {}
+          } catch (e) {
+            try {
+              ws.send(
+                JSON.stringify({
+                  type: "error",
+                  message: e instanceof Error ? e.message : "Errore uso oggetto",
                 }),
               );
             } catch (_) {}
@@ -481,6 +590,22 @@ export const realtimeRoutes = new Elysia()
               return;
             }
           }
+
+          const attackPayload = parseAttackMessage(resolvedText);
+          if (attackPayload?.inventoryId) {
+            try {
+              await applyWeaponStrikeInventory(user.characterId, attackPayload.inventoryId);
+            } catch (e) {
+              ws.send(
+                JSON.stringify({
+                  type: "error",
+                  message: e instanceof Error ? e.message : "Errore uso arma",
+                }),
+              );
+              return;
+            }
+          }
+
           const { row, levelUp } = await insertMessage(
             roomId,
             user.characterId,

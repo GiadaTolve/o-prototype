@@ -578,6 +578,11 @@ export default function DashboardPage() {
           canAccessSviluppo={char?.canAccessSviluppo}
           char={char}
           onOpenCombattimento={() => open("combattimento")}
+          onOpenCediDrop={
+            char?.canAccessShinigami || char?.canAccessGestione
+              ? () => open("cediDrop")
+              : undefined
+          }
           onOpenNote={() => open("note")}
         />
         <DashboardRightCol
@@ -615,6 +620,7 @@ export default function DashboardPage() {
               ? presenti
               : undefined
           }
+          roomUsers={openWindow === "cediDrop" ? (roomId ? usersInRoom : []) : undefined}
           presentiAreMock={openWindow === "presenti" ? presentiAreMock : undefined}
           profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}
           smsTargetCharacterId={openWindow === "sms" ? smsTargetCharacterId : undefined}

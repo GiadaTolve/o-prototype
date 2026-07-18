@@ -53,6 +53,9 @@ import { ChatConstructResolutionPost } from "./chat-combat/ChatConstructResoluti
 import { buildChatWazaPostFromMessage } from "./chat-combat/buildChatWazaPostFromMessage";
 import { buildConstructPostFromMessage, buildStandaloneConstructPostFromMessage, extractStandaloneConstructName } from "./chat-combat/buildConstructPostFromMessage";
 import { ChatAttackCard, extractAttackData } from "./chat-combat/ChatAttackCard";
+import { ChatItemUseCard, extractItemUseCard } from "./chat-combat/ChatItemUseCard";
+import { ChatDropEventCard, extractDropEventData } from "./chat-loot/ChatDropEventCard";
+import { ChatGroundLootPanel } from "./chat-loot/ChatGroundLootPanel";
 
 /** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
 const MOBILE_CHAT_MAX_LENGTH = 500;
@@ -93,6 +96,8 @@ type Props = {
   onImmersiveChange?: (immersive: boolean) => void;
   /** Apre la finestra Pannello Combattimento nel dock. */
   onOpenCombattimento?: () => void;
+  /** Apre la finestra Cedi Drop (solo Master/staff). */
+  onOpenCediDrop?: () => void;
   /** Apre il Blocco Note nel dock. */
   onOpenNote?: () => void;
 };
@@ -118,6 +123,7 @@ export function DashboardCenter({
   variant = "default",
   onImmersiveChange,
   onOpenCombattimento,
+  onOpenCediDrop,
   onOpenNote,
 }: Props) {
   const compact = variant === "mobile";
@@ -583,6 +589,7 @@ export function DashboardCenter({
           char={char}
           compact={compact}
           onOpenCombattimento={onOpenCombattimento}
+          onOpenCediDrop={onOpenCediDrop}
           onOpenNote={onOpenNote}
         />
         </div>
@@ -826,6 +833,8 @@ type GameSession = {
   roomId: string;
   title: string | null;
   fetchId: string | null;
+  questId?: string | null;
+  sessionType?: string | null;
   status: 'ACTIVE' | 'FROZEN' | 'CLOSED' | 'CANCELLED';
   startedAt: string;
   lastActiveAt: string;
@@ -833,6 +842,7 @@ type GameSession = {
   cancelledAt: string | null;
   creator?: { id: string; name: string };
   fetch?: { id: string; title: string };
+  quest?: { id: string; title: string };
   participants?: Array<{
     id: string;
     characterId: string;
@@ -844,10 +854,14 @@ type GameSession = {
 function RegistraGiocataButton({
   roomId,
   activeQuest,
+  usersInRoom,
+  myCharacterId,
   iconOnly = false,
 }: {
   roomId: RoomId | null;
   activeQuest?: { id: string; title?: string } | null;
+  usersInRoom?: Presente[];
+  myCharacterId?: string;
   iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -857,21 +871,50 @@ function RegistraGiocataButton({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [useFetch, setUseFetch] = useState(false);
   const [title, setTitle] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
+
+  const presentOthers = useMemo(
+    () => (usersInRoom ?? []).filter((u) => u.id !== myCharacterId),
+    [usersInRoom, myCharacterId],
+  );
+
+  const handleParticipantToggle = (characterId: string) => {
+    setSelectedParticipants((prev) =>
+      prev.includes(characterId) ? prev.filter((id) => id !== characterId) : [...prev, characterId],
+    );
+  };
+
+  const syncDeclaredParticipants = useCallback(async (sessionId: string, participantIds: string[]) => {
+    const updated = (await api.post(`/game-sessions/${sessionId}/participants`, {
+      participantIds,
+    })) as GameSession;
+    setSession(updated);
+    return updated;
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!roomId) return;
     setLoading(true);
     try {
-      const [activeSession, myFetch] = await Promise.all([
-        api.get(`/game-sessions/room/${roomId}/active`).then((d) => d as GameSession | null).catch(() => null),
+      const [openSession, myFetch] = await Promise.all([
+        api.get(`/game-sessions/room/${roomId}/open`).then((d) => d as GameSession | null).catch(() => null),
         api.get("/fetches/my").then((d) => { const x = d as { id?: string; assigned?: boolean } | undefined; return x && "id" in x && x.id ? x.id : null; }).catch(() => null),
       ]);
-      setSession(activeSession);
+      setSession(openSession);
       setMyFetchId(myFetch);
       setUseFetch(!!myFetch);
+      if (openSession?.participants?.length) {
+        setSelectedParticipants(
+          openSession.participants
+            .map((p) => p.characterId)
+            .filter((id) => id !== openSession.creatorId),
+        );
+      } else {
+        setSelectedParticipants([]);
+      }
     } catch (e) {
       console.error("Errore caricamento dati:", e);
     } finally {
@@ -883,6 +926,7 @@ function RegistraGiocataButton({
     if (open && roomId) loadData();
     if (!open) {
       setTitle("");
+      setSelectedParticipants([]);
     }
   }, [open, roomId, loadData]);
 
@@ -903,12 +947,26 @@ function RegistraGiocataButton({
         title: title.trim() || undefined,
         fetchId: useFetch && myFetchId ? myFetchId : undefined,
         questId: activeQuest?.id,
+        participantIds: selectedParticipants.length > 0 ? selectedParticipants : undefined,
       }) as GameSession;
       setSession(newSession);
       setTitle("");
       toast.success("Registrazione avviata con successo!");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Errore durante l'avvio della registrazione");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const saveDeclaredParticipants = async () => {
+    if (!session) return;
+    setActionLoading('participants');
+    try {
+      await syncDeclaredParticipants(session.id, selectedParticipants);
+      toast.success("Partecipanti salvati");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Errore salvataggio partecipanti");
     } finally {
       setActionLoading(null);
     }
@@ -994,6 +1052,43 @@ function RegistraGiocataButton({
     }
   };
 
+  const sessionKindLabel = session
+    ? session.sessionType === "EVENTO"
+      ? "Evento"
+      : session.fetchId
+        ? "Fetch"
+        : session.questId
+          ? "Quest"
+          : "Libera"
+    : null;
+
+  const participantPicker = presentOthers.length > 0 ? (
+    <div className="space-y-2">
+      <label className="text-[10px] uppercase tracking-wider text-gray-500">Partecipanti dichiarati</label>
+      <p className="text-[10px] text-gray-500">Chi selezioni vedrà la giocata nel Journal a chiusura (oltre a chi agisce in chat).</p>
+      <div className="max-h-[140px] overflow-y-auto border border-[var(--border-color)] rounded p-2 bg-black/20">
+        {presentOthers.map((user) => (
+          <label key={user.id} className={`flex items-center gap-2 text-xs cursor-pointer hover:text-[var(--accent-gold)] py-1 min-h-[44px] ${user.isShadow ? "text-[var(--accent-violet-light)]/90" : ""}`}>
+            <input
+              type="checkbox"
+              checked={selectedParticipants.includes(user.id)}
+              onChange={() => handleParticipantToggle(user.id)}
+              className="rounded border-[var(--border-color)]"
+            />
+            <span className="flex items-center gap-1.5">
+              {user.name}
+              {user.isShadow && (
+                <FontAwesomeIcon icon={icons.eyeSlash} className="w-3 h-3 text-[var(--accent-violet-light)]/80" title="Shadowban" aria-hidden />
+              )}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <p className="text-[10px] text-gray-500 italic">Nessun altro presente in chat: verranno aggiunti anche i PG con azioni registrate.</p>
+  );
+
   const toggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1046,11 +1141,21 @@ function RegistraGiocataButton({
           <div className="flex flex-col gap-3">
             <div>
               <h3 className="text-sm font-semibold text-[var(--accent-gold)] mb-1">
-                {session.title || 'Registrazione'} {session.status === 'ACTIVE' ? 'Attiva' : session.status === 'FROZEN' ? 'Congelata' : session.status === 'CLOSED' ? 'Chiusa' : 'Annullata'}
+                {session.title || 'Registrazione'} {session.status === 'ACTIVE' ? 'Attiva' : session.status === 'FROZEN' ? 'In attesa' : session.status === 'CLOSED' ? 'Chiusa' : 'Annullata'}
               </h3>
+              {sessionKindLabel && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] uppercase tracking-wider text-[var(--accent-violet-light)] bg-[var(--accent-violet)]/20 border border-[var(--accent-violet)]/40 mb-2">
+                  {sessionKindLabel}
+                </span>
+              )}
               {session.fetch && (
                 <p className="text-[10px] text-[var(--accent-violet)] mb-2">
                   Fetch: {session.fetch.title}
+                </p>
+              )}
+              {session.quest?.title && !session.fetch && (
+                <p className="text-[10px] text-[var(--accent-violet-light)] mb-2">
+                  Quest: {session.quest.title}
                 </p>
               )}
             </div>
@@ -1071,21 +1176,30 @@ function RegistraGiocataButton({
 
             {session.status === 'ACTIVE' && (
               <div className="flex flex-col gap-2 pt-2 border-t border-[var(--border-color)]">
+                {participantPicker}
+                <button
+                  type="button"
+                  onClick={saveDeclaredParticipants}
+                  disabled={actionLoading !== null}
+                  className="px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 text-xs disabled:opacity-50 min-h-[44px]"
+                >
+                  {actionLoading === 'participants' ? "…" : "Salva partecipanti dichiarati"}
+                </button>
                 <button
                   type="button"
                   onClick={refreshParticipants}
                   disabled={actionLoading !== null}
-                  className="px-3 py-1.5 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:bg-black/20 disabled:opacity-50"
+                  className="px-3 py-1.5 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:bg-black/20 disabled:opacity-50 min-h-[44px]"
                 >
-                  {actionLoading === 'refresh' ? "…" : "Aggiorna partecipanti"}
+                  {actionLoading === 'refresh' ? "…" : "Aggiorna da chat (azioni >500)"}
                 </button>
                 <button
                   type="button"
                   onClick={freezeSession}
                   disabled={actionLoading !== null}
-                  className="px-3 py-1.5 rounded border border-yellow-500/60 text-yellow-400 hover:bg-yellow-500/10 text-xs disabled:opacity-50"
+                  className="px-3 py-1.5 rounded border border-[var(--accent-violet)]/60 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 text-xs disabled:opacity-50 min-h-[44px]"
                 >
-                  {actionLoading === 'freeze' ? "…" : "Congela registrazione"}
+                  {actionLoading === 'freeze' ? "…" : "Congela (salva in attesa)"}
                 </button>
                 <div className="flex gap-2">
                   <button
@@ -1110,19 +1224,39 @@ function RegistraGiocataButton({
 
             {session.status === 'FROZEN' && (
               <div className="flex flex-col gap-2 pt-2 border-t border-[var(--border-color)]">
+                <p className="text-[10px] text-gray-400">
+                  Registrazione in attesa con titolo «{session.title || "Senza titolo"}». Scongela per continuare o chiudi per archiviarla nel Journal.
+                </p>
+                {participantPicker}
+                <button
+                  type="button"
+                  onClick={saveDeclaredParticipants}
+                  disabled={actionLoading !== null}
+                  className="px-3 py-1.5 rounded border border-[var(--accent-violet)]/50 text-[var(--accent-violet-light)] hover:bg-[var(--accent-violet)]/10 text-xs disabled:opacity-50 min-h-[44px]"
+                >
+                  {actionLoading === 'participants' ? "…" : "Salva partecipanti dichiarati"}
+                </button>
                 <button
                   type="button"
                   onClick={resumeSession}
                   disabled={actionLoading !== null}
-                  className="px-3 py-1.5 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 text-xs disabled:opacity-50"
+                  className="px-3 py-1.5 rounded border border-[var(--accent-gold)] text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 text-xs disabled:opacity-50 min-h-[44px]"
                 >
-                  {actionLoading === 'resume' ? "…" : "Riavvia registrazione"}
+                  {actionLoading === 'resume' ? "…" : "Scongela e riprendi"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseSession}
+                  disabled={actionLoading !== null}
+                  className="px-3 py-1.5 rounded border border-[var(--accent-gold)]/70 text-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/10 text-xs disabled:opacity-50 min-h-[44px]"
+                >
+                  {actionLoading === 'close' ? "…" : "Chiudi e archivia"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelSession}
                   disabled={actionLoading !== null}
-                  className="px-3 py-1.5 rounded border border-red-500/60 text-red-400 hover:bg-red-500/10 text-xs disabled:opacity-50"
+                  className="px-3 py-1.5 rounded border border-red-500/60 text-red-400 hover:bg-red-500/10 text-xs disabled:opacity-50 min-h-[44px]"
                 >
                   {actionLoading === 'cancel' ? "…" : "Annulla"}
                 </button>
@@ -1151,7 +1285,7 @@ function RegistraGiocataButton({
               className="w-full px-3 py-2 bg-black/30 border border-[var(--border-color)] rounded text-sm text-white placeholder-gray-500"
             />
             {myFetchId && (
-              <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <label className="flex items-center gap-2 text-xs cursor-pointer min-h-[44px]">
                 <input
                   type="checkbox"
                   checked={useFetch}
@@ -1161,6 +1295,7 @@ function RegistraGiocataButton({
                 <span>Associa Fetch assegnata</span>
               </label>
             )}
+            {participantPicker}
             <div className="flex gap-2 pt-2 border-t border-[var(--border-color)]">
               <button
                 type="button"
@@ -1979,6 +2114,7 @@ function ChatView({
   char,
   compact = false,
   onOpenCombattimento,
+  onOpenCediDrop,
   onOpenNote,
 }: {
   roomId: RoomId;
@@ -1998,6 +2134,7 @@ function ChatView({
   char?: CharacterSummary;
   compact?: boolean;
   onOpenCombattimento?: () => void;
+  onOpenCediDrop?: () => void;
   onOpenNote?: () => void;
 }) {
   const { index: wazaTagIndex } = useWazaCatalog();
@@ -2483,6 +2620,21 @@ function ChatView({
             </div>
           )}
           <ArmadioCasa roomId={roomId} characterId={char?.id} />
+          <ChatGroundLootPanel
+            roomId={roomId}
+            characterId={char?.id}
+            sendMessage={sendMessage}
+          />
+          {!compact && (canAccessShinigami || canAccessGestione) && onOpenCediDrop && (
+            <button
+              type="button"
+              onClick={onOpenCediDrop}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-gold)] uppercase tracking-wider"
+            >
+              <FontAwesomeIcon icon={icons.mercato} className="w-3.5 h-3.5" />
+              Cedi Drop
+            </button>
+          )}
           {!compact && onOpenCombattimento && (
             <button
               type="button"
@@ -2575,7 +2727,7 @@ function ChatView({
                       />
                     )}
                     {!isPartychatRoom && (
-                      <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} iconOnly />
+                      <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} usersInRoom={usersInRoom} myCharacterId={char?.id} iconOnly />
                     )}
                     {canAccessGestione && <GlobalMessageButton iconOnly />}
                   </div>
@@ -2688,7 +2840,7 @@ function ChatView({
                     Note
                   </button>
                 )}
-                {!isPartychatRoom && <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} />}
+                {!isPartychatRoom && <RegistraGiocataButton roomId={roomId} activeQuest={activeQuest} usersInRoom={usersInRoom} myCharacterId={char?.id} />}
                 {canAccessGestione && <GlobalMessageButton />}
               </div>
               <div className="flex items-center gap-4 flex-wrap justify-end">
@@ -2908,6 +3060,8 @@ function ChatMessageBlock({
     });
   }, [message.content, message.miniAvatar, actorSkiruSheet, actorHpMax, characterName]);
   const attackData = useMemo(() => extractAttackData(message.content), [message.content]);
+  const itemUseData = useMemo(() => extractItemUseCard(message.content), [message.content]);
+  const dropEventData = useMemo(() => extractDropEventData(message.content), [message.content]);
 
   const narrativeBody = useMemo(
     () => removeWazaTagsFromText(message.content),
@@ -2936,6 +3090,15 @@ function ChatMessageBlock({
           ✦ MESSAGGIO GLOBALE ✦
         </strong>
         <p className="m-0 font-normal text-sm text-gray-200" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+      </div>
+    );
+  }
+
+  // Evento loot (drop / prendi / a terra)
+  if (dropEventData) {
+    return (
+      <div className="w-full mb-3">
+        <ChatDropEventCard data={dropEventData} />
       </div>
     );
   }
@@ -2973,6 +3136,15 @@ function ChatMessageBlock({
     return (
       <div className="w-full mb-3">
         <ChatAttackCard data={attackData} characterName={characterName} />
+      </div>
+    );
+  }
+
+  // Card uso oggetto (pannello combattimento)
+  if (itemUseData) {
+    return (
+      <div className="w-full mb-3">
+        <ChatItemUseCard data={itemUseData} characterName={characterName} />
       </div>
     );
   }

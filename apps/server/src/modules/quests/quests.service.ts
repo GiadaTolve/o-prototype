@@ -77,6 +77,16 @@ export async function createQuest(
       }))
     );
   }
+
+  if (row.roomId) {
+    const { ensureGameSessionForQuest } = await import("../game-sessions/game-sessions.service");
+    await ensureGameSessionForQuest({
+      id: row.id,
+      creatorId,
+      roomId: row.roomId,
+      title: row.title,
+    });
+  }
   
   return row!;
 }
@@ -240,6 +250,10 @@ export async function registerParticipant(questId: string, characterId: string, 
     .insert(questParticipants)
     .values({ questId, characterId, fetchId: fetchId ?? null })
     .returning();
+
+  const { syncQuestParticipantToGameSession } = await import("../game-sessions/game-sessions.service");
+  await syncQuestParticipantToGameSession(questId, characterId);
+
   return row!;
 }
 
@@ -425,6 +439,10 @@ export async function closeQuest(questId: string, creatorId: string) {
     .set({ status: "CLOSED", closedAt: new Date() })
     .where(eq(quests.id, questId))
     .returning();
+
+  const { closeGameSessionForQuest } = await import("../game-sessions/game-sessions.service");
+  await closeGameSessionForQuest(questId);
+
   return row!;
 }
 
@@ -476,11 +494,38 @@ export async function updateQuestStatus(questId: string, creatorId: string, stat
   if (!quest) throw new Error("Quest non trovata");
   if (quest.creatorId !== creatorId) throw new Error("Solo il creatore può modificare la quest");
 
+  const previousStatus = quest.status as QuestStatus;
+
   const [row] = await db
     .update(quests)
     .set({ status, ...(status === "CLOSED" ? { closedAt: new Date() } : {}) })
     .where(eq(quests.id, questId))
     .returning();
+
+  if (quest.roomId) {
+    const {
+      ensureGameSessionForQuest,
+      closeGameSessionForQuest,
+      freezeGameSessionForQuest,
+    } = await import("../game-sessions/game-sessions.service");
+
+    if (status === "CLOSED") {
+      await closeGameSessionForQuest(questId);
+    } else if (status === "PAUSED" && previousStatus !== "PAUSED") {
+      await freezeGameSessionForQuest(questId);
+    } else if (
+      (status === "IN_PROGRESS" || status === "OPEN") &&
+      previousStatus === "PAUSED"
+    ) {
+      await ensureGameSessionForQuest({
+        id: quest.id,
+        creatorId: quest.creatorId,
+        roomId: quest.roomId,
+        title: quest.title,
+      });
+    }
+  }
+
   return row!;
 }
 
@@ -495,6 +540,9 @@ export async function deleteQuest(questId: string) {
   if (quest.status !== "PAUSED" && quest.status !== "OPEN") {
     throw new Error("Solo quest in pausa o aperte possono essere eliminate");
   }
+
+  const { cancelGameSessionForQuest } = await import("../game-sessions/game-sessions.service");
+  await cancelGameSessionForQuest(questId);
   
   await db.delete(quests).where(eq(quests.id, questId));
 }

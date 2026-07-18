@@ -13,7 +13,7 @@ export async function getUnreadCount(characterId: string): Promise<number> {
 
 export async function createSystemNotification(
   characterId: string,
-  type: 'fetch_responso' | 'new_registration' | 'rent_reminder' | 'rent_eviction',
+  type: 'fetch_responso' | 'fetch_giocata_completed' | 'new_registration' | 'rent_reminder' | 'rent_eviction',
   opts: { title?: string; content?: string }
 ) {
   const [row] = await db

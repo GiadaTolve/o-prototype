@@ -237,6 +237,9 @@ export function useRealtime(
               if (prev.some((p) => p.id === m.id)) return prev;
               return [...prev, m];
             });
+            if (m.content.trim().startsWith("📦")) {
+              window.dispatchEvent(new CustomEvent("chatDropUpdated"));
+            }
           }
           if (
             data.type === "character_status_updated" &&

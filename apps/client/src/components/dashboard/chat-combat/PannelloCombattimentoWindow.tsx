@@ -11,6 +11,7 @@ import { CombatHpInline } from "./CombatHpInline";
 import { CombatCsInline } from "./CombatCsInline";
 import { CombatConstructsSection } from "./CombatConstructsSection";
 import { CombatWeaponsSection } from "./CombatWeaponsSection";
+import { CombatItemsSection } from "./CombatItemsSection";
 import { LancioWazaPanel } from "./LancioWazaPanel";
 import { resolveCharacterComputed, formatMovementMeters } from "../character-computed";
 import { computeIndicativeActionIr } from "@domain/combat/resolution";
@@ -324,6 +325,15 @@ export function PannelloCombattimentoWindow({
       >
         <ZoneHeader label="Equipaggiamento" />
         <CombatWeaponsSection char={char} onSendMessage={onSendMessage} />
+      </section>
+
+      {/* ── Z2b · OGGETTI ───────────────────────────────────────────────── */}
+      <section
+        className="rounded-xl border p-3 shrink-0"
+        style={{ background: "color-mix(in srgb, var(--panel-bg) 80%, black)", borderColor: "var(--border-color)" }}
+      >
+        <ZoneHeader label="Oggetti" dot="var(--accent-gold)" />
+        <CombatItemsSection characterId={characterId} onSendMessage={onSendMessage} />
       </section>
 
       {/* ── Z3 · LANCIO WAZA ─────────────────────────────────────────────── */}
