@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { STYLE_LABELS, type StyleId } from "@domain/progression/style-hexagon";
 import { invalidateWazaCatalogCache } from "@/hooks/useWazaCatalog";
-import { useSviluppoTaxonomy } from "@/hooks/useSviluppoTaxonomy";
+import { useStatuti } from "@/hooks/useStatuti";
 
 type CreatePreset = "base" | "ordine" | "madosho" | "premio";
 
@@ -38,7 +38,7 @@ export function GestioneWazaCreatePanel({
   const [rank, setRank] = useState("T1");
   const [costExp, setCostExp] = useState(0);
   const [styleId, setStyleId] = useState<string>("");
-  const { state: taxonomy } = useSviluppoTaxonomy();
+  const { state: statuti } = useStatuti();
   const [parentId, setParentId] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -151,7 +151,7 @@ export function GestioneWazaCreatePanel({
               className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
             >
               <option value="">—</option>
-              {(preset === "madosho" ? taxonomy.madosho : preset === "ordine" ? taxonomy.ordine : taxonomy.premio).map((t) => (
+              {(preset === "madosho" ? statuti.madosho : preset === "ordine" ? statuti.ordine : statuti.premio).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>

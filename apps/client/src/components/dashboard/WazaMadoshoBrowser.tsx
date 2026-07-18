@@ -12,6 +12,8 @@ import {
 import type { SkiruSheet } from "@domain/skiru";
 import { sortWazaByKindAndName } from "@domain/progression";
 import { useDoMechanicsSnapshot } from "@/hooks/useDoMechanicsSnapshot";
+import { findStatutiEntry, useStatuti } from "@/hooks/useStatuti";
+import { WazaEditorialHeader } from "./WazaEditorialHeader";
 import { WazaCatalogRow } from "./WazaCatalogRow";
 import type { CatalogWaza, StyleHexState } from "./waza-catalog-types";
 import { api } from "@/lib/api";
@@ -75,6 +77,10 @@ export function WazaMadoshoBrowser({
     [onCharUpdate, onReload],
   );
 
+  const { state: statuti } = useStatuti();
+  const madoshoDef = MADOSHO_CATALOG.find((m) => m.id === selected);
+  const madoshoEntry = findStatutiEntry(statuti, "madosho", selected);
+
   const owned = wazaForRamo.filter((w) => w.owned).length;
 
   return (
@@ -122,28 +128,28 @@ export function WazaMadoshoBrowser({
         </nav>
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <header className="shrink-0 border-b border-[var(--border-color)]/70 bg-black/85 px-4 py-3">
-            <p className="text-[8px] font-display uppercase tracking-[0.24em] text-[var(--accent-violet-light)]/60 mb-0.5">
-              Lignaggio
-            </p>
-            <h4 className="font-display text-sm text-[var(--accent-gold)]">
-              {MADOSHO_CATALOG.find((m) => m.id === selected)?.name}
-            </h4>
-            <p className="text-xs text-[var(--accent-violet-light)]/75 mt-2 leading-relaxed">
-              {MADOSHO_CATALOG.find((m) => m.id === selected)?.tagline}
-            </p>
-            {!charMadoshoId && (
-              <p className="mt-2 text-[10px] text-[var(--accent-violet-light)]/80 italic">
-                Richiedi una Madoshō dallo staff (Scheda → Richieste) per acquistare le waza del lignaggio.
-              </p>
-            )}
-            {charMadoshoId && charMadoshoId !== selected && (
-              <p className="mt-2 text-[10px] text-[var(--foreground)]/50 italic flex items-center gap-1.5">
-                <FontAwesomeIcon icon={icons.lock} className="w-2.5 h-2.5" />
-                Solo consultazione — waza di un altro lignaggio.
-              </p>
-            )}
-          </header>
+          <WazaEditorialHeader
+            title={madoshoDef?.name ?? selected}
+            subtitle={madoshoEntry?.sottotitolo ?? madoshoDef?.tagline}
+            statute={madoshoEntry?.statute}
+            mechanics={madoshoEntry?.descrizione_meccanica}
+            statuteLabel="Lignaggio"
+            footer={
+              <>
+                {!charMadoshoId && (
+                  <p className="text-[10px] text-[var(--accent-violet-light)]/80 italic">
+                    Richiedi una Madoshō dallo staff (Scheda → Richieste) per acquistare le waza del lignaggio.
+                  </p>
+                )}
+                {charMadoshoId && charMadoshoId !== selected && (
+                  <p className="text-[10px] text-[var(--foreground)]/50 italic flex items-center gap-1.5">
+                    <FontAwesomeIcon icon={icons.lock} className="w-2.5 h-2.5" />
+                    Solo consultazione — waza di un altro lignaggio.
+                  </p>
+                )}
+              </>
+            }
+          />
 
           <div className="shrink-0 px-4 py-2 border-b border-[var(--border-color)]/40 bg-black/30 text-xs font-display uppercase tracking-[0.14em] text-[var(--foreground)]/60">
             Tecniche · {wazaForRamo.length}

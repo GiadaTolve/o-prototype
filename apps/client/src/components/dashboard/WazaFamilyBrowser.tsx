@@ -9,6 +9,8 @@ import {
 import { sortWazaByKindAndName } from "@domain/progression";
 import type { SkiruSheet } from "@domain/skiru";
 import { useDoMechanicsSnapshot } from "@/hooks/useDoMechanicsSnapshot";
+import { useStatuti } from "@/hooks/useStatuti";
+import { WazaEditorialHeader } from "./WazaEditorialHeader";
 import { WazaCatalogRow } from "./WazaCatalogRow";
 import { filterCatalogByFamily, type CatalogWaza } from "./waza-catalog-types";
 import { api } from "@/lib/api";
@@ -73,6 +75,21 @@ export function WazaFamilyBrowser({
     [onCharUpdate, onReload],
   );
 
+  const { state: statuti } = useStatuti();
+
+  const familyStatuti = useMemo(() => {
+    if (family === "ordine") {
+      const withContent = statuti.ordine.find(
+        (e) => e.statute?.trim() || e.descrizione_meccanica?.trim() || e.sottotitolo?.trim(),
+      );
+      return withContent ?? statuti.ordine[0] ?? null;
+    }
+    return null;
+  }, [family, statuti.ordine]);
+
+  const sectionLabel =
+    family === "ordine" ? "Arsenale" : family === "oni-no-mori" ? "Regione" : "Catalogo";
+
   const owned = items.filter((w) => w.owned).length;
 
   return (
@@ -81,17 +98,13 @@ export function WazaFamilyBrowser({
         fullHeight ? "flex flex-col flex-1 min-h-0 h-full" : ""
       }`}
     >
-      <header className="shrink-0 border-b border-[var(--border-color)]/70 bg-black/85 px-4 py-3">
-        <p className="text-[8px] font-display uppercase tracking-[0.24em] text-[var(--accent-violet-light)]/60 mb-0.5">
-          Catalogo
-        </p>
-        <h4 className="font-display text-sm text-[var(--accent-gold)]">
-          {WAZA_CATALOG_FAMILY_LABELS[family]}
-        </h4>
-        <p className="text-xs text-[var(--accent-violet-light)]/75 mt-2 leading-relaxed">
-          {WAZA_CATALOG_FAMILY_BLURBS[family]}
-        </p>
-      </header>
+      <WazaEditorialHeader
+        title={WAZA_CATALOG_FAMILY_LABELS[family]}
+        subtitle={familyStatuti?.sottotitolo ?? WAZA_CATALOG_FAMILY_BLURBS[family]}
+        statute={familyStatuti?.statute}
+        mechanics={familyStatuti?.descrizione_meccanica}
+        statuteLabel={sectionLabel}
+      />
 
       <div className="shrink-0 px-4 py-2 border-b border-[var(--border-color)]/40 bg-black/30 text-xs font-display uppercase tracking-[0.14em] text-[var(--foreground)]/60">
         Tecniche · {items.length}

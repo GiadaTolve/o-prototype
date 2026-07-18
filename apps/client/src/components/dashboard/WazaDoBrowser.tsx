@@ -17,7 +17,8 @@ import type { CatalogWaza, StyleHexState } from "./waza-catalog-types";
 import { filterCatalogByFamily } from "./waza-catalog-types";
 import type { SkiruSheet } from "@domain/skiru";
 import { useDoMechanicsSnapshot, type WazaResolveExtras } from "@/hooks/useDoMechanicsSnapshot";
-import { useSviluppoTaxonomy } from "@/hooks/useSviluppoTaxonomy";
+import { findStatutiEntry, useStatuti } from "@/hooks/useStatuti";
+import { WazaEditorialHeader } from "./WazaEditorialHeader";
 
 const STYLE_SHORT: Record<StyleId, string> = {
   toka: "Tōka",
@@ -173,7 +174,8 @@ export function WazaDoBrowser({
   const { extras: resolveExtrasFromHook } = useDoMechanicsSnapshot(csPreview, !resolveExtrasProp);
   const resolveExtras = resolveExtrasProp ?? resolveExtrasFromHook;
 
-  const { state: taxonomy } = useSviluppoTaxonomy();
+  const { state: statuti } = useStatuti();
+  const doEntry = findStatutiEntry(statuti, "do", selected);
 
   const { keystoneWaza, catalogWaza, wazaForStyle } = useMemo(() => {
     const items = catalog.filter((w) => w.styleId === selected);
@@ -343,17 +345,13 @@ export function WazaDoBrowser({
             </nav>
 
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
-              <header className="shrink-0 sticky top-0 z-10 border-b border-[var(--border-color)]/70 bg-black/85 backdrop-blur-md px-4 py-3">
-                <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                  <div>
-                    <p className="text-[8px] font-display uppercase tracking-[0.24em] text-[var(--accent-violet-light)]/60 mb-0.5">
-                      Statuto
-                    </p>
-                    <h4 className="font-display text-sm text-[var(--accent-gold)] tracking-wide">
-                      {STYLE_LABELS[selected]}
-                    </h4>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 justify-end">
+              <WazaEditorialHeader
+                title={STYLE_LABELS[selected]}
+                subtitle={doEntry?.sottotitolo}
+                statute={doEntry?.statute || STYLE_STATUTES[selected]}
+                mechanics={doEntry?.descrizione_meccanica}
+                badges={
+                  <>
                     {!branchUnlocked && (
                       <span className="text-[8px] font-display uppercase px-2 py-0.5 rounded border border-[var(--border-color)] text-[var(--foreground)]/45 flex items-center gap-1">
                         <FontAwesomeIcon icon={icons.lock} className="w-2 h-2" />
@@ -376,25 +374,16 @@ export function WazaDoBrowser({
                         Principale
                       </span>
                     )}
-                  </div>
-                </div>
-
-                <div className="waza-do-statute-scroll">
-                  <FontAwesomeIcon
-                    icon={icons.quote}
-                    className="waza-do-statute-quote mb-1 block"
-                  />
-                  <p className="waza-description whitespace-pre-line pr-1">
-                    {taxonomy.do.find((e) => e.name === STYLE_LABELS[selected])?.statute || STYLE_STATUTES[selected]}
-                  </p>
-                </div>
-
-                {!branchUnlocked && (
-                  <p className="mt-2 text-xs text-[var(--accent-violet-light)]/75 italic">
-                    Puoi leggere le waza di questa Via; per acquistarle sblocca il ramo dall&apos;Esagono con Key.
-                  </p>
-                )}
-              </header>
+                  </>
+                }
+                footer={
+                  !branchUnlocked ? (
+                    <p className="text-xs text-[var(--accent-violet-light)]/75 italic">
+                      Puoi leggere le waza di questa Via; per acquistarle sblocca il ramo dall&apos;Esagono con Key.
+                    </p>
+                  ) : undefined
+                }
+              />
 
               <div className="shrink-0 px-4 py-2 border-b border-[var(--border-color)]/40 bg-black/30 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-display uppercase tracking-[0.14em] text-[var(--foreground)]/60">

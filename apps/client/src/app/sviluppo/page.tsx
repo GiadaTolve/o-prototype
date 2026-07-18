@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CatalogoWaza } from "@/components/sviluppo/waza/CatalogoWaza";
 import { BestiarioManagement } from "@/components/gestione/BestiarioManagement";
 import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
-import { GestioneTaxonomyPanel } from "@/components/gestione/GestioneTaxonomyPanel";
+import { GestioneStatutiPanel } from "@/components/gestione/GestioneStatutiPanel";
 import { MarketSviluppoPanel } from "@/components/sviluppo/MarketSviluppoPanel";
 import { api } from "@/lib/api";
 import { canManageWaza } from "@/lib/waza-authoring-access";
@@ -168,7 +168,7 @@ export default function SviluppoPage() {
               <p className="text-sm text-gray-400">Accesso al Catalogo Waza non disponibile.</p>
             ))}
 
-          {activeTab === "statuti" && <GestioneTaxonomyPanel />}
+          {activeTab === "statuti" && <GestioneStatutiPanel />}
 
           {activeTab === "status" && <GestioneStatusPanel />}
           {activeTab === "bestiario" && <BestiarioManagement />}

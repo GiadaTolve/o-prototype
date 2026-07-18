@@ -16,7 +16,7 @@ import {
   type PlayerRequestKind,
 } from "@domain/progression/player-requests";
 import { getMadoshoDef } from "@domain/progression/madosho";
-import { useSviluppoTaxonomy } from "@/hooks/useSviluppoTaxonomy";
+import { useStatuti } from "@/hooks/useStatuti";
 import { api } from "@/lib/api";
 import { icons } from "@/lib/icons";
 
@@ -133,7 +133,7 @@ function assignedLabel(kind: PlayerRequestKind, assigned: Assigned): string {
 }
 
 export function SchedaRichiestePage() {
-  const { state: taxonomy } = useSviluppoTaxonomy();
+  const { state: statuti } = useStatuti();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<PlayerRequestKind | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -156,11 +156,11 @@ export function SchedaRichiestePage() {
     const map = new Map<string, { id: string; label: string }>();
     for (const p of serverPremioOptions) map.set(p.id, p);
     for (const p of PREMIO_REQUEST_OPTIONS) map.set(p.id, p);
-    for (const p of taxonomy.premio) {
+    for (const p of statuti.premio) {
       map.set(p.id, { id: p.id, label: p.name });
     }
     return [...map.values()];
-  }, [serverPremioOptions, taxonomy.premio]);
+  }, [serverPremioOptions, statuti.premio]);
 
   const load = useCallback(async () => {
     setLoading(true);

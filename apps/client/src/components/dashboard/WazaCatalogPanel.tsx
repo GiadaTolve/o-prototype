@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { icons } from "@/lib/icons";
 import { api } from "@/lib/api";
 import {
   WAZA_CATALOG_FAMILIES,
@@ -83,42 +81,7 @@ export function WazaCatalogPanel({
     }`;
 
   return (
-    <div className="flex flex-col h-full min-h-0 gap-3">
-      <div className="shrink-0 rounded-lg border border-[var(--border-color)]/70 bg-black/40 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="font-display text-sm text-[var(--accent-gold)] flex items-center gap-2">
-            <FontAwesomeIcon icon={icons.waza} className="w-3.5 h-3.5 text-[var(--accent-violet-light)]" />
-            Catalogo Waza
-          </h3>
-          <p className="text-[11px] text-[var(--accent-violet-light)]/75 mt-1 max-w-xl">
-            Generiche · Dō · Madoshō · Ordine · Oni no Mori
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-right shrink-0">
-          <label className="text-right">
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[var(--foreground)]/40 font-display">
-              CS anteprima
-            </p>
-            <input
-              type="number"
-              min={0}
-              max={30}
-              value={csPreview}
-              onChange={(e) => setCsPreview(Math.max(0, Number(e.target.value) || 0))}
-              className="mt-0.5 w-14 rounded border border-[var(--border-color)] bg-black/40 px-1.5 py-0.5 text-sm font-display text-[var(--accent-gold)] tabular-nums text-right"
-            />
-          </label>
-          <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[var(--foreground)]/40 font-display">EXP</p>
-            <p className="font-display text-lg text-[var(--accent-gold)] tabular-nums">{expSpendable}</p>
-          </div>
-          <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[var(--foreground)]/40 font-display">Keys</p>
-            <p className="font-display text-lg text-[var(--accent-violet-light)] tabular-nums">{charKeys}</p>
-          </div>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full min-h-0 gap-0">
       <nav
         className="shrink-0 flex border-b border-[var(--border-color)] bg-black/30 rounded-t-lg overflow-x-auto"
         aria-label="Famiglie waza"
