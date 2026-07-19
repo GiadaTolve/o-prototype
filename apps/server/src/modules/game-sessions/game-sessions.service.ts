@@ -1,6 +1,6 @@
 import { eq, and, gt, gte, lte, desc, sql, inArray } from "drizzle-orm";
 import { db } from '../../plugins/db'
-import { gameSessions, gameSessionParticipants, zoneMessages, characters, fetches, quests, questRewards, ledgerEntries, questParticipants } from '../../db/schema'
+import { gameSessions, gameSessionParticipants, zoneMessages, characters, fetches, fetchAssignments, quests, questRewards, ledgerEntries, questParticipants } from '../../db/schema'
 import { isValidRoom } from '../chat/chat.service'
 import { createRem } from '@domain/types/money'
 import { earn } from '@domain/ledger/transaction'
@@ -174,6 +174,15 @@ export async function createGameSession(
       columns: { characterId: true },
     })
     for (const row of qp) declared.add(row.characterId)
+  }
+
+  // Parità con le quest: chi ha la fetch assegnata deve sempre finire nel Journal.
+  if (fetchId) {
+    const fa = await db.query.fetchAssignments.findMany({
+      where: eq(fetchAssignments.fetchId, fetchId),
+      columns: { characterId: true },
+    })
+    for (const row of fa) declared.add(row.characterId)
   }
 
   await ensureSessionParticipants(session.id, [...declared])
@@ -406,8 +415,12 @@ export async function syncQuestParticipantToGameSession(questId: string, charact
 
 /**
  * Congela una sessione (può essere riavviata in futuro).
+ * participantIds: opzionale — partecipanti dichiarati da salvare prima del freeze.
  */
-export async function freezeGameSession(sessionId: string) {
+export async function freezeGameSession(
+  sessionId: string,
+  participantIds?: readonly string[] | null,
+) {
   const session = await db.query.gameSessions.findFirst({
     where: eq(gameSessions.id, sessionId),
   })
@@ -418,6 +431,13 @@ export async function freezeGameSession(sessionId: string) {
 
   if (session.status !== 'ACTIVE') {
     throw new Error('Solo le sessioni attive possono essere congelate')
+  }
+
+  if (participantIds && participantIds.length > 0) {
+    await ensureSessionParticipants(sessionId, [
+      session.creatorId,
+      ...participantIds,
+    ])
   }
 
   await refreshSessionParticipants(sessionId, session.roomId)
@@ -468,8 +488,13 @@ export async function resumeGameSession(sessionId: string) {
 /**
  * Chiude definitivamente una sessione (viene conservata nella scheda del personaggio).
  * Se la sessione ha una fetch associata, premia automaticamente i giocatori con >4 azioni.
+ * participantIds: opzionale — partecipanti dichiarati da salvare prima della chiusura
+ * (così finiscono nel Journal anche senza azioni >500 caratteri).
  */
-export async function closeGameSession(sessionId: string) {
+export async function closeGameSession(
+  sessionId: string,
+  participantIds?: readonly string[] | null,
+) {
   const session = await db.query.gameSessions.findFirst({
     where: eq(gameSessions.id, sessionId),
     with: {
@@ -488,6 +513,22 @@ export async function closeGameSession(sessionId: string) {
 
   if (session.status === 'CLOSED' || session.status === 'CANCELLED') {
     throw new Error('Sessione già chiusa o annullata')
+  }
+
+  // Partecipanti dichiarati (checkbox) + assignee fetch → Journal di tutti
+  const declared = new Set<string>([
+    session.creatorId,
+    ...(participantIds ?? []),
+  ])
+  if (session.fetchId) {
+    const fa = await db.query.fetchAssignments.findMany({
+      where: eq(fetchAssignments.fetchId, session.fetchId),
+      columns: { characterId: true },
+    })
+    for (const row of fa) declared.add(row.characterId)
+  }
+  if (declared.size > 0) {
+    await ensureSessionParticipants(sessionId, [...declared])
   }
 
   // Aggiorna i partecipanti prima di chiudere
@@ -863,6 +904,7 @@ export async function cancelGameSession(sessionId: string) {
  * 1. Sessioni dove il PG è in gameSessionParticipants (partecipante diretto o creatore)
  * 2. Sessioni legate a una quest dove il PG è in questParticipants (fix: evita che
  *    messaggi brevi escludano dalla registrazione)
+ * 3. Sessioni legate a una fetch assegnata al PG (stessa garanzia del punto 2)
  */
 export async function getCharacterSessions(characterId: string, status?: 'ACTIVE' | 'FROZEN' | 'CLOSED' | 'CANCELLED') {
   const byId = new Map<string, any>()
@@ -910,6 +952,31 @@ export async function getCharacterSessions(characterId: string, status?: 'ACTIVE
       },
     })
     for (const s of linkedSessions) {
+      if (!byId.has(s.id)) byId.set(s.id, s)
+    }
+  }
+
+  // 3. Sessioni via fetchAssignments → chi ha la fetch assegnata vede la giocata nel Journal
+  //    anche se non è mai stato scritto in game_session_participants.
+  const fetchRows = await db.query.fetchAssignments.findMany({
+    where: eq(fetchAssignments.characterId, characterId),
+    columns: { fetchId: true },
+  })
+
+  if (fetchRows.length > 0) {
+    const fetchIds = fetchRows.map((r) => r.fetchId)
+    const linkedFetchSessions = await db.query.gameSessions.findMany({
+      where: and(
+        inArray(gameSessions.fetchId, fetchIds),
+        status ? eq(gameSessions.status, status) : undefined,
+      ),
+      with: {
+        fetch: true,
+        quest: true,
+        participants: { with: { character: true } },
+      },
+    })
+    for (const s of linkedFetchSessions) {
       if (!byId.has(s.id)) byId.set(s.id, s)
     }
   }
