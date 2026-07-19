@@ -57,8 +57,8 @@ import { ChatItemUseCard, extractItemUseCard } from "./chat-combat/ChatItemUseCa
 import { ChatDropEventCard, extractDropEventData } from "./chat-loot/ChatDropEventCard";
 import { ChatGroundLootPanel } from "./chat-loot/ChatGroundLootPanel";
 
-/** Limite caratteri messaggio chat da mobile (allineato a SMS e ROADMAP). */
-const MOBILE_CHAT_MAX_LENGTH = 500;
+/** Limite caratteri messaggio chat da mobile. */
+const MOBILE_CHAT_MAX_LENGTH = 800;
 
 /** Bozza che invierà solo un tiro dado (nessun EXP). */
 function isDiceOnlyDraft(draft: string): boolean {
