@@ -160,7 +160,14 @@ export const shinigamiCombatRoutes = new Elysia({ prefix: '/shinigami/combat' })
 
       .get('/bestiario', async ({ query }) => {
         await svc.ensureBestiarioSeed()
-        return svc.listBestiarioCatalog(query.q)
+        return svc.listBestiarioCatalog(query.q, {
+          tagCaccia: query.tag_caccia === '1' || query.tag_caccia === 'true',
+        })
+      }, {
+        query: t.Object({
+          q: t.Optional(t.String()),
+          tag_caccia: t.Optional(t.String()),
+        }),
       })
       .post('/bestiario/:id/spawn/:roomId', async ({ user, params, set }) => {
         try {

@@ -316,11 +316,14 @@ export async function instantiateAlboOnField(roomId: string, userId: string, alb
   } as PngScheda & { albo_id: string })
 }
 
-export async function listBestiarioCatalog(q?: string) {
+export async function listBestiarioCatalog(q?: string, opts?: { tagCaccia?: boolean }) {
   const rows = await db.query.bestiario.findMany({
     orderBy: [asc(bestiario.tier), asc(bestiario.name)],
   })
   let items = rows.map(mapBestiario)
+  if (opts?.tagCaccia === true) {
+    items = items.filter((i) => i.tag_caccia)
+  }
   if (q?.trim()) {
     const needle = q.trim().toLowerCase()
     items = items.filter(
@@ -416,4 +419,154 @@ export async function ensureBestiarioSeed() {
     },
   ])
   return { seeded: true }
+}
+
+export type BestiarioWriteInput = {
+  nome?: string
+  name?: string
+  name_jp?: string | null
+  name_kanji?: string | null
+  tipo?: string
+  tier?: number
+  lore?: string | null
+  habitat?: string | null
+  comportamento?: string | null
+  onimori?: string | null
+  hp_max?: number
+  cs_max?: number
+  ir_attacco?: number
+  ir_difesa?: number
+  waza?: PngWazaEntry[]
+  drop_table?: Array<{
+    item_id: string
+    item_nome?: string
+    quantita?: number
+    quantita_min?: number
+    quantita_max?: number
+    probabilita: number
+  }>
+  tag_caccia?: boolean
+  immagine?: string | null
+  image_url?: string | null
+}
+
+export function normalizeDropTable(
+  rows: BestiarioWriteInput['drop_table'],
+): Array<{
+  item_id: string
+  item_nome?: string
+  quantita?: number
+  quantita_min?: number
+  quantita_max?: number
+  probabilita: number
+}> {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .filter((r) => r && typeof r.item_id === 'string' && r.item_id.trim())
+    .map((r) => ({
+      item_id: r.item_id.trim(),
+      item_nome: r.item_nome?.trim() || undefined,
+      quantita: r.quantita,
+      quantita_min: r.quantita_min,
+      quantita_max: r.quantita_max,
+      probabilita: Math.max(0, Math.min(100, Math.round(Number(r.probabilita) || 0))),
+    }))
+}
+
+export function normalizeWaza(rows: BestiarioWriteInput['waza']): PngWazaEntry[] {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .filter((r) => r && typeof r.nome === 'string' && r.nome.trim())
+    .map((r) => ({
+      nome: r.nome.trim(),
+      descrizione: r.descrizione?.trim() || undefined,
+      danno: r.danno != null ? Number(r.danno) : undefined,
+      tier: r.tier != null ? asTier(Number(r.tier)) : undefined,
+    }))
+}
+
+export { asTipo as asTipoForTest, asTier as asTierForTest }
+
+export async function getBestiarioEntry(id: string) {
+  const entry = await db.query.bestiario.findFirst({ where: eq(bestiario.id, id) })
+  if (!entry) throw new Error('Voce Bestiario non trovata')
+  return mapBestiario(entry)
+}
+
+export async function createBestiarioEntry(input: BestiarioWriteInput) {
+  const nome = (input.nome ?? input.name ?? '').trim()
+  if (!nome) throw new Error('Nome obbligatorio')
+  const [row] = await db
+    .insert(bestiario)
+    .values({
+      name: nome,
+      nameJp: input.name_jp?.trim() || null,
+      nameKanji: input.name_kanji?.trim() || null,
+      tipo: asTipo(input.tipo) as ShinigamiPngTipo,
+      tier: asTier(input.tier ?? 1),
+      lore: input.lore?.trim() || null,
+      habitat: input.habitat?.trim() || null,
+      comportamento: input.comportamento?.trim() || null,
+      onimori: input.onimori?.trim() || null,
+      hpMax: Math.max(1, Math.round(input.hp_max ?? 40)),
+      csMax: Math.max(0, Math.round(input.cs_max ?? 10)),
+      irAttacco: Math.max(0, Math.round(input.ir_attacco ?? 5)),
+      irDifesa: Math.max(0, Math.round(input.ir_difesa ?? 5)),
+      waza: normalizeWaza(input.waza),
+      dropTable: normalizeDropTable(input.drop_table),
+      tagCaccia: Boolean(input.tag_caccia),
+      imageUrl: (input.immagine ?? input.image_url)?.trim() || null,
+    })
+    .returning()
+  return mapBestiario(row!)
+}
+
+export async function updateBestiarioEntry(id: string, input: BestiarioWriteInput) {
+  const existing = await db.query.bestiario.findFirst({ where: eq(bestiario.id, id) })
+  if (!existing) throw new Error('Voce Bestiario non trovata')
+  const nome = (input.nome ?? input.name)?.trim()
+  const [row] = await db
+    .update(bestiario)
+    .set({
+      ...(nome ? { name: nome } : {}),
+      ...(input.name_jp !== undefined ? { nameJp: input.name_jp?.trim() || null } : {}),
+      ...(input.name_kanji !== undefined ? { nameKanji: input.name_kanji?.trim() || null } : {}),
+      ...(input.tipo !== undefined ? { tipo: asTipo(input.tipo) as ShinigamiPngTipo } : {}),
+      ...(input.tier !== undefined ? { tier: asTier(input.tier) } : {}),
+      ...(input.lore !== undefined ? { lore: input.lore?.trim() || null } : {}),
+      ...(input.habitat !== undefined ? { habitat: input.habitat?.trim() || null } : {}),
+      ...(input.comportamento !== undefined
+        ? { comportamento: input.comportamento?.trim() || null }
+        : {}),
+      ...(input.onimori !== undefined ? { onimori: input.onimori?.trim() || null } : {}),
+      ...(input.hp_max !== undefined ? { hpMax: Math.max(1, Math.round(input.hp_max)) } : {}),
+      ...(input.cs_max !== undefined ? { csMax: Math.max(0, Math.round(input.cs_max)) } : {}),
+      ...(input.ir_attacco !== undefined
+        ? { irAttacco: Math.max(0, Math.round(input.ir_attacco)) }
+        : {}),
+      ...(input.ir_difesa !== undefined
+        ? { irDifesa: Math.max(0, Math.round(input.ir_difesa)) }
+        : {}),
+      ...(input.waza !== undefined ? { waza: normalizeWaza(input.waza) } : {}),
+      ...(input.drop_table !== undefined
+        ? { dropTable: normalizeDropTable(input.drop_table) }
+        : {}),
+      ...(input.tag_caccia !== undefined ? { tagCaccia: Boolean(input.tag_caccia) } : {}),
+      ...((input.immagine !== undefined || input.image_url !== undefined)
+        ? { imageUrl: (input.immagine ?? input.image_url)?.trim() || null }
+        : {}),
+    })
+    .where(eq(bestiario.id, id))
+    .returning()
+  return mapBestiario(row!)
+}
+
+export async function deleteBestiarioEntry(id: string) {
+  const existing = await db.query.bestiario.findFirst({
+    where: eq(bestiario.id, id),
+    columns: { id: true },
+  })
+  if (!existing) throw new Error('Voce Bestiario non trovata')
+  await db.delete(bestiario).where(eq(bestiario.id, id))
+  return { success: true }
 }

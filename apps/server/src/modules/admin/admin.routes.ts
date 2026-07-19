@@ -54,8 +54,60 @@ import { setRoomOpen, getRoomState } from '../anonymous-chat/anonymous-chat.serv
 import { sendTestEmail, emailConfigStatus } from '../../lib/email'
 import type { UserRole, BanState } from '@domain/security/jwt'
 import { getSupervisioneSnapshot, upsertIpStaffNote, upsertUserStaffNote, upsertDeviceStaffNote } from '../supervisione/supervisione.service'
+import * as shinigamiCombat from '../shinigami/shinigami-combat.service'
 
 const PARADISE_ROOM_ID = 'edo__paradise'
+
+const BestiarioTipoLiteral = t.Union([
+  t.Literal('umano'),
+  t.Literal('kyofu'),
+  t.Literal('kizu'),
+  t.Literal('holic'),
+  t.Literal('boss'),
+  t.Literal('mob'),
+])
+
+const BestiarioAdminBody = t.Object({
+  nome: t.Optional(t.String()),
+  name: t.Optional(t.String()),
+  name_jp: t.Optional(t.Union([t.String(), t.Null()])),
+  name_kanji: t.Optional(t.Union([t.String(), t.Null()])),
+  tipo: t.Optional(BestiarioTipoLiteral),
+  tier: t.Optional(t.Number()),
+  lore: t.Optional(t.Union([t.String(), t.Null()])),
+  habitat: t.Optional(t.Union([t.String(), t.Null()])),
+  comportamento: t.Optional(t.Union([t.String(), t.Null()])),
+  onimori: t.Optional(t.Union([t.String(), t.Null()])),
+  hp_max: t.Optional(t.Number()),
+  cs_max: t.Optional(t.Number()),
+  ir_attacco: t.Optional(t.Number()),
+  ir_difesa: t.Optional(t.Number()),
+  waza: t.Optional(
+    t.Array(
+      t.Object({
+        nome: t.String(),
+        descrizione: t.Optional(t.String()),
+        danno: t.Optional(t.Number()),
+        tier: t.Optional(t.Number()),
+      }),
+    ),
+  ),
+  drop_table: t.Optional(
+    t.Array(
+      t.Object({
+        item_id: t.String(),
+        item_nome: t.Optional(t.String()),
+        quantita: t.Optional(t.Number()),
+        quantita_min: t.Optional(t.Number()),
+        quantita_max: t.Optional(t.Number()),
+        probabilita: t.Number(),
+      }),
+    ),
+  ),
+  tag_caccia: t.Optional(t.Boolean()),
+  immagine: t.Optional(t.Union([t.String(), t.Null()])),
+  image_url: t.Optional(t.Union([t.String(), t.Null()])),
+})
 
 export const adminRoutes = new Elysia({ prefix: '/admin' })
   .use(authPlugin)
@@ -1403,6 +1455,63 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
             } catch (e: unknown) {
               set.status = 400
               return { error: e instanceof Error ? e.message : 'Errore eliminazione PNG' }
+            }
+          }, { params: t.Object({ id: t.String() }) })
+
+          // ==========================================
+          // BESTIARIO SPEC (Tulpa — catalogo condiviso)
+          // ==========================================
+          .get('/bestiario', async ({ query, set }) => {
+            try {
+              await shinigamiCombat.ensureBestiarioSeed()
+              return await shinigamiCombat.listBestiarioCatalog(query.q, {
+                tagCaccia: query.tag_caccia === '1' || query.tag_caccia === 'true',
+              })
+            } catch (e: unknown) {
+              set.status = 400
+              return { error: e instanceof Error ? e.message : 'Errore Bestiario' }
+            }
+          }, {
+            query: t.Object({
+              q: t.Optional(t.String()),
+              tag_caccia: t.Optional(t.String()),
+            }),
+          })
+          .get('/bestiario/:id', async ({ params, set }) => {
+            try {
+              return await shinigamiCombat.getBestiarioEntry(params.id)
+            } catch (e: unknown) {
+              set.status = 404
+              return { error: e instanceof Error ? e.message : 'Non trovato' }
+            }
+          }, { params: t.Object({ id: t.String() }) })
+          .post('/bestiario', async ({ body, set }) => {
+            try {
+              const created = await shinigamiCombat.createBestiarioEntry(body)
+              set.status = 201
+              return created
+            } catch (e: unknown) {
+              set.status = 400
+              return { error: e instanceof Error ? e.message : 'Errore creazione' }
+            }
+          }, { body: BestiarioAdminBody })
+          .put('/bestiario/:id', async ({ params, body, set }) => {
+            try {
+              return await shinigamiCombat.updateBestiarioEntry(params.id, body)
+            } catch (e: unknown) {
+              set.status = 400
+              return { error: e instanceof Error ? e.message : 'Errore aggiornamento' }
+            }
+          }, {
+            params: t.Object({ id: t.String() }),
+            body: BestiarioAdminBody,
+          })
+          .delete('/bestiario/:id', async ({ params, set }) => {
+            try {
+              return await shinigamiCombat.deleteBestiarioEntry(params.id)
+            } catch (e: unknown) {
+              set.status = 400
+              return { error: e instanceof Error ? e.message : 'Errore eliminazione' }
             }
           }, { params: t.Object({ id: t.String() }) })
 
