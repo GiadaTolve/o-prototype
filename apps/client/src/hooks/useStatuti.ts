@@ -63,10 +63,11 @@ function readLocalFallback(): StatutiState | null {
       localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StatutiState>;
+    // Non preferire i default hardcoded: la copia locale deve riflettere ciò che era sul server.
     const mergedDo = Array.isArray(parsed.do)
       ? DEFAULT_STATE.do.map((def) => {
           const saved = (parsed.do as typeof DEFAULT_STATE.do).find((e) => e.id === def.id);
-          return saved ? { ...def, ...saved, statute: saved.statute || def.statute } : def;
+          return saved ? { ...def, ...saved } : def;
         })
       : DEFAULT_STATE.do;
     return {
@@ -74,9 +75,7 @@ function readLocalFallback(): StatutiState | null {
       madosho: Array.isArray(parsed.madosho)
         ? DEFAULT_STATE.madosho.map((def) => {
             const saved = parsed.madosho!.find((e) => e.id === def.id);
-            return saved
-              ? { ...def, ...saved, sottotitolo: saved.sottotitolo || def.sottotitolo }
-              : def;
+            return saved ? { ...def, ...saved } : def;
           })
         : DEFAULT_STATE.madosho,
       ordine: Array.isArray(parsed.ordine) ? parsed.ordine : DEFAULT_STATE.ordine,
@@ -134,33 +133,31 @@ export function useStatuti() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const loadFromServer = useCallback(async (opts?: { silent?: boolean }) => {
+    try {
+      const res = await fetch(`${API_BASE}/statuti`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        throw new Error(
+          res.status === 401 || res.status === 403
+            ? "Sessione scaduta o senza permesso."
+            : `Caricamento statuti fallito (${res.status}).`,
+        );
+      }
+      const rows = (await res.json()) as DbRow[];
+      const merged = mergeDbRows(DEFAULT_STATE, Array.isArray(rows) ? rows : []);
+      setState(merged);
+      setLoadError(null);
       try {
-        const res = await fetch(`${API_BASE}/statuti`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!res.ok) {
-          throw new Error(
-            res.status === 401 || res.status === 403
-              ? "Sessione scaduta o senza permesso Sviluppo."
-              : `Caricamento statuti fallito (${res.status}).`,
-          );
-        }
-        const rows = (await res.json()) as DbRow[];
-        if (cancelled) return;
-        const merged = mergeDbRows(DEFAULT_STATE, Array.isArray(rows) ? rows : []);
-        setState(merged);
-        setLoadError(null);
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        } catch {
-          // ignora
-        }
-      } catch (err) {
-        if (cancelled) return;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      } catch {
+        // ignora
+      }
+      return true;
+    } catch (err) {
+      if (!opts?.silent) {
         const fallback = readLocalFallback();
         if (fallback) setState(fallback);
         setLoadError(
@@ -168,14 +165,41 @@ export function useStatuti() {
             ? `${err.message} Mostro una copia locale di emergenza (può non essere aggiornata su altri dispositivi).`
             : "Impossibile caricare dal server.",
         );
-      } finally {
-        if (!cancelled) setLoaded(true);
       }
+      return false;
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      await loadFromServer();
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadFromServer]);
+
+  // Dopo modifiche da un altro device (es. telefono), il desktop deve riprendere dal server.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadFromServer({ silent: true });
+      }
+    };
+    const onFocus = () => {
+      void loadFromServer({ silent: true });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [loadFromServer]);
 
   const updateAndSave = useCallback(
     async (

@@ -7,7 +7,6 @@ import { api } from "@/lib/api";
 import {
   STYLE_HEX_ORDER,
   STYLE_LABELS,
-  STYLE_STATUTES,
   getStyleKeystone,
   layoutCatalogWazaList,
   type StyleId,
@@ -349,7 +348,7 @@ export function WazaDoBrowser({
                 title={STYLE_LABELS[selected]}
                 titleUppercase
                 subtitle={doEntry?.sottotitolo}
-                statute={doEntry?.statute || STYLE_STATUTES[selected]}
+                statute={doEntry?.statute ?? ""}
                 mechanics={doEntry?.descrizione_meccanica}
                 badges={
                   <>
