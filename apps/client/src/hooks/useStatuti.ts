@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MADOSHO_CATALOG } from "@domain/progression/madosho";
 import { ORDER_REQUEST_VALUES } from "@domain/progression/player-requests";
 import { STYLE_HEX_ORDER, STYLE_LABELS } from "@domain/progression/style-hexagon";
-import { STYLE_STATUTES } from "@domain/progression/do-statutes";
 
 export type StatutiKind = "do" | "madosho" | "ordine" | "premio";
 
@@ -28,7 +27,9 @@ const DEFAULT_STATE: StatutiState = {
   do: STYLE_HEX_ORDER.map((styleId) => ({
     id: styleId,
     name: STYLE_LABELS[styleId],
-    statute: STYLE_STATUTES[styleId] ?? "",
+    // Vuoto finché non arriva il DB — non riusare i testi hardcoded del package
+    // (altrimenti desktop sembra «aggiornato» con contenuti vecchi di codice).
+    statute: "",
     descrizione_meccanica: "",
   })),
   madosho: MADOSHO_CATALOG.map((m) => ({

@@ -37,6 +37,7 @@
         "add-shinigami-png-tables": "bun run scripts/add-shinigami-png-tables.ts",
         "add-supervisione-ip-tables": "bun run scripts/add-supervisione-ip-tables.ts",
         "add-statuti-atto-column": "bun run scripts/add-statuti-atto-column.ts",
+        "add-taxonomy-statutes-table": "bun run scripts/add-taxonomy-statutes-table.ts",
         "seed-social-blueprints": "bun run scripts/seed-social-blueprints.ts",
         "smoke-shakai-combat": "bun run scripts/smoke-shakai-combat.ts",
         "smoke-economy-phase2": "bun run scripts/smoke-economy-phase2.ts",
