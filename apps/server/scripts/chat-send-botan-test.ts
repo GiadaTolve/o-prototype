@@ -34,10 +34,30 @@ function waitForOpen(ws: WebSocket): Promise<void> {
   })
 }
 
+function waitForWelcome(ws: WebSocket, token: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Auth/welcome timeout')), 8000)
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(String(ev.data)) as { type?: string }
+        if (data.type === 'welcome') {
+          clearTimeout(timeout)
+          resolve()
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    ws.send(JSON.stringify({ type: 'auth', token }))
+  })
+}
+
 function collectWsMessages(ws: WebSocket, ms: number): Promise<unknown[]> {
   const out: unknown[] = []
+  const prev = ws.onmessage
   return new Promise((resolve) => {
     ws.onmessage = (ev) => {
+      if (typeof prev === 'function') prev.call(ws, ev)
       try {
         out.push(JSON.parse(String(ev.data)))
       } catch {
@@ -74,8 +94,9 @@ async function main() {
   console.log(`   Arma: ${nido.item.name} · INT ${intBefore}/${nido.item.integrityMax ?? '?'}`)
 
   const token = await login()
-  const ws = new WebSocket(`${WS}/ws?token=${encodeURIComponent(token)}`)
+  const ws = new WebSocket(`${WS}/ws`)
   await waitForOpen(ws)
+  await waitForWelcome(ws, token)
 
   const messages = collectWsMessages(ws, 4000)
 

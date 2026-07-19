@@ -1,9 +1,9 @@
 /**
  * WebSocket real-time: presence per room (chat location) + chat.
- * Client: ws://.../ws?token=<jwt>. Join/leave room; receive presence updates.
+ * Client: ws://.../ws → primo messaggio `{ type: "auth", token }` (JWT non in query string).
  */
 
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { jwtVerify } from "jose";
 import { JWT_SECRET } from "../../config";
 import { characterService } from "../characters/characters.service";
@@ -39,6 +39,59 @@ const PARADISE_ROOM = PARTYCHAT_ROOM;
 
 type WsUser = { userId: string; characterId: string; name: string; isShadow?: boolean };
 const wsSessions = new Map<string, WsUser>();
+
+/** Timeout auth: se non arriva `{ type: "auth", token }` entro questo intervallo → close 4401 */
+const WS_AUTH_TIMEOUT_MS = 5_000;
+const pendingAuthTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearPendingAuth(wsId: string): void {
+  const t = pendingAuthTimers.get(wsId);
+  if (t) {
+    clearTimeout(t);
+    pendingAuthTimers.delete(wsId);
+  }
+}
+
+async function authenticateWsConnection(
+  ws: { id: string; send: (data: string) => void; close: (code?: number, reason?: string) => void },
+  token: string,
+): Promise<boolean> {
+  let payload: { id?: string; sub?: string };
+  try {
+    const res = await jwtVerify(token, SECRET);
+    payload = res.payload as { id?: string; sub?: string };
+  } catch {
+    ws.close(4401, "Invalid token");
+    return false;
+  }
+  const userId = (payload.id ?? payload.sub) as string;
+  if (!userId) {
+    ws.close(4401, "Invalid token");
+    return false;
+  }
+  const char = await characterService.getCharacterByUserId(userId);
+  if (!char) {
+    ws.close(4403, "Character not found");
+    return false;
+  }
+  const userRow = await characterService.getUserByCharacterId(char.id);
+  const isShadow = userRow?.banState === "SHADOW";
+  const user: WsUser = {
+    userId,
+    characterId: char.id,
+    name: char.name,
+    isShadow,
+  };
+  wsSessions.set(ws.id, user);
+  presence.markOnline(ws.id, { ...user, isShadow });
+  characterSockets.set(char.id, { send: (d) => ws.send(d) });
+  try {
+    ws.send(JSON.stringify({ type: "welcome", me: { id: char.id, name: char.name } }));
+  } catch (e) {
+    console.error("[realtime] welcome send error:", e);
+  }
+  return true;
+}
 
 /** roomId -> wsId -> ws (solo send per broadcast) */
 const roomSockets = new Map<string, Map<string, { send: (data: string) => void }>>();
@@ -273,55 +326,53 @@ export function broadcastSms(
 
 export const realtimeRoutes = new Elysia()
   .ws("/ws", {
-    query: t.Object({ token: t.String() }),
-
-    async open(ws) {
-      const token = (ws.data as { query?: { token?: string } }).query?.token;
-      if (!token) {
-        ws.close(4401, "Missing token");
-        return;
-      }
-      let payload: { id?: string; sub?: string };
-      try {
-        const res = await jwtVerify(token, SECRET);
-        payload = res.payload as { id?: string; sub?: string };
-      } catch {
-        ws.close(4401, "Invalid token");
-        return;
-      }
-      const userId = (payload.id ?? payload.sub) as string;
-      if (!userId) {
-        ws.close(4401, "Invalid token");
-        return;
-      }
-      const char = await characterService.getCharacterByUserId(userId);
-      if (!char) {
-        ws.close(4403, "Character not found");
-        return;
-      }
-      const userRow = await characterService.getUserByCharacterId(char.id);
-      const isShadow = userRow?.banState === "SHADOW";
-      const user: WsUser = {
-        userId,
-        characterId: char.id,
-        name: char.name,
-        isShadow,
-      };
-      wsSessions.set(ws.id, user);
-      presence.markOnline(ws.id, { ...user, isShadow });
-      // Registra per SMS broadcast
-      characterSockets.set(char.id, { send: (d) => ws.send(d) });
-      try {
-        ws.send(JSON.stringify({ type: "welcome", me: { id: char.id, name: char.name } }));
-      } catch (e) {
-        console.error("[realtime] welcome send error:", e);
-      }
+    open(ws) {
+      clearPendingAuth(ws.id);
+      pendingAuthTimers.set(
+        ws.id,
+        setTimeout(() => {
+          pendingAuthTimers.delete(ws.id);
+          if (!wsSessions.has(ws.id)) {
+            try {
+              ws.close(4401, "Auth timeout");
+            } catch {
+              /* already closed */
+            }
+          }
+        }, WS_AUTH_TIMEOUT_MS),
+      );
     },
 
     async message(ws, raw) {
-      const msg = typeof raw === "string" ? (JSON.parse(raw) as Record<string, unknown>) : (raw as Record<string, unknown>);
+      let msg: Record<string, unknown>;
+      try {
+        msg = typeof raw === "string" ? (JSON.parse(raw) as Record<string, unknown>) : (raw as Record<string, unknown>);
+      } catch {
+        if (!wsSessions.has(ws.id)) {
+          clearPendingAuth(ws.id);
+          ws.close(4401, "Invalid message");
+        }
+        return;
+      }
+
+      if (!wsSessions.has(ws.id)) {
+        if (msg.type === "auth" && typeof msg.token === "string" && msg.token.length > 0) {
+          clearPendingAuth(ws.id);
+          await authenticateWsConnection(ws, msg.token);
+          return;
+        }
+        clearPendingAuth(ws.id);
+        ws.close(4401, "Auth required");
+        return;
+      }
+
       const user = wsSessions.get(ws.id);
       if (!user) return;
+
+      if (msg.type === "auth") {
+        // già autenticato: ignora
+        return;
+      }
 
       if (msg.type === "ping") {
         presence.touchOnline(user.characterId);
@@ -769,6 +820,7 @@ export const realtimeRoutes = new Elysia()
     },
 
     close(ws) {
+      clearPendingAuth(ws.id);
       const roomId = presence.leave(ws.id);
       // Circus: non rimuovere partecipante — mantiene nome animale se rientra nella stessa sessione
       if (roomId) {
