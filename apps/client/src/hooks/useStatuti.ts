@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MADOSHO_CATALOG } from "@domain/progression/madosho";
 import { ORDER_REQUEST_VALUES } from "@domain/progression/player-requests";
 import { STYLE_HEX_ORDER, STYLE_LABELS } from "@domain/progression/style-hexagon";
+import { getAccessToken } from "@/lib/auth-session";
 
 export type StatutiKind = "do" | "madosho" | "ordine" | "premio";
 
@@ -136,9 +137,11 @@ export function useStatuti() {
 
   const loadFromServer = useCallback(async (opts?: { silent?: boolean }) => {
     try {
+      const token = getAccessToken();
       const res = await fetch(`${API_BASE}/statuti`, {
         credentials: "include",
         cache: "no-store",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) {
         throw new Error(
@@ -219,11 +222,15 @@ export function useStatuti() {
         [kind]: prev[kind].map((e) => (e.id === id ? { ...e, ...patch } : e)),
       }));
       try {
+        const token = getAccessToken();
         const res = await fetch(`${API_BASE}/statuti/${kind}/${id}`, {
           method: "PUT",
           credentials: "include",
           cache: "no-store",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({
             statute: patch.statute,
             atto: patch.atto,

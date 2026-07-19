@@ -1,14 +1,14 @@
 // apps/client/src/lib/api.ts
 
-import { clearSessionHint, getLegacyToken } from "@/lib/auth-session";
+import { clearSessionHint, getAccessToken } from "@/lib/auth-session";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 async function fetcher(endpoint: string, options: RequestInit = {}) {
-  const legacy = getLegacyToken();
+  const accessToken = getAccessToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(legacy ? { Authorization: `Bearer ${legacy}` } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...(options.headers as Record<string, string> | undefined),
   };
 

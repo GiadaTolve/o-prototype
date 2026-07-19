@@ -45,7 +45,8 @@ export function buildSessionCookie(token: string): string {
     `Max-Age=${SESSION_MAX_AGE_SEC}`,
   ]
   if (IS_PRODUCTION) {
-    parts.push('Secure', 'SameSite=None')
+    // Cross-site (Vercel ↔ Render): SameSite=None; Partitioned aiuta Chrome CHIPS.
+    parts.push('Secure', 'SameSite=None', 'Partitioned')
   } else {
     parts.push('SameSite=Lax')
   }
@@ -60,7 +61,7 @@ export function buildClearSessionCookie(): string {
     'Max-Age=0',
   ]
   if (IS_PRODUCTION) {
-    parts.push('Secure', 'SameSite=None')
+    parts.push('Secure', 'SameSite=None', 'Partitioned')
   } else {
     parts.push('SameSite=Lax')
   }

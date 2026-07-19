@@ -1,10 +1,13 @@
 /**
- * Sessione client: cookie httpOnly lato API + hint leggero in sessionStorage
- * (niente JWT persistente in localStorage — resta solo un ponte di migrazione).
+ * Sessione client:
+ * - cookie httpOnly (stesso sito / quando il browser lo accetta)
+ * - JWT in sessionStorage come fallback cross-site (Vercel ↔ Render su Safari iOS)
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const HINT_KEY = "oyasumi_authed";
+/** Fallback Bearer quando il cookie third-party non viene salvato/inviato. */
+const ACCESS_TOKEN_KEY = "oyasumi_access_token";
 const LEGACY_TOKEN_KEY = "token";
 
 export function apiUrl(path: string): string {
@@ -12,9 +15,15 @@ export function apiUrl(path: string): string {
   return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/** JWT legacy ancora in localStorage (pre-cookie). */
-export function getLegacyToken(): string | null {
+/** Token da mandare come Authorization Bearer (sessionStorage, poi legacy localStorage). */
+export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
+  try {
+    const fromSession = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    if (fromSession) return fromSession;
+  } catch {
+    /* ignore */
+  }
   try {
     return localStorage.getItem(LEGACY_TOKEN_KEY);
   } catch {
@@ -22,9 +31,21 @@ export function getLegacyToken(): string | null {
   }
 }
 
-/** Rimuove il JWT legacy da localStorage (migrazione). */
-export function clearLegacyToken(): void {
+/** @deprecated usa getAccessToken */
+export function getLegacyToken(): string | null {
+  return getAccessToken();
+}
+
+export function setAccessToken(token: string): void {
   if (typeof window === "undefined") return;
+  const t = token.trim();
+  if (!t) return;
+  try {
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, t);
+  } catch {
+    /* ignore */
+  }
+  // Migrazione: non tenere più JWT in localStorage
   try {
     localStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch {
@@ -32,9 +53,29 @@ export function clearLegacyToken(): void {
   }
 }
 
-export function markSession(): void {
+export function clearAccessToken(): void {
   if (typeof window === "undefined") return;
-  clearLegacyToken();
+  try {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+  try {
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** @deprecated usa clearAccessToken */
+export function clearLegacyToken(): void {
+  clearAccessToken();
+}
+
+/** Dopo login/register: hint UI + token Bearer di fallback (necessario su Safari mobile). */
+export function markSession(token?: string | null): void {
+  if (typeof window === "undefined") return;
+  if (token) setAccessToken(token);
   try {
     sessionStorage.setItem(HINT_KEY, "1");
   } catch {
@@ -49,7 +90,7 @@ export function clearSessionHint(): void {
   } catch {
     /* ignore */
   }
-  clearLegacyToken();
+  clearAccessToken();
 }
 
 /** Hint UI veloce (non è prova di auth — verificare con /auth/me se serve). */
@@ -60,18 +101,18 @@ export function hasSessionHint(): boolean {
   } catch {
     /* ignore */
   }
-  return Boolean(getLegacyToken());
+  return Boolean(getAccessToken());
 }
 
 export async function fetchAuthMe(): Promise<boolean> {
   try {
-    const legacy = getLegacyToken();
+    const token = getAccessToken();
     const res = await fetch(apiUrl("/auth/me"), {
       credentials: "include",
-      headers: legacy ? { Authorization: `Bearer ${legacy}` } : undefined,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     if (res.ok) {
-      markSession();
+      markSession(token);
       return true;
     }
     if (res.status === 401) clearSessionHint();
@@ -82,13 +123,17 @@ export async function fetchAuthMe(): Promise<boolean> {
 }
 
 export async function fetchWsTicket(): Promise<string | null> {
-  const legacy = getLegacyToken();
-  if (legacy) return legacy;
+  const existing = getAccessToken();
+  if (existing) return existing;
   try {
     const res = await fetch(apiUrl("/auth/ws-ticket"), { credentials: "include" });
     if (!res.ok) return null;
     const data = (await res.json()) as { token?: string };
-    return typeof data.token === "string" ? data.token : null;
+    if (typeof data.token === "string" && data.token) {
+      setAccessToken(data.token);
+      return data.token;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -96,7 +141,14 @@ export async function fetchWsTicket(): Promise<string | null> {
 
 export async function logoutSession(): Promise<void> {
   try {
-    await fetch(apiUrl("/auth/logout"), { method: "POST", credentials: "include" });
+    await fetch(apiUrl("/auth/logout"), {
+      method: "POST",
+      credentials: "include",
+      headers: (() => {
+        const t = getAccessToken();
+        return t ? { Authorization: `Bearer ${t}` } : undefined;
+      })(),
+    });
   } catch {
     /* ignore */
   }

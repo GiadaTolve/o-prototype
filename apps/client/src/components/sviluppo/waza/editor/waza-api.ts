@@ -13,11 +13,11 @@ export class WazaApiError extends Error {
 }
 
 async function wazaFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const { getLegacyToken } = await import("@/lib/auth-session");
-  const legacy = getLegacyToken();
+  const { getAccessToken } = await import("@/lib/auth-session");
+  const accessToken = getAccessToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
-    ...(legacy ? { Authorization: `Bearer ${legacy}` } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...options.headers,
   };
 
@@ -25,6 +25,7 @@ async function wazaFetch<T>(endpoint: string, options: RequestInit = {}): Promis
     ...options,
     headers,
     credentials: "include",
+    cache: "no-store",
   });
   let data: unknown = null;
   try {

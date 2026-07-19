@@ -177,12 +177,16 @@ export function LandingRegisterForm({
         credentials: "include",
         body: JSON.stringify({ nomePg: data.nomePg, password: data.password, ...device }),
       });
-      const loginBody = (await loginRes.json()) as { success?: boolean; error?: string };
+      const loginBody = (await loginRes.json()) as {
+        success?: boolean;
+        error?: string;
+        token?: string;
+      };
       if (!loginRes.ok) {
         throw new Error(loginBody.error || "Login automatico non riuscito");
       }
 
-      markSession();
+      markSession(loginBody.token ?? null);
       registeredOkRef.current = true;
       clearYumeSession();
       setIsFinishing(true);

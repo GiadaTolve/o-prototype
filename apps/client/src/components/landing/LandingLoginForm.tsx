@@ -33,6 +33,7 @@ export function LandingLoginForm() {
         error?: string;
         code?: string;
         retryAfterSec?: number;
+        token?: string;
       };
       if (!res.ok) {
         if (res.status === 429 || data.code === "RATE_LIMITED") {
@@ -40,7 +41,7 @@ export function LandingLoginForm() {
         }
         throw new Error(data.error || "Accesso non riuscito");
       }
-      markSession();
+      markSession(typeof data.token === "string" ? data.token : null);
       router.push("/dashboard");
     } catch (err) {
       setError(formatFetchError(err, API_BASE));
