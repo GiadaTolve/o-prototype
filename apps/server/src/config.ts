@@ -11,7 +11,27 @@ for (const envPath of [
   }
 }
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'secret-di-sviluppo-non-sicuro-12345'
+/** Fallback solo locale — mai in produzione / Render. */
+const JWT_SECRET_DEV_FALLBACK = 'secret-di-sviluppo-non-sicuro-12345'
+
+export const IS_RENDER = process.env.RENDER === 'true'
+export const IS_PRODUCTION =
+  process.env.NODE_ENV === 'production' || IS_RENDER
+
+function resolveJwtSecret(): string {
+  const fromEnv = (process.env.JWT_SECRET || '').trim()
+  if (IS_PRODUCTION) {
+    if (!fromEnv || fromEnv === JWT_SECRET_DEV_FALLBACK) {
+      throw new Error(
+        'JWT_SECRET mancante o non sicuro: in produzione/Render va impostato un segreto forte (diverso dal fallback di sviluppo).',
+      )
+    }
+    return fromEnv
+  }
+  return fromEnv || JWT_SECRET_DEV_FALLBACK
+}
+
+export const JWT_SECRET = resolveJwtSecret()
 export const APP_URL = process.env.APP_URL || 'http://localhost:3000'
 
 /** Forza provider: gmail-api | resend | gmail-smtp (vuoto = auto) */
@@ -35,5 +55,3 @@ export const GMAIL_FROM_WELCOME =
   process.env.GMAIL_FROM_WELCOME || '"Oyasumi Staff" <oyasumi.staff@gmail.com>'
 export const GMAIL_FROM_NOTIFY =
   process.env.GMAIL_FROM_NOTIFY || '"Notifiche Oyasumi" <oyasumi.staff@gmail.com>'
-
-export const IS_RENDER = process.env.RENDER === 'true'

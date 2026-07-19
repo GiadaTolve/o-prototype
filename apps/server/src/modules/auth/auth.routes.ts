@@ -10,6 +10,30 @@ import { registerUser } from './auth.service'
 import { sendPasswordResetEmail, sendRegistrationEmails } from '../../lib/email'
 import { extractClientIp } from '../../lib/client-ip'
 import { recordSessionIp, recordSessionDevice } from '../supervisione/supervisione.service'
+import {
+  checkForgotPasswordAllowed,
+  checkLoginAllowed,
+  clearLoginFailures,
+  formatAuthRateLimitMessage,
+  recordForgotPasswordAttempt,
+  recordLoginFailure,
+} from './login-rate-limiter'
+
+function rateLimitResponse(
+  set: { status?: number | string; headers: Record<string, string | number> },
+  retryAfterSec: number,
+) {
+  set.status = 429
+  set.headers = {
+    ...set.headers,
+    'retry-after': String(retryAfterSec),
+  }
+  return {
+    error: formatAuthRateLimitMessage(retryAfterSec),
+    code: 'RATE_LIMITED' as const,
+    retryAfterSec,
+  }
+}
 
 /** Risolve il personaggio per login: «Botan Miyazaki» o solo «Botan». */
 async function resolveLoginCharacter(nomePg: string) {
@@ -124,8 +148,15 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   // ===================== LOGIN (Nome PG + Password) =====================
   .post('/login', async ({ body, set, jwt, request, headers, server }) => {
     try {
+      const ip = extractClientIp({ request, headers, server })
+      const rate = checkLoginAllowed(ip, body.nomePg)
+      if (!rate.allowed) {
+        return rateLimitResponse(set, rate.retryAfterSec)
+      }
+
       const char = await resolveLoginCharacter(body.nomePg)
       if (!char?.user) {
+        recordLoginFailure(ip, body.nomePg)
         const ambiguous = await db.query.characters.findMany({
           where: ilike(characters.name, body.nomePg.trim()),
           columns: { id: true },
@@ -144,9 +175,13 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       const user = char.user as { id: string; passwordHash: string; email: string; role: string; banState: string }
       const ok = await Bun.password.verify(body.password, user.passwordHash)
       if (!ok) {
+        recordLoginFailure(ip, body.nomePg)
         set.status = 401
         return { error: "Nome PG o password non validi" }
       }
+
+      clearLoginFailures(ip, body.nomePg)
+
       const token = await jwt.sign({
         id: user.id,
         sub: user.id,
@@ -155,7 +190,6 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         banState: user.banState,
       })
 
-      const ip = extractClientIp({ request, headers, server })
       const ua = typeof headers['user-agent'] === 'string' ? headers['user-agent'] : null
       await recordSessionIp({
         userId: user.id,
@@ -190,12 +224,19 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   })
 
   // ===================== RECUPERO PASSWORD (tramite email) =====================
-  .post('/forgot-password', async ({ body, set }) => {
+  .post('/forgot-password', async ({ body, set, request, headers, server }) => {
     try {
+      const ip = extractClientIp({ request, headers, server })
+      const rate = checkForgotPasswordAllowed(ip)
+      if (!rate.allowed) {
+        return rateLimitResponse(set, rate.retryAfterSec)
+      }
+
       const u = await db.query.users.findFirst({
         where: eq(users.email, body.email),
       })
       if (!u) {
+        recordForgotPasswordAttempt(ip)
         set.status = 200
         return { success: true, message: "Se l'email è registrata, riceverai un link di reset." }
       }
@@ -211,6 +252,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       })
 
       const { ok, error } = await sendPasswordResetEmail(u.email, token)
+      recordForgotPasswordAttempt(ip)
       if (!ok) {
         set.status = 500
         return { error: error || "Errore nell'invio email." }
