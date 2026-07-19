@@ -1,5 +1,6 @@
 "use client";
 
+import { hasSessionHint } from "@/lib/auth-session";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CatalogoWaza } from "@/components/sviluppo/waza/CatalogoWaza";
@@ -104,7 +105,7 @@ export default function SviluppoPage() {
   >("catalogo-waza");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = hasSessionHint();
     if (!token) { router.push("/auth"); return; }
     api
       .get("/characters/me")

@@ -17,6 +17,7 @@ import {
   type YumeUserData,
 } from "./yume-register-session";
 import { getDevicePayload } from "@/lib/device-fingerprint";
+import { clearSessionHint, hasSessionHint, markSession } from "@/lib/auth-session";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -49,7 +50,7 @@ export function LandingRegisterForm({
   onOpenPrincipia,
   onOpenLogin,
 }: {
-  onRegisterSuccess: (token: string) => void;
+  onRegisterSuccess: () => void;
   onOpenGuida: () => void;
   onOpenLore: () => void;
   onOpenPrivacy: () => void;
@@ -73,7 +74,7 @@ export function LandingRegisterForm({
   const activeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sessionRef = useRef(session);
   const fixFieldRef = useRef<"name" | "email" | null>(null);
-  const registeredTokenRef = useRef<string | null>(null);
+  const registeredOkRef = useRef(false);
   sessionRef.current = session;
 
   const linkHandlers: YumeLinkHandlers = {
@@ -173,16 +174,16 @@ export function LandingRegisterForm({
       const loginRes = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ nomePg: data.nomePg, password: data.password, ...device }),
       });
-      const loginBody = (await loginRes.json()) as { token?: string; error?: string };
-      if (!loginRes.ok || !loginBody.token) {
+      const loginBody = (await loginRes.json()) as { success?: boolean; error?: string };
+      if (!loginRes.ok) {
         throw new Error(loginBody.error || "Login automatico non riuscito");
       }
 
-      const token = loginBody.token;
-      localStorage.setItem("token", token);
-      registeredTokenRef.current = token;
+      markSession();
+      registeredOkRef.current = true;
       clearYumeSession();
       setIsFinishing(true);
       setIsInputDisabled(true);
@@ -220,13 +221,12 @@ export function LandingRegisterForm({
   }, [clearAllTimers, playMessageSequence]);
 
   const goToLand = useCallback(() => {
-    const token = registeredTokenRef.current ?? localStorage.getItem("token");
-    if (token) onRegisterSuccess(token);
+    if (registeredOkRef.current || hasSessionHint()) onRegisterSuccess();
   }, [onRegisterSuccess]);
 
   const startNewRegistration = useCallback(() => {
-    localStorage.removeItem("token");
-    registeredTokenRef.current = null;
+    clearSessionHint();
+    registeredOkRef.current = false;
     restartRegistration();
   }, [restartRegistration]);
 
@@ -253,6 +253,7 @@ export function LandingRegisterForm({
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           email: data.email,
           password: data.password,
@@ -819,13 +820,12 @@ export function LandingRegisterForm({
 
   useEffect(() => {
     const stored = loadYumeSession();
-    const savedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     // Sessione legacy bloccata: isComplete salvato ma redirect non completato
     if (stored?.isComplete) {
       clearYumeSession();
-      if (savedToken) {
-        onRegisterSuccess(savedToken);
+      if (hasSessionHint()) {
+        onRegisterSuccess();
         return;
       }
       playMessageSequence(OPENING, () => {

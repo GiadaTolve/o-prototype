@@ -182,7 +182,6 @@ export function DashboardMobileLayout({
 
   const handleLogout = async () => {
     await logoutPresence();
-    localStorage.removeItem("token");
     router.push("/auth");
   };
 

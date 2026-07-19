@@ -1,10 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
-}
-
 export class WazaApiError extends Error {
   constructor(
     message: string,
@@ -18,14 +13,19 @@ export class WazaApiError extends Error {
 }
 
 async function wazaFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
+  const { getLegacyToken } = await import("@/lib/auth-session");
+  const legacy = getLegacyToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(legacy ? { Authorization: `Bearer ${legacy}` } : {}),
     ...options.headers,
   };
 
-  const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
   let data: unknown = null;
   try {
     data = await response.json();

@@ -8,6 +8,7 @@ import Image from "next/image";
 import { api } from "@/lib/api";
 import { formatNarrativeText } from "@/lib/narrative-parser";
 import { getPixelIconUrlRuolo, getPixelIconUrlOrdine, PIXEL_ICON_SIZE, PIXEL_ICON_DISPLAY_CLASS, type PixelIconRuolo, type PixelIconOrdine } from "@/components/dashboard/pixel-icons";
+import { hasSessionHint } from "@/lib/auth-session";
 
 type Quest = {
   id: string;
@@ -84,7 +85,7 @@ export default function QuestDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!localStorage.getItem("token")) {
+    if (!hasSessionHint()) {
       router.replace("/auth");
       return;
     }

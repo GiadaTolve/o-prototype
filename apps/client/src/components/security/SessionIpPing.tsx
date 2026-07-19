@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { api } from "@/lib/api";
 import { getDevicePayload } from "@/lib/device-fingerprint";
+import { hasSessionHint } from "@/lib/auth-session";
 
 const SESSION_KEY = "oyasumi-session-ip-ping";
 
@@ -10,8 +11,7 @@ const SESSION_KEY = "oyasumi-session-ip-ping";
 export function SessionIpPing() {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!hasSessionHint()) return;
     try {
       if (sessionStorage.getItem(SESSION_KEY) === "1") return;
     } catch {

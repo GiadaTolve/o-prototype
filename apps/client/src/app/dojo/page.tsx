@@ -1,5 +1,6 @@
 "use client";
 
+import { hasSessionHint } from "@/lib/auth-session";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DojoPanel } from "@/components/dashboard/SkiruWazaPanel";
@@ -17,7 +18,7 @@ export default function DojoPage() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = hasSessionHint();
     if (!token) {
       router.push("/auth");
       return;
