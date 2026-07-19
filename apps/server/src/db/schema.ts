@@ -386,12 +386,26 @@ export const items = pgTable('items', {
   >().default('junk'),
   integrityMax: integer('integrity_max'),
   effectText: text('effect_text'),
-  /** Danno base dell'arma (WEAPON). */
+  /** Danno base dell'arma (WEAPON) — DMG flat. */
   damage: integer('damage'),
-  /** Valore Scudo/DR dell'armatura (ARMOR). */
+  /** Valore Scudo/DR dell'armatura (ARMOR) — display Sc. */
   resistance: integer('resistance'),
-  /** Bonus piatto automatico in chat: +IR se WEAPON, +mitigation/IR-def se ARMOR, altro se ACCESSORY. */
+  /**
+   * @deprecated Preferire skiruBonuses / mitigationFlat.
+   * Bonus piatto legacy (+IR arma / +mitigation armatura).
+   */
   bonus: integer('bonus'),
+  /** Mitigazione flat % da oggetto equipaggiato. */
+  mitigationFlat: integer('mitigation_flat'),
+  /** Bonus flat a Skiru: [{ skiruId, value }] o { skiruId: value }. */
+  skiruBonuses: jsonb('skiru_bonuses').$type<Array<{ skiruId: string; value: number }> | Record<string, number> | null>(),
+  /** Malus flat a Skiru (valori positivi = −punti). */
+  skiruMaluses: jsonb('skiru_maluses').$type<Array<{ skiruId: string; value: number }> | Record<string, number> | null>(),
+  /**
+   * Se valorizzato (es. ishi), l'oggetto è craft-esclusivo di quella classe:
+   * non può essere droppato dal Master. Equip/uso liberi dopo craft o acquisto Piazza.
+   */
+  craftExclusiveClassId: text('craft_exclusive_class_id'),
   /** Tipo munizioni richieste (armi da fuoco/lancio con munizioni consumabili). */
   ammoKind: text('ammo_kind'),
   /** Slot inventario occupati da questa riga (default 1). */

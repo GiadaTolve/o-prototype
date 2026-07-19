@@ -57,7 +57,9 @@ import { buildCharacterPixelIcons } from '../../lib/character-pixel-icons'
 import {
   buildSkiruCharacterComputed,
   resolveCharacterSkiruSheet,
-} from './skiru-sheet';
+} from './skiru-sheet'
+import { loadEquippedItemMods } from './equipment-mods'
+import { applyEquipmentModsToSheet } from '@domain/economy/equipped-mods';
 import {
   canUnlockNextPassiveSlot,
   getNextPassiveSlotToUnlock,
@@ -306,16 +308,21 @@ export class CharacterService {
       hpModifier = housing.housingType.hpBonus || 0;
     }
 
-    return this.mergeCharacterWithSkiru(character, skiruSheet, hpModifier, derived);
+    return await this.mergeCharacterWithSkiru(character, skiruSheet, hpModifier, derived);
   }
 
-  private mergeCharacterWithSkiru(
+  private async mergeCharacterWithSkiru(
     character: typeof characters.$inferSelect,
     skiruSheet: SkiruSheet,
     hpModifier: number,
     derived: ReturnType<typeof calculateDerivedStats>,
   ) {
-    const skiruPayload = buildSkiruCharacterComputed(skiruSheet, hpModifier);
+    const equipmentMods = await loadEquippedItemMods(character.id)
+    const effectiveSheet = applyEquipmentModsToSheet(skiruSheet, equipmentMods)
+    const skiruPayload = buildSkiruCharacterComputed(effectiveSheet, hpModifier, {
+      mitigationFlat: equipmentMods.mitigationFlat,
+    })
+    const baseDomains = calculateSkiruDomainIndices(skiruSheet)
     const hp = resolveCombatHp(character.currentHp, skiruPayload.computed.hpMax);
     const chrono = toCombatChronoVitals(
       normalizeStoredChronoStackState(
@@ -326,6 +333,17 @@ export class CharacterService {
     return {
       ...character,
       ...skiruPayload,
+      /** Sheet persistito (senza equip) — albero Skiru. */
+      skiruSheet,
+      skiruDomains: baseDomains,
+      /** Sheet con overlay oggetti equipaggiati — IR / CAC / CAD. */
+      skiruSheetEffective: effectiveSheet,
+      equipmentMods: {
+        damageFlat: equipmentMods.damageFlat,
+        mitigationFlat: equipmentMods.mitigationFlat,
+        skiruDeltas: equipmentMods.skiruDeltas,
+        lines: equipmentMods.lines,
+      },
       computed: {
         ...skiruPayload.computed,
         hpMax: hp.hpMax,
@@ -338,6 +356,7 @@ export class CharacterService {
         csCurrent: chrono.csCurrent,
         csCapacity: chrono.csCapacity,
         csAccumulating: chrono.accumulating,
+        equipmentDamageFlat: equipmentMods.damageFlat,
       },
     };
   }
@@ -387,7 +406,7 @@ export class CharacterService {
         ? hpModifier
         : await this.resolveHousingHpModifier(characterId);
 
-    return this.mergeCharacterWithSkiru(char, skiruSheet, resolvedHpModifier, derived);
+    return await this.mergeCharacterWithSkiru(char, skiruSheet, resolvedHpModifier, derived);
   }
 
   /** Elenco personaggi (id, name, miniAvatar) per Nuova conversazione SMS. Esclude excludeCharacterId. */
@@ -1441,20 +1460,22 @@ export class CharacterService {
     const takenFlat = statusToDamageTakenFlatBonus(victimContainer, tier as WazaTier);
     const victimMods = compileCombatModifiers(victimContainer, victimMeta);
     const riderAndOptionBonus = options.flatBonus ?? 0;
+    const equipDmg = attackerBundle.equipmentMods?.damageFlat ?? 0;
+    const equipMit = victimBundle.equipmentMods?.mitigationFlat ?? 0;
     const totalFlatBonus =
-      riderAndOptionBonus + (offensive.flatBonus ?? 0) + takenFlat;
+      riderAndOptionBonus + (offensive.flatBonus ?? 0) + takenFlat + equipDmg;
 
     const breakdown = resolveDamageToHp({
       tier: tier as WazaTier,
-      attackerSheet: attackerBundle.skiruSheet as SkiruSheet,
-      targetSheet: victimBundle.skiruSheet as SkiruSheet,
+      attackerSheet: (attackerBundle.skiruSheetEffective ?? attackerBundle.skiruSheet) as SkiruSheet,
+      targetSheet: (victimBundle.skiruSheetEffective ?? victimBundle.skiruSheet) as SkiruSheet,
       isReactiveCounter: options.isReactiveCounter,
       wazaTags: extractMechanicTagsFromEffect(options.wazaEffectText),
       bonuses: {
         flatBonus: totalFlatBonus,
         damageMultiplier: offensive.damageMultiplier,
       },
-      extraMitigationPercent: victimMods.mitigationBonusPercent,
+      extraMitigationPercent: (victimMods.mitigationBonusPercent ?? 0) + equipMit,
     });
 
     const vitals = await this.applyCombatHpDelta(victimCharacterId, -breakdown.hpDamage, {
@@ -1480,8 +1501,8 @@ export class CharacterService {
       throw new Error('Personaggio non trovato');
     }
 
-    const actorSheet = actorBundle.skiruSheet as SkiruSheet;
-    const defenderSheet = defenderBundle.skiruSheet as SkiruSheet;
+    const actorSheet = (actorBundle.skiruSheetEffective ?? actorBundle.skiruSheet) as SkiruSheet;
+    const defenderSheet = (defenderBundle.skiruSheetEffective ?? defenderBundle.skiruSheet) as SkiruSheet;
     const sokaiju = buildSokaijuConfrontationFromSheets(
       actorSheet,
       defenderSheet,
@@ -2097,15 +2118,28 @@ export class CharacterService {
 
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
-      columns: { uiMetadata: true, name: true, surname: true, madoshoId: true, skiruSheet: true, constitution: true, dexterity: true, mind: true, empathy: true },
+      columns: {
+        uiMetadata: true,
+        name: true,
+        surname: true,
+        madoshoId: true,
+        skiruSheet: true,
+        strength: true,
+        constitution: true,
+        dexterity: true,
+        mind: true,
+        empathy: true,
+      },
     });
     if (!char) return null;
 
     const baseStats = this.baseStatsFromCharacter(char);
-    const actorSkiruSheet = resolveCharacterSkiruSheet(
+    const baseSheet = resolveCharacterSkiruSheet(
       char.skiruSheet as Record<string, number> | undefined,
       baseStats,
     );
+    const actorEquipMods = await loadEquippedItemMods(characterId);
+    const actorSkiruSheet = applyEquipmentModsToSheet(baseSheet, actorEquipMods);
 
     const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
     const chronoState = await this.loadStoredChronoState(characterId);
@@ -2280,7 +2314,9 @@ export class CharacterService {
           ? { ...buildActionIndexFromDeclaredSkiru(actorSkiruSheet, effect.skiruId), wazaTags }
           : { ...buildIndicativeActionIndex(actorSkiruSheet), wazaTags };
         const defenderBundle = await this.getSkiruBundleForCharacter(effect.victimCharacterId);
-        const defenderSheet = (defenderBundle?.skiruSheet ?? {}) as SkiruSheet;
+        const defenderSheet = (defenderBundle?.skiruSheetEffective ??
+          defenderBundle?.skiruSheet ??
+          {}) as SkiruSheet;
         const defenderInput = buildIndicativeActionIndex(defenderSheet);
 
         const confrontation = await this.resolveCombatConfrontationBetween(
@@ -2393,15 +2429,28 @@ export class CharacterService {
 
     const char = await db.query.characters.findFirst({
       where: eq(characters.id, characterId),
-      columns: { uiMetadata: true, name: true, surname: true, madoshoId: true, skiruSheet: true, constitution: true, dexterity: true, mind: true, empathy: true },
+      columns: {
+        uiMetadata: true,
+        name: true,
+        surname: true,
+        madoshoId: true,
+        skiruSheet: true,
+        strength: true,
+        constitution: true,
+        dexterity: true,
+        mind: true,
+        empathy: true,
+      },
     });
     if (!char) return { ok: true };
 
     const baseStats = this.baseStatsFromCharacter(char);
-    const actorSkiruSheet = resolveCharacterSkiruSheet(
+    const baseSheet = resolveCharacterSkiruSheet(
       char.skiruSheet as Record<string, number> | undefined,
       baseStats,
     );
+    const actorEquipMods = await loadEquippedItemMods(characterId);
+    const actorSkiruSheet = applyEquipmentModsToSheet(baseSheet, actorEquipMods);
     const meta = (char.uiMetadata ?? {}) as DoMechanicsUiMeta;
     const chronoState = await this.loadStoredChronoState(characterId);
     const chronoBefore = chronoState.current;
@@ -2781,6 +2830,8 @@ export class CharacterService {
       character.skiruSheet as Record<string, number> | undefined,
       baseStats,
     );
+    const equipmentMods = await loadEquippedItemMods(character.id);
+    const effectiveSheet = applyEquipmentModsToSheet(skiruSheet, equipmentMods);
 
     const expSpendable = character.experienceSpendable ?? 0;
 
@@ -2806,18 +2857,29 @@ export class CharacterService {
       }
     }
 
-    const derivedStats = calculateSkiruDerivedStats(skiruSheet);
+    const derivedStats = calculateSkiruDerivedStats(effectiveSheet);
     const skiruDomains = calculateSkiruDomainIndices(skiruSheet);
     const hp = resolveCombatHp(character.currentHp, Math.max(1, derivedStats.hpMax));
+    const mitigationPercent = Math.min(
+      30,
+      Math.max(0, derivedStats.mitigationPercent + equipmentMods.mitigationFlat),
+    );
 
     return {
       skiruSheet,
+      skiruSheetEffective: effectiveSheet,
+      equipmentMods: {
+        damageFlat: equipmentMods.damageFlat,
+        mitigationFlat: equipmentMods.mitigationFlat,
+        skiruDeltas: equipmentMods.skiruDeltas,
+        lines: equipmentMods.lines,
+      },
       expSpendable,
       expCostNextByNode,
       derived: {
         hpMax: hp.hpMax,
         hpCurrent: hp.hpCurrent,
-        mitigationPercent: derivedStats.mitigationPercent,
+        mitigationPercent,
         movementMetersPerQuarter: derivedStats.movementMetersPerQuarter,
         cac: derivedStats.cac,
         cad: derivedStats.cad,

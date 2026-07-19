@@ -6,9 +6,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { MARKET_CATEGORIES, MARKET_CATEGORY_LABELS, type MarketCategory } from "@domain/economy/market-catalog";
 import type { ItemCategory } from "@domain/economy/types";
+import { SKIRU_CATALOG } from "@domain/skiru";
+import { SOCIAL_CLASSES } from "@domain/shakai-kaikyu";
 import { formatItemCategory } from "@/components/dashboard/inventory/labels";
 
 type ItemType = "GENERIC" | "WEAPON" | "ARMOR" | "BAG";
+
+type SkiruFlatRow = { skiruId: string; value: number };
 
 type DismantleYieldsAdmin = {
   junkCatalogKey?: string | null;
@@ -33,9 +37,15 @@ type CatalogItemAdmin = {
   damage: number | null;
   resistance: number | null;
   bonus: number | null;
+  mitigationFlat: number | null;
+  skiruBonuses: SkiruFlatRow[] | null;
+  skiruMaluses: SkiruFlatRow[] | null;
+  craftExclusiveClassId: string | null;
   ammoKind: string | null;
   dismantleYields?: DismantleYieldsAdmin;
 };
+
+const SKIRU_OPTIONS = SKIRU_CATALOG.map((s) => ({ id: s.id, label: s.name }));
 
 const ITEM_CATEGORIES: ItemCategory[] = [
   "junk",
@@ -106,6 +116,10 @@ export function ItemCatalogManagement() {
         damage: data.damage,
         resistance: data.resistance,
         bonus: data.bonus,
+        mitigationFlat: data.mitigationFlat,
+        skiruBonuses: data.skiruBonuses,
+        skiruMaluses: data.skiruMaluses,
+        craftExclusiveClassId: data.craftExclusiveClassId,
         ammoKind: data.ammoKind,
         dismantleYields: data.dismantleYields ?? null,
       });
@@ -157,7 +171,13 @@ export function ItemCatalogManagement() {
                     <div className="flex flex-wrap gap-2 mt-1 text-[10px] text-gray-500">
                       {it.integrityMax != null && <span>INT max {it.integrityMax}</span>}
                       {it.damage != null && <span>DMG {it.damage}</span>}
-                      {it.resistance != null && <span>RES {it.resistance}</span>}
+                      {it.mitigationFlat != null && <span>Mit {it.mitigationFlat}%</span>}
+                      {it.resistance != null && <span>Sc {it.resistance}</span>}
+                      {it.craftExclusiveClassId && (
+                        <span className="text-[var(--accent-violet-light)]">
+                          Craft {it.craftExclusiveClassId}
+                        </span>
+                      )}
                       {it.marketCategory && (
                         <span className="text-[var(--accent-gold)]">
                           Market · {MARKET_CATEGORY_LABELS[it.marketCategory]}
@@ -217,7 +237,16 @@ function ItemEditModal({
   const [itemType, setItemType] = useState<ItemType>(item.type ?? "GENERIC");
   const [damage, setDamage] = useState(item.damage?.toString() ?? "");
   const [resistance, setResistance] = useState(item.resistance?.toString() ?? "");
-  const [bonus, setBonus] = useState(item.bonus?.toString() ?? "");
+  const [mitigationFlat, setMitigationFlat] = useState(item.mitigationFlat?.toString() ?? "");
+  const [skiruBonuses, setSkiruBonuses] = useState<SkiruFlatRow[]>(
+    Array.isArray(item.skiruBonuses) ? item.skiruBonuses : [],
+  );
+  const [skiruMaluses, setSkiruMaluses] = useState<SkiruFlatRow[]>(
+    Array.isArray(item.skiruMaluses) ? item.skiruMaluses : [],
+  );
+  const [craftExclusiveClassId, setCraftExclusiveClassId] = useState(
+    item.craftExclusiveClassId ?? "",
+  );
   const [ammoKind, setAmmoKind] = useState(item.ammoKind ?? "");
   const [dismantleJunkKey, setDismantleJunkKey] = useState(item.dismantleYields?.junkCatalogKey ?? "");
   const [dismantleJunkQty, setDismantleJunkQty] = useState(
@@ -272,7 +301,10 @@ function ItemEditModal({
       type: itemType,
       damage: damage !== "" ? Number(damage) : null,
       resistance: resistance !== "" ? Number(resistance) : null,
-      bonus: bonus !== "" ? Number(bonus) : null,
+      mitigationFlat: mitigationFlat !== "" ? Number(mitigationFlat) : null,
+      skiruBonuses: skiruBonuses.filter((r) => r.skiruId && r.value !== 0),
+      skiruMaluses: skiruMaluses.filter((r) => r.skiruId && r.value !== 0),
+      craftExclusiveClassId: craftExclusiveClassId || null,
       ammoKind: ammoKind || null,
       dismantleYields,
     });
@@ -315,16 +347,45 @@ function ItemEditModal({
             <Field label="INT max">
               <input type="number" inputMode="numeric" value={integrityMax} onChange={(e) => setIntegrityMax(e.target.value)} className="field-input" />
             </Field>
-            <Field label="DMG">
+            <Field label="DMG (flat)">
               <input type="number" inputMode="numeric" value={damage} onChange={(e) => setDamage(e.target.value)} className="field-input" />
             </Field>
-            <Field label="RES">
+            <Field label="Mitigazione % (flat)">
+              <input type="number" inputMode="numeric" value={mitigationFlat} onChange={(e) => setMitigationFlat(e.target.value)} className="field-input" />
+            </Field>
+            <Field label="Scudo / RES">
               <input type="number" inputMode="numeric" value={resistance} onChange={(e) => setResistance(e.target.value)} className="field-input" />
             </Field>
-            <Field label="Bonus">
-              <input type="number" inputMode="numeric" value={bonus} onChange={(e) => setBonus(e.target.value)} className="field-input" />
-            </Field>
           </div>
+
+          <SkiruFlatEditor
+            label="Bonus Skiru"
+            rows={skiruBonuses}
+            onChange={setSkiruBonuses}
+          />
+          <SkiruFlatEditor
+            label="Malus Skiru"
+            rows={skiruMaluses}
+            onChange={setSkiruMaluses}
+          />
+
+          <Field label="Craft esclusivo (classe)">
+            <select
+              value={craftExclusiveClassId}
+              onChange={(e) => setCraftExclusiveClassId(e.target.value)}
+              className="field-input"
+            >
+              <option value="">Nessuno (drop ok)</option>
+              {SOCIAL_CLASSES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nameItalian} ({c.id})
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-gray-500 mt-1">
+              Se impostato: solo craft di classe; non droppabile dal Master. Chi lo compra in Piazza può usarlo.
+            </p>
+          </Field>
           <Field label="Categoria Market (vetrina)">
             <select
               value={marketCategory}
@@ -396,6 +457,76 @@ function ItemEditModal({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function SkiruFlatEditor({
+  label,
+  rows,
+  onChange,
+}: {
+  label: string;
+  rows: SkiruFlatRow[];
+  onChange: (rows: SkiruFlatRow[]) => void;
+}) {
+  return (
+    <div className="rounded border border-[var(--border-color)]/60 p-3 space-y-2 bg-black/20">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] uppercase tracking-wider text-[var(--accent-violet-light)] font-display">
+          {label}
+        </p>
+        <button
+          type="button"
+          onClick={() => onChange([...rows, { skiruId: "kairiki", value: 1 }])}
+          className="min-h-[36px] px-2 rounded border border-[var(--border-color)] text-[10px] uppercase text-gray-400 hover:text-[var(--accent-gold)]"
+        >
+          + Riga
+        </button>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-[10px] text-gray-500 italic">Nessuna riga.</p>
+      ) : (
+        rows.map((row, idx) => (
+          <div key={`${row.skiruId}-${idx}`} className="flex flex-col sm:flex-row gap-2">
+            <select
+              value={row.skiruId}
+              onChange={(e) => {
+                const next = [...rows];
+                next[idx] = { ...row, skiruId: e.target.value };
+                onChange(next);
+              }}
+              className="field-input flex-1 min-h-[44px]"
+            >
+              {SKIRU_OPTIONS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={row.value}
+              onChange={(e) => {
+                const next = [...rows];
+                next[idx] = { ...row, value: Number(e.target.value) || 0 };
+                onChange(next);
+              }}
+              className="field-input w-full sm:w-24 min-h-[44px]"
+            />
+            <button
+              type="button"
+              onClick={() => onChange(rows.filter((_, i) => i !== idx))}
+              className="min-h-[44px] min-w-[44px] rounded border border-[var(--border-color)] text-gray-500 hover:text-red-400"
+              aria-label="Rimuovi"
+            >
+              ×
+            </button>
+          </div>
+        ))
+      )}
     </div>
   );
 }

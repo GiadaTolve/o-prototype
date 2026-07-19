@@ -30,14 +30,22 @@ export function resolveCharacterSkiruSheet(
 export function buildSkiruCharacterComputed(
   sheet: SkiruSheet,
   hpModifier = 0,
+  equipment?: {
+    mitigationFlat?: number
+  } | null,
 ) {
   const derived = calculateSkiruDerivedStats(sheet)
   const skiruDomains = calculateSkiruDomainIndices(sheet)
+  const mitigationFlat = equipment?.mitigationFlat ?? 0
+  const mitigationPercent = Math.min(
+    30,
+    Math.max(0, derived.mitigationPercent + mitigationFlat),
+  )
 
   return {
     computed: {
       hpMax: Math.max(1, derived.hpMax + hpModifier),
-      mitigationPercent: derived.mitigationPercent,
+      mitigationPercent,
       movementMetersPerQuarter: derived.movementMetersPerQuarter,
       cac: derived.cac,
       cad: derived.cad,

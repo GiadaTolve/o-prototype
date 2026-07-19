@@ -59,8 +59,21 @@ async function grantCatalogLoot(
   catalogKey: string,
   quantity: number,
 ): Promise<{ name: string; quantity: number }> {
+  await assertCatalogKeyDroppable(catalogKey)
   await addItemByCatalogKey(characterId, catalogKey, quantity, { origin: 'droppato' })
   return { name: await resolveCatalogDisplayName(catalogKey), quantity }
+}
+
+async function assertCatalogKeyDroppable(catalogKey: string): Promise<void> {
+  const item = await db.query.items.findFirst({
+    where: eq(items.catalogKey, catalogKey),
+    columns: { craftExclusiveClassId: true, name: true },
+  })
+  if (item?.craftExclusiveClassId) {
+    throw new Error(
+      `«${item.name}» è craft-esclusivo (${item.craftExclusiveClassId}): non si può droppare. Solo craft di classe o vendita in Piazza.`,
+    )
+  }
 }
 
 async function addGroundLoot(
@@ -69,6 +82,7 @@ async function addGroundLoot(
   quantity: number,
   createdByCharacterId: string,
 ): Promise<{ name: string; quantity: number }> {
+  await assertCatalogKeyDroppable(catalogKey)
   const existing = await db.query.sceneGroundLoot.findFirst({
     where: and(eq(sceneGroundLoot.roomId, roomId), eq(sceneGroundLoot.catalogKey, catalogKey)),
   })

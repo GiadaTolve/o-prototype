@@ -142,7 +142,7 @@ export function PannelloCombattimentoWindow({
   setShowCampo: (v: boolean) => void;
 }) {
   const characterId = char?.id;
-  const skiruSheet = char?.skiruSheet;
+  const skiruSheet = char?.skiruSheetEffective ?? char?.skiruSheet;
   const mountedRef = useRef(true);
 
   useEffect(() => {

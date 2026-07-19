@@ -62,6 +62,10 @@ function toCatalogEntry(row: typeof items.$inferSelect) {
     damage: row.damage,
     resistance: row.resistance,
     bonus: row.bonus,
+    mitigationFlat: row.mitigationFlat,
+    skiruBonuses: row.skiruBonuses,
+    skiruMaluses: row.skiruMaluses,
+    craftExclusiveClassId: row.craftExclusiveClassId,
     ammoKind: row.ammoKind,
     dismantleYields: parseDismantleCatalogYields(row.dismantleYields),
   }
@@ -82,6 +86,10 @@ export type MarketCatalogInput = {
   damage?: number | null
   resistance?: number | null
   bonus?: number | null
+  mitigationFlat?: number | null
+  skiruBonuses?: Array<{ skiruId: string; value: number }> | Record<string, number> | null
+  skiruMaluses?: Array<{ skiruId: string; value: number }> | Record<string, number> | null
+  craftExclusiveClassId?: string | null
   ammoKind?: string | null
   dismantleYields?: DismantleCatalogYields | null
 }
@@ -126,6 +134,10 @@ export async function createMarketCatalogItem(input: MarketCatalogInput) {
       damage: input.damage ?? null,
       resistance: input.resistance ?? null,
       bonus: input.bonus ?? null,
+      mitigationFlat: input.mitigationFlat ?? null,
+      skiruBonuses: input.skiruBonuses ?? null,
+      skiruMaluses: input.skiruMaluses ?? null,
+      craftExclusiveClassId: input.craftExclusiveClassId ?? null,
       ammoKind: input.ammoKind ?? null,
       dismantleYields: input.dismantleYields ?? null,
     })
@@ -173,6 +185,14 @@ export async function updateMarketCatalogItem(id: string, input: Partial<MarketC
       damage: input.damage !== undefined ? input.damage : existing.damage,
       resistance: input.resistance !== undefined ? input.resistance : existing.resistance,
       bonus: input.bonus !== undefined ? input.bonus : existing.bonus,
+      mitigationFlat:
+        input.mitigationFlat !== undefined ? input.mitigationFlat : existing.mitigationFlat,
+      skiruBonuses: input.skiruBonuses !== undefined ? input.skiruBonuses : existing.skiruBonuses,
+      skiruMaluses: input.skiruMaluses !== undefined ? input.skiruMaluses : existing.skiruMaluses,
+      craftExclusiveClassId:
+        input.craftExclusiveClassId !== undefined
+          ? input.craftExclusiveClassId
+          : existing.craftExclusiveClassId,
       ammoKind: input.ammoKind !== undefined ? input.ammoKind : existing.ammoKind,
       dismantleYields:
         input.dismantleYields !== undefined ? input.dismantleYields : existing.dismantleYields,

@@ -80,13 +80,15 @@ function EquipSlot({
             <p className="text-[10px] font-display text-white truncate">{item.item.name}</p>
             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
               {item.item.damage != null && (
-                <span className="text-[8px] text-red-400">DMG {item.item.damage}</span>
+                <span className="text-[8px] text-[var(--accent-gold)]">DMG {item.item.damage}</span>
+              )}
+              {item.item.mitigationFlat != null && (
+                <span className="text-[8px] text-[var(--accent-violet-light)]">
+                  Mit {item.item.mitigationFlat}%
+                </span>
               )}
               {item.item.resistance != null && (
-                <span className="text-[8px] text-blue-400">ARM {item.item.resistance}</span>
-              )}
-              {item.item.bonus != null && (
-                <span className="text-[8px] text-[var(--accent-gold)]">+{item.item.bonus} bonus</span>
+                <span className="text-[8px] text-[var(--accent-violet-light)]">Sc {item.item.resistance}</span>
               )}
               {item.economy?.integrityMax != null && item.economy.integrityMax > 0 && (
                 <span className={`text-[8px] ${item.economy.isBroken ? 'text-red-400' : 'text-gray-500'}`}>

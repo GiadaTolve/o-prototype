@@ -33,6 +33,10 @@ export interface InventoryItemRow {
     damage?: number | null
     resistance?: number | null
     bonus?: number | null
+    mitigationFlat?: number | null
+    skiruBonuses?: Array<{ skiruId: string; value: number }> | Record<string, number> | null
+    skiruMaluses?: Array<{ skiruId: string; value: number }> | Record<string, number> | null
+    craftExclusiveClassId?: string | null
     ammoKind?: string | null
   }
   economy?: InventoryEconomyFields

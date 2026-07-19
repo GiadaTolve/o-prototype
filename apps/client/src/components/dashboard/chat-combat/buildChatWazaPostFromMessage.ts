@@ -93,10 +93,16 @@ export type BuildChatWazaPostInput = {
   preview: WazaTagPreview;
   entry?: Pick<WazaTagCatalogEntry, "poolId" | "effect" | "description" | "isPassive"> | null;
   actorSkiruSheet?: SkiruSheet | null;
+  /** Mod equip (per + in chat / DMG flat). */
+  equipmentMods?: {
+    damageFlat: number;
+    mitigationFlat: number;
+    lines: readonly string[];
+  } | null;
 };
 
 export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): WazaResolutionPostData {
-  const { messageContent, characterName, preview, entry, actorSkiruSheet } = input;
+  const { messageContent, characterName, preview, entry, actorSkiruSheet, equipmentMods } = input;
   const sheet = actorSkiruSheet ?? null;
   const effectText = entry?.effect ?? entry?.description ?? null;
   const messageIr = extractIrTagFromText(messageContent);
@@ -159,7 +165,8 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
       : null;
 
   const dannoLordo = dmg?.totalBeforeMitigation ?? preview.damage ?? null;
-  const dannoFinale = dannoLordo ?? 0;
+  const equipDmg = equipmentMods?.damageFlat ?? 0;
+  const dannoFinale = (dannoLordo ?? 0) + equipDmg;
   const irDisplay = irFinale ?? 0;
 
   const irModifiers: { label: string; value: number }[] = [];
@@ -181,6 +188,12 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   }
 
   const dannoModifiers: { label: string; value: number }[] = [];
+  if (equipmentMods && equipmentMods.damageFlat !== 0) {
+    dannoModifiers.push({
+      label: "Equip DMG",
+      value: equipmentMods.damageFlat,
+    });
+  }
   if (dmg) {
     if (dmg.shijuPercentBonus > 0) {
       const bonus = Math.round(dmg.tierValue * dmg.shijuPercentBonus);
@@ -199,6 +212,9 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   }
 
   const statusAttivi: string[] = [];
+  if (equipmentMods?.lines?.length) {
+    for (const line of equipmentMods.lines) statusAttivi.push(line);
+  }
   if (launchSkiruId && skiruName) statusAttivi.push(`Skiru dichiarata: ${skiruName}`);
   else if (skiruName) statusAttivi.push(`Via ${skiruName}`);
   if (riderLabel && !dannoModifiers.some((m) => m.label === riderLabel)) {

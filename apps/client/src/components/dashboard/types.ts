@@ -34,6 +34,15 @@ export type CharacterSummary = {
   /** Indici domini Skiru (Ten / Chi / Jin). */
   skiruDomains?: SkiruDomainIndex[];
   skiruSheet?: Record<string, number>;
+  /** Sheet con overlay oggetti equipaggiati (IR / CAC / CAD). */
+  skiruSheetEffective?: Record<string, number>;
+  /** Bonus/malus da equip addosso. */
+  equipmentMods?: {
+    damageFlat: number;
+    mitigationFlat: number;
+    skiruDeltas: Record<string, number>;
+    lines: string[];
+  };
   /** Alias assegnato dallo staff. */
   staffAlias?: string | null;
   /** Note Master (solo Master+ modifica). */

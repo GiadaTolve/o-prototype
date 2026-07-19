@@ -2762,7 +2762,12 @@ function ChatView({
                 currentCharacterName={char?.name ?? usersInRoom.find((u) => u.isMe || u.id === char?.id)?.name}
                 currentCharacterSurname={char?.surname}
                 actorSkiruSheet={
-                  m.characterId === char?.id ? char?.skiruSheet : undefined
+                  m.characterId === char?.id
+                    ? (char?.skiruSheetEffective ?? char?.skiruSheet)
+                    : undefined
+                }
+                actorEquipmentMods={
+                  m.characterId === char?.id ? char?.equipmentMods : undefined
                 }
                 actorHpMax={
                   m.characterId === char?.id ? (char?.computed?.hpMax ?? null) : null
@@ -3089,6 +3094,7 @@ function ChatMessageBlock({
   currentCharacterName,
   currentCharacterSurname,
   actorSkiruSheet,
+  actorEquipmentMods,
   actorHpMax,
   isPartychat = false,
 }: {
@@ -3099,6 +3105,12 @@ function ChatMessageBlock({
   currentCharacterName?: string;
   currentCharacterSurname?: string | null;
   actorSkiruSheet?: Record<string, number>;
+  actorEquipmentMods?: {
+    damageFlat: number;
+    mitigationFlat: number;
+    skiruDeltas: Record<string, number>;
+    lines: string[];
+  };
   actorHpMax?: number | null;
   isPartychat?: boolean;
 }) {
@@ -3122,9 +3134,10 @@ function ChatMessageBlock({
         preview,
         entry: entry ?? null,
         actorSkiruSheet: actorSkiruSheet ?? null,
+        equipmentMods: actorEquipmentMods ?? null,
       });
     });
-  }, [message.content, message.name, message.surname, actorSkiruSheet, wazaTagIndex]);
+  }, [message.content, message.name, message.surname, actorSkiruSheet, actorEquipmentMods, wazaTagIndex]);
 
   const characterName = [message.name, message.surname].filter(Boolean).join(" ");
 

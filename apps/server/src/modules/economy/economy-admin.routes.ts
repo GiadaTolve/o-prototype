@@ -86,6 +86,18 @@ export const economyAdminRoutes = new Elysia({ prefix: '/economy-admin' })
               damage: t.Optional(t.Nullable(t.Number())),
               resistance: t.Optional(t.Nullable(t.Number())),
               bonus: t.Optional(t.Nullable(t.Number())),
+              mitigationFlat: t.Optional(t.Nullable(t.Number())),
+              skiruBonuses: t.Optional(
+                t.Nullable(
+                  t.Array(t.Object({ skiruId: t.String(), value: t.Number() })),
+                ),
+              ),
+              skiruMaluses: t.Optional(
+                t.Nullable(
+                  t.Array(t.Object({ skiruId: t.String(), value: t.Number() })),
+                ),
+              ),
+              craftExclusiveClassId: t.Optional(t.Nullable(t.String())),
               ammoKind: t.Optional(t.Nullable(t.String())),
               dismantleYields: t.Optional(
                 t.Nullable(

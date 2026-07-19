@@ -121,26 +121,58 @@ export function InventoryItemDetailModal({ item, onClose }: Props) {
             />
           )}
 
-          {/* Statistiche combattimento */}
-          {(item.item.damage != null || item.item.resistance != null || item.item.bonus != null) && (
-            <div className="grid grid-cols-3 gap-2">
-              {item.item.damage != null && (
-                <div className="rounded border border-red-500/30 bg-red-950/20 px-2 py-1.5 text-center">
-                  <p className="text-[8px] uppercase tracking-wider text-red-400 font-display mb-0.5">Danno</p>
-                  <p className="text-sm font-bold text-red-300">{item.item.damage}</p>
-                </div>
+          {/* Statistiche combattimento / mod equip */}
+          {(item.item.damage != null ||
+            item.item.resistance != null ||
+            item.item.mitigationFlat != null ||
+            (Array.isArray(item.item.skiruBonuses) && item.item.skiruBonuses.length > 0) ||
+            (Array.isArray(item.item.skiruMaluses) && item.item.skiruMaluses.length > 0)) && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                {item.item.damage != null && (
+                  <div className="rounded border border-[var(--accent-gold)]/30 bg-[var(--accent-gold)]/5 px-2 py-1.5 text-center">
+                    <p className="text-[8px] uppercase tracking-wider text-[var(--accent-gold)] font-display mb-0.5">
+                      DMG
+                    </p>
+                    <p className="text-sm font-bold text-[var(--accent-gold)]">{item.item.damage}</p>
+                  </div>
+                )}
+                {item.item.mitigationFlat != null && (
+                  <div className="rounded border border-[var(--accent-violet)]/30 bg-[var(--accent-violet)]/5 px-2 py-1.5 text-center">
+                    <p className="text-[8px] uppercase tracking-wider text-[var(--accent-violet-light)] font-display mb-0.5">
+                      Mitigazione
+                    </p>
+                    <p className="text-sm font-bold text-[var(--accent-violet-light)]">
+                      {item.item.mitigationFlat}%
+                    </p>
+                  </div>
+                )}
+                {item.item.resistance != null && (
+                  <div className="rounded border border-[var(--border-color)] bg-black/30 px-2 py-1.5 text-center">
+                    <p className="text-[8px] uppercase tracking-wider text-gray-400 font-display mb-0.5">
+                      Scudo
+                    </p>
+                    <p className="text-sm font-bold text-white">{item.item.resistance}</p>
+                  </div>
+                )}
+              </div>
+              {Array.isArray(item.item.skiruBonuses) && item.item.skiruBonuses.length > 0 && (
+                <ul className="text-[11px] text-[var(--accent-gold)] space-y-0.5">
+                  {item.item.skiruBonuses.map((b) => (
+                    <li key={`b-${b.skiruId}`}>
+                      Bonus {b.skiruId} +{b.value}
+                    </li>
+                  ))}
+                </ul>
               )}
-              {item.item.resistance != null && (
-                <div className="rounded border border-blue-500/30 bg-blue-950/20 px-2 py-1.5 text-center">
-                  <p className="text-[8px] uppercase tracking-wider text-blue-400 font-display mb-0.5">Armatura</p>
-                  <p className="text-sm font-bold text-blue-300">{item.item.resistance}</p>
-                </div>
-              )}
-              {item.item.bonus != null && (
-                <div className="rounded border border-[var(--accent-gold)]/30 bg-[var(--accent-gold)]/5 px-2 py-1.5 text-center">
-                  <p className="text-[8px] uppercase tracking-wider text-[var(--accent-gold)] font-display mb-0.5">Bonus</p>
-                  <p className="text-sm font-bold text-[var(--accent-gold)]">+{item.item.bonus}</p>
-                </div>
+              {Array.isArray(item.item.skiruMaluses) && item.item.skiruMaluses.length > 0 && (
+                <ul className="text-[11px] text-[var(--accent-violet-light)] space-y-0.5">
+                  {item.item.skiruMaluses.map((m) => (
+                    <li key={`m-${m.skiruId}`}>
+                      Malus {m.skiruId} −{Math.abs(m.value)}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}
