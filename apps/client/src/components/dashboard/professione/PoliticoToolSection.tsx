@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from '@/components/ui/Toast'
+import { api } from '@/lib/api'
 import { politicoApi } from '@/lib/politico-api'
 import type { CharacterSummary } from '../types'
 import {
@@ -35,6 +36,7 @@ export function PoliticoToolSection({ char, roomId, onUpdate }: Props) {
   const [notes, setNotes] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [alboUmani, setAlboUmani] = useState<{ id: string; nome: string; tier: number }[]>([])
 
   const load = useCallback(async () => {
     setError(null)
@@ -53,6 +55,17 @@ export function PoliticoToolSection({ char, roomId, onUpdate }: Props) {
   useEffect(() => {
     load().finally(() => setLoading(false))
   }, [load, char?.id])
+
+  /** Spec Shinigami §6: PNG umani dell'Albo condivisi con Tool Politico (se account Shinigami). */
+  useEffect(() => {
+    void api
+      .get('/shinigami/combat/albo?tipo=umano')
+      .then((d) => {
+        const items = (d as { items?: { id: string; nome: string; tier: number }[] }).items ?? []
+        setAlboUmani(items)
+      })
+      .catch(() => setAlboUmani([]))
+  }, [char?.id])
 
   useEffect(() => {
     if (!status) return
@@ -167,10 +180,27 @@ export function PoliticoToolSection({ char, roomId, onUpdate }: Props) {
             <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-display mt-2">
               Controparte
             </label>
+            {alboUmani.length > 0 && (
+              <select
+                value=""
+                onChange={(e) => {
+                  const name = e.target.value
+                  if (name) setCounterparty(name)
+                }}
+                className="w-full mb-1.5 rounded border border-[var(--border-color)] bg-black/40 px-2 py-2 text-sm text-white"
+              >
+                <option value="">Da Albo PNG (umani)…</option>
+                {alboUmani.map((n) => (
+                  <option key={n.id} value={n.nome}>
+                    {n.nome} · T{n.tier}
+                  </option>
+                ))}
+              </select>
+            )}
             <input
               value={counterparty}
               onChange={(e) => setCounterparty(e.target.value)}
-              placeholder="Nome PG o fazione"
+              placeholder="Nome PG, fazione o PNG Albo"
               maxLength={120}
               className="w-full rounded border border-[var(--border-color)] bg-black/40 px-2 py-2 text-sm text-white"
             />

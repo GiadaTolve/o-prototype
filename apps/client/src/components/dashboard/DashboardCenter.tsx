@@ -99,6 +99,8 @@ type Props = {
   onImmersiveChange?: (immersive: boolean) => void;
   /** Apre la finestra Pannello Combattimento nel dock. */
   onOpenCombattimento?: () => void;
+  /** Apre il pannello Shinigami (controllo scena Master). */
+  onOpenTulpa?: () => void;
   /** Apre la finestra Cedi Drop (solo Master/staff). */
   onOpenCediDrop?: () => void;
   /** Apre il Blocco Note nel dock. */
@@ -129,6 +131,7 @@ export function DashboardCenter({
   variant = "default",
   onImmersiveChange,
   onOpenCombattimento,
+  onOpenTulpa,
   onOpenCediDrop,
   onOpenNote,
 }: Props) {
@@ -679,6 +682,7 @@ export function DashboardCenter({
           char={char}
           compact={compact}
           onOpenCombattimento={onOpenCombattimento}
+          onOpenTulpa={onOpenTulpa}
           onOpenCediDrop={onOpenCediDrop}
           onOpenNote={onOpenNote}
         />
@@ -2204,6 +2208,7 @@ function ChatView({
   char,
   compact = false,
   onOpenCombattimento,
+  onOpenTulpa,
   onOpenCediDrop,
   onOpenNote,
 }: {
@@ -2224,6 +2229,7 @@ function ChatView({
   char?: CharacterSummary;
   compact?: boolean;
   onOpenCombattimento?: () => void;
+  onOpenTulpa?: () => void;
   onOpenCediDrop?: () => void;
   onOpenNote?: () => void;
 }) {
@@ -2733,6 +2739,16 @@ function ChatView({
             >
               <FontAwesomeIcon icon={icons.waza} className="w-3.5 h-3.5" />
               Pannello Combattimento
+            </button>
+          )}
+          {!compact && canAccessShinigami && onOpenTulpa && (
+            <button
+              type="button"
+              onClick={onOpenTulpa}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--accent-violet)]/40 bg-black/30 hover:border-[var(--accent-violet)]/70 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-violet-light)] uppercase tracking-wider"
+            >
+              <FontAwesomeIcon icon={icons.eye} className="w-3.5 h-3.5" />
+              Shinigami
             </button>
           )}
           <MasterNotesBox roomId={roomId} canAccessShinigami={canAccessShinigami} />

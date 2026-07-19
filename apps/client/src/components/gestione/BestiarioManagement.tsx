@@ -74,7 +74,13 @@ export function BestiarioManagement() {
     }
   };
 
-  const categoryLabels: Record<string, string> = { HOLIC: "Holic", PHOBIAS: "Phobias", MUEN: "Muen" };
+  const categoryLabels: Record<string, string> = {
+    HOLIC: "Holic",
+    PHOBIAS: "Phobias",
+    MUEN: "Muen",
+    HUMAN: "Umano",
+    CUSTOM: "Custom",
+  };
 
   return (
     <div className="space-y-4">
@@ -202,6 +208,8 @@ function CreatureModal({
               <option value="HOLIC">Holic</option>
               <option value="PHOBIAS">Phobias</option>
               <option value="MUEN">Muen</option>
+              <option value="HUMAN">Umano</option>
+              <option value="CUSTOM">Custom</option>
             </select>
           </div>
           <div>

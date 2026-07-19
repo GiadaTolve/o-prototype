@@ -1,4 +1,4 @@
-import { eq, ne, gte, and, or, ilike } from 'drizzle-orm';
+import { eq, ne, gte, and, or, ilike, inArray } from 'drizzle-orm';
 import { db } from '../../plugins/db'; 
 import { characters, users, characterHousing, characterSkills, skills, questRewards, quests, characterStatusEffects, fieldConstructs } from '../../db/schema';
 // 👇 CORREZIONE: Usa l'alias definito nel tuo tsconfig (@domain)
@@ -18,10 +18,12 @@ import { isWazaTier, type WazaTier } from '@domain/combat/tier';
 import { WAZA_TAG_CATALOG } from '@domain/combat/waza-tag-catalog.generated';
 import { WAZA_LAUNCH_PROFILE_DATA } from '@domain/combat/waza-launch-profile-data';
 import {
+  applyCombatCsDelta,
   normalizeStoredChronoStackState,
   processChronoChatMessage,
   processChronoEndOfTurn,
   processChronoHitTaken,
+  setCombatCsCurrent,
   toCombatChronoVitals,
   type StoredChronoStackState,
 } from '@domain/combat/combat-chrono';
@@ -1180,7 +1182,12 @@ export class CharacterService {
     const hpMax = bundle.computed.hpMax ?? 0;
     const hp = resolveCombatHp(bundle.currentHp, hpMax);
     const chrono = await this.getCombatChronoVitals(characterId);
-    return { ...hp, chronoStack: chrono };
+    return {
+      ...hp,
+      chronoStack: chrono,
+      dodgeIr: Math.max(0, bundle.computed.dodgeIr ?? 0),
+      parryIr: Math.max(0, bundle.computed.parryIr ?? 0),
+    };
   }
 
   private async loadStoredChronoState(characterId: string): Promise<StoredChronoStackState> {
@@ -1409,6 +1416,33 @@ export class CharacterService {
     }
 
     return resolveCombatHp(next, hpMax);
+  }
+
+  /** Master / Tulpa: ± CS o set assoluto. */
+  async applyCombatCsChange(
+    characterId: string,
+    input: { delta?: number; set?: number },
+  ) {
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.id, characterId),
+      columns: { id: true, chronoStackState: true },
+    });
+    if (!char) throw new Error('Personaggio non trovato');
+
+    const before = normalizeStoredChronoStackState(
+      char.chronoStackState as StoredChronoStackState | null | undefined,
+    );
+    let next = before;
+    if (typeof input.set === 'number' && Number.isFinite(input.set)) {
+      next = setCombatCsCurrent(before, input.set);
+    } else if (typeof input.delta === 'number' && Number.isFinite(input.delta)) {
+      next = applyCombatCsDelta(before, input.delta);
+    } else {
+      throw new Error('Specificare delta o set per il Chrono Stack.');
+    }
+
+    await this.persistStoredChronoState(characterId, next);
+    return toCombatChronoVitals(next);
   }
 
   /**
@@ -1715,6 +1749,66 @@ export class CharacterService {
           { proprieta: proprietaMap[r.id] },
         ),
       ),
+    };
+  }
+
+  /** Master / Tulpa: tutti i costrutti creati dai PG elencati (scena). */
+  async listFieldConstructsForCreators(characterIds: string[]) {
+    const ids = [...new Set(characterIds.map((id) => id.trim()).filter(Boolean))];
+    if (ids.length === 0) return { constructs: [] as ReturnType<typeof fieldConstructToApi>[] };
+
+    const nameRows = await db
+      .select({
+        id: characters.id,
+        name: characters.name,
+        surname: characters.surname,
+        uiMetadata: characters.uiMetadata,
+      })
+      .from(characters)
+      .where(inArray(characters.id, ids));
+
+    const nameById = new Map(
+      nameRows.map((r) => {
+        const label = r.surname ? `${r.name} ${r.surname}` : r.name;
+        return [r.id, label] as const;
+      }),
+    );
+    const proprietaByCreator = new Map(
+      nameRows.map((r) => [
+        r.id,
+        this.readFieldConstructProprietaMap(
+          r.uiMetadata as { fieldConstructProprieta?: Record<string, string[]> },
+        ),
+      ]),
+    );
+
+    const rows = await db.query.fieldConstructs.findMany({
+      where: inArray(fieldConstructs.creatorCharacterId, ids),
+      orderBy: (fc, { desc }) => [desc(fc.createdAt)],
+    });
+
+    return {
+      constructs: rows.map((r) => {
+        const api = fieldConstructToApi(
+          {
+            id: r.id,
+            creatorCharacterId: r.creatorCharacterId,
+            label: r.label,
+            size: r.size,
+            wazaTier: r.wazaTier as FieldConstruct['wazaTier'],
+            kongenRank: r.kongenRank,
+            maxResistance: r.maxResistance,
+            remainingResistance: r.remainingResistance,
+            stationary: r.stationary,
+            createdAt: r.createdAt?.toISOString(),
+          },
+          { proprieta: proprietaByCreator.get(r.creatorCharacterId)?.[r.id] },
+        );
+        return {
+          ...api,
+          creatorName: nameById.get(r.creatorCharacterId) ?? r.creatorCharacterId,
+        };
+      }),
     };
   }
 

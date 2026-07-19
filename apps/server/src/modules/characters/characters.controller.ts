@@ -441,6 +441,107 @@ export const charactersController = new Elysia({ prefix: '/characters' })
       detail: { summary: 'Master: applica danno/cura HP (non va in chat)' },
     })
 
+    .post('/:id/combat-cs', async ({ user, params, body, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      if (!(await resolveMasterAccessForUser(user))) {
+        set.status = 403
+        return { error: 'Solo Master/Admin possono modificare Chrono Stack' }
+      }
+      try {
+        const chrono = await characterService.applyCombatCsChange(params.id, {
+          delta: body.delta,
+          set: body.set,
+        })
+        broadcastCharacterChronoUpdated({ characterId: params.id, ...chrono })
+        return chrono
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore Chrono Stack' }
+      }
+    }, {
+      body: t.Object({
+        delta: t.Optional(t.Number()),
+        set: t.Optional(t.Number()),
+      }),
+      detail: { summary: 'Master: ± o set Chrono Stack (non va in chat)' },
+    })
+
+    .get('/:id/do-mechanics', async ({ user, params, query, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      if (!(await resolveMasterAccessForUser(user))) {
+        set.status = 403
+        return { error: 'Solo Master/Admin' }
+      }
+      try {
+        const cs = typeof query.currentCs === 'number' ? query.currentCs : 0
+        return await characterService.getDoMechanics(params.id, cs)
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore meccaniche Dō' }
+      }
+    }, {
+      query: t.Object({ currentCs: t.Optional(t.Numeric()) }),
+      detail: { summary: 'Master: stato meccaniche Dō di un PG' },
+    })
+
+    .patch('/:id/do-mechanics', async ({ user, params, body, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      if (!(await resolveMasterAccessForUser(user))) {
+        set.status = 403
+        return { error: 'Solo Master/Admin' }
+      }
+      try {
+        const result = await characterService.patchDoMechanics(params.id, body)
+        const chrono = result.itoPatch?.chrono
+        if (chrono) {
+          broadcastCharacterChronoUpdated({ characterId: params.id, ...chrono })
+        }
+        if ((result.itoPatch?.emorragiaStacks ?? 0) > 0) {
+          broadcastCharacterStatusUpdated({ characterId: params.id })
+        }
+        broadcastCharacterStatusUpdated({ characterId: params.id })
+        return result
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore meccaniche Dō' }
+      }
+    }, {
+      body: t.Object({
+        style: t.Optional(t.Union([
+          t.Literal('ito'),
+          t.Literal('naikan'),
+          t.Literal('hensei'),
+          t.Literal('hado'),
+          t.Literal('gokaon'),
+        ])),
+        action: t.Optional(t.Union([
+          t.Literal('release'),
+          t.Literal('accumulate'),
+          t.Literal('tickTurn'),
+          t.Literal('reset'),
+          t.Literal('advance'),
+          t.Literal('setPhase'),
+          t.Literal('vent'),
+          t.Literal('add'),
+          t.Literal('remove'),
+        ])),
+        threads: t.Optional(t.Union([t.Literal(1), t.Literal(2)])),
+        phase: t.Optional(t.Union([
+          t.Literal('neutro'),
+          t.Literal('solido'),
+          t.Literal('fluido'),
+          t.Literal('gassoso'),
+        ])),
+        itoTension: t.Optional(t.Number()),
+        naikanPhase: t.Optional(t.Number()),
+        yuragiPhase: t.Optional(t.String()),
+        kaden: t.Optional(t.Number()),
+        currentCs: t.Optional(t.Number()),
+        lastReceivedHitTier: t.Optional(t.Number()),
+      }),
+      detail: { summary: 'Master: aggiorna meccaniche Dō di un PG (reminder privato)' },
+    })
+
     .delete('/:id/status-effects/:statusId', async ({ user, params, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }
       if (!(await resolveMasterAccessForUser(user))) {
@@ -713,6 +814,25 @@ export const charactersController = new Elysia({ prefix: '/characters' })
         return { error: e instanceof Error ? e.message : 'Errore costrutti' }
       }
     }, { detail: { summary: 'List field constructs by creator' } })
+
+    .post('/field-constructs/scene', async ({ user, body, set }) => {
+      if (!user) { set.status = 401; return { error: 'Unauthorized' } }
+      if (!(await resolveMasterAccessForUser(user))) {
+        set.status = 403
+        return { error: 'Solo Master/Admin' }
+      }
+      try {
+        return await characterService.listFieldConstructsForCreators(body.characterIds ?? [])
+      } catch (e: unknown) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Errore costrutti scena' }
+      }
+    }, {
+      body: t.Object({
+        characterIds: t.Array(t.String()),
+      }),
+      detail: { summary: 'Master: tutti i costrutti in scena (per creator IDs)' },
+    })
 
     .post('/:id/field-constructs', async ({ user, params, body, set }) => {
       if (!user) { set.status = 401; return { error: 'Unauthorized' } }

@@ -565,6 +565,16 @@ export async function closeGameSession(sessionId: string) {
     updatedSession.participants.map((p) => characterService.resetCombatStateForSession(p.characterId))
   )
 
+  // Spec Shinigami §6: PNG di campo non persistono oltre la sessione
+  if (updatedSession.roomId) {
+    try {
+      const { clearFieldForRoom } = await import('../shinigami/shinigami-combat.service')
+      await clearFieldForRoom(updatedSession.roomId)
+    } catch {
+      /* best-effort */
+    }
+  }
+
   return updated
 }
 

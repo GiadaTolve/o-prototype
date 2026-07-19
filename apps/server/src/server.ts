@@ -40,6 +40,8 @@ import { adminRoutes } from './modules/admin/admin.routes'
 import { musicRoutes } from './modules/music/music.routes'
 import { forumRoutes } from './modules/forum/forum.routes'
 import { bestiarioRoutes } from './modules/bestiario/bestiario.routes'
+import { shinigamiPngRoutes } from './modules/bestiario/shinigami-png.routes'
+import { shinigamiCombatRoutes } from './modules/shinigami/shinigami-combat.routes'
 import { wazaRoutes } from './modules/waza/waza.routes'
 import { wazaAdminRoutes } from './modules/waza/waza-admin.routes'
 import { wikiRoutes } from './modules/wiki/wiki.routes'
@@ -97,6 +99,8 @@ const app = new Elysia()
   .use(musicRoutes)
   .use(forumRoutes)
   .use(bestiarioRoutes)
+  .use(shinigamiPngRoutes)
+  .use(shinigamiCombatRoutes)
   .use(wazaRoutes)
   .use(wazaAdminRoutes)
   .use(wikiRoutes)

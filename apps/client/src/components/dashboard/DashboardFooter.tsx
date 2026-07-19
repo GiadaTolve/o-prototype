@@ -21,6 +21,8 @@ const DOCK_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   notifiche: icons.bell,
   spazioEventi: icons.gamepad,
   combattimento: icons.waza,
+  tulpa: icons.eye,
+  cediDrop: icons.mercato,
   note: icons.edit,
 };
 

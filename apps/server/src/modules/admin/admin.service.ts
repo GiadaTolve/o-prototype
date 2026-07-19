@@ -735,10 +735,16 @@ export async function createCreature(data: {
   name: string
   description?: string
   imageUrl?: string
-  category: 'HOLIC' | 'PHOBIAS' | 'MUEN'
-  stats?: { hp?: number; attack?: number; defense?: number }
+  category: 'HOLIC' | 'PHOBIAS' | 'MUEN' | 'HUMAN' | 'CUSTOM'
+  stats?: { hp?: number; attack?: number; defense?: number; [k: string]: unknown }
+  inAlbo?: boolean
+  createdByUserId?: string | null
 }) {
-  const [c] = await db.insert(creatures).values(data).returning()
+  const [c] = await db.insert(creatures).values({
+    ...data,
+    inAlbo: data.inAlbo ?? true,
+    createdByUserId: data.createdByUserId ?? null,
+  }).returning()
   return c!
 }
 
@@ -746,8 +752,9 @@ export async function updateCreature(creatureId: string, data: {
   name?: string
   description?: string
   imageUrl?: string
-  category?: 'HOLIC' | 'PHOBIAS' | 'MUEN'
-  stats?: { hp?: number; attack?: number; defense?: number }
+  category?: 'HOLIC' | 'PHOBIAS' | 'MUEN' | 'HUMAN' | 'CUSTOM'
+  stats?: { hp?: number; attack?: number; defense?: number; [k: string]: unknown }
+  inAlbo?: boolean
 }) {
   const [updated] = await db
     .update(creatures)

@@ -15,6 +15,8 @@
       "./shakai-kaikyu/*": "./src/shakai-kaikyu/*.ts",
       "./economy": "./src/economy/index.ts",
       "./economy/*": "./src/economy/*.ts",
+      "./shinigami": "./src/shinigami/index.ts",
+      "./shinigami/*": "./src/shinigami/*.ts",
       "./*": "./src/*.ts"
     }
   }

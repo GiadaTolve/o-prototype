@@ -23,6 +23,7 @@ import type { SocialClassState } from "./professione/types";
 import { InventorySection } from "./inventory/InventorySection";
 import { MercatoPanel } from "./mercato/MercatoPanel";
 import { PannelloCombattimentoWindow } from "./chat-combat/PannelloCombattimentoWindow";
+import { TulpaShinigamiPanel } from "./tulpa/TulpaShinigamiPanel";
 import { CediDropWindow } from "./chat-loot/CediDropWindow";
 import { resolveCharacterComputed, formatMovementMeters } from "./character-computed";
 import { getMadoshoDef } from "@domain/progression/madosho";
@@ -45,6 +46,7 @@ const PANEL_ICONS: Record<WindowId, (typeof icons)[keyof typeof icons]> = {
   notifiche: icons.bell,
   spazioEventi: icons.gamepad,
   combattimento: icons.waza,
+  tulpa: icons.eye,
   cediDrop: icons.mercato,
   note: icons.edit,
 };
@@ -79,6 +81,8 @@ type Props = {
   chatConnected?: boolean;
   /** Presenti nella room chat corrente (Cedi Drop). */
   roomUsers?: Presente[];
+  /** Room chat corrente (Shinigami Colonna B — PNG sul campo). */
+  roomId?: string | null;
   presentiAreMock?: boolean;
 };
 
@@ -88,7 +92,7 @@ const UNIFIED_PANEL_IDS = ["sms", "banca", "mercato", "ordine", "bestiario", "no
 /** Stesse dimensioni della colonna centrale (chat / main area) */
 const MAIN_AREA_PANEL_IDS = ["scheda", "profilo"] as const;
 
-export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione, chatConnected = true, roomUsers = [] }: Props) {
+export function DashboardWindowPanel({ windowId, onLower, onClose, char, presenti = [], profileCharacterId, smsTargetCharacterId, onUnreadChange, onNotificationsUnreadChange, onCharUpdate, canAccessGestione, chatConnected = true, roomUsers = [], roomId = null }: Props) {
   const isSms = windowId === "sms";
   const isFetch = windowId === "fetch";
   const isScheda = windowId === "scheda";
@@ -97,6 +101,7 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   const isMainAreaPanel = (MAIN_AREA_PANEL_IDS as readonly string[]).includes(windowId);
   const isUnifiedPanel = (UNIFIED_PANEL_IDS as readonly string[]).includes(windowId);
   const isCombattimento = windowId === "combattimento";
+  const isTulpa = windowId === "tulpa";
   const isCediDrop = windowId === "cediDrop";
   const isNote = windowId === "note";
 
@@ -110,10 +115,31 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   const draggingTargetRef = useRef<"combat" | "cediDrop" | "note" | null>(null);
   const COMBAT_W = showCampo ? 700 : 440;
   const COMBAT_H = 680;
+  const TULPA_W = typeof window !== "undefined" ? Math.min(1100, Math.max(720, window.innerWidth - 48)) : 960;
+  const TULPA_H = 720;
   const CEDI_DROP_W = 460;
   const CEDI_DROP_H = 680;
   const NOTE_W = 360;
   const NOTE_H = 300;
+
+  /** Posizione iniziale già al primo paint — evita figli montati solo dopo setState in effect. */
+  const combatOrTulpaPos = (() => {
+    if (dragPos) return dragPos;
+    if (typeof window === "undefined") return null;
+    if (isCombattimento) {
+      return {
+        x: Math.max(8, Math.round((window.innerWidth - COMBAT_W) / 2)),
+        y: Math.max(8, Math.round((window.innerHeight - COMBAT_H) / 2)),
+      };
+    }
+    if (isTulpa) {
+      return {
+        x: Math.max(8, Math.round((window.innerWidth - TULPA_W) / 2)),
+        y: Math.max(8, Math.round((window.innerHeight - TULPA_H) / 2)),
+      };
+    }
+    return null;
+  })();
 
   // note localStorage
   const [noteText, setNoteText] = useState<string>(() => {
@@ -122,14 +148,11 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
   });
 
   useEffect(() => {
-    if (isCombattimento && !dragPos) {
-      setDragPos({
-        x: Math.max(8, Math.round((window.innerWidth - COMBAT_W) / 2)),
-        y: Math.max(8, Math.round((window.innerHeight - COMBAT_H) / 2)),
-      });
+    if ((isCombattimento || isTulpa) && !dragPos && combatOrTulpaPos) {
+      setDragPos(combatOrTulpaPos);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCombattimento]);
+  }, [isCombattimento, isTulpa]);
 
   useEffect(() => {
     if (isCediDrop && !cediDropDragPos) {
@@ -208,10 +231,10 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
         aria-label={WINDOW_LABELS[windowId]}
         aria-modal="true"
       >
-        {dragPos && (
+        {combatOrTulpaPos && (
           <div
             className="absolute flex flex-col overflow-hidden pointer-events-auto bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl shadow-[0_0_32px_rgba(165,131,224,0.18)]"
-            style={{ left: dragPos.x, top: dragPos.y, width: COMBAT_W, height: COMBAT_H, transition: "width 0.2s ease" }}
+            style={{ left: combatOrTulpaPos.x, top: combatOrTulpaPos.y, width: COMBAT_W, height: COMBAT_H, transition: "width 0.2s ease" }}
             onMouseDown={handleCombatHeaderMouseDown}
           >
             {/* Header — drag handle */}
@@ -248,6 +271,53 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
                 showCampo={showCampo}
                 setShowCampo={setShowCampo}
               />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (isTulpa) {
+    return (
+      <div
+        className="fixed inset-0 z-30 pointer-events-none"
+        role="dialog"
+        aria-label={WINDOW_LABELS[windowId]}
+        aria-modal="true"
+      >
+        {combatOrTulpaPos && (
+          <div
+            className="absolute flex flex-col overflow-hidden pointer-events-auto bg-[var(--panel-bg)] border border-[var(--accent-violet)]/50 rounded-xl shadow-2xl shadow-[0_0_32px_rgba(165,131,224,0.22)]"
+            style={{ left: combatOrTulpaPos.x, top: combatOrTulpaPos.y, width: TULPA_W, height: TULPA_H }}
+            onMouseDown={handleCombatHeaderMouseDown}
+          >
+            <div className="combat-drag-handle flex items-center justify-between shrink-0 px-4 py-2.5 border-b border-[var(--border-color)] bg-black/40 select-none cursor-grab active:cursor-grabbing">
+              <h3 className="font-display text-xs uppercase tracking-widest text-[var(--accent-violet-light)] flex items-center gap-2 pointer-events-none">
+                <FontAwesomeIcon icon={PANEL_ICONS[windowId]} className="w-3.5 h-3.5" />
+                {WINDOW_LABELS[windowId]}
+              </h3>
+              <div className="flex items-center gap-1 pointer-events-auto" onMouseDown={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => onLower(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-[var(--accent-gold)] hover:bg-white/10 rounded transition-colors"
+                  title="Abbassa (in dock)"
+                >
+                  <FontAwesomeIcon icon={icons.minimize} className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onClose(windowId)}
+                  className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-white/10 rounded transition-colors"
+                  title="Chiudi"
+                >
+                  <FontAwesomeIcon icon={icons.close} className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <TulpaShinigamiPanel usersInRoom={presenti} roomId={roomId} />
             </div>
           </div>
         )}
@@ -4192,21 +4262,21 @@ type BestiaryEntry = {
   name: string;
   description: string | null;
   imageUrl: string | null;
-  category: "HOLIC" | "PHOBIAS" | "MUEN";
+  category: string;
   stats: { hp?: number; attack?: number; defense?: number } | null;
 };
 
-type BestiaryByCategory = {
-  HOLIC: BestiaryEntry[];
-  PHOBIAS: BestiaryEntry[];
-  MUEN: BestiaryEntry[];
-};
+type BestiaryByCategory = Record<string, BestiaryEntry[]>;
 
 const CATEGORY_LABELS: Record<string, string> = {
   HOLIC: "Holic",
   PHOBIAS: "Phobias",
   MUEN: "Muen",
+  HUMAN: "Umano",
+  CUSTOM: "Custom",
 };
+
+const BESTIARY_CAT_ORDER = ["HOLIC", "PHOBIAS", "MUEN", "HUMAN", "CUSTOM"] as const;
 
 function BestiarioContent({ char }: { char?: CharacterSummary }) {
   const [grouped, setGrouped] = useState<BestiaryByCategory | null>(null);
@@ -4217,7 +4287,9 @@ function BestiarioContent({ char }: { char?: CharacterSummary }) {
     api
       .get("/bestiario")
       .then((d) => setGrouped(d as BestiaryByCategory))
-      .catch(() => setGrouped({ HOLIC: [], PHOBIAS: [], MUEN: [] }))
+      .catch(() =>
+        setGrouped({ HOLIC: [], PHOBIAS: [], MUEN: [], HUMAN: [], CUSTOM: [] }),
+      )
       .finally(() => setLoading(false));
   }, []);
 
@@ -4234,7 +4306,9 @@ function BestiarioContent({ char }: { char?: CharacterSummary }) {
     return <p className="text-sm text-gray-500 p-4">Caricamento…</p>;
   }
 
-  const total = grouped ? grouped.HOLIC.length + grouped.PHOBIAS.length + grouped.MUEN.length : 0;
+  const total = grouped
+    ? BESTIARY_CAT_ORDER.reduce((n, cat) => n + (grouped[cat]?.length ?? 0), 0)
+    : 0;
 
   return (
     <div className="space-y-4">
@@ -4252,13 +4326,13 @@ function BestiarioContent({ char }: { char?: CharacterSummary }) {
         </div>
       ) : (
         <div className="space-y-6">
-          {(["HOLIC", "PHOBIAS", "MUEN"] as const).map((cat) => {
+          {BESTIARY_CAT_ORDER.map((cat) => {
             const entries = (grouped[cat] ?? []).filter(filterEntry);
             if (entries.length === 0) return null;
             return (
               <section key={cat}>
                 <h4 className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] mb-3 font-display">
-                  {CATEGORY_LABELS[cat]}
+                  {CATEGORY_LABELS[cat] ?? cat}
                 </h4>
                 <ul className="space-y-2">
                   {entries.map((entry) => (

@@ -1267,6 +1267,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
                   imageUrl: body.image_url,
                   category: body.category,
                   stats: body.stats,
+                  inAlbo: body.in_albo ?? true,
                 })
                 return c
               } catch (e: unknown) {
@@ -1279,12 +1280,19 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
                 name: t.String(),
                 description: t.Optional(t.String()),
                 image_url: t.Optional(t.String()),
-                category: t.Union([t.Literal('HOLIC'), t.Literal('PHOBIAS'), t.Literal('MUEN')]),
+                category: t.Union([
+                  t.Literal('HOLIC'),
+                  t.Literal('PHOBIAS'),
+                  t.Literal('MUEN'),
+                  t.Literal('HUMAN'),
+                  t.Literal('CUSTOM'),
+                ]),
                 stats: t.Optional(t.Object({
                   hp: t.Optional(t.Number()),
                   attack: t.Optional(t.Number()),
                   defense: t.Optional(t.Number()),
                 })),
+                in_albo: t.Optional(t.Boolean()),
               }),
             }
           )
@@ -1298,6 +1306,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
                   imageUrl: body.image_url,
                   category: body.category,
                   stats: body.stats,
+                  inAlbo: body.in_albo,
                 })
                 return c
               } catch (e: unknown) {
@@ -1311,12 +1320,19 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
                 name: t.Optional(t.String()),
                 description: t.Optional(t.String()),
                 image_url: t.Optional(t.String()),
-                category: t.Optional(t.Union([t.Literal('HOLIC'), t.Literal('PHOBIAS'), t.Literal('MUEN')])),
+                category: t.Optional(t.Union([
+                  t.Literal('HOLIC'),
+                  t.Literal('PHOBIAS'),
+                  t.Literal('MUEN'),
+                  t.Literal('HUMAN'),
+                  t.Literal('CUSTOM'),
+                ])),
                 stats: t.Optional(t.Object({
                   hp: t.Optional(t.Number()),
                   attack: t.Optional(t.Number()),
                   defense: t.Optional(t.Number()),
                 })),
+                in_albo: t.Optional(t.Boolean()),
               }),
             }
           )

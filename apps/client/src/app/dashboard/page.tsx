@@ -596,6 +596,9 @@ export default function DashboardPage() {
           canAccessSviluppo={char?.canAccessSviluppo}
           char={char}
           onOpenCombattimento={() => open("combattimento")}
+          onOpenTulpa={
+            char?.canAccessShinigami ? () => open("tulpa") : undefined
+          }
           onOpenCediDrop={
             char?.canAccessShinigami || char?.canAccessGestione
               ? () => open("cediDrop")
@@ -632,11 +635,16 @@ export default function DashboardPage() {
               : undefined
           }
           presenti={
-            openWindow === "presenti" || openWindow === "combattimento"
+            openWindow === "presenti"
               ? presenti
-              : undefined
+              : openWindow === "combattimento" || openWindow === "tulpa"
+                ? roomId
+                  ? usersInRoom
+                  : presenti
+                : undefined
           }
           roomUsers={openWindow === "cediDrop" ? (roomId ? usersInRoom : []) : undefined}
+          roomId={openWindow === "tulpa" ? roomId : undefined}
           presentiAreMock={openWindow === "presenti" ? presentiAreMock : undefined}
           profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}
           smsTargetCharacterId={openWindow === "sms" ? smsTargetCharacterId : undefined}

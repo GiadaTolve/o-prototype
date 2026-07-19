@@ -33,6 +33,8 @@
         "add-items-bonus-column": "bun run scripts/add-items-bonus-column.ts",
         "add-items-dismantle-yields-column": "bun run scripts/add-items-dismantle-yields-column.ts",
         "add-items-combat-mods-columns": "bun run scripts/add-items-combat-mods-columns.ts",
+        "add-creatures-tulpa-columns": "bun run scripts/add-creatures-tulpa-columns.ts",
+        "add-shinigami-png-tables": "bun run scripts/add-shinigami-png-tables.ts",
         "add-statuti-atto-column": "bun run scripts/add-statuti-atto-column.ts",
         "seed-social-blueprints": "bun run scripts/seed-social-blueprints.ts",
         "smoke-shakai-combat": "bun run scripts/smoke-shakai-combat.ts",

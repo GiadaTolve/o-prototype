@@ -224,3 +224,23 @@ export function consumeChronoSkipTurn(state: StoredChronoStackState): StoredChro
   if (!state.skipNextTurn) return state
   return { ...state, skipNextTurn: false }
 }
+
+/** Master / Tulpa: ± CS (non scende sotto 0). */
+export function applyCombatCsDelta(
+  state: StoredChronoStackState,
+  delta: number,
+): StoredChronoStackState {
+  const next = Math.max(0, Math.round(state.current + (Number(delta) || 0)))
+  if (next === state.current) return state
+  return { ...state, current: next }
+}
+
+/** Master / Tulpa: imposta CS assoluto. */
+export function setCombatCsCurrent(
+  state: StoredChronoStackState,
+  value: number,
+): StoredChronoStackState {
+  const next = Math.max(0, Math.round(Number(value) || 0))
+  if (next === state.current) return state
+  return { ...state, current: next }
+}

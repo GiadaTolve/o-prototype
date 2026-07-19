@@ -353,16 +353,120 @@ export const characterSkills = pgTable('character_skills', {
 // 4b. BESTIARIO (PNG — Personaggi Non Giocanti)
 // ==========================================
 
-/** Catalogo globale dei PNG esistenti e persistenti. Categorie: Holic, Phobias, Muen. */
+/** Catalogo globale PNG (Holic / Phobias / Muen / Umano / Custom). */
 export const creatures = pgTable('creatures', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
   description: text('description'),
   imageUrl: text('image_url'),
-  /** Categoria: Holic, Phobias, Muen. */
-  category: text('category').$type<'HOLIC' | 'PHOBIAS' | 'MUEN'>().notNull(),
-  /** Stats opzionali per lore/combat. */
-  stats: jsonb('stats').$type<{ hp?: number; attack?: number; defense?: number; [k: string]: unknown }>(),
+  /** Categoria: Holic, Phobias, Muen, Umano, Custom. */
+  category: text('category').$type<'HOLIC' | 'PHOBIAS' | 'MUEN' | 'HUMAN' | 'CUSTOM'>().notNull(),
+  /**
+   * Stats lore/combat: HP, CS, IR-ish, mitigazione, note, seed random, ecc.
+   */
+  stats: jsonb('stats').$type<{
+    hp?: number
+    hpMax?: number
+    cs?: number
+    attack?: number
+    defense?: number
+    mitigation?: number
+    ir?: number
+    cac?: number
+    cad?: number
+    movement?: number
+    notes?: string
+    randomSeed?: number
+    kind?: string
+    [k: string]: unknown
+  }>(),
+  /** Salvato nell'Albo PNG Shinigami (riutilizzabile). */
+  inAlbo: boolean('in_albo').default(false).notNull(),
+  /** Autore (user) — null = entry catalogo staff. */
+  createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+})
+
+// ==========================================
+// 4c. SHINIGAMI — PNG / Albo / Bestiario (Spec Tulpa)
+// ==========================================
+
+export type ShinigamiPngTipo = 'umano' | 'kyofu' | 'kizu' | 'holic' | 'boss' | 'mob'
+
+export type ShinigamiPngWaza = { nome: string; descrizione?: string; danno?: number; tier?: number }
+export type ShinigamiPngStatus = { slug: string; stack: number }
+export type ShinigamiDropRow = {
+  item_id: string
+  item_nome?: string
+  quantita?: number
+  quantita_min?: number
+  quantita_max?: number
+  probabilita: number
+}
+
+/** PNG attivi sul campo (Colonna B) — istanze per room. */
+export const npcs = pgTable('npcs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  tipo: text('tipo').$type<ShinigamiPngTipo>().notNull().default('mob'),
+  tier: integer('tier').notNull().default(1),
+  hpMax: integer('hp_max').notNull().default(40),
+  hpCurrent: integer('hp_current').notNull().default(40),
+  csMax: integer('cs_max').notNull().default(10),
+  csCurrent: integer('cs_current').notNull().default(0),
+  irAttacco: integer('ir_attacco').notNull().default(5),
+  irDifesa: integer('ir_difesa').notNull().default(5),
+  waza: jsonb('waza').$type<ShinigamiPngWaza[]>().default([]),
+  statusAttivi: jsonb('status_attivi').$type<ShinigamiPngStatus[]>().default([]),
+  note: text('note').default(''),
+  roomId: text('room_id').notNull(),
+  createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  bestiarioId: uuid('bestiario_id'),
+  alboId: uuid('albo_id'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})
+
+/** Albo PNG per-master (Colonna C). */
+export const alboPng = pgTable('albo_png', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  tipo: text('tipo').$type<ShinigamiPngTipo>().notNull().default('mob'),
+  tier: integer('tier').notNull().default(1),
+  hpMax: integer('hp_max').notNull().default(40),
+  csMax: integer('cs_max').notNull().default(10),
+  irAttacco: integer('ir_attacco').notNull().default(5),
+  irDifesa: integer('ir_difesa').notNull().default(5),
+  waza: jsonb('waza').$type<ShinigamiPngWaza[]>().default([]),
+  note: text('note').default(''),
+  sourceBestiarioId: uuid('source_bestiario_id'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})
+
+/** Catalogo Bestiario condiviso (Colonna C) — predisposto Caccia. */
+export const bestiario = pgTable('bestiario', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  nameJp: text('name_jp'),
+  nameKanji: text('name_kanji'),
+  tipo: text('tipo').$type<ShinigamiPngTipo>().notNull().default('mob'),
+  tier: integer('tier').notNull().default(1),
+  lore: text('lore'),
+  habitat: text('habitat'),
+  comportamento: text('comportamento'),
+  onimori: text('onimori'),
+  hpMax: integer('hp_max').notNull().default(40),
+  csMax: integer('cs_max').notNull().default(10),
+  irAttacco: integer('ir_attacco').notNull().default(5),
+  irDifesa: integer('ir_difesa').notNull().default(5),
+  waza: jsonb('waza').$type<ShinigamiPngWaza[]>().default([]),
+  dropTable: jsonb('drop_table').$type<ShinigamiDropRow[]>().default([]),
+  tagCaccia: boolean('tag_caccia').default(false).notNull(),
+  imageUrl: text('image_url'),
   createdAt: timestamp('created_at').defaultNow(),
 })
 
