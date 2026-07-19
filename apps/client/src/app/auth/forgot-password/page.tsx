@@ -25,7 +25,12 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Qualcosa è andato storto");
+      if (!res.ok) {
+        if (res.status === 429 || data.code === "RATE_LIMITED") {
+          throw new Error(data.error || "Troppi tentativi, riprova più tardi.");
+        }
+        throw new Error(data.error || "Qualcosa è andato storto");
+      }
       setSent(true);
     } catch (err: unknown) {
       setError(formatFetchError(err, API_BASE));

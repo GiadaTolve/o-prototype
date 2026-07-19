@@ -26,8 +26,18 @@ export function LandingLoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nomePg, password, ...device }),
       });
-      const data = (await res.json()) as { token?: string; error?: string };
-      if (!res.ok) throw new Error(data.error || "Accesso non riuscito");
+      const data = (await res.json()) as {
+        token?: string;
+        error?: string;
+        code?: string;
+        retryAfterSec?: number;
+      };
+      if (!res.ok) {
+        if (res.status === 429 || data.code === "RATE_LIMITED") {
+          throw new Error(data.error || "Troppi tentativi, riprova più tardi.");
+        }
+        throw new Error(data.error || "Accesso non riuscito");
+      }
       if (!data.token) throw new Error("Risposta senza token");
       localStorage.setItem("token", data.token);
       router.push("/dashboard");
