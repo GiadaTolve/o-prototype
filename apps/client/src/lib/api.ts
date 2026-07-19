@@ -18,6 +18,7 @@ async function fetcher(endpoint: string, options: RequestInit = {}) {
       ...options,
       headers,
       credentials: "include",
+      cache: options.cache ?? "no-store",
     });
   } catch (error) {
     if (error instanceof TypeError && error.message.includes("fetch")) {

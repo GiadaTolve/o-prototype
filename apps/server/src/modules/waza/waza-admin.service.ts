@@ -8,7 +8,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "../../plugins/db";
-import { vocabolari, waza, wazaVersioni } from "../../db/schema";
+import { skills, vocabolari, waza, wazaVersioni } from "../../db/schema";
 import { validateEffettiSchema } from "./effetti-validator";
 import { runWazaSandbox, type WazaSandboxInput } from "@domain/combat/waza-sandbox";
 import {
@@ -30,6 +30,7 @@ import {
   warnAttivaSenzaSkiruIr,
 } from "./waza-skiru-ir";
 import { wazaHasPublishedVersionByWazaId } from "./waza-published-filter";
+import { reloadWazaCatalog } from "./waza-catalog.service";
 
 export class WazaAdminHttpError extends Error {
   constructor(
@@ -694,7 +695,27 @@ export async function publishAdminWazaVersion(
       .where(eq(waza.id, wazaId))
       .returning();
 
+    // Catalogo giocatore (Do / Madoshō / skills) legge ancora `skills`, non waza_versioni.
+    if (updatedWaza.legacyId) {
+      await tx
+        .update(skills)
+        .set({
+          name: pubblicata.nomeRomaji,
+          description: pubblicata.descrizione,
+          isPassive: updatedWaza.tipo === "passiva",
+          rank: updatedWaza.tier != null ? `T${updatedWaza.tier}` : null,
+        })
+        .where(eq(skills.id, updatedWaza.legacyId));
+    }
+
     return { waza: updatedWaza, versione: pubblicata };
+  }).then(async (result) => {
+    if (result.waza.legacyId) {
+      await reloadWazaCatalog().catch((e) =>
+        console.warn("[waza] reloadWazaCatalog dopo publish:", e),
+      );
+    }
+    return result;
   });
 }
 
