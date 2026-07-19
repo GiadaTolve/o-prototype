@@ -1231,10 +1231,12 @@ function ProfiloPersonaggioWindow({ characterId }: { characterId?: string }) {
                             className="border-b border-[var(--border-color)]/40 last:border-0 hover:bg:white/5 transition-colors"
                           >
                             <td className="px-3 py-2 text-[11px] text-gray-300">
-                              {r.startedAt ? new Date(r.startedAt).toLocaleDateString("it-IT") : "-"}
+                              {r.closedAt || r.startedAt
+                                ? new Date(r.closedAt || r.startedAt).toLocaleDateString("it-IT")
+                                : "-"}
                             </td>
                             <td className="px-3 py-2 text-[11px] text-gray-100 font-display">
-                              {r.fetch?.title ?? "Sessione libera"}
+                              {r.title || r.fetch?.title || r.quest?.title || "Sessione libera"}
                             </td>
                             <td className="px-3 py-2 text-[11px] text-[var(--accent-gold)] font-display">
                               {r.status ?? "-"}
@@ -2153,13 +2155,18 @@ function resolveRegistrationKind(s: {
 function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "quest" | "fetch" | "free" | "evento">("all");
 
   useEffect(() => {
     if (!characterId) {
       setLoading(false);
+      setLoadError(null);
+      setRegistrations([]);
       return;
     }
+    setLoading(true);
+    setLoadError(null);
     api
       .get(`/game-sessions/character/${characterId}`)
       .then((d) => {
@@ -2197,7 +2204,11 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
         });
         setRegistrations(mapped);
       })
-      .catch(() => setRegistrations([]))
+      .catch((e: unknown) => {
+        console.error("Errore caricamento Journal:", e);
+        setRegistrations([]);
+        setLoadError(e instanceof Error ? e.message : "Impossibile caricare le registrazioni");
+      })
       .finally(() => setLoading(false));
   }, [characterId]);
 
@@ -2294,6 +2305,8 @@ function SchedaRegistrazioniPage({ characterId }: { characterId?: string }) {
         <div className="p-4">
           {loading ? (
             <p className="text-sm text-gray-500 italic">Caricamento sessioni...</p>
+          ) : loadError ? (
+            <div className="text-sm text-red-400/90 italic">{loadError}</div>
           ) : filteredRegistrations.length === 0 ? (
             <div className="text-sm text-gray-500 italic">
               Nessuna sessione registrata. Le giocate e le quest completate appariranno qui con data, titolo e
@@ -3097,7 +3110,9 @@ function SchedaContent({ char, characterId, onCharUpdate }: { char?: CharacterSu
               isOwnCharacter={false}
             />
           )}
-          {activeSection === "registrazioni" && <SchedaRegistrazioniPage characterId={characterId || displayChar.id} />}
+          {activeSection === "registrazioni" && (
+            <SchedaRegistrazioniPage characterId={schedaCharacterId || viewingCharacterId || displayChar.id} />
+          )}
           {activeSection === "log" && <SchedaLogPage char={displayChar} characterId={characterId || displayChar.id} isRemoteCharacter={!!isRemoteCharacter} />}
           {activeSection === "richieste" && !isRemoteCharacter && <SchedaRichiestePage />}
         </div>
