@@ -2721,31 +2721,31 @@ function ChatView({
             characterId={char?.id}
             sendMessage={sendMessage}
           />
-          {!compact && (canAccessShinigami || canAccessGestione) && onOpenCediDrop && (
+          {(canAccessShinigami || canAccessGestione) && onOpenCediDrop && (
             <button
               type="button"
               onClick={onOpenCediDrop}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-gold)] uppercase tracking-wider"
+              className="w-full flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-gold)] uppercase tracking-wider"
             >
               <FontAwesomeIcon icon={icons.mercato} className="w-3.5 h-3.5" />
               Cedi Drop
             </button>
           )}
-          {!compact && onOpenCombattimento && (
+          {onOpenCombattimento && (
             <button
               type="button"
               onClick={onOpenCombattimento}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-gold)] uppercase tracking-wider"
+              className="w-full flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded border border-[var(--border-color)] bg-black/30 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-gold)] uppercase tracking-wider"
             >
               <FontAwesomeIcon icon={icons.waza} className="w-3.5 h-3.5" />
               Pannello Combattimento
             </button>
           )}
-          {!compact && canAccessShinigami && onOpenTulpa && (
+          {canAccessShinigami && onOpenTulpa && (
             <button
               type="button"
               onClick={onOpenTulpa}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-[var(--accent-violet)]/40 bg-black/30 hover:border-[var(--accent-violet)]/70 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-violet-light)] uppercase tracking-wider"
+              className="w-full flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded border border-[var(--accent-violet)]/40 bg-black/30 hover:border-[var(--accent-violet)]/70 hover:bg-[color-mix(in_srgb,var(--panel-bg)_80%,black)] transition-colors text-[11px] font-display text-[var(--accent-violet-light)] uppercase tracking-wider"
             >
               <FontAwesomeIcon icon={icons.eye} className="w-3.5 h-3.5" />
               Shinigami

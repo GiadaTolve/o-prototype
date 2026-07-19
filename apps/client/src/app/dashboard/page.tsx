@@ -530,6 +530,15 @@ export default function DashboardPage() {
           setSokaijuTab(tab);
           setSokaijuTrigger((t) => t + 1);
         }}
+        onOpenCombattimento={() => open("combattimento")}
+        onOpenTulpa={
+          char?.canAccessShinigami ? () => open("tulpa") : undefined
+        }
+        onOpenCediDrop={
+          char?.canAccessShinigami || char?.canAccessGestione
+            ? () => open("cediDrop")
+            : undefined
+        }
       />
       {char?.pendingLevelUp && (
         <LevelUpOverlay

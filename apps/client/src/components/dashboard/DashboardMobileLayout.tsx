@@ -54,6 +54,9 @@ type Props = {
   onOpenSviluppo: () => void;
   onOpenDojo: () => void;
   onOpenSokaiju: (tab?: string) => void;
+  onOpenCombattimento?: () => void;
+  onOpenTulpa?: () => void;
+  onOpenCediDrop?: () => void;
 };
 
 export function DashboardMobileLayout({
@@ -91,6 +94,9 @@ export function DashboardMobileLayout({
   onOpenSviluppo,
   onOpenDojo,
   onOpenSokaiju,
+  onOpenCombattimento,
+  onOpenTulpa,
+  onOpenCediDrop,
 }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MobileTab>("mappa");
@@ -310,6 +316,9 @@ export function DashboardMobileLayout({
               canAccessGestione={char?.canAccessGestione}
               canAccessSviluppo={char?.canAccessSviluppo}
               char={char}
+              onOpenCombattimento={onOpenCombattimento}
+              onOpenTulpa={onOpenTulpa}
+              onOpenCediDrop={onOpenCediDrop}
             />
           </div>
         )}
@@ -441,17 +450,29 @@ export function DashboardMobileLayout({
             char={
               openWindow === "scheda" ||
               openWindow === "mercato" ||
-              openWindow === "banca"
+              openWindow === "banca" ||
+              openWindow === "combattimento"
                 ? char
                 : undefined
             }
-            presenti={openWindow === "presenti" ? presenti : undefined}
+            presenti={
+              openWindow === "presenti"
+                ? presenti
+                : openWindow === "combattimento" || openWindow === "tulpa"
+                  ? roomId
+                    ? usersInRoom
+                    : presenti
+                  : undefined
+            }
+            roomId={openWindow === "tulpa" || openWindow === "cediDrop" ? roomId : undefined}
+            roomUsers={openWindow === "cediDrop" ? (roomId ? usersInRoom : []) : undefined}
             profileCharacterId={openWindow === "scheda" ? profileCharacterId ?? undefined : undefined}
             smsTargetCharacterId={undefined}
             onCharUpdate={onCharUpdate}
             onUnreadChange={undefined}
             onNotificationsUnreadChange={fetchNotificationsUnread}
             canAccessGestione={char?.canAccessGestione}
+            chatConnected={openWindow === "combattimento" ? chatConnected : undefined}
           />
           <button
             type="button"
