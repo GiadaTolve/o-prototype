@@ -122,7 +122,7 @@ export function useRealtime(
       if (!currentToken || !roomRef.current) return;
 
       didOpen = false;
-      const url = `${WS_BASE}/ws?token=${encodeURIComponent(currentToken)}`;
+      const url = `${WS_BASE}/ws`;
       ws = new WebSocket(url);
       wsRef.current = ws;
 
@@ -140,14 +140,12 @@ export function useRealtime(
           clearTimeout(openTimeout);
           openTimeout = null;
         }
-        setConnected(true);
-        setConnectionFailed(false);
-        if (pingTimer) clearInterval(pingTimer);
-        pingTimer = setInterval(() => {
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "ping" }));
-          }
-        }, WS_PING_INTERVAL_MS);
+        const t = getToken();
+        if (!t || ws?.readyState !== WebSocket.OPEN) {
+          ws?.close();
+          return;
+        }
+        ws.send(JSON.stringify({ type: "auth", token: t }));
       };
 
       ws.onmessage = (ev) => {
@@ -188,6 +186,14 @@ export function useRealtime(
           }
           if (data.type === "welcome" && data.me) {
             meIdRef.current = data.me.id;
+            setConnected(true);
+            setConnectionFailed(false);
+            if (pingTimer) clearInterval(pingTimer);
+            pingTimer = setInterval(() => {
+              if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "ping" }));
+              }
+            }, WS_PING_INTERVAL_MS);
             const r = roomRef.current;
             if (r && ws?.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: "join", zone: r }));

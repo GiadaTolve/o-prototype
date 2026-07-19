@@ -90,18 +90,17 @@ export function useSmsRealtime(options: {
         return;
       }
 
-      const url = `${WS_BASE}/ws?token=${encodeURIComponent(token)}`;
+      const url = `${WS_BASE}/ws`;
       ws = new WebSocket(url);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setConnected(true);
-        clearTimers();
-        pingTimer = setInterval(() => {
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "ping" }));
-          }
-        }, WS_PING_INTERVAL_MS);
+        const t = getToken();
+        if (!t || ws?.readyState !== WebSocket.OPEN) {
+          ws?.close();
+          return;
+        }
+        ws.send(JSON.stringify({ type: "auth", token: t }));
       };
 
       ws.onmessage = async (ev) => {
@@ -126,6 +125,14 @@ export function useSmsRealtime(options: {
           }
           if (data.type === "welcome" && data.me?.id) {
             myCharacterIdRef.current = data.me.id;
+            setConnected(true);
+            clearTimers();
+            pingTimer = setInterval(() => {
+              if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "ping" }));
+              }
+            }, WS_PING_INTERVAL_MS);
+            return;
           }
           if (
             data.type === "fetch_responso" &&
