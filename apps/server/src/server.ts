@@ -52,14 +52,17 @@ import { pushRoutes } from './modules/push/push.routes'
 import { startDailyTickScheduler } from './scheduler/daily-tick.scheduler'
 import { JWT_SECRET } from './config'
 import { emailConfigStatus } from './lib/email'
+import { describeCorsOrigin, resolveCorsOrigin } from './lib/cors-origins'
 
 const PORT = Number(process.env.PORT) || 4000
+const corsOrigin = resolveCorsOrigin()
 
 const app = new Elysia()
   .use(cors({
-    origin: true,
+    origin: corsOrigin,
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   }))
   .use(
     jwt({
@@ -113,6 +116,7 @@ const app = new Elysia()
   .use(presenceRoutes)
   .listen(PORT, () => {
     console.log(`🚀 Server avviato su http://localhost:${PORT}`)
+    console.log(`🔒 CORS: ${describeCorsOrigin(corsOrigin)}`)
     const email = emailConfigStatus()
     if (!email.configured) {
       console.warn('⚠️  Email disabilitate: configura Gmail API OAuth, RESEND_API_KEY o EMAIL_PASS (locale)')

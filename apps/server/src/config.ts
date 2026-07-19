@@ -14,6 +14,10 @@ for (const envPath of [
 export const JWT_SECRET = process.env.JWT_SECRET || 'secret-di-sviluppo-non-sicuro-12345'
 export const APP_URL = process.env.APP_URL || 'http://localhost:3000'
 
+export const IS_RENDER = process.env.RENDER === 'true'
+export const IS_PRODUCTION =
+  process.env.NODE_ENV === 'production' || IS_RENDER
+
 /** Forza provider: gmail-api | resend | gmail-smtp (vuoto = auto) */
 export const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || '').trim().toLowerCase()
 
@@ -35,5 +39,3 @@ export const GMAIL_FROM_WELCOME =
   process.env.GMAIL_FROM_WELCOME || '"Oyasumi Staff" <oyasumi.staff@gmail.com>'
 export const GMAIL_FROM_NOTIFY =
   process.env.GMAIL_FROM_NOTIFY || '"Notifiche Oyasumi" <oyasumi.staff@gmail.com>'
-
-export const IS_RENDER = process.env.RENDER === 'true'
