@@ -12,11 +12,12 @@ const LABELS: Record<EditableKind, string> = { do: "Dō", madosho: "Madoshō", o
 const CREATABLE: EditableKind[] = ["madosho", "ordine", "premio"];
 
 export function GestioneStatutiPanel() {
-  const { state, setState, updateAndSave } = useStatuti();
+  const { state, setState, updateAndSave, loadError, saveError } = useStatuti();
   const [openSection, setOpenSection] = useState<EditableKind>("do");
   const [showCreate, setShowCreate] = useState<Record<string, boolean>>({});
   const [newNames, setNewNames] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [localSaveError, setLocalSaveError] = useState<string | null>(null);
 
   const update = (
     kind: EditableKind,
@@ -35,13 +36,19 @@ export function GestioneStatutiPanel() {
       if (!entry) return;
       const key = `${kind}:${id}`;
       setSaving((prev) => ({ ...prev, [key]: true }));
-      await updateAndSave(kind, id, {
-        statute: entry.statute,
-        atto: entry.atto,
-        sottotitolo: entry.sottotitolo,
-        descrizione_meccanica: entry.descrizione_meccanica,
-      });
-      setSaving((prev) => ({ ...prev, [key]: false }));
+      setLocalSaveError(null);
+      try {
+        await updateAndSave(kind, id, {
+          statute: entry.statute,
+          atto: entry.atto,
+          sottotitolo: entry.sottotitolo,
+          descrizione_meccanica: entry.descrizione_meccanica,
+        });
+      } catch (err) {
+        setLocalSaveError(err instanceof Error ? err.message : "Salvataggio non riuscito.");
+      } finally {
+        setSaving((prev) => ({ ...prev, [key]: false }));
+      }
     },
     [state, updateAndSave],
   );
@@ -70,8 +77,16 @@ export function GestioneStatutiPanel() {
       <div className="mb-6">
         <h2 className="font-display text-xl text-[var(--accent-gold)] tracking-wide">Statuti</h2>
         <p className="font-sans text-xs text-[var(--accent-violet-light)] mt-1 leading-relaxed">
-          Modifica statuti, sottotitoli, atti (Madoshō) e meccaniche. Il salvataggio è automatico all&apos;uscita dal campo — visibile a tutti.
+          Modifica statuti, sottotitoli, atti (Madoshō) e meccaniche. Il salvataggio è automatico all&apos;uscita dal campo — sorgente unica: database (visibile su tutti i dispositivi).
         </p>
+        {(loadError || saveError || localSaveError) && (
+          <p
+            role="alert"
+            className="mt-3 rounded border border-[var(--accent-gold)]/40 bg-[var(--accent-gold)]/10 px-3 py-2 font-sans text-xs text-[var(--accent-gold)]"
+          >
+            {localSaveError || saveError || loadError}
+          </p>
+        )}
       </div>
 
       {(["do", "madosho", "ordine", "premio"] as const).map((kind) => (

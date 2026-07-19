@@ -147,7 +147,8 @@ export function GestioneStatusPanel() {
       <div>
         <h2 className="text-lg font-display text-[var(--accent-gold)]">Status</h2>
         <p className="text-xs text-[var(--accent-violet-light)] mt-1">
-          Elenco status con area di lavoro per nuove voci. Gli status base restano il riferimento di sistema.
+          Workbench locale: le modifiche restano solo in questa sessione browser e non vengono
+          salvate sul server (né su altri dispositivi). Gli status base restano il riferimento di sistema.
         </p>
       </div>
 

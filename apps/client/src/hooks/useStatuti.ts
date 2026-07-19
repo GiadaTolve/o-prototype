@@ -20,6 +20,7 @@ export type StatutiEntry = {
 export type StatutiState = Record<StatutiKind, StatutiEntry[]>;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+/** Solo cache di emergenza se il server non risponde — non è più la fonte di verità. */
 const STORAGE_KEY = "oyasumi.sviluppo.statuti.v1";
 const LEGACY_STORAGE_KEY = "oyasumi.sviluppo.taxonomy.v2";
 
@@ -56,7 +57,38 @@ type DbRow = {
   descrizione_meccanica: string;
 };
 
-function mergeDbRows(base: StatutiState, rows: DbRow[]): StatutiState {
+function readLocalFallback(): StatutiState | null {
+  try {
+    const raw =
+      localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StatutiState>;
+    const mergedDo = Array.isArray(parsed.do)
+      ? DEFAULT_STATE.do.map((def) => {
+          const saved = (parsed.do as typeof DEFAULT_STATE.do).find((e) => e.id === def.id);
+          return saved ? { ...def, ...saved, statute: saved.statute || def.statute } : def;
+        })
+      : DEFAULT_STATE.do;
+    return {
+      do: mergedDo,
+      madosho: Array.isArray(parsed.madosho)
+        ? DEFAULT_STATE.madosho.map((def) => {
+            const saved = parsed.madosho!.find((e) => e.id === def.id);
+            return saved
+              ? { ...def, ...saved, sottotitolo: saved.sottotitolo || def.sottotitolo }
+              : def;
+          })
+        : DEFAULT_STATE.madosho,
+      ordine: Array.isArray(parsed.ordine) ? parsed.ordine : DEFAULT_STATE.ordine,
+      premio: Array.isArray(parsed.premio) ? parsed.premio : DEFAULT_STATE.premio,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Applica sempre i campi DB (anche stringhe vuote): il server è autorevole. */
+export function mergeDbRows(base: StatutiState, rows: DbRow[]): StatutiState {
   const result: StatutiState = {
     do: base.do.map((e) => ({ ...e })),
     madosho: base.madosho.map((e) => ({ ...e })),
@@ -68,17 +100,20 @@ function mergeDbRows(base: StatutiState, rows: DbRow[]): StatutiState {
     if (!result[kind]) continue;
     const idx = result[kind].findIndex((e) => e.id === row.entryId);
     if (idx !== -1) {
-      if (row.statute) result[kind][idx].statute = row.statute;
-      if (row.atto) result[kind][idx].atto = row.atto;
-      if (row.sottotitolo) result[kind][idx].sottotitolo = row.sottotitolo;
-      if (row.descrizione_meccanica) result[kind][idx].descrizione_meccanica = row.descrizione_meccanica;
+      result[kind][idx] = {
+        ...result[kind][idx],
+        statute: row.statute ?? "",
+        atto: row.atto ?? "",
+        sottotitolo: row.sottotitolo ?? "",
+        descrizione_meccanica: row.descrizione_meccanica ?? "",
+      };
     } else if (kind === "premio" && row.entryId) {
       result.premio.push({
         id: row.entryId,
         name: row.entryId,
-        statute: row.statute,
-        atto: row.atto,
-        descrizione_meccanica: row.descrizione_meccanica,
+        statute: row.statute ?? "",
+        atto: row.atto ?? "",
+        descrizione_meccanica: row.descrizione_meccanica ?? "",
       });
     }
   }
@@ -96,53 +131,51 @@ export function findStatutiEntry(
 export function useStatuti() {
   const [state, setState] = useState<StatutiState>(DEFAULT_STATE);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const raw =
-        localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<StatutiState>;
-        const mergedDo = Array.isArray(parsed.do)
-          ? DEFAULT_STATE.do.map((def) => {
-              const saved = (parsed.do as typeof DEFAULT_STATE.do).find((e) => e.id === def.id);
-              return saved ? { ...def, ...saved, statute: saved.statute || def.statute } : def;
-            })
-          : DEFAULT_STATE.do;
-        setState({
-          do: mergedDo,
-          madosho: Array.isArray(parsed.madosho)
-            ? DEFAULT_STATE.madosho.map((def) => {
-                const saved = parsed.madosho!.find((e) => e.id === def.id);
-                return saved ? { ...def, ...saved, sottotitolo: saved.sottotitolo || def.sottotitolo } : def;
-              })
-            : DEFAULT_STATE.madosho,
-          ordine: Array.isArray(parsed.ordine) ? parsed.ordine : DEFAULT_STATE.ordine,
-          premio: Array.isArray(parsed.premio) ? parsed.premio : DEFAULT_STATE.premio,
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/statuti`, {
+          credentials: "include",
+          cache: "no-store",
         });
+        if (!res.ok) {
+          throw new Error(
+            res.status === 401 || res.status === 403
+              ? "Sessione scaduta o senza permesso Sviluppo."
+              : `Caricamento statuti fallito (${res.status}).`,
+          );
+        }
+        const rows = (await res.json()) as DbRow[];
+        if (cancelled) return;
+        const merged = mergeDbRows(DEFAULT_STATE, Array.isArray(rows) ? rows : []);
+        setState(merged);
+        setLoadError(null);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        } catch {
+          // ignora
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const fallback = readLocalFallback();
+        if (fallback) setState(fallback);
+        setLoadError(
+          err instanceof Error
+            ? `${err.message} Mostro una copia locale di emergenza (può non essere aggiornata su altri dispositivi).`
+            : "Impossibile caricare dal server.",
+        );
+      } finally {
+        if (!cancelled) setLoaded(true);
       }
-    } catch {
-      // ignora
-    }
-
-    fetch(`${API_BASE}/statuti`, { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((rows: DbRow[] | null) => {
-        if (!Array.isArray(rows)) return;
-        setState((prev) => mergeDbRows(prev, rows));
-      })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // ignora
-    }
-  }, [state, loaded]);
 
   const updateAndSave = useCallback(
     async (
@@ -161,9 +194,10 @@ export function useStatuti() {
         [kind]: prev[kind].map((e) => (e.id === id ? { ...e, ...patch } : e)),
       }));
       try {
-        await fetch(`${API_BASE}/statuti/${kind}/${id}`, {
+        const res = await fetch(`${API_BASE}/statuti/${kind}/${id}`, {
           method: "PUT",
           credentials: "include",
+          cache: "no-store",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             statute: patch.statute,
@@ -172,16 +206,41 @@ export function useStatuti() {
             descrizione_meccanica: patch.descrizione_meccanica,
           }),
         });
-      } catch {
-        // ignora — cache locale aggiornata
+        if (!res.ok) {
+          let message = `Salvataggio non riuscito (${res.status}).`;
+          try {
+            const data = (await res.json()) as { error?: string };
+            if (data.error) message = data.error;
+          } catch {
+            // ignora
+          }
+          throw new Error(message);
+        }
+
+        setSaveError(null);
+        setState((prev) => {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prev));
+          } catch {
+            // ignora
+          }
+          return prev;
+        });
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Salvataggio non riuscito: il server non ha confermato la modifica.";
+        setSaveError(message);
+        throw new Error(message);
       }
     },
     [],
   );
 
   return useMemo(
-    () => ({ state, setState, updateAndSave, loaded }),
-    [state, updateAndSave, loaded],
+    () => ({ state, setState, updateAndSave, loaded, loadError, saveError }),
+    [state, updateAndSave, loaded, loadError, saveError],
   );
 }
 
