@@ -45,7 +45,8 @@ function buildContentSecurityPolicy(): string {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    // 'self': consente iframe interni (Dōjō, Sōkaiju, Gestione, …); blocca embedding cross-site
+    "frame-ancestors 'self'",
   ];
   if (isProd) directives.push("upgrade-insecure-requests");
   return directives.join("; ");
@@ -54,7 +55,7 @@ function buildContentSecurityPolicy(): string {
 const securityHeaders = [
   { key: "Content-Security-Policy", value: buildContentSecurityPolicy() },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
