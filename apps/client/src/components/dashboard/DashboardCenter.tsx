@@ -1006,6 +1006,11 @@ function RegistraGiocataButton({
             .map((p) => p.characterId)
             .filter((id) => id !== openSession.creatorId),
         );
+      } else if (!openSession) {
+        // Nuova registrazione: pre-seleziona tutti i presenti in chat
+        setSelectedParticipants(
+          (usersInRoom ?? []).filter((u) => u.id !== myCharacterId).map((u) => u.id),
+        );
       } else {
         setSelectedParticipants([]);
       }
@@ -1014,7 +1019,7 @@ function RegistraGiocataButton({
     } finally {
       setLoading(false);
     }
-  }, [roomId]);
+  }, [roomId, usersInRoom, myCharacterId]);
 
   useEffect(() => {
     if (open && roomId) loadData();
@@ -1084,7 +1089,9 @@ function RegistraGiocataButton({
     if (!session) return;
     setActionLoading('freeze');
     try {
-      const updated = await api.post(`/game-sessions/${session.id}/freeze`, {}) as GameSession;
+      const updated = await api.post(`/game-sessions/${session.id}/freeze`, {
+        participantIds: selectedParticipants,
+      }) as GameSession;
       setSession(updated);
       toast.info("Registrazione congelata");
     } catch (e: unknown) {
@@ -1117,9 +1124,11 @@ function RegistraGiocataButton({
     setShowCloseConfirm(false);
     setActionLoading('close');
     try {
-      const updated = await api.post(`/game-sessions/${session.id}/close`, {}) as GameSession;
+      const updated = await api.post(`/game-sessions/${session.id}/close`, {
+        participantIds: selectedParticipants,
+      }) as GameSession;
       setSession(updated);
-      toast.success("Registrazione chiusa e conservata");
+      toast.success("Registrazione chiusa e conservata nel Journal di tutti i partecipanti");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Errore durante la chiusura");
     } finally {
@@ -1159,7 +1168,7 @@ function RegistraGiocataButton({
   const participantPicker = presentOthers.length > 0 ? (
     <div className="space-y-2">
       <label className="text-[10px] uppercase tracking-wider text-gray-500">Partecipanti dichiarati</label>
-      <p className="text-[10px] text-gray-500">Chi selezioni vedrà la giocata nel Journal a chiusura (oltre a chi agisce in chat).</p>
+      <p className="text-[10px] text-gray-500">Chi selezioni vedrà la giocata nel Journal (salvati automaticamente a chiusura/congelamento).</p>
       <div className="max-h-[140px] overflow-y-auto border border-[var(--border-color)] rounded p-2 bg-black/20">
         {presentOthers.map((user) => (
           <label key={user.id} className={`flex items-center gap-2 text-xs cursor-pointer hover:text-[var(--accent-gold)] py-1 min-h-[44px] ${user.isShadow ? "text-[var(--accent-violet-light)]/90" : ""}`}>
@@ -1434,7 +1443,7 @@ function RegistraGiocataButton({
       <ConfirmDialog
         open={showCloseConfirm}
         title="Chiudi Registrazione"
-        message="Chiudere definitivamente questa registrazione? Verrà conservata nella scheda del personaggio."
+        message="Chiudere definitivamente questa registrazione? Verrà conservata nel Journal di tutti i partecipanti dichiarati."
         confirmText="Chiudi"
         cancelText="Annulla"
         type="info"

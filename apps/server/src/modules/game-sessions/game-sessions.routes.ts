@@ -279,7 +279,7 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
       // Congela una sessione (solo creatore o cariche superiori)
       .post(
         '/:id/freeze',
-        async ({ params, user, set }) => {
+        async ({ params, body, user, set }) => {
           try {
             const char = await characterService.getCharacterByUserId(user!.id)
             if (!char) {
@@ -303,7 +303,7 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 403
               return { error: 'Solo il creatore o cariche superiori possono congelare la sessione' }
             }
-            const updated = await freezeGameSession(params.id)
+            const updated = await freezeGameSession(params.id, body?.participantIds ?? null)
             return updated
           } catch (e: unknown) {
             set.status = 400
@@ -312,6 +312,9 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         },
         {
           params: t.Object({ id: t.String() }),
+          body: t.Optional(t.Object({
+            participantIds: t.Optional(t.Array(t.String())),
+          })),
         }
       )
 
@@ -357,7 +360,7 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
       // Chiude una sessione (solo creatore o cariche superiori)
       .post(
         '/:id/close',
-        async ({ params, user, set }) => {
+        async ({ params, body, user, set }) => {
           try {
             const char = await characterService.getCharacterByUserId(user!.id)
             if (!char) {
@@ -381,7 +384,7 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 403
               return { error: 'Solo il creatore o cariche superiori possono chiudere la sessione' }
             }
-            const updated = await closeGameSession(params.id)
+            const updated = await closeGameSession(params.id, body?.participantIds ?? null)
             return updated
           } catch (e: unknown) {
             set.status = 400
@@ -390,6 +393,9 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         },
         {
           params: t.Object({ id: t.String() }),
+          body: t.Optional(t.Object({
+            participantIds: t.Optional(t.Array(t.String())),
+          })),
         }
       )
 
@@ -432,7 +438,7 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
         }
       )
 
-      // Ottiene tutte le sessioni del proprio personaggio (solo le proprie)
+      // Journal / registrazioni: proprie (tutti gli stati) oppure altrui (CLOSED/FROZEN, journal pubblico)
       .get(
         '/character/:characterId',
         async ({ params, query, user, set }) => {
@@ -442,13 +448,26 @@ export const gameSessionsRoutes = new Elysia({ prefix: '/game-sessions' })
               set.status = 404
               return { error: 'Personaggio non trovato' }
             }
-            if (params.characterId !== char.id) {
-              set.status = 403
-              return { error: 'Puoi visualizzare solo le tue sessioni' }
+
+            const isOwn = params.characterId === char.id
+            if (!isOwn) {
+              const target = await db.query.characters.findFirst({
+                where: eq(characters.id, params.characterId),
+                columns: { id: true },
+              })
+              if (!target) {
+                set.status = 404
+                return { error: 'Personaggio non trovato' }
+              }
+              // Allineato a canSeeJournal sul profilo pubblico: solo sessioni archiviate
+              const sessions = await getCharacterSessions(params.characterId)
+              return sessions.filter(
+                (s: { status?: string }) => s.status === 'CLOSED' || s.status === 'FROZEN',
+              )
             }
+
             const status = query.status as 'ACTIVE' | 'FROZEN' | 'CLOSED' | 'CANCELLED' | undefined
-            const sessions = await getCharacterSessions(params.characterId, status)
-            return sessions
+            return await getCharacterSessions(params.characterId, status)
           } catch (e: unknown) {
             set.status = 400
             return { error: e instanceof Error ? e.message : 'Errore durante il recupero' }
