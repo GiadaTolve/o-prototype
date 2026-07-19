@@ -1,5 +1,6 @@
 "use client";
 
+import { hasSessionHint } from "@/lib/auth-session";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WikiPage } from "@/components/wiki/WikiPage";
@@ -9,7 +10,7 @@ export default function AmbientazionePage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = hasSessionHint();
     if (!token) {
       router.push("/auth");
       return;

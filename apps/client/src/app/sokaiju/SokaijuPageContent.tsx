@@ -1,5 +1,6 @@
 "use client";
 
+import { hasSessionHint } from "@/lib/auth-session";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SkiruWazaPanel } from "@/components/dashboard/SkiruWazaPanel";
@@ -19,7 +20,7 @@ export default function SokaijuPageContent() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = hasSessionHint();
     if (!token) {
       router.push("/auth");
       return;

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import type { Presente, ChatMessage } from "@/components/dashboard/types";
 import type { PendingLevelUpBanner } from "@domain/progression/level-up";
 import { dispatchInventoryUpdated } from "@/lib/inventory-events";
+import { fetchWsTicket, hasSessionHint } from "@/lib/auth-session";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
@@ -15,11 +16,6 @@ export type LevelUpWsPayload = {
   newKeys?: number;
   newExpTotal?: number;
 };
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
-}
 
 /**
  * Real-time: presenza in room + chat per location.
@@ -71,8 +67,7 @@ export function useRealtime(
       setConnected(false);
       return;
     }
-    const token = getToken();
-    if (!token) {
+    if (!hasSessionHint()) {
       setUsers([]);
       setMessages([]);
       setConnected(false);
@@ -104,7 +99,7 @@ export function useRealtime(
     const loadHistory = async () => {
       try {
         const res = await fetch(`${API_BASE}/chat/${roomId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
         if (res.ok) {
           const list = (await res.json()) as ChatMessage[];
@@ -118,11 +113,10 @@ export function useRealtime(
 
     const connect = () => {
       if (disposed) return;
-      const currentToken = getToken();
-      if (!currentToken || !roomRef.current) return;
+      if (!hasSessionHint() || !roomRef.current) return;
 
       didOpen = false;
-      const url = `${WS_BASE}/ws?token=${encodeURIComponent(currentToken)}`;
+      const url = `${WS_BASE}/ws`;
       ws = new WebSocket(url);
       wsRef.current = ws;
 
@@ -140,14 +134,14 @@ export function useRealtime(
           clearTimeout(openTimeout);
           openTimeout = null;
         }
-        setConnected(true);
-        setConnectionFailed(false);
-        if (pingTimer) clearInterval(pingTimer);
-        pingTimer = setInterval(() => {
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "ping" }));
+        void (async () => {
+          const ticket = await fetchWsTicket();
+          if (!ticket || disposed || ws?.readyState !== WebSocket.OPEN) {
+            ws?.close();
+            return;
           }
-        }, WS_PING_INTERVAL_MS);
+          ws.send(JSON.stringify({ type: "auth", token: ticket }));
+        })();
       };
 
       ws.onmessage = (ev) => {
@@ -188,6 +182,14 @@ export function useRealtime(
           }
           if (data.type === "welcome" && data.me) {
             meIdRef.current = data.me.id;
+            setConnected(true);
+            setConnectionFailed(false);
+            if (pingTimer) clearInterval(pingTimer);
+            pingTimer = setInterval(() => {
+              if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "ping" }));
+              }
+            }, WS_PING_INTERVAL_MS);
             const r = roomRef.current;
             if (r && ws?.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: "join", zone: r }));
@@ -331,7 +333,7 @@ export function useRealtime(
         setConnected(false);
         wsRef.current = null;
         if (!didOpen) setConnectionFailed(true);
-        if (!disposed && roomRef.current && getToken()) {
+        if (!disposed && roomRef.current && hasSessionHint()) {
           reconnectTimer = setTimeout(connect, WS_RECONNECT_DELAY_MS);
         } else {
           setUsers([]);

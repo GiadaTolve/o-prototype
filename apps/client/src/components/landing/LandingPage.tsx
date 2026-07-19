@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LandingLoginForm } from "./LandingLoginForm";
 import { LandingRegisterForm } from "./LandingRegisterForm";
 import { LandingInfoModal } from "./LandingInfoModal";
+import { fetchAuthMe, hasSessionHint } from "@/lib/auth-session";
 import "./landing.css";
 
 type View = "LOGIN" | "REGISTER";
@@ -16,10 +17,10 @@ export function LandingPage({ initialView = "LOGIN" }: { initialView?: View }) {
   const [activeModal, setActiveModal] = useState<Modal>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      router.replace("/dashboard");
-    }
+    if (!hasSessionHint()) return;
+    void fetchAuthMe().then((ok) => {
+      if (ok) router.replace("/dashboard");
+    });
   }, [router]);
 
   const closeModal = () => setActiveModal(null);
@@ -87,8 +88,7 @@ export function LandingPage({ initialView = "LOGIN" }: { initialView?: View }) {
             <LandingInfoModal kind="principia" onClose={closeModal} />
           ) : activeView === "REGISTER" ? (
             <LandingRegisterForm
-              onRegisterSuccess={(token) => {
-                localStorage.setItem("token", token);
+              onRegisterSuccess={() => {
                 router.replace("/dashboard");
               }}
               onOpenGuida={() => openModal("GUIDE")}

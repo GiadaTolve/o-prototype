@@ -24,6 +24,7 @@ import { isCharacterMeFound, characterMeToSummary } from "@/lib/character-me";
 import { toast } from "@/components/ui/Toast";
 import { LevelUpOverlay } from "@/components/dashboard/LevelUpOverlay";
 import { logoutPresence } from "@/lib/presence-logout";
+import { hasSessionHint } from "@/lib/auth-session";
 import type { LevelUpWsPayload } from "@/hooks/useRealtime";
 
 export default function DashboardPage() {
@@ -56,8 +57,7 @@ export default function DashboardPage() {
   useWebPush(Boolean(char?.id));
 
   const reloadChar = useCallback(async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!hasSessionHint()) return;
     try {
       const data = await api.get("/characters/me");
       if (isCharacterMeFound(data)) setChar(characterMeToSummary(data));
@@ -68,8 +68,7 @@ export default function DashboardPage() {
 
   const fetchSmsUnread = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!hasSessionHint()) return;
       const d = (await api.get("/sms/unread-count")) as { count?: number };
       const count = typeof d.count === "number" ? d.count : 0;
       setSmsUnread(count);
@@ -290,8 +289,7 @@ export default function DashboardPage() {
 
     const loadPresenti = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
+        if (!hasSessionHint()) {
           const mockPresenti = getMockPresenti(typeof char?.name === "string" ? char.name : undefined);
           setPresenti(mockPresenti);
           setPresentiAreMock(true);
@@ -411,8 +409,7 @@ export default function DashboardPage() {
   }, [openCharacterSheet]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!hasSessionHint()) {
       setError("Sessione non trovata. Effettua l'accesso.");
       setLoading(false);
       return;
@@ -472,7 +469,6 @@ export default function DashboardPage() {
   if (error) {
     const logout = async () => {
       await logoutPresence();
-      localStorage.removeItem("token");
       router.push("/auth");
     };
     return (

@@ -10,6 +10,12 @@ import { registerUser } from './auth.service'
 import { sendPasswordResetEmail, sendRegistrationEmails } from '../../lib/email'
 import { extractClientIp } from '../../lib/client-ip'
 import { recordSessionIp, recordSessionDevice } from '../supervisione/supervisione.service'
+import {
+  appendSetCookie,
+  buildClearSessionCookie,
+  buildSessionCookie,
+  resolveRequestAccessToken,
+} from '../../lib/session-cookie'
 
 /** Risolve il personaggio per login: «Botan Miyazaki» o solo «Botan». */
 async function resolveLoginCharacter(nomePg: string) {
@@ -175,6 +181,8 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       }
 
       set.status = 200
+      appendSetCookie(set, buildSessionCookie(token))
+      // `token` resta in JSON per script/test; il browser usa il cookie httpOnly.
       return { success: true, token, user: { id: user.id, email: user.email } }
     } catch (e: unknown) {
       set.status = 500
@@ -271,18 +279,19 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   })
 
   // =====================
-  // ME (Check Token)
+  // ME (Check Token / cookie)
   // =====================
-  .get('/me', async ({ jwt, headers, set }) => {
-    const authHeader = headers['authorization']
+  .get('/me', async ({ jwt, request, set }) => {
+    const token = resolveRequestAccessToken({
+      authorization: request.headers.get('authorization') ?? undefined,
+      cookie: request.headers.get('cookie'),
+    })
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       set.status = 401
       return { error: 'Token mancante' }
     }
 
-    const token = authHeader.slice(7)
-    // Verifica usando lo stesso segreto del login
     const payload = await jwt.verify(token)
 
     if (!payload) {
@@ -296,13 +305,39 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     }
   })
 
-  .post('/session-ping', async ({ jwt, headers, set, request, server, body }) => {
-    const authHeader = headers['authorization']
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  .post('/logout', async ({ set }) => {
+    appendSetCookie(set, buildClearSessionCookie())
+    return { success: true }
+  })
+
+  /** Token breve per auth WS (il JWT resta httpOnly; qui solo in memoria per il messaggio auth). */
+  .get('/ws-ticket', async ({ jwt, request, set }) => {
+    const token = resolveRequestAccessToken({
+      authorization: request.headers.get('authorization') ?? undefined,
+      cookie: request.headers.get('cookie'),
+    })
+    if (!token) {
+      set.status = 401
+      return { error: 'Non autenticato' }
+    }
+    const payload = await jwt.verify(token)
+    if (!payload) {
+      set.status = 401
+      return { error: 'Sessione non valida' }
+    }
+    return { token }
+  })
+
+  .post('/session-ping', async ({ jwt, request, set, headers, server, body }) => {
+    const token = resolveRequestAccessToken({
+      authorization: request.headers.get('authorization') ?? undefined,
+      cookie: request.headers.get('cookie'),
+    })
+    if (!token) {
       set.status = 401
       return { error: 'Token mancante' }
     }
-    const payload = await jwt.verify(authHeader.slice(7))
+    const payload = await jwt.verify(token)
     if (!payload || typeof payload !== 'object') {
       set.status = 401
       return { error: 'Token non valido' }

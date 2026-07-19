@@ -2,17 +2,13 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { dispatchInventoryUpdated } from "@/lib/inventory-events";
+import { fetchWsTicket, hasSessionHint } from "@/lib/auth-session";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
 const NOTIFICATION_SOUND = "/musica/notifications/message.one.mp3";
 const WS_PING_INTERVAL_MS = 30_000;
 const WS_RECONNECT_DELAY_MS = 3_000;
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
-}
 
 /** Riproduce il suono di notifica SMS (solo se il messaggio è ricevuto, non inviato). */
 function playNotificationSound(): void {
@@ -84,24 +80,24 @@ export function useSmsRealtime(options: {
 
     const connect = () => {
       if (disposed) return;
-      const token = getToken();
-      if (!token) {
+      if (!hasSessionHint()) {
         setConnected(false);
         return;
       }
 
-      const url = `${WS_BASE}/ws?token=${encodeURIComponent(token)}`;
+      const url = `${WS_BASE}/ws`;
       ws = new WebSocket(url);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setConnected(true);
-        clearTimers();
-        pingTimer = setInterval(() => {
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "ping" }));
+        void (async () => {
+          const ticket = await fetchWsTicket();
+          if (!ticket || disposed || ws?.readyState !== WebSocket.OPEN) {
+            ws?.close();
+            return;
           }
-        }, WS_PING_INTERVAL_MS);
+          ws.send(JSON.stringify({ type: "auth", token: ticket }));
+        })();
       };
 
       ws.onmessage = async (ev) => {
@@ -126,6 +122,14 @@ export function useSmsRealtime(options: {
           }
           if (data.type === "welcome" && data.me?.id) {
             myCharacterIdRef.current = data.me.id;
+            setConnected(true);
+            clearTimers();
+            pingTimer = setInterval(() => {
+              if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "ping" }));
+              }
+            }, WS_PING_INTERVAL_MS);
+            return;
           }
           if (
             data.type === "fetch_responso" &&
@@ -158,11 +162,9 @@ export function useSmsRealtime(options: {
             // Se myId non è disponibile, prova a ottenerlo da /characters/me (fallback sincrono)
             if (!myId) {
               try {
-                const currentToken = getToken();
-                if (currentToken) {
-                  // Usa fetch sincrono per ottenere myId il prima possibile
+                if (hasSessionHint()) {
                   const char = await fetch(`${API_BASE}/characters/me`, {
-                    headers: { Authorization: `Bearer ${currentToken}` },
+                    credentials: "include",
                   }).then((r) => r.json()).catch(() => null) as { id?: string } | null;
                   if (char?.id) {
                     myId = char.id;
@@ -192,7 +194,7 @@ export function useSmsRealtime(options: {
         setConnected(false);
         wsRef.current = null;
         clearTimers();
-        if (!disposed && getToken()) {
+        if (!disposed && hasSessionHint()) {
           reconnectTimer = setTimeout(connect, WS_RECONNECT_DELAY_MS);
         }
       };

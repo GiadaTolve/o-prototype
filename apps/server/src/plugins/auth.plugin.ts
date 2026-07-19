@@ -5,6 +5,7 @@ import { JWT_SECRET } from '../config'
 import { db } from '../plugins/db'
 import { characters, users } from '../db/schema'
 import { eq } from 'drizzle-orm'
+import { resolveRequestAccessToken } from '../lib/session-cookie'
 
 export const authPlugin = (app: Elysia) =>
   app
@@ -15,17 +16,19 @@ export const authPlugin = (app: Elysia) =>
         secret: JWT_SECRET,
       })
     )
-    // 1. Diciamo esplicitamente cosa ritorna il derive (id + role + characterId per accesso UI)
-    .derive(async ({ jwt, bearer }): Promise<{ user: { id: string; role?: string; characterId?: string } | null }> => {
-      if (!bearer) return { user: null }
+    .derive(async ({ jwt, bearer, request }): Promise<{ user: { id: string; role?: string; characterId?: string } | null }> => {
+      const token = resolveRequestAccessToken({
+        authorization: bearer ? `Bearer ${bearer}` : request.headers.get('authorization') ?? undefined,
+        cookie: request.headers.get('cookie'),
+      })
+      if (!token) return { user: null }
 
-      const profile = await jwt.verify(bearer) as { id?: string; sub?: string; role?: string } | null
+      const profile = await jwt.verify(token) as { id?: string; sub?: string; role?: string } | null
       
       if (!profile) return { user: null }
 
       const userId = (profile.id ?? profile.sub) as string
       
-      // Ruolo sempre dal DB (così cambi staff si applicano senza nuovo login)
       let role = profile.role as string | undefined
       let characterId: string | undefined
       try {
@@ -53,13 +56,10 @@ export const authPlugin = (app: Elysia) =>
         } 
       }
     })
-    // 2. Usiamo 'as any' temporaneamente sui parametri della macro se TS fa i capricci.
-    // Questo forza TS a stare zitto e accettare la logica.
     .macro(({ onBeforeHandle }: any) => ({
       isAuthenticated(enabled: boolean) {
         if (!enabled) return
         
-        // Qui 'user' viene iniettato dal derive sopra
         onBeforeHandle(({ user, error }: any) => {
           if (!user) return error(401, 'Unauthorized')
         })

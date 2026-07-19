@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatFetchError } from "@/lib/format-fetch-error";
 import { getDevicePayload } from "@/lib/device-fingerprint";
+import { markSession } from "@/lib/auth-session";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -24,12 +25,12 @@ export function LandingLoginForm() {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ nomePg, password, ...device }),
       });
-      const data = (await res.json()) as { token?: string; error?: string };
+      const data = (await res.json()) as { success?: boolean; error?: string };
       if (!res.ok) throw new Error(data.error || "Accesso non riuscito");
-      if (!data.token) throw new Error("Risposta senza token");
-      localStorage.setItem("token", data.token);
+      markSession();
       router.push("/dashboard");
     } catch (err) {
       setError(formatFetchError(err, API_BASE));

@@ -50,7 +50,6 @@ export function DashboardHeader({
 
   const logout = async () => {
     await logoutPresence();
-    localStorage.removeItem("token");
     router.push("/auth");
   };
 

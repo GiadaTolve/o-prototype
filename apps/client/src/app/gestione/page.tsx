@@ -1,5 +1,6 @@
 "use client";
 
+import { hasSessionHint } from "@/lib/auth-session";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -74,7 +75,7 @@ export default function GestionePage() {
 
   useEffect(() => {
     // Verifica autenticazione e permessi
-    const token = localStorage.getItem("token");
+    const token = hasSessionHint();
     if (!token) {
       router.push("/auth");
       return;
