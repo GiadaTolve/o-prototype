@@ -17,8 +17,73 @@ export const users = pgTable('users', {
 
   /** Preferenze espresse in chat Yume-chan alla registrazione (visibile a staff) */
   playerPreferences: text('player_preferences'),
+
+  /** IP alla registrazione / primo login — baseline Supervisione. */
+  registrationIp: text('registration_ip'),
+
+  /** Nota staff Supervisione (es. condivide IP legittimamente). */
+  supervisioneNote: text('supervisione_note'),
   
   createdAt: timestamp('created_at').defaultNow()
+})
+
+/** IP aggiuntivi rispetto a registration_ip (VPN, rete diversa, ecc.). */
+export const userKnownIps = pgTable(
+  'user_known_ips',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    ip: text('ip').notNull(),
+    userAgent: text('user_agent'),
+    characterId: uuid('character_id').references(() => characters.id, { onDelete: 'set null' }),
+    firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
+    lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
+    /** True = IP di registrazione/primo login (sempre in lista). */
+    isRegistration: boolean('is_registration').default(false).notNull(),
+  },
+  (t) => [unique('user_known_ips_user_ip').on(t.userId, t.ip)],
+)
+
+/** Note staff su un IP condiviso (Supervisione). */
+export const supervisioneIpNotes = pgTable('supervisione_ip_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  ip: text('ip').notNull().unique(),
+  note: text('note').notNull().default(''),
+  updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+/** Device fingerprint leggero (ID browser persistente + segnale soft). */
+export const userKnownDevices = pgTable(
+  'user_known_devices',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** UUID stabile in localStorage del browser. */
+    deviceId: text('device_id').notNull(),
+    /** Hash leggero di UA/lingua/timezone/schermo (segnalazione soft). */
+    signalHash: text('signal_hash'),
+    userAgent: text('user_agent'),
+    characterId: uuid('character_id').references(() => characters.id, { onDelete: 'set null' }),
+    firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
+    lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
+  },
+  (t) => [unique('user_known_devices_user_device').on(t.userId, t.deviceId)],
+)
+
+/** Note staff su deviceId condiviso. */
+export const supervisioneDeviceNotes = pgTable('supervisione_device_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  deviceId: text('device_id').notNull().unique(),
+  note: text('note').notNull().default(''),
+  updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
 export const passwordResetTokens = pgTable('password_reset_tokens', {
@@ -741,6 +806,21 @@ export const meteoPrefetture = pgTable('meteo_prefetture', {
 
 export const usersRelations = relations(users, ({ many }) => ({
   characters: many(characters),
+  knownIps: many(userKnownIps),
+  knownDevices: many(userKnownDevices),
+}))
+
+export const userKnownIpsRelations = relations(userKnownIps, ({ one }) => ({
+  user: one(users, { fields: [userKnownIps.userId], references: [users.id] }),
+  character: one(characters, { fields: [userKnownIps.characterId], references: [characters.id] }),
+}))
+
+export const userKnownDevicesRelations = relations(userKnownDevices, ({ one }) => ({
+  user: one(users, { fields: [userKnownDevices.userId], references: [users.id] }),
+  character: one(characters, {
+    fields: [userKnownDevices.characterId],
+    references: [characters.id],
+  }),
 }))
 
 export const charactersRelations = relations(characters, ({ one, many }) => ({

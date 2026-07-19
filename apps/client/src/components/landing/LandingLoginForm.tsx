@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatFetchError } from "@/lib/format-fetch-error";
+import { getDevicePayload } from "@/lib/device-fingerprint";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -19,10 +20,11 @@ export function LandingLoginForm() {
     setError("");
     setLoading(true);
     try {
+      const device = getDevicePayload();
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nomePg, password }),
+        body: JSON.stringify({ nomePg, password, ...device }),
       });
       const data = (await res.json()) as { token?: string; error?: string };
       if (!res.ok) throw new Error(data.error || "Accesso non riuscito");

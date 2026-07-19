@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { formatNarrativeText } from "@/lib/narrative-parser";
 import { GestioneRichiestePanel } from "@/components/gestione/GestioneRichiestePanel";
+import { GestioneSupervisionePanel } from "@/components/gestione/GestioneSupervisionePanel";
 import {
   PIXEL_ICON_RUOLI,
   PIXEL_ICON_SIZE,
@@ -55,7 +56,7 @@ export default function GestionePage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "richieste" | "forum" | "musica" | "logs" | "maps" | "banners" | "events" | "jobs" | "housing">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "richieste" | "supervisione" | "forum" | "musica" | "logs" | "maps" | "banners" | "events" | "jobs" | "housing">("users");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [sanctions, setSanctions] = useState<Sanction[]>([]);
   const [pendingRequests, setPendingRequests] = useState(0);
@@ -129,6 +130,7 @@ export default function GestionePage() {
           {[
             { id: "users" as const, label: "Gestione Utenti" },
             { id: "richieste" as const, label: "Richieste", badge: pendingRequests },
+            { id: "supervisione" as const, label: "Supervisione" },
             { id: "forum" as const, label: "Moderazione Forum" },
             { id: "logs" as const, label: "Log Chat" },
             { id: "maps" as const, label: "Gestione Mappe" },
@@ -287,6 +289,8 @@ export default function GestionePage() {
           {activeTab === "richieste" && (
             <GestioneRichiestePanel onQueueChange={fetchPendingRequests} />
           )}
+
+          {activeTab === "supervisione" && <GestioneSupervisionePanel />}
 
           {activeTab === "forum" && <ForumManagement />}
 

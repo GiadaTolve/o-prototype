@@ -8,6 +8,8 @@ import { users, characters, passwordResetTokens } from '../../db/schema'
 import { JWT_SECRET } from '../../config'
 import { registerUser } from './auth.service'
 import { sendPasswordResetEmail, sendRegistrationEmails } from '../../lib/email'
+import { extractClientIp } from '../../lib/client-ip'
+import { recordSessionIp, recordSessionDevice } from '../supervisione/supervisione.service'
 
 /** Risolve il personaggio per login: «Botan Miyazaki» o solo «Botan». */
 async function resolveLoginCharacter(nomePg: string) {
@@ -53,7 +55,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   })
 
   // ===================== REGISTER =====================
-  .post('/register', async ({ body, set }) => {
+  .post('/register', async ({ body, set, request, headers, server }) => {
     try {
       const result = await registerUser(
         body.email,
@@ -61,6 +63,15 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         body.characterName,
         body.playerPreferences,
       )
+
+      const ip = extractClientIp({ request, headers, server })
+      const ua = typeof headers['user-agent'] === 'string' ? headers['user-agent'] : null
+      await recordSessionIp({
+        userId: result.user.id,
+        characterId: result.character.id,
+        ip,
+        userAgent: ua,
+      }).catch((e) => console.warn('[auth] recordSessionIp register:', e))
 
       const emailResult = await sendRegistrationEmails({
         email: body.email,
@@ -111,7 +122,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   })
 
   // ===================== LOGIN (Nome PG + Password) =====================
-  .post('/login', async ({ body, set, jwt }) => {
+  .post('/login', async ({ body, set, jwt, request, headers, server }) => {
     try {
       const char = await resolveLoginCharacter(body.nomePg)
       if (!char?.user) {
@@ -143,6 +154,26 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         role: user.role,
         banState: user.banState,
       })
+
+      const ip = extractClientIp({ request, headers, server })
+      const ua = typeof headers['user-agent'] === 'string' ? headers['user-agent'] : null
+      await recordSessionIp({
+        userId: user.id,
+        characterId: char.id,
+        ip,
+        userAgent: ua,
+      }).catch((e) => console.warn('[auth] recordSessionIp login:', e))
+
+      if (body.deviceId) {
+        await recordSessionDevice({
+          userId: user.id,
+          characterId: char.id,
+          deviceId: body.deviceId,
+          signalHash: body.signalHash ?? null,
+          userAgent: ua,
+        }).catch((e) => console.warn('[auth] recordSessionDevice login:', e))
+      }
+
       set.status = 200
       return { success: true, token, user: { id: user.id, email: user.email } }
     } catch (e: unknown) {
@@ -153,6 +184,8 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     body: t.Object({
       nomePg: t.String({ minLength: 1 }),
       password: t.String(),
+      deviceId: t.Optional(t.String({ minLength: 8, maxLength: 80 })),
+      signalHash: t.Optional(t.String({ maxLength: 128 })),
     }),
   })
 
@@ -261,4 +294,58 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       message: "Sei autenticato!",
       user: payload
     }
+  })
+
+  .post('/session-ping', async ({ jwt, headers, set, request, server, body }) => {
+    const authHeader = headers['authorization']
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      set.status = 401
+      return { error: 'Token mancante' }
+    }
+    const payload = await jwt.verify(authHeader.slice(7))
+    if (!payload || typeof payload !== 'object') {
+      set.status = 401
+      return { error: 'Token non valido' }
+    }
+    const userId =
+      typeof (payload as { id?: string }).id === 'string'
+        ? (payload as { id: string }).id
+        : typeof (payload as { sub?: string }).sub === 'string'
+          ? (payload as { sub: string }).sub
+          : null
+    if (!userId) {
+      set.status = 401
+      return { error: 'Token senza utente' }
+    }
+
+    const char = await db.query.characters.findFirst({
+      where: eq(characters.userId, userId),
+      columns: { id: true },
+    })
+    const ip = extractClientIp({ request, headers, server })
+    const ua = typeof headers['user-agent'] === 'string' ? headers['user-agent'] : null
+    const ipResult = await recordSessionIp({
+      userId,
+      characterId: char?.id ?? null,
+      ip,
+      userAgent: ua,
+    })
+    let deviceResult: { recorded: boolean; deviceId: string } | null = null
+    if (body?.deviceId) {
+      deviceResult = await recordSessionDevice({
+        userId,
+        characterId: char?.id ?? null,
+        deviceId: body.deviceId,
+        signalHash: body.signalHash ?? null,
+        userAgent: ua,
+      })
+    }
+    return { success: true, ...ipResult, device: deviceResult }
+  }, {
+    body: t.Optional(
+      t.Object({
+        deviceId: t.Optional(t.String({ minLength: 8, maxLength: 80 })),
+        signalHash: t.Optional(t.String({ maxLength: 128 })),
+      }),
+    ),
   })

@@ -5,6 +5,8 @@ import "@fortawesome/fontawesome-svg-core/styles.css";
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "./globals.css";
 import { ToastContainer } from "@/components/ui/Toast";
+import { ClientViewGuard } from "@/components/security/ClientViewGuard";
+import { SessionIpPing } from "@/components/security/SessionIpPing";
 
 config.autoAddCss = false;
 
@@ -62,6 +64,8 @@ export default function RootLayout({
       className={`${sourceSans.variable} ${philosopher.variable} ${ebGaramond.variable} ${workbench.variable}`}
     >
       <body className="font-sans antialiased">
+        <ClientViewGuard />
+        <SessionIpPing />
         {children}
         <ToastContainer />
       </body>

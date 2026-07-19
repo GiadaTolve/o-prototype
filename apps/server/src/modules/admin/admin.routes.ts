@@ -53,6 +53,7 @@ import { moderateSocialClass } from '../shakai/shakai.service'
 import { setRoomOpen, getRoomState } from '../anonymous-chat/anonymous-chat.service'
 import { sendTestEmail, emailConfigStatus } from '../../lib/email'
 import type { UserRole, BanState } from '@domain/security/jwt'
+import { getSupervisioneSnapshot, upsertIpStaffNote, upsertUserStaffNote, upsertDeviceStaffNote } from '../supervisione/supervisione.service'
 
 const PARADISE_ROOM_ID = 'edo__paradise'
 
@@ -128,6 +129,65 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
               return { error: e instanceof Error ? e.message : 'Errore durante il recupero utenti' }
             }
           })
+          .get('/supervisione', async ({ set }) => {
+            try {
+              return await getSupervisioneSnapshot()
+            } catch (e: unknown) {
+              set.status = 500
+              return { error: e instanceof Error ? e.message : 'Errore Supervisione' }
+            }
+          })
+          .put(
+            '/supervisione/ip-note',
+            async ({ body, user, set }) => {
+              try {
+                return await upsertIpStaffNote(body.ip, body.note ?? '', user!.id)
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore nota IP' }
+              }
+            },
+            {
+              body: t.Object({
+                ip: t.String({ minLength: 1 }),
+                note: t.Optional(t.String({ maxLength: 4000 })),
+              }),
+            },
+          )
+          .put(
+            '/supervisione/user-note',
+            async ({ body, set }) => {
+              try {
+                return await upsertUserStaffNote(body.userId, body.note ?? '')
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore nota utente' }
+              }
+            },
+            {
+              body: t.Object({
+                userId: t.String({ minLength: 1 }),
+                note: t.Optional(t.String({ maxLength: 4000 })),
+              }),
+            },
+          )
+          .put(
+            '/supervisione/device-note',
+            async ({ body, user, set }) => {
+              try {
+                return await upsertDeviceStaffNote(body.deviceId, body.note ?? '', user!.id)
+              } catch (e: unknown) {
+                set.status = 400
+                return { error: e instanceof Error ? e.message : 'Errore nota device' }
+              }
+            },
+            {
+              body: t.Object({
+                deviceId: t.String({ minLength: 8, maxLength: 80 }),
+                note: t.Optional(t.String({ maxLength: 4000 })),
+              }),
+            },
+          )
           .get('/email/status', () => emailConfigStatus())
           .post(
             '/email/test',

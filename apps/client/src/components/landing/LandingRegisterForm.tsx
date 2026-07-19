@@ -16,6 +16,7 @@ import {
   type YumeRegisterSession,
   type YumeUserData,
 } from "./yume-register-session";
+import { getDevicePayload } from "@/lib/device-fingerprint";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -168,10 +169,11 @@ export function LandingRegisterForm({
 
   const autoLoginAndFinish = useCallback(
     async (data: YumeUserData) => {
+      const device = getDevicePayload();
       const loginRes = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nomePg: data.nomePg, password: data.password }),
+        body: JSON.stringify({ nomePg: data.nomePg, password: data.password, ...device }),
       });
       const loginBody = (await loginRes.json()) as { token?: string; error?: string };
       if (!loginRes.ok || !loginBody.token) {
