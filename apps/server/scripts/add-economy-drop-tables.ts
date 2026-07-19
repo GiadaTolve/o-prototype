@@ -1,48 +1,58 @@
 /**
  * Crea economy_drop_pools e economy_drop_tables (liste loot Sviluppo / Cedi Drop).
+ * Migra LOCAL + Neon.
  * Uso: cd apps/server && bun run add-economy-drop-tables
  */
+import postgres from 'postgres'
 import { config } from 'dotenv'
 import { resolve } from 'path'
 
 config({ path: resolve(import.meta.dir, '../../../.env') })
 
-import { pool } from '../src/plugins/db'
+function normalizeUrl(raw: string, forceSsl: boolean): { url: string; ssl?: 'require' } {
+  let url = raw.replace(/[?&]options=[^&]*/g, '').replace(/[?&]$/, '')
+  if (forceSsl) url = url.replace('-pooler.c-', '.c-')
+  return forceSsl ? { url, ssl: 'require' } : { url }
+}
 
-async function main() {
-  const client = await pool.connect()
+async function migrateOne(label: string, raw: string, forceSsl: boolean) {
+  const { url, ssl } = normalizeUrl(raw, forceSsl)
+  const host = url.includes('@') ? url.split('@')[1]?.split('/')[0] : url
+  console.log(`\n→ ${label} (${host})`)
+  const sql = postgres(url, { ssl, max: 1 })
   try {
-    await client.query('BEGIN')
-
-    await client.query(`
+    await sql`
       CREATE TABLE IF NOT EXISTS economy_drop_pools (
-        id TEXT PRIMARY KEY,
-        junk_catalog_keys JSONB NOT NULL,
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        id text PRIMARY KEY,
+        junk_catalog_keys jsonb NOT NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
       )
-    `)
+    `
+    console.log('  ✓ economy_drop_pools')
 
-    await client.query(`
+    await sql`
       CREATE TABLE IF NOT EXISTS economy_drop_tables (
-        id TEXT PRIMARY KEY,
-        label TEXT NOT NULL,
-        entries JSONB NOT NULL,
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        id text PRIMARY KEY,
+        label text NOT NULL,
+        entries jsonb NOT NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
       )
-    `)
-
-    await client.query('COMMIT')
-    console.log('Tabelle economy_drop_pools e economy_drop_tables pronte.')
-  } catch (e) {
-    await client.query('ROLLBACK')
-    throw e
+    `
+    console.log('  ✓ economy_drop_tables')
   } finally {
-    client.release()
-    await pool.end()
+    await sql.end({ timeout: 5 })
   }
 }
 
-main().catch((e) => {
-  console.error(e)
+const local = process.env.DATABASE_URL
+const neon = process.env.NEON_DATABASE_URL
+
+if (!local && !neon) {
+  console.error('Serve DATABASE_URL e/o NEON_DATABASE_URL')
   process.exit(1)
-})
+}
+
+if (local) await migrateOne('DATABASE_URL', local, false)
+if (neon) await migrateOne('NEON_DATABASE_URL', neon, true)
+
+console.log('\nFatto.')
