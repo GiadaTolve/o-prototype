@@ -13,10 +13,7 @@ import {
 } from '../skiru/derived-stats'
 import { getSkiruPoints } from '../skiru/progression'
 import type { SkiruSheet } from '../skiru/types'
-import {
-  JUNKAN_POTENZIAMENTO_BASE,
-  resolveJunkanPotenziamentoCapacity,
-} from '../styles/naikan/junkan'
+import { JUNKAN_BUN_BASE, resolveJunkanBunCapacity } from '../styles/naikan/junkan'
 import {
   KADEN_METAMORPHOSIS_CS,
   resolveKadenState,
@@ -131,11 +128,11 @@ export function resolveAyatsuriConstructMovementMeters(
 
 function junkanCapacityLine(sheet: SkiruSheet): WazaResolvedLine {
   const itami = getSkiruPoints(sheet, SKIRU_ID_ITAMI)
-  const capacity = resolveJunkanPotenziamentoCapacity(sheet)
+  const capacity = resolveJunkanBunCapacity(sheet)
   return {
     label: 'Capacità Junkan',
-    value: `${capacity} pt Potenziamento`,
-    hint: `${JUNKAN_POTENZIAMENTO_BASE} + ${itami} Itami`,
+    value: `${capacity} Bun`,
+    hint: `${JUNKAN_BUN_BASE} + ${itami} Itami`,
   }
 }
 
@@ -277,12 +274,12 @@ function naikanPotenziamentoBase(sheet: SkiruSheet): WazaResolvedLine[] {
 }
 
 function hariTsumeLines(sheet: SkiruSheet): WazaResolvedLine[] {
-  const capacity = resolveJunkanPotenziamentoCapacity(sheet)
+  const capacity = resolveJunkanBunCapacity(sheet)
   return [
     ...naikanPotenziamentoBase(sheet),
     {
       label: 'Potenziamento colpo',
-      value: '+3 pt',
+      value: '+3 Bun',
       hint: 'Ripartiti su Binshō e Kairyoku (Indice e danno). Max Capacità Junkan: ' + capacity,
     },
   ]
@@ -453,8 +450,8 @@ function datsuiSacrificeLines(sheet: SkiruSheet, kind: 'scudo' | 'proiettile'): 
     ...naikanPotenziamentoBase(sheet),
     {
       label: kind === 'scudo' ? 'Resistenza Scudo' : 'Danno proiettile',
-      value: 'Σ boost sacrificati',
-      hint: 'Somma dei punti-Potenziamento rimossi al lancio',
+      value: 'Σ Bun sacrificati',
+      hint: 'Somma dei Bun rimossi al lancio',
     },
   ]
 }

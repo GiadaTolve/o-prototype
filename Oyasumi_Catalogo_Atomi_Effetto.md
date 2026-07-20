@@ -94,7 +94,7 @@ Questa è la scoperta più importante dell'analisi: **quasi nessun valore nel da
 | `TIER` | `{tipo:"TIER"}` → legge il tier della waza (T1=4…T5=23) | il 70% dei danni |
 | `TIER_DELTA` | `{tipo:"TIER_DELTA", n:+1}` | Kakuchō, Hakai-Mei, Hōwa, Kaatsu, tutta la famiglia "+1 tier" |
 | `TIER_PER_STACK` | `{tipo:"TIER_PER_STACK", status:"*"}` | Kunō-Baku, Kesshō-Mei (taglia per stack) |
-| `SOMMA_BOOST` | somma dei punti-[Potenziamento] sacrificati | Datsui-Tate, Datsui-Yumi |
+| `SOMMA_BOOST` | somma dei Bun sacrificati | Datsui-Tate, Datsui-Yumi |
 | `TIER_COLPO_SUBITO` | eco del tier dell'ultimo colpo ricevuto | Junnō, Hibiki-Gaeshi |
 | `FORMULA_SKIRU` | `{tipo:"FORMULA", base:8, skiru:"Seimitsu", per_punto:1}` | Michishirube (8+Seimitsu m), soglie di stile (2+Fudōshin, 3+Itami…), Movimento |
 | `SCALARE_A_CRESCERE` | `{tipo:"SCALA", passi:[2,4,6], cap:6}` | Tsubo-Uchi |

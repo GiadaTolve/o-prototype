@@ -891,7 +891,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "isPassive": false,
     "description": "L'analista si spoglia di tutto ciò che si era costruito addosso e lo proietta appena oltre la pelle, come un samurai depone l'armatura davanti a un altare.",
     "poolId": "datsui-tate-scudo-spogliato",
-    "effect": "Attiva · [Scudo][Energetico] · CS 2 · 1 turno. Rimuovi tutti i tuoi Potenziamento attivi e generi uno Scudo con Resistenza pari alla somma dei punti-boost sacrificati. Dura fino a fine prossimo turno o a esaurimento. Il turno seguente non puoi ricevere Potenziamento da alcuna fonte."
+    "effect": "Attiva · [Scudo][Energetico] · CS 2 · 1 turno. Rimuovi tutti i tuoi Potenziamento attivi e generi uno Scudo con Resistenza pari alla somma dei Bun sacrificati. Dura fino a fine prossimo turno o a esaurimento. Il turno seguente non puoi ricevere Potenziamento da alcuna fonte."
   },
   {
     "name": "Datsui-Yumi (脱衣弓) — L'Arco Spogliato",
@@ -900,7 +900,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "isPassive": false,
     "description": "Invece di una freccia, l'analista incocca la propria armatura: la Jigo-Ka compressa diventa un dardo che fende l'aria col peso intero della forza appena rinunciata.",
     "poolId": "datsui-yumi-arco-spogliato",
-    "effect": "Attiva · [Proiettile][Energetico] · CS 2 · istantanea. Lanciabile solo con almeno 1 Potenziamento attivo. Rimuovi tutti i Potenziamento e generi un proiettile per 15 m; danno = somma dei punti-boost sacrificati. Il turno seguente non puoi ricevere Potenziamento."
+    "effect": "Attiva · [Proiettile][Energetico] · CS 2 · istantanea. Lanciabile solo con almeno 1 Potenziamento attivo. Rimuovi tutti i Potenziamento e generi un proiettile per 15 m; danno = somma dei Bun sacrificati. Il turno seguente non puoi ricevere Potenziamento."
   },
   {
     "name": "Hari-Tsume (張り詰め) — Carico Trattenuto",

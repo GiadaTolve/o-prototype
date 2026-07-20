@@ -52,7 +52,7 @@ export const NAIKAN_WAZA_POOL: WazaDef[] = [
     'datsui-tate-scudo-spogliato',
     'Datsui-Tate (脱衣盾) — Lo Scudo Spogliato',
     "L'analista si spoglia di tutto ciò che si era costruito addosso e lo proietta appena oltre la pelle, come un samurai depone l'armatura davanti a un altare.",
-    'Attiva · [Scudo][Energetico] · CS 2 · 1 turno. Rimuovi tutti i tuoi Potenziamento attivi e generi uno Scudo con Resistenza pari alla somma dei punti-boost sacrificati. Dura fino a fine prossimo turno o a esaurimento. Il turno seguente non puoi ricevere Potenziamento da alcuna fonte.',
+    'Attiva · [Scudo][Energetico] · CS 2 · 1 turno. Rimuovi tutti i tuoi Potenziamento attivi e generi uno Scudo con Resistenza pari alla somma dei Bun sacrificati. Dura fino a fine prossimo turno o a esaurimento. Il turno seguente non puoi ricevere Potenziamento da alcuna fonte.',
     { costCs: 2, durata: 'un_turno' },
   ),
   makeActive(
@@ -60,7 +60,7 @@ export const NAIKAN_WAZA_POOL: WazaDef[] = [
     'datsui-yumi-arco-spogliato',
     'Datsui-Yumi (脱衣弓) — L\'Arco Spogliato',
     "Invece di una freccia, l'analista incocca la propria armatura: la Jigo-Ka compressa diventa un dardo che fende l'aria col peso intero della forza appena rinunciata.",
-    'Attiva · [Proiettile][Energetico] · CS 2 · istantanea. Lanciabile solo con almeno 1 Potenziamento attivo. Rimuovi tutti i Potenziamento e generi un proiettile per 15 m; danno = somma dei punti-boost sacrificati. Il turno seguente non puoi ricevere Potenziamento.',
+    'Attiva · [Proiettile][Energetico] · CS 2 · istantanea. Lanciabile solo con almeno 1 Potenziamento attivo. Rimuovi tutti i Potenziamento e generi un proiettile per 15 m; danno = somma dei Bun sacrificati. Il turno seguente non puoi ricevere Potenziamento.',
     { costCs: 2, hasDamage: true },
   ),
   makeActive(

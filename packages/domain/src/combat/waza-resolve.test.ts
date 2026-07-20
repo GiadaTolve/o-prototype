@@ -13,7 +13,7 @@ import {
   UBAIITO_MENTAL_SKIRU_IDS,
 } from './waza-resolve'
 import { computeIndicativeActionIr } from './resolution'
-import { resolveJunkanPotenziamentoCapacity } from '../styles/naikan/junkan'
+import { resolveJunkanBunCapacity } from '../styles/naikan/junkan'
 
 describe('waza-resolve', () => {
   const sheet = {
@@ -53,12 +53,12 @@ describe('waza-resolve', () => {
   })
 
   it('Junkan: Capacità 3 + Itami su Naikan generico', () => {
-    expect(resolveJunkanPotenziamentoCapacity(sheet)).toBe(8)
+    expect(resolveJunkanBunCapacity(sheet)).toBe(8)
     const v = resolveWazaPersonalValues('jiga-hoki-ego-traboccante', {
       sheet,
       styleId: 'naikan',
     })
-    expect(v?.lines[0]?.value).toBe('8 pt Potenziamento')
+    expect(v?.lines[0]?.value).toBe('8 Bun')
   })
 
   it('Junnō: bonus resistenza da tier colpo', () => {
@@ -136,7 +136,7 @@ describe('waza-resolve', () => {
   it('Shōka: Capacità Junkan esplicita', () => {
     const v = resolveWazaPersonalValues('shoka-sublimazione', { sheet })
     expect(v?.lines[0]?.label).toBe('Capacità Junkan')
-    expect(v?.lines[0]?.value).toBe('8 pt Potenziamento')
+    expect(v?.lines[0]?.value).toBe('8 Bun')
   })
 
   it('Ayatsuri: movimento costrutto da Undō', () => {
@@ -170,10 +170,10 @@ describe('waza-resolve', () => {
     expect(resolveWazaPersonalValues('shoka-fiamma-docile', { sheet, styleId: 'toka' })).toBeNull()
   })
 
-  it('Hari-Tsume: +3 pt entro Junkan', () => {
+  it('Hari-Tsume: +3 Bun entro Junkan', () => {
     const v = resolveWazaPersonalValues('hari-tsume-carico-trattenuto', { sheet })
-    expect(v?.lines.find((l) => l.label === 'Potenziamento colpo')?.value).toBe('+3 pt')
-    expect(v?.lines.find((l) => l.label === 'Capacità Junkan')?.value).toBe('8 pt Potenziamento')
+    expect(v?.lines.find((l) => l.label === 'Potenziamento colpo')?.value).toBe('+3 Bun')
+    expect(v?.lines.find((l) => l.label === 'Capacità Junkan')?.value).toBe('8 Bun')
   })
 
   it('Sen\'i-Gake: opzioni fibra +2', () => {

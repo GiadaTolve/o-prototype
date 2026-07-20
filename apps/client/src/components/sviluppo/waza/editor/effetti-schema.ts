@@ -51,7 +51,7 @@ export const VALORE_TIPO_LABELS: Record<string, string> = {
   TIER: "Usa la forza della waza (tier)",
   TIER_DELTA: "Un gradino più forte/debole (tier ±1)",
   TIER_PER_STACK: "Tier per stack di status",
-  SOMMA_BOOST: "Somma dei bonus attivi",
+  SOMMA_BOOST: "Somma dei Bun sacrificati",
   TIER_COLPO_SUBITO: "Tier del colpo subito",
   FORMULA: "Formula su Skiru",
   MOLT: "Moltiplicatore",

@@ -239,7 +239,7 @@ export const NAIKAN_CATALOG: NaikanCatalogEntry[] = [
     flavor:
       "L'analista spoglia i propri nodi di tutto ciò che li gonfiava e trasforma quella resa in muro: ogni Potenziamento sacrificato diventa uno strato di barriera.",
     meccanica:
-      "Attiva · [Scudo][Energetica] · CS 2 · 1 turno. Rimuovi tutti i tuoi Potenziamento attivi: la loro somma diventa Resistenza dello Scudo. Il turno seguente non puoi ricevere Potenziamento.",
+      "Attiva · [Scudo][Energetica] · CS 2 · 1 turno. Rimuovi tutti i tuoi Potenziamento attivi: la somma dei Bun diventa Resistenza dello Scudo. Il turno seguente non puoi ricevere Potenziamento.",
     tier: 2,
     tags: ["Scudo", "Energetica"],
     cs: 2,
@@ -262,7 +262,7 @@ export const NAIKAN_CATALOG: NaikanCatalogEntry[] = [
         durata: { tipo: "TURNI", n: 1 },
         resistenza_scudo: { tipo: "SOMMA_BOOST" },
         nota_master:
-          "Resistenza Scudo = somma dei bonus sacrificati dai Potenziamento rimossi.",
+          "Resistenza Scudo = somma dei Bun sacrificati dai Potenziamento rimossi.",
       },
       {
         tipo: "MANUALE",
@@ -284,7 +284,7 @@ export const NAIKAN_CATALOG: NaikanCatalogEntry[] = [
     flavor:
       "I Potenziamento non muoiono: si comprimono, si concentrano e vengono lanciati fuori dal corpo come frecce di Jigo-Ka pura.",
     meccanica:
-      "Attiva · [Proiettile][Energetica] · CS 2 · istantanea. Richiede ≥1 Potenziamento attivo. Rimuovi tutti i tuoi Potenziamento e lancia un Proiettile (15 m) il cui danno = somma dei bonus sacrificati. Il turno seguente non puoi ricevere Potenziamento.",
+      "Attiva · [Proiettile][Energetica] · CS 2 · istantanea. Richiede ≥1 Potenziamento attivo. Rimuovi tutti i tuoi Potenziamento e lancia un Proiettile (15 m) il cui danno = somma dei Bun sacrificati. Il turno seguente non puoi ricevere Potenziamento.",
     tier: 2,
     tags: ["Proiettile", "Energetica"],
     cs: 2,
@@ -308,7 +308,7 @@ export const NAIKAN_CATALOG: NaikanCatalogEntry[] = [
         durata: { tipo: "ISTANTANEA" },
         valore: { tipo: "SOMMA_BOOST" },
         consistenza: "Energetica",
-        nota_master: "Danno = somma dei bonus sacrificati dai Potenziamento rimossi. Gittata 15 m.",
+        nota_master: "Danno = somma dei Bun sacrificati dai Potenziamento rimossi. Gittata 15 m.",
       },
       {
         tipo: "MANUALE",

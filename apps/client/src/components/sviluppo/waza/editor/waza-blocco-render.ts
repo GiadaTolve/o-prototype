@@ -103,7 +103,7 @@ export function renderValore(value: unknown, tierFlatDamage?: number | null): st
       return status ? `il tier per ogni stack di ${status}` : "il tier per ogni stack…";
     }
     case "SOMMA_BOOST":
-      return "la somma dei boost attivi";
+      return "la somma dei Bun sacrificati";
     case "TIER_COLPO_SUBITO":
       return "il tier del colpo subito";
     case "FORMULA": {

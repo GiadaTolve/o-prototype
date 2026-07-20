@@ -8,8 +8,8 @@ export const JUNKAN_STYLE_ID = 'naikan' as const
 export const JUNKAN_MAX_PHASE = 3
 export const JUNKAN_SUPPORT_BONUS_PERCENT = 10
 
-/** Punti-Potenziamento simultanei sul corpo — manuale Junkan. */
-export const JUNKAN_POTENZIAMENTO_BASE = 3
+/** Bun simultanei sul corpo (unità Junkan) — capacità base. */
+export const JUNKAN_BUN_BASE = 3
 
 export type JunkanPhase = 0 | 1 | 2 | 3
 
@@ -45,8 +45,8 @@ export function resetJunkanCycle(): JunkanPhase {
   return 0
 }
 
-/** Capacità di Junkan = 3 + Itami (punti-Potenziamento simultanei sul corpo). */
-export function resolveJunkanPotenziamentoCapacity(sheet: SkiruSheet): number {
+/** Capacità di Junkan = 3 + Itami (Bun simultanei sul corpo). */
+export function resolveJunkanBunCapacity(sheet: SkiruSheet): number {
   const itami = getSkiruPoints(sheet, SKIRU_ID_ITAMI)
-  return JUNKAN_POTENZIAMENTO_BASE + itami
+  return JUNKAN_BUN_BASE + itami
 }
