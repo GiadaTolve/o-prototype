@@ -1722,7 +1722,33 @@ body {
   object-fit: cover;
 }
 
-.bbcode-accent {
+/* Wiki — accent di sistema (EB Garamond + barra viola, come effetti editoriali) */
+.wiki-prose .wiki-accent {
+  display: block;
+  margin: 0.75rem 0;
+  padding: 0.45rem 0.65rem 0.45rem 0.75rem;
+  font-family: var(--font-accent, "EB Garamond", Georgia, serif);
+  font-size: 1.02em;
+  font-style: italic;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--accent-gold) 72%, var(--accent-violet-light));
+  border-left: 2px solid color-mix(in srgb, var(--accent-violet) 48%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent-violet) 9%, transparent) 0%,
+    transparent 70%
+  );
+  border-radius: 0 4px 4px 0;
+}
+
+.wiki-prose span.wiki-accent {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0.2rem 0;
+  vertical-align: baseline;
+}
+
+.wiki-prose .wiki-marker {
   color: var(--accent-gold);
   font-weight: 600;
 }

@@ -40,7 +40,7 @@ export function BbcodeToolbar({ onInsert, variant = "forum", className = "" }: B
             type="button"
             className={`${btnClass} text-[var(--accent-gold)] border-[var(--accent-gold)]/30`}
             onClick={() => onInsert("[accent]", "[/accent]")}
-            title="Accent oro (oppure @parola nel testo)"
+            title="Accent di sistema (EB Garamond + barra)"
           >
             ACC
           </button>

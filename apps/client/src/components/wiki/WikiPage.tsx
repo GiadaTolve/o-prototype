@@ -417,11 +417,11 @@ export function WikiPage({ kind }: WikiPageProps) {
                   onChange={(e) => setEditTarget({ ...editTarget, content: e.target.value })}
                   rows={12}
                   className="w-full px-3 py-2 bg-[var(--button-bg)] border border-[var(--border-color)] border-t-0 rounded-b text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none resize-y font-mono leading-relaxed"
-                  placeholder="Paragrafo vuoto = nuovo blocco. Elenchi: • o - all'inizio riga. BBCode: [b], [i], [accent]… @parola per accent oro. [banner]URL[/banner] · [img=left]URL[/img]"
+                  placeholder="Paragrafo vuoto = nuovo blocco. Elenchi: • o - all'inizio riga. [accent]…[/accent] = accent di sistema. @parola = enfasi oro inline."
                 />
                 <p className="mt-1.5 text-[10px] text-gray-500 leading-relaxed">
-                  Accent come in landing: <span className="text-[var(--accent-gold)]">@parola</span> oppure{" "}
-                  <code className="text-[var(--accent-violet-light)]">[accent]testo[/accent]</code>. Banner inline:{" "}
+                  <code className="text-[var(--accent-violet-light)]">[accent]testo[/accent]</code> = accent di sistema (Garamond
+                  + barra viola). <span className="text-[var(--accent-gold)]">@parola</span> = enfasi oro inline. Banner:{" "}
                   <code className="text-[var(--accent-violet-light)]">[banner]url[/banner]</code>. Miniatura a sinistra:{" "}
                   <code className="text-[var(--accent-violet-light)]">[img=left]url[/img]</code>.
                 </p>

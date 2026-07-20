@@ -1,7 +1,7 @@
 /**
  * BBCode Parser — Forum + Wiki (Guida/Ambientazione).
  * Forum: [b], [i], [u], [s], [quote], [code], [spoiler], [img], [url], [color], [center]
- * Wiki: + [accent], [banner], [img=left], marcatori @parola (stile landing)
+ * Wiki: + [accent], [banner], [img=left], marcatori @parola (enfasi inline oro)
  */
 
 function escapeHtml(text: string): string {
@@ -46,10 +46,10 @@ function applyBBCodeTags(html: string, options?: { wiki?: boolean }): string {
       '<img src="$1" alt="" class="bbcode-img bbcode-img--left" loading="lazy" />',
     );
 
-    // [accent] ... [/accent] — enfasi oro (stile landing @marker)
+    // [accent] ... [/accent] — accent di sistema (EB Garamond + barra laterale)
     out = out.replace(
       /\[accent\]([\s\S]*?)\[\/accent\]/gi,
-      '<span class="bbcode-accent">$1</span>',
+      '<span class="wiki-accent">$1</span>',
     );
   }
 
@@ -90,14 +90,27 @@ function applyBBCodeTags(html: string, options?: { wiki?: boolean }): string {
   return out;
 }
 
-/** Marcatori @parola → accent oro (come Yume-chan in landing). */
-function applyWikiAccents(html: string): string {
-  return html.replace(/@(\w+)/g, '<span class="bbcode-accent">$1</span>');
+/** Marcatori @parola → enfasi oro inline (stile chat landing). */
+function applyWikiMarkers(html: string): string {
+  return html.replace(/@(\w+)/g, '<span class="wiki-marker">$1</span>');
+}
+
+function renderWikiAccentBlock(inner: string): string {
+  let html = escapeHtml(inner.trim());
+  html = applyBBCodeTags(html, { wiki: true });
+  html = applyWikiMarkers(html);
+  html = html.replace(/\n/g, "<br />");
+  return `<aside class="wiki-accent">${html}</aside>`;
 }
 
 function parseWikiBlock(block: string): string {
   const trimmed = block.trim();
   if (!trimmed) return "";
+
+  const accentOnly = /^\[accent\]([\s\S]*)\[\/accent\]$/i.exec(trimmed);
+  if (accentOnly) {
+    return renderWikiAccentBlock(accentOnly[1]);
+  }
 
   const lines = trimmed.split("\n");
   const isList =
@@ -112,7 +125,7 @@ function parseWikiBlock(block: string): string {
         const content = line.replace(/^[•-]\s*/, "");
         let html = escapeHtml(content);
         html = applyBBCodeTags(html, { wiki: true });
-        html = applyWikiAccents(html);
+        html = applyWikiMarkers(html);
         return `<li>${html}</li>`;
       })
       .join("");
@@ -121,7 +134,7 @@ function parseWikiBlock(block: string): string {
 
   let html = escapeHtml(trimmed);
   html = applyBBCodeTags(html, { wiki: true });
-  html = applyWikiAccents(html);
+  html = applyWikiMarkers(html);
   html = html.replace(/\n/g, "<br />");
   return `<p class="wiki-paragraph mb-4 last:mb-0">${html}</p>`;
 }
