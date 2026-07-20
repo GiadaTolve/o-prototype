@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { api } from "@/lib/api";
+import { parseWikiContent } from "@/lib/bbcode-parser";
+import { insertBbcodeTag } from "@/lib/bbcode-insert";
+import { BbcodeToolbar } from "@/components/shared/BbcodeToolbar";
 
 export type WikiKind = "guida" | "ambientazione";
 
@@ -35,33 +38,18 @@ type EditTarget = {
   imageUrl: string;
 };
 
-function renderParagraphs(text: string) {
+function WikiRichContent({ text }: { text: string }) {
   if (!text.trim()) {
     return <p className="text-gray-500 italic">Nessun contenuto ancora.</p>;
   }
-  return text.split(/\n\n+/).map((block, i) => {
-    const lines = block.split("\n").filter(Boolean);
-    const isList = lines.every((l) => l.startsWith("• ") || l.startsWith("- "));
-    if (isList) {
-      return (
-        <ul key={i} className="list-disc list-inside space-y-1 my-3">
-          {lines.map((line, j) => (
-            <li key={j}>{line.replace(/^[•-]\s*/, "")}</li>
-          ))}
-        </ul>
-      );
-    }
-    return (
-      <p key={i} className="mb-4 last:mb-0">
-        {block.split("\n").map((line, j, arr) => (
-          <span key={j}>
-            {line}
-            {j < arr.length - 1 && <br />}
-          </span>
-        ))}
-      </p>
-    );
-  });
+
+  const html = parseWikiContent(text);
+  return (
+    <div
+      className="wiki-prose flow-root text-gray-300 leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 export function WikiPage({ kind }: WikiPageProps) {
@@ -73,6 +61,7 @@ export function WikiPage({ kind }: WikiPageProps) {
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [saving, setSaving] = useState(false);
   const mountedRef = useRef(false);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -222,6 +211,14 @@ export function WikiPage({ kind }: WikiPageProps) {
     }
   };
 
+  const insertContentTag = (openTag: string, closeTag: string) => {
+    if (!editTarget) return;
+    const textarea = contentTextareaRef.current;
+    if (!textarea) return;
+    const next = insertBbcodeTag(textarea, editTarget.content, openTag, closeTag);
+    setEditTarget({ ...editTarget, content: next });
+  };
+
   if (loading) {
     return (
       <div className="wiki-layout h-full w-full flex items-center justify-center">
@@ -355,14 +352,12 @@ export function WikiPage({ kind }: WikiPageProps) {
                 <img
                   src={activeSection.imageUrl}
                   alt={activeSection.title}
-                  className="w-full max-h-80 object-cover"
+                  className="bbcode-banner w-full max-h-80 object-cover"
                 />
               </figure>
             )}
 
-            <div className="wiki-prose text-gray-300 leading-relaxed">
-              {renderParagraphs(activeSection.content)}
-            </div>
+            <WikiRichContent text={activeSection.content} />
           </article>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
@@ -385,7 +380,7 @@ export function WikiPage({ kind }: WikiPageProps) {
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
           <div
-            className="w-full max-w-lg bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-[0_8px_40px_var(--shadow-dark)] animate__animated animate__fadeIn"
+            className="w-full max-w-2xl bg-[var(--panel-bg)] border border-[var(--border-color)] rounded-lg shadow-[0_8px_40px_var(--shadow-dark)] animate__animated animate__fadeIn max-h-[90vh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
           >
@@ -415,24 +410,32 @@ export function WikiPage({ kind }: WikiPageProps) {
               </label>
               <label className="block">
                 <span className="text-xs text-gray-500 uppercase tracking-wider">Contenuto</span>
+                <BbcodeToolbar variant="wiki" onInsert={insertContentTag} />
                 <textarea
+                  ref={contentTextareaRef}
                   value={editTarget.content}
                   onChange={(e) => setEditTarget({ ...editTarget, content: e.target.value })}
-                  rows={10}
-                  className="mt-1 w-full px-3 py-2 bg-[var(--button-bg)] border border-[var(--border-color)] rounded text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none resize-y"
-                  placeholder="Testo del paragrafo. Usa una riga vuota tra i paragrafi. Per elenchi usa • all'inizio della riga."
+                  rows={12}
+                  className="w-full px-3 py-2 bg-[var(--button-bg)] border border-[var(--border-color)] border-t-0 rounded-b text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none resize-y font-mono leading-relaxed"
+                  placeholder="Paragrafo vuoto = nuovo blocco. Elenchi: • o - all'inizio riga. BBCode: [b], [i], [accent]… @parola per accent oro. [banner]URL[/banner] · [img=left]URL[/img]"
                 />
+                <p className="mt-1.5 text-[10px] text-gray-500 leading-relaxed">
+                  Accent come in landing: <span className="text-[var(--accent-gold)]">@parola</span> oppure{" "}
+                  <code className="text-[var(--accent-violet-light)]">[accent]testo[/accent]</code>. Banner inline:{" "}
+                  <code className="text-[var(--accent-violet-light)]">[banner]url[/banner]</code>. Miniatura a sinistra:{" "}
+                  <code className="text-[var(--accent-violet-light)]">[img=left]url[/img]</code>.
+                </p>
               </label>
               <label className="block">
                 <span className="text-xs text-gray-500 uppercase tracking-wider">
-                  Immagine (URL, opzionale)
+                  Banner sezione (URL, opzionale)
                 </span>
                 <input
                   type="url"
                   value={editTarget.imageUrl}
                   onChange={(e) => setEditTarget({ ...editTarget, imageUrl: e.target.value })}
                   className="mt-1 w-full px-3 py-2 bg-[var(--button-bg)] border border-[var(--border-color)] rounded text-sm text-gray-200 focus:border-[var(--accent-gold)] outline-none"
-                  placeholder="https://..."
+                  placeholder="https://… — immagine in testa alla sezione"
                 />
               </label>
             </div>

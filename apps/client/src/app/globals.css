@@ -1698,6 +1698,35 @@ body {
   margin: 10px 0;
 }
 
+.bbcode-img--left {
+  float: left;
+  max-width: 120px;
+  width: min(120px, 33%);
+  margin: 0.15rem 1rem 0.5rem 0;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 16px var(--shadow-dark);
+}
+
+.bbcode-banner-wrap {
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px var(--shadow-dark);
+}
+
+.bbcode-banner {
+  display: block;
+  width: 100%;
+  max-height: 20rem;
+  object-fit: cover;
+}
+
+.bbcode-accent {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
 .bbcode-link {
   color: var(--accent-violet);
   text-decoration: underline;
@@ -2145,6 +2174,19 @@ html:has(.wiki-page-root) body {
 .wiki-prose {
   text-align: justify;
   hyphens: auto;
+}
+
+.wiki-prose.flow-root {
+  display: flow-root;
+}
+
+.wiki-prose .wiki-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.wiki-prose .bbcode-banner-wrap + .wiki-paragraph,
+.wiki-prose .wiki-paragraph + .bbcode-banner-wrap {
+  margin-top: 0.5rem;
 }
 
 .wiki-content {
