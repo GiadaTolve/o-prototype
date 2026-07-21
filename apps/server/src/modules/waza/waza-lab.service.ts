@@ -336,11 +336,31 @@ export async function patchWazaLabItem(
       })
       .where(eq(skills.id, skill.id));
 
-    if (input.cs !== undefined) {
-      const authoring = await db.query.waza.findFirst({
-        where: eq(waza.legacyId, skill.id),
-      });
-      if (authoring) {
+    const authoring = await db.query.waza.findFirst({
+      where: eq(waza.legacyId, skill.id),
+    });
+    if (authoring) {
+      const nextRank = isPassive
+        ? null
+        : input.rank !== undefined
+          ? input.rank?.trim() || null
+          : skill.rank;
+      const nextTier =
+        isPassive || !nextRank
+          ? null
+          : Number(String(nextRank).replace(/^T/i, "")) || null;
+
+      if (input.rank !== undefined || input.isPassive !== undefined) {
+        await db
+          .update(waza)
+          .set({
+            tipo: isPassive ? "passiva" : "attiva",
+            tier: nextTier != null && nextTier >= 1 && nextTier <= 5 ? nextTier : null,
+          })
+          .where(eq(waza.id, authoring.id));
+      }
+
+      if (input.cs !== undefined) {
         const versione = await db.query.wazaVersioni.findFirst({
           where: eq(wazaVersioni.wazaId, authoring.id),
           orderBy: (v, { desc: d }) => [d(v.numero)],

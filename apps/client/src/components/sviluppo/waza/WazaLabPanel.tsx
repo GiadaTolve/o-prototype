@@ -486,7 +486,58 @@ export function WazaLabPanel() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="block space-y-1">
+                      <span className="text-[10px] uppercase tracking-wider text-gray-500">Tipo</span>
+                      <select
+                        value={draft.isPassive ? "passiva" : "attiva"}
+                        onChange={(e) => {
+                          const isPassive = e.target.value === "passiva";
+                          const rank = isPassive ? null : draft.rank ?? "T1";
+                          setDraft({
+                            ...draft,
+                            isPassive,
+                            rank,
+                            costExp: resolveDefaultWazaCostExp({ isPassive, rank }),
+                          });
+                        }}
+                        className="w-full rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
+                      >
+                        <option value="attiva">Attiva</option>
+                        <option value="passiva">Passiva</option>
+                      </select>
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] uppercase tracking-wider text-gray-500">Tier</span>
+                      <select
+                        value={draft.isPassive ? "" : draft.rank ?? "T1"}
+                        disabled={draft.isPassive}
+                        onChange={(e) => {
+                          const rank = e.target.value || "T1";
+                          setDraft({
+                            ...draft,
+                            rank,
+                            costExp: resolveDefaultWazaCostExp({
+                              isPassive: false,
+                              rank,
+                            }),
+                          });
+                        }}
+                        className="w-full rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px] disabled:opacity-50"
+                      >
+                        {draft.isPassive ? (
+                          <option value="">— (passiva)</option>
+                        ) : (
+                          <>
+                            <option value="T1">T1</option>
+                            <option value="T2">T2</option>
+                            <option value="T3">T3</option>
+                            <option value="T4">T4</option>
+                            <option value="T5">T5</option>
+                          </>
+                        )}
+                      </select>
+                    </label>
                     <label className="block space-y-1">
                       <span className="text-[10px] uppercase tracking-wider text-gray-500">EXP</span>
                       <div className="flex gap-2">
@@ -541,28 +592,6 @@ export function WazaLabPanel() {
                         className="w-full rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
                         disabled={!draft.hasAuthoring}
                       />
-                    </label>
-                    <label className="block space-y-1">
-                      <span className="text-[10px] uppercase tracking-wider text-gray-500">Tipo</span>
-                      <select
-                        value={draft.isPassive ? "passiva" : "attiva"}
-                        onChange={(e) => {
-                          const isPassive = e.target.value === "passiva";
-                          setDraft({
-                            ...draft,
-                            isPassive,
-                            rank: isPassive ? null : draft.rank ?? "T1",
-                            costExp: resolveDefaultWazaCostExp({
-                              isPassive,
-                              rank: isPassive ? null : draft.rank ?? "T1",
-                            }),
-                          });
-                        }}
-                        className="w-full rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
-                      >
-                        <option value="attiva">Attiva</option>
-                        <option value="passiva">Passiva</option>
-                      </select>
                     </label>
                   </div>
 
