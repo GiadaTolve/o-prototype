@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ordine — mockup main content · Oyasumi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --background: #0b0b11;
+      --panel-bg: #14141f;
+      --accent-gold: #c9a84a;
+      --accent-violet: #7c3aed;
+      --accent-violet-light: #a78bfa;
+      --border-color: #2a2a3a;
+      --text: #e5e5ea;
+      --text-muted: #9ca3af;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Source Sans 3", system-ui, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .page { max-width: 960px; margin: 0 auto; padding: 1.25rem; }
+    h1, h2, h3, .font-display {
+      font-family: Philosopher, serif;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+    h1 { color: var(--accent-gold); font-size: 1.5rem; margin: 0 0 0.5rem; }
+    .lead { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; }
+    .group-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent-violet-light);
+      margin: 0.75rem 0 0.35rem;
+      opacity: 0.8;
+    }
+    .switcher { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+    .switcher button {
+      font-family: Philosopher, serif;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.4rem 0.7rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .switcher button.active {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      background: rgba(201, 168, 74, 0.08);
+    }
+    .switcher button.variant-a {
+      border-color: color-mix(in srgb, var(--accent-gold) 40%, var(--border-color));
+    }
+    .switcher button.variant-a.active {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 12px rgba(201, 168, 74, 0.15);
+    }
+    .note {
+      border-left: 2px solid var(--accent-violet);
+      padding: 0.65rem 0.85rem;
+      background: rgba(124, 58, 237, 0.08);
+      font-size: 0.8rem;
+      color: var(--accent-violet-light);
+      margin-bottom: 1rem;
+      border-radius: 0 4px 4px 0;
+    }
+    .compare {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+      font-size: 0.78rem;
+    }
+    .compare div {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.65rem;
+      background: var(--panel-bg);
+    }
+    .compare strong { color: var(--accent-gold); display: block; margin-bottom: 0.25rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .shell {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel-bg);
+    }
+    .shell-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(0,0,0,0.35);
+    }
+    .shell-head .title { font-family: Philosopher, serif; color: var(--accent-gold); font-size: 0.95rem; }
+    .shell-head .back { font-size: 0.75rem; color: var(--text-muted); }
+    .shell-body {
+      padding: 1rem;
+      background-color: rgba(0,0,0,0.45);
+      min-height: 440px;
+    }
+    .proposal { display: none; }
+    .proposal.visible { display: block; }
+    /* shared */
+    .portraits { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+    @media (max-width: 520px) { .portraits { grid-template-columns: 1fr; } }
+    .portrait {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem;
+      cursor: pointer;
+      background: rgba(0,0,0,0.25);
+      text-align: left;
+      color: inherit;
+      width: 100%;
+    }
+    .portrait.selected { border-color: var(--accent-gold); background: rgba(201,168,74,0.06); }
+    .portrait.compact { padding: 0.55rem; }
+    .portrait.compact .portrait-img { height: 72px; }
+    .portrait-img {
+      height: 100px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      background: rgba(0,0,0,0.3);
+    }
+    .portrait h3 { margin: 0; font-size: 1rem; color: var(--accent-gold); }
+    .portrait p { margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--text-muted); }
+    .tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.75rem 0; }
+    .tabs button, .seg button, .chips button, .anchor-nav button {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .tabs button.active, .seg button.active, .chips button.active, .anchor-nav button.active {
+      border-color: var(--accent-violet);
+      color: var(--accent-violet-light);
+      background: rgba(124,58,237,0.1);
+    }
+    .accent-block {
+      font-family: "EB Garamond", Georgia, serif;
+      font-style: italic;
+      border-left: 2px solid rgba(124, 58, 237, 0.5);
+      padding-left: 0.75rem;
+      color: color-mix(in srgb, var(--accent-gold) 72%, var(--accent-violet-light));
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+    .compendi-item, .waza-row {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.55rem 0.65rem;
+      margin-bottom: 0.45rem;
+      background: rgba(0,0,0,0.25);
+      font-size: 0.82rem;
+    }
+    .compendi-item strong { display: block; color: var(--text); margin-bottom: 0.15rem; }
+    .waza-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    .badge {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      color: var(--accent-violet-light);
+      white-space: nowrap;
+    }
+    .section-label {
+      font-family: Philosopher, serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent-gold);
+      opacity: 0.85;
+      margin: 0.75rem 0 0.35rem;
+    }
+    /* B wiki */
+    .wiki-layout { display: flex; gap: 0; min-height: 360px; }
+    @media (max-width: 600px) { .wiki-layout { flex-direction: column; } }
+    .wiki-nav {
+      width: 148px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border-color);
+      padding-right: 0.65rem;
+    }
+    @media (max-width: 600px) {
+      .wiki-nav { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 0.65rem; margin-bottom: 0.65rem; }
+    }
+    .wiki-nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.5rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .wiki-nav button.parent { font-family: Philosopher, serif; color: var(--accent-violet-light); font-size: 0.8rem; padding-top: 0.5rem; }
+    .wiki-nav button.child { padding-left: 1rem; font-size: 0.72rem; }
+    .wiki-nav button.active { background: rgba(124,58,237,0.12); color: var(--accent-gold); }
+    .wiki-main { flex: 1; min-width: 0; }
+    /* C editorial */
+    .editorial-head { display: grid; grid-template-columns: 120px 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    @media (max-width: 480px) { .editorial-head { grid-template-columns: 1fr; } }
+    .editorial-head .thumb {
+      height: 140px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-align: center;
+      background: rgba(0,0,0,0.3);
+    }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
+    hr.div { border: none; border-top: 1px solid var(--border-color); margin: 1rem 0; }
+    /* D hero */
+    .hero {
+      position: relative;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      min-height: 168px;
+      background: linear-gradient(135deg, rgba(0,0,0,0.55), rgba(124,58,237,0.12));
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+      opacity: 0.55;
+    }
+    .hero-overlay {
+      position: relative;
+      z-index: 1;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 168px;
+      background: linear-gradient(to top, rgba(11,11,17,0.92) 35%, transparent);
+    }
+    .hero-overlay h2 { margin: 0; color: var(--accent-gold); font-size: 1.25rem; }
+    .hero-overlay p { margin: 0.2rem 0 0.65rem; font-size: 0.78rem; color: var(--text-muted); font-style: italic; }
+    .seg { display: inline-flex; gap: 0; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; border-right: 1px solid var(--border-color); }
+    .seg button:last-child { border-right: none; }
+    /* E split */
+    .split {
+      display: grid;
+      grid-template-columns: minmax(140px, 34%) 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    @media (max-width: 560px) {
+      .split { grid-template-columns: 1fr; }
+      .split-aside { display: grid; grid-template-columns: 96px 1fr; gap: 0.65rem; align-items: center; }
+      .split-aside .portrait-img { height: 96px; margin: 0; }
+      .split-aside .sticky-inner { position: static !important; }
+    }
+    .sticky-inner { position: sticky; top: 0.5rem; }
+    .split-aside .portrait {
+      cursor: default;
+      margin-bottom: 0.5rem;
+    }
+    .split-aside .portrait:last-child { margin-bottom: 0; }
+    .split-aside .portrait:not(.selected) { opacity: 0.55; cursor: pointer; }
+    .split-aside .portrait:not(.selected):hover { opacity: 0.8; }
+    /* F breadcrumb + chips */
+    .crumb {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin: 0.5rem 0;
+    }
+    .crumb span { color: var(--accent-gold); }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0 0.75rem; }
+    .compendi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .compendi-card {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.55rem;
+      background: rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-size: 0.78rem;
+      text-align: left;
+      color: inherit;
+    }
+    .compendi-card.selected { border-color: var(--accent-violet); background: rgba(124,58,237,0.08); }
+    .compendi-card strong { display: block; color: var(--accent-violet-light); font-size: 0.75rem; margin-bottom: 0.2rem; }
+  /* G anchor */
+    .anchor-nav {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      padding: 0.5rem 0;
+      margin-bottom: 0.5rem;
+      background: rgba(20,20,31,0.95);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .scroll-section {
+      scroll-margin-top: 3.5rem;
+      padding-top: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .scroll-section h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.95rem;
+      color: var(--accent-gold);
+    }
+    /* H arsenale first */
+    .arsenale-teaser {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .waza-card {
+      border: 1px solid color-mix(in srgb, var(--accent-gold) 35%, var(--border-color));
+      border-radius: 6px;
+      padding: 0.55rem;
+      background: rgba(201,168,74,0.04);
+      font-size: 0.78rem;
+    }
+    .waza-card strong { color: var(--accent-gold); display: block; }
+    .waza-card span { font-size: 0.68rem; color: var(--text-muted); }
+    .accordion {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+    }
+    .accordion summary {
+      cursor: pointer;
+      padding: 0.55rem 0.65rem;
+      font-family: Philosopher, serif;
+      font-size: 0.82rem;
+      color: var(--accent-violet-light);
+      background: rgba(0,0,0,0.2);
+      list-style: none;
+    }
+    .accordion summary::-webkit-details-marker { display: none; }
+    .accordion[open] summary { border-bottom: 1px solid var(--border-color); color: var(--accent-gold); }
+    .accordion .body { padding: 0.65rem; font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Ordine — mockup main content</h1>
+    <p class="lead">
+      Bottone colonna sinistra → vista nel centro (come Guida). Evoluzioni della proposta A in evidenza.
+    </p>
+
+    <p class="group-label">Varianti A — ritratti + sezioni</p>
+    <div class="switcher" id="switcher-a">
+      <button type="button" data-p="A" class="active variant-a">A · Hub + tab</button>
+      <button type="button" data-p="D" class="variant-a">D · Hero banner</button>
+      <button type="button" data-p="E" class="variant-a">E · Split sticky</button>
+      <button type="button" data-p="F" class="variant-a">F · Compendi drill-down</button>
+      <button type="button" data-p="G" class="variant-a">G · Anchor scroll</button>
+      <button type="button" data-p="H" class="variant-a">H · Arsenale in testa</button>
+    </div>
+
+    <p class="group-label">Alternative</p>
+    <div class="switcher" id="switcher-alt">
+      <button type="button" data-p="B">B · Wiki sidebar</button>
+      <button type="button" data-p="C">C · Scroll unico</button>
+    </div>
+
+    <div class="compare" id="compare-box">
+      <div><strong>Pro</strong><span id="cmp-pro">Mantiene i ritratti; tab chiare; ok su mobile.</span></div>
+      <div><strong>Contro</strong><span id="cmp-contro">Due livelli UI; arsenale meno in evidenza.</span></div>
+      <div><strong>Dati</strong>Statuti taxonomy · Compendi extra · Waza family ordine (da creare).</div>
+    </div>
+
+    <div class="shell">
+      <div class="shell-head">
+        <span class="title" id="shell-title">Ordine · Proposal A</span>
+        <span class="back">← Torna alla Mappa</span>
+      </div>
+      <div class="shell-body">
+
+        <!-- A -->
+        <div class="proposal visible" id="prop-A">
+          <p class="note">Base: due ritratti affiancati, poi tab Statuto / Compendi / Arsenale.</p>
+          <div class="portraits" id="a-portraits"></div>
+          <h2 id="a-name" style="margin:0;font-size:1.1rem;color:var(--accent-gold)">Chisen-Tai</h2>
+          <div class="tabs" id="a-tabs">
+            <button type="button" data-tab="statuto" class="active">Statuto</button>
+            <button type="button" data-tab="compendi">Compendi</button>
+            <button type="button" data-tab="arsenale">Arsenale</button>
+          </div>
+          <div id="a-content"></div>
+        </div>
+
+        <!-- D -->
+        <div class="proposal" id="prop-D">
+          <p class="note">Un ritratto hero a tutta larghezza; switch fazione come segment control sul banner.</p>
+          <div class="hero" id="d-hero">
+            <div class="hero-bg" id="d-hero-bg">Ritratto hero</div>
+            <div class="hero-overlay">
+              <div class="seg" id="d-seg">
+                <button type="button" data-order="chisen" class="active">Chisen-Tai</button>
+                <button type="button" data-order="mugen">Mugen-Tai</button>
+              </div>
+              <h2 id="d-name">Chisen-Tai</h2>
+              <p id="d-tag"></p>
+            </div>
+          </div>
+          <div class="tabs" id="d-tabs">
+            <button type="button" data-tab="statuto" class="active">Statuto</button>
+            <button type="button" data-tab="compendi">Compendi</button>
+            <button type="button" data-tab="arsenale">Arsenale</button>
+          </div>
+          <div id="d-content"></div>
+        </div>
+
+        <!-- E -->
+        <div class="proposal" id="prop-E">
+          <p class="note">Desktop: colonna sinistra sticky con ritratti impilati; destra tab + contenuto. Mobile: header compatto.</p>
+          <div class="split">
+            <aside class="split-aside">
+              <div class="sticky-inner" id="e-portraits"></div>
+            </aside>
+            <div class="split-main">
+              <h2 id="e-name" style="margin:0;font-size:1.1rem;color:var(--accent-gold)">Chisen-Tai</h2>
+              <p id="e-tag" style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0.5rem;font-style:italic"></p>
+              <div class="tabs" id="e-tabs">
+                <button type="button" data-tab="statuto" class="active">Statuto</button>
+                <button type="button" data-tab="compendi">Compendi</button>
+                <button type="button" data-tab="arsenale">Arsenale</button>
+              </div>
+              <div id="e-content"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- F -->
+        <div class="proposal" id="prop-F">
+          <p class="note">Come A ma nella tab Compendi: griglia card + breadcrumb e chip per aprire un singolo compendio.</p>
+          <div class="portraits compact" id="f-portraits"></div>
+          <h2 id="f-name" style="margin:0;font-size:1.1rem;color:var(--accent-gold)">Chisen-Tai</h2>
+          <div class="tabs" id="f-tabs">
+            <button type="button" data-tab="statuto" class="active">Statuto</button>
+            <button type="button" data-tab="compendi">Compendi</button>
+            <button type="button" data-tab="arsenale">Arsenale</button>
+          </div>
+          <div class="crumb" id="f-crumb"></div>
+          <div id="f-content"></div>
+        </div>
+
+        <!-- G -->
+        <div class="proposal" id="prop-G">
+          <p class="note">Ritratti compatti + nav sticky a ancoraggio: tutte le sezioni visibili in scroll continuo.</p>
+          <div class="portraits compact" id="g-portraits"></div>
+          <nav class="anchor-nav" id="g-anchor">
+            <button type="button" data-anchor="statuto" class="active">Statuto</button>
+            <button type="button" data-anchor="compendi">Compendi</button>
+            <button type="button" data-anchor="arsenale">Arsenale</button>
+          </nav>
+          <div id="g-content"></div>
+        </div>
+
+        <!-- H -->
+        <div class="proposal" id="prop-H">
+          <p class="note">Waza d'ordine in evidenza subito sotto i ritratti; Statuto e Compendi in accordion sotto.</p>
+          <div class="portraits compact" id="h-portraits"></div>
+          <div class="section-label" style="margin-top:0">Arsenale d'ordine</div>
+          <div class="arsenale-teaser" id="h-arsenale"></div>
+          <details class="accordion" open>
+            <summary>Statuto</summary>
+            <div class="body" id="h-statuto"></div>
+          </details>
+          <details class="accordion">
+            <summary>Compendi <span id="h-compendi-count" style="opacity:0.6;font-size:0.72rem"></span></summary>
+            <div class="body" id="h-compendi"></div>
+          </details>
+        </div>
+
+        <!-- B -->
+        <div class="proposal" id="prop-B">
+          <p class="note">Indice a sinistra (stile Guida). Scalabile se i compendi crescono.</p>
+          <div class="wiki-layout">
+            <nav class="wiki-nav" id="b-nav"></nav>
+            <div class="wiki-main">
+              <h2 id="b-name" style="margin:0;font-size:1.1rem;color:var(--accent-gold)">Chisen-Tai</h2>
+              <p id="b-tag" style="font-size:0.75rem;color:var(--text-muted);margin:0.25rem 0 0.75rem"></p>
+              <div id="b-content"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- C -->
+        <div class="proposal" id="prop-C">
+          <p class="note">Una pagina lunga per fazione: tutto in scroll, massima immersione.</p>
+          <div class="tabs" id="c-order-tabs">
+            <button type="button" data-order="chisen" class="active">Chisen-Tai</button>
+            <button type="button" data-order="mugen">Mugen-Tai</button>
+          </div>
+          <div id="c-content"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DATA = {
+      chisen: {
+        name: "Chisen-Tai",
+        tag: "Ordine della disciplina · lettura e controllo",
+        statute: "Lo Chisen-Tai forma analisti che misurano il campo prima di colpire. Lo Statuto fissa doveri, gerarchie e limiti d'intervento in scena.",
+        rules: ["Obbedienza alle gerarchie quando richiesto dal Master", "Priorità osservazione e supporto", "Segretezza su contenuti interni"],
+        compendi: [
+          { t: "Protocollo di Lettura", b: "Documentare bersagli e status senza rompere l'immersione." },
+          { t: "Catena di Comando", b: "Ruoli interni e chi può dare ordini in scena." },
+          { t: "Marchio e Distintivi", b: "Icona pixel e titoli visibili agli altri PG." },
+        ],
+        waza: [
+          { n: "Seirei-Kei", tier: "T1" },
+          { n: "Kansatsu-Hō", tier: "T2" },
+          { n: "Teishi", tier: "T2" },
+        ],
+      },
+      mugen: {
+        name: "Mugen-Tai",
+        tag: "Ordine della spinta · pressione e arsenale",
+        statute: "Il Mugen-Tai forma chi porta il peso dello scontro. Statuto = lealtà, uso della forza, responsabilità verso l'Ordine.",
+        rules: ["Forza con costo narrativo", "Protezione fratelli d'ordine", "Segretezza su arsenale riservato"],
+        compendi: [
+          { t: "Arsenale Condiviso", b: "Sblocco waza d'ordine (milestone Sentō Senshi)." },
+          { t: "Giuramento del Taglio", b: "Rituale di ingresso nel Mugen-Tai." },
+          { t: "Campagne Storiche", b: "Vignette su operazioni passate." },
+        ],
+        waza: [
+          { n: "Zan'ei", tier: "T1" },
+          { n: "Totsugeki", tier: "T2" },
+          { n: "Hōkō", tier: "T3" },
+        ],
+      },
+    };
+
+    const CMP = {
+      A: { pro: "Mantiene i ritratti; tab chiare; ok su mobile.", contro: "Due livelli UI; arsenale meno in evidenza." },
+      D: { pro: "Ritratto protagonista; switch fazione elegante; feel da splash.", contro: "Non vedi le due fazioni affiancate; più click per confrontare." },
+      E: { pro: "Ritratto sempre visibile su desktop; area lettura ampia.", contro: "Asimmetrico; su mobile il ritratto si riduce molto." },
+      F: { pro: "Scalabile con molti compendi; breadcrumb chiaro.", contro: "Un livello UI in più solo in Compendi; più tap su mobile." },
+      G: { pro: "Panoramica senza nascondere sezioni; nav sticky utile.", contro: "Pagina lunga; arsenale in fondo allo scroll." },
+      H: { pro: "Waza subito visibili; Statuto/Compendi non invadono.", contro: "Gerarchia invertita rispetto al canonico statuto-first." },
+      B: { pro: "Coerente con Guida; tanti compendi senza caos.", contro: "Ritratti secondari; sidebar stretta su mobile." },
+      C: { pro: "Lettura continua; pochi click; editorial.", contro: "Pagina lunga; arsenale in fondo." },
+    };
+
+    function renderStatuto(o) {
+      return `<div class="accent-block">${o.statute}</div>
+        <div class="section-label">Regole d'ordine</div>
+        ${o.rules.map(r => `<p style="margin:0.25rem 0;font-size:0.82rem;color:var(--text-muted)">— ${r}</p>`).join("")}`;
+    }
+    function renderCompendi(o) {
+      return o.compendi.map(c => `<div class="compendi-item"><strong>${c.t}</strong>${c.b}</div>`).join("");
+    }
+    function renderArsenale(o) {
+      return `<p style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted)">Waza d'ordine · ${o.waza.length} <span class="badge">in preparazione</span></p>` +
+        o.waza.map(w => `<div class="waza-row"><span><strong>${w.n}</strong><br><span style="font-size:0.72rem;color:var(--text-muted)">Placeholder</span></span><span class="badge">${w.tier}</span></div>`).join("");
+    }
+    function renderSection(o, section) {
+      if (section === "statuto") return renderStatuto(o);
+      if (section === "compendi") return renderCompendi(o);
+      return renderArsenale(o);
+    }
+    function renderFullPage(o) {
+      return `<div class="editorial-head">
+          <div class="thumb">Ritratto<br>${o.name}</div>
+          <div><h2 style="margin:0;color:var(--accent-gold)">${o.name}</h2>
+          <p style="font-style:italic;color:var(--text-muted);margin:0.25rem 0">${o.tag}</p>
+          <div class="pill-row"><span class="badge">Statuto</span><span class="badge">${o.compendi.length} compendi</span><span class="badge">${o.waza.length} waza mock</span></div></div>
+        </div>
+        <hr class="div"><div class="section-label">Statuto</div>${renderStatuto(o)}
+        <hr class="div"><div class="section-label">Compendi</div>${renderCompendi(o)}
+        <hr class="div"><div class="section-label">Arsenale d'ordine</div>${renderArsenale(o)}`;
+    }
+
+    function buildPortraits(containerId, stateKey, compact) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = "";
+      ["chisen", "mugen"].forEach(key => {
+        const d = DATA[key];
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "portrait" + (compact ? " compact" : "") + (state[stateKey] === key ? " selected" : "");
+        btn.dataset.order = key;
+        btn.innerHTML = `<div class="portrait-img">Ritratto ${key === "chisen" ? "Chisen" : "Mugen"}</div>
+          <h3>${d.name}</h3><p>${key === "chisen" ? "Disciplina · lettura e controllo" : "Spinta · pressione e arsenale"}</p>`;
+        btn.addEventListener("click", () => {
+          state[stateKey] = key;
+          if (stateKey === "aOrder") paintA();
+          if (stateKey === "fOrder") paintF();
+          if (stateKey === "gOrder") paintG();
+          if (stateKey === "hOrder") paintH();
+        });
+        el.appendChild(btn);
+      });
+    }
+
+    function wireTabs(tabId, onTab) {
+      document.querySelectorAll("#" + tabId + " button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#" + tabId + " button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          onTab(btn.dataset.tab);
+        });
+      });
+    }
+
+    const state = { aOrder: "chisen", aTab: "statuto", dOrder: "chisen", dTab: "statuto", eOrder: "chisen", eTab: "statuto", fOrder: "chisen", fTab: "statuto", fComp: null, gOrder: "chisen", hOrder: "chisen" };
+
+    function paintA() {
+      buildPortraits("a-portraits", "aOrder", false);
+      const o = DATA[state.aOrder];
+      document.getElementById("a-name").textContent = o.name;
+      document.getElementById("a-content").innerHTML = renderSection(o, state.aTab);
+    }
+    wireTabs("a-tabs", tab => { state.aTab = tab; paintA(); });
+    paintA();
+
+    function paintD() {
+      const o = DATA[state.dOrder];
+      document.getElementById("d-name").textContent = o.name;
+      document.getElementById("d-tag").textContent = o.tag;
+      document.getElementById("d-hero-bg").textContent = "Ritratto hero · " + o.name;
+      document.querySelectorAll("#d-seg button").forEach(b => b.classList.toggle("active", b.dataset.order === state.dOrder));
+      document.getElementById("d-content").innerHTML = renderSection(o, state.dTab);
+    }
+    document.querySelectorAll("#d-seg button").forEach(btn => {
+      btn.addEventListener("click", () => { state.dOrder = btn.dataset.order; paintD(); });
+    });
+    wireTabs("d-tabs", tab => { state.dTab = tab; paintD(); });
+    paintD();
+
+    function paintE() {
+      const el = document.getElementById("e-portraits");
+      el.innerHTML = "";
+      ["chisen", "mugen"].forEach(key => {
+        const d = DATA[key];
+        const div = document.createElement("button");
+        div.type = "button";
+        div.className = "portrait" + (state.eOrder === key ? " selected" : "");
+        div.innerHTML = `<div class="portrait-img">Ritratto ${key === "chisen" ? "Chisen" : "Mugen"}</div><h3>${d.name}</h3>`;
+        div.addEventListener("click", () => { state.eOrder = key; paintE(); });
+        el.appendChild(div);
+      });
+      const o = DATA[state.eOrder];
+      document.getElementById("e-name").textContent = o.name;
+      document.getElementById("e-tag").textContent = o.tag;
+      document.getElementById("e-content").innerHTML = renderSection(o, state.eTab);
+    }
+    wireTabs("e-tabs", tab => { state.eTab = tab; paintE(); });
+    paintE();
+
+    function renderFCompendi(o) {
+      if (state.fTab !== "compendi") return renderSection(o, state.fTab);
+      const crumb = document.getElementById("f-crumb");
+      if (state.fComp === null) {
+        crumb.innerHTML = `<span>${o.name}</span> · Compendi · <em>scegli voce</em>`;
+        const grid = o.compendi.map((c, i) =>
+          `<button type="button" class="compendi-card" data-i="${i}"><strong>${c.t}</strong>${c.b.slice(0, 48)}…</button>`
+        ).join("");
+        setTimeout(() => {
+          document.querySelectorAll("#f-content .compendi-card").forEach(card => {
+            card.addEventListener("click", () => {
+              state.fComp = Number(card.dataset.i);
+              paintF();
+            });
+          });
+        }, 0);
+        return `<div class="compendi-grid">${grid}</div>`;
+      }
+      const c = o.compendi[state.fComp];
+      crumb.innerHTML = `<span>${o.name}</span> · Compendi · <span>${c.t}</span>`;
+      const chips = o.compendi.map((item, i) =>
+        `<button type="button" class="${i === state.fComp ? "active" : ""}" data-i="${i}">${item.t}</button>`
+      ).join("");
+      setTimeout(() => {
+        document.querySelectorAll("#f-content .chips button").forEach(btn => {
+          btn.addEventListener("click", () => { state.fComp = Number(btn.dataset.i); paintF(); });
+        });
+      }, 0);
+      return `<div class="chips">${chips}</div>
+        <div class="accent-block">${c.b}</div>
+        <p style="font-size:0.82rem;color:var(--text-muted)">Contenuto BBCode del compendio (placeholder). Stesso renderer della Guida.</p>`;
+    }
+    function paintF() {
+      buildPortraits("f-portraits", "fOrder", true);
+      const o = DATA[state.fOrder];
+      document.getElementById("f-name").textContent = o.name;
+      if (state.fTab !== "compendi") {
+        state.fComp = null;
+        document.getElementById("f-crumb").innerHTML = "";
+      }
+      document.getElementById("f-content").innerHTML = state.fTab === "compendi" ? renderFCompendi(o) : renderSection(o, state.fTab);
+      if (state.fTab === "compendi" && state.fComp !== null) {
+        document.getElementById("f-content").innerHTML = renderFCompendi(o);
+      }
+    }
+    wireTabs("f-tabs", tab => { state.fTab = tab; state.fComp = null; paintF(); });
+    paintF();
+
+    function paintG() {
+      buildPortraits("g-portraits", "gOrder", true);
+      const o = DATA[state.gOrder];
+      document.getElementById("g-content").innerHTML = `
+        <section class="scroll-section" id="g-statuto"><h3>Statuto · ${o.name}</h3>${renderStatuto(o)}</section>
+        <hr class="div">
+        <section class="scroll-section" id="g-compendi"><h3>Compendi</h3>${renderCompendi(o)}</section>
+        <hr class="div">
+        <section class="scroll-section" id="g-arsenale"><h3>Arsenale d'ordine</h3>${renderArsenale(o)}</section>`;
+    }
+    document.querySelectorAll("#g-anchor button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#g-anchor button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("g-" + btn.dataset.anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    paintG();
+
+    function paintH() {
+      buildPortraits("h-portraits", "hOrder", true);
+      const o = DATA[state.hOrder];
+      document.getElementById("h-arsenale").innerHTML = o.waza.map(w =>
+        `<div class="waza-card"><strong>${w.n}</strong><span>${w.tier} · placeholder</span></div>`
+      ).join("") + `<div class="waza-card" style="border-style:dashed;opacity:0.7"><strong>+ altre</strong><span>in preparazione</span></div>`;
+      document.getElementById("h-statuto").innerHTML = renderStatuto(o);
+      document.getElementById("h-compendi").innerHTML = renderCompendi(o);
+      document.getElementById("h-compendi-count").textContent = `(${o.compendi.length})`;
+    }
+    paintH();
+
+    const bNavItems = [
+      { id: "chisen-statuto", label: "Chisen-Tai", parent: true, order: "chisen", sec: "statuto" },
+      { id: "chisen-statuto", label: "Statuto", order: "chisen", sec: "statuto" },
+      { id: "chisen-compendi", label: "Compendi", order: "chisen", sec: "compendi" },
+      { id: "chisen-arsenale", label: "Arsenale", order: "chisen", sec: "arsenale" },
+      { id: "mugen-statuto", label: "Mugen-Tai", parent: true, order: "mugen", sec: "statuto" },
+      { id: "mugen-statuto", label: "Statuto", order: "mugen", sec: "statuto" },
+      { id: "mugen-compendi", label: "Compendi", order: "mugen", sec: "compendi" },
+      { id: "mugen-arsenale", label: "Arsenale", order: "mugen", sec: "arsenale" },
+    ];
+    let bNav = "chisen-statuto";
+    const bNavEl = document.getElementById("b-nav");
+    bNavItems.forEach((item, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = item.label;
+      btn.className = item.parent ? "parent" : "child";
+      btn.addEventListener("click", () => { bNav = item.id; paintB(); });
+      bNavEl.appendChild(btn);
+    });
+    function paintB() {
+      const cur = bNavItems.find(x => x.id === bNav) || bNavItems[0];
+      const o = DATA[cur.order];
+      document.getElementById("b-name").textContent = o.name;
+      document.getElementById("b-tag").textContent = o.tag;
+      document.getElementById("b-content").innerHTML = renderSection(o, cur.sec);
+      bNavEl.querySelectorAll("button").forEach((btn, i) => {
+        const item = bNavItems[i];
+        btn.classList.toggle("active", !item.parent && item.id === bNav);
+      });
+    }
+    paintB();
+
+    let cOrder = "chisen";
+    function paintC() {
+      document.getElementById("c-content").innerHTML = renderFullPage(DATA[cOrder]);
+    }
+    document.querySelectorAll("#c-order-tabs button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#c-order-tabs button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        cOrder = btn.dataset.order;
+        paintC();
+      });
+    });
+    paintC();
+
+    let currentP = "A";
+    function switchProposal(p) {
+      currentP = p;
+      document.querySelectorAll(".switcher button").forEach(b => b.classList.toggle("active", b.dataset.p === p));
+      document.querySelectorAll(".proposal").forEach(el => el.classList.remove("visible"));
+      document.getElementById("prop-" + p).classList.add("visible");
+      document.getElementById("shell-title").textContent = "Ordine · Proposal " + p;
+      const c = CMP[p];
+      document.getElementById("cmp-pro").textContent = c.pro;
+      document.getElementById("cmp-contro").textContent = c.contro;
+    }
+    document.querySelectorAll(".switcher").forEach(sw => {
+      sw.addEventListener("click", e => {
+        const btn = e.target.closest("button[data-p]");
+        if (btn) switchProposal(btn.dataset.p);
+      });
+    });
+  </script>
+</body>
+</html>

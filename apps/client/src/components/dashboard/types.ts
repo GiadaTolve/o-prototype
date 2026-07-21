@@ -64,6 +64,8 @@ export type CharacterSummary = {
   pendingLevelUp?: PendingLevelUpBanner | null;
   /** Grado gerarchico (es. "Hakyō", "Kanteikan"). */
   grade?: string | null;
+  /** Ordine PG: MUGEN-TAI | CHISEN-TAI | NONE */
+  order?: string | null;
 } | null;
 
 export const WINDOW_LABELS: Record<WindowId, string> = {

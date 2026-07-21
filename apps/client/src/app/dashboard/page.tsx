@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [gestioneTrigger, setGestioneTrigger] = useState(0);
   const [sviluppoTrigger, setSviluppoTrigger] = useState(0);
   const [dojoTrigger, setDojoTrigger] = useState(0);
+  const [ordineTrigger, setOrdineTrigger] = useState(0);
   const [sokaijuTrigger, setSokaijuTrigger] = useState(0);
   const [sokaijuTab, setSokaijuTab] = useState<string | undefined>();
   const [smsUnread, setSmsUnread] = useState(0);
@@ -500,6 +501,7 @@ export default function DashboardPage() {
         gestioneTrigger={gestioneTrigger}
         sviluppoTrigger={sviluppoTrigger}
         dojoTrigger={dojoTrigger}
+        ordineTrigger={ordineTrigger}
         sokaijuTrigger={sokaijuTrigger}
         sokaijuTab={sokaijuTab}
         messages={messages}
@@ -522,6 +524,7 @@ export default function DashboardPage() {
         onOpenGestione={() => setGestioneTrigger((t) => t + 1)}
         onOpenSviluppo={() => setSviluppoTrigger((t) => t + 1)}
         onOpenDojo={() => setDojoTrigger((t) => t + 1)}
+        onOpenOrdine={() => setOrdineTrigger((t) => t + 1)}
         onOpenSokaiju={(tab?: string) => {
           setSokaijuTab(tab);
           setSokaijuTrigger((t) => t + 1);
@@ -575,7 +578,7 @@ export default function DashboardPage() {
             setSokaijuTrigger((t) => t + 1);
           }}
           onOpenDojo={() => setDojoTrigger((t) => t + 1)}
-          onOpenOrdine={() => open("ordine")}
+          onOpenOrdine={() => setOrdineTrigger((t) => t + 1)}
           onOpenBestiario={() => open("bestiario")}
           smsUnread={smsUnread}
         />
@@ -588,6 +591,7 @@ export default function DashboardPage() {
           gestioneTrigger={gestioneTrigger}
           sviluppoTrigger={sviluppoTrigger}
           dojoTrigger={dojoTrigger}
+          ordineTrigger={ordineTrigger}
           sokaijuTrigger={sokaijuTrigger}
           sokaijuTab={sokaijuTab}
           onRoomChange={setRoomId}
@@ -610,6 +614,7 @@ export default function DashboardPage() {
               : undefined
           }
           onOpenNote={() => open("note")}
+          onCharUpdate={reloadChar}
         />
         <DashboardRightCol
           presenti={presenti}

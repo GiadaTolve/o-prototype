@@ -87,7 +87,7 @@ type Props = {
 };
 
 /** Finestre con dimensione unificata: 80% della zona centrale */
-const UNIFIED_PANEL_IDS = ["sms", "banca", "mercato", "ordine", "bestiario", "notifiche", "spazioEventi", "fetch"] as const;
+const UNIFIED_PANEL_IDS = ["sms", "banca", "mercato", "bestiario", "notifiche", "spazioEventi", "fetch"] as const;
 
 /** Stesse dimensioni della colonna centrale (chat / main area) */
 const MAIN_AREA_PANEL_IDS = ["scheda", "profilo"] as const;
@@ -507,9 +507,7 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
               ? "flex flex-col"
               : isMainAreaPanel
                 ? "h-full"
-                : windowId === "ordine"
-                    ? "overflow-y-auto px-4 pt-0 pb-4"
-                    : "overflow-y-auto px-4 py-4"
+                : "overflow-y-auto px-4 py-4"
           }`}
         >
           {windowId === "scheda" && (
@@ -529,7 +527,6 @@ export function DashboardWindowPanel({ windowId, onLower, onClose, char, present
           {windowId === "banca" && <BancaContent char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "mercato" && <MercatoPanel char={char} onCharUpdate={onCharUpdate} />}
           {windowId === "housing" && <HousingContent char={char} onCharUpdate={onCharUpdate} />}
-          {windowId === "ordine" && <OrdineContent char={char} />}
           {windowId === "bestiario" && <BestiarioContent char={char} />}
           {windowId === "notifiche" && <NotificheContent onUnreadChange={onNotificationsUnreadChange} />}
           {windowId === "spazioEventi" && <SpazioEventiContent canAccessGestione={canAccessGestione} />}
@@ -4170,103 +4167,6 @@ function HousingContent({ char, onCharUpdate }: { char?: CharacterSummary; onCha
           </div>
         )}
       </section>
-    </div>
-  );
-}
-
-// ─── Ordine Content ───
-const ORDINE_CHISEN = { id: "chisen-tai", src: "/ordine/chisen.png", label: "Chisen-Tai" };
-const ORDINE_MUGEN = { id: "mugen-tai", src: "/ordine/mugen.png", label: "Mugen-Tai" };
-
-function OrdineStatutoBox({ ord, onClose }: { ord: typeof ORDINE_CHISEN; onClose: () => void }) {
-  return (
-    <div className="w-full max-w-md h-[70%] min-h-0 p-6 mt-2 mx-4 mb-4 bg-black/30 rounded border border-[var(--accent-gold)]/30 overflow-y-auto self-stretch flex flex-col">
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <span className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display">
-          {ord.label}
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs text-gray-500 hover:text-white"
-        >
-          Chiudi
-        </button>
-      </div>
-      <div className="space-y-6 text-sm flex-1 min-h-0">
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]/80 mb-2 font-display">Statuto</p>
-          <p className="text-gray-400 italic">[Placeholder — Contenuto statuto]</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]/80 mb-2 font-display">Regole</p>
-          <p className="text-gray-400 italic">[Placeholder — Contenuto regole]</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-[var(--accent-gold)]/80 mb-2 font-display">Compendi</p>
-          <p className="text-gray-400 italic">[Placeholder — Contenuto compendi]</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OrdineContent({ char }: { char?: CharacterSummary }) {
-  const [statutoOpen, setStatutoOpen] = useState<"chisen-tai" | "mugen-tai" | null>(null);
-
-  return (
-    <div className="flex flex-col h-full min-h-0 -mx-4 mt-7 -mb-4">
-      {/* Split: click su un'immagine → l'altra sparisce, lo statuto prende il suo posto */}
-      <div className="flex-1 flex min-h-[960px] items-stretch overflow-visible pt-6">
-        {/* Slot sinistro: Chisen quando nulla/mugen aperto, Statuto quando chisen aperto */}
-        <div
-          className="flex-1 flex min-h-0 overflow-visible pr-0"
-          style={{ justifyContent: statutoOpen === "mugen-tai" ? "center" : statutoOpen === "chisen-tai" ? "flex-start" : "flex-end", alignItems: statutoOpen === "mugen-tai" ? "center" : "flex-start" }}
-        >
-          {statutoOpen === "mugen-tai" ? (
-            <OrdineStatutoBox ord={ORDINE_MUGEN} onClose={() => setStatutoOpen(null)} />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setStatutoOpen("chisen-tai")}
-              className="group relative flex items-start justify-center pt-0 px-2 pb-6 focus:outline-none overflow-visible pr-0"
-            >
-              <img
-                src={ORDINE_CHISEN.src}
-                alt={ORDINE_CHISEN.label}
-                className={`max-w-full max-h-[800px] w-auto h-auto object-contain mt-6 ${statutoOpen === "chisen-tai" ? "-mr-4 -ml-12" : "-mr-20"}`}
-              />
-              <span className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-3 py-1.5 rounded">
-                {ORDINE_CHISEN.label}
-              </span>
-            </button>
-          )}
-        </div>
-        {/* Slot destro: Mugen quando nulla/chisen aperto, Statuto quando mugen aperto */}
-        <div
-          className="flex-1 flex min-h-0 overflow-visible pl-0"
-          style={{ justifyContent: statutoOpen === "chisen-tai" ? "center" : statutoOpen === "mugen-tai" ? "flex-end" : "flex-start", alignItems: statutoOpen === "chisen-tai" ? "center" : "flex-start" }}
-        >
-          {statutoOpen === "chisen-tai" ? (
-            <OrdineStatutoBox ord={ORDINE_CHISEN} onClose={() => setStatutoOpen(null)} />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setStatutoOpen("mugen-tai")}
-              className="group relative flex items-start justify-center pt-0 px-2 pb-6 focus:outline-none overflow-visible pl-0"
-            >
-              <img
-                src={ORDINE_MUGEN.src}
-                alt={ORDINE_MUGEN.label}
-                className={`max-w-full max-h-[800px] w-auto h-auto object-contain -mt-6 ${statutoOpen === "mugen-tai" ? "-ml-4 -mr-12" : "-ml-20"}`}
-              />
-              <span className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-[var(--accent-gold)] font-display opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-3 py-1.5 rounded">
-                {ORDINE_MUGEN.label}
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

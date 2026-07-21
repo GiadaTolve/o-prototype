@@ -56,6 +56,7 @@ import { ChatAttackCard, extractAttackData } from "./chat-combat/ChatAttackCard"
 import { ChatItemUseCard, extractItemUseCard } from "./chat-combat/ChatItemUseCard";
 import { ChatDropEventCard, extractDropEventData } from "./chat-loot/ChatDropEventCard";
 import { ChatGroundLootPanel } from "./chat-loot/ChatGroundLootPanel";
+import { OrdineContent } from "./OrdineContent";
 
 /** Limite caratteri messaggio chat da mobile. */
 const MOBILE_CHAT_MAX_LENGTH = 800;
@@ -65,7 +66,7 @@ function isDiceOnlyDraft(draft: string): boolean {
   return /^\s*\/?(?:d|dado)\s+\d+\s*$/i.test(draft.trim());
 }
 
-type View = "root" | "game-map" | "zone-list" | "chat" | "shinigami" | "guida" | "ambientazione" | "forum" | "gestione" | "sviluppo" | "dojo" | "sokaiju";
+type View = "root" | "game-map" | "zone-list" | "chat" | "shinigami" | "guida" | "ambientazione" | "forum" | "gestione" | "sviluppo" | "dojo" | "ordine" | "sokaiju";
 
 type Props = {
   mapTrigger?: number;
@@ -76,6 +77,7 @@ type Props = {
   gestioneTrigger?: number;
   sviluppoTrigger?: number;
   dojoTrigger?: number;
+  ordineTrigger?: number;
   sokaijuTrigger?: number;
   sokaijuTab?: string;
   onRoomChange: (room: RoomId | null) => void;
@@ -105,6 +107,8 @@ type Props = {
   onOpenCediDrop?: () => void;
   /** Apre il Blocco Note nel dock. */
   onOpenNote?: () => void;
+  /** Ricarica personaggio (es. dopo acquisto waza d'ordine). */
+  onCharUpdate?: () => void;
 };
 
 export function DashboardCenter({
@@ -116,6 +120,7 @@ export function DashboardCenter({
   gestioneTrigger = 0,
   sviluppoTrigger = 0,
   dojoTrigger = 0,
+  ordineTrigger = 0,
   sokaijuTrigger = 0,
   sokaijuTab,
   onRoomChange,
@@ -134,6 +139,7 @@ export function DashboardCenter({
   onOpenTulpa,
   onOpenCediDrop,
   onOpenNote,
+  onCharUpdate,
 }: Props) {
   const compact = variant === "mobile";
   const { index: wazaTagIndex } = useWazaCatalog();
@@ -203,6 +209,12 @@ export function DashboardCenter({
       setView("dojo");
     }
   }, [dojoTrigger]);
+
+  useEffect(() => {
+    if (ordineTrigger > 0) {
+      setView("ordine");
+    }
+  }, [ordineTrigger]);
 
   useEffect(() => {
     if (sokaijuTrigger > 0) {
@@ -622,6 +634,38 @@ export function DashboardCenter({
               className="w-full h-full min-h-[600px] border-0"
               title="Dōjō"
             />
+          </div>
+        </div>
+      )}
+
+      {view === "ordine" && (
+        <div className="flex-1 min-h-0 overflow-auto flex flex-col">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-[var(--accent-violet)]/30"
+            style={{
+              backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('/backgrounds/cloudy.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <h2 className="font-display text-lg text-[var(--accent-gold)]">Ordine</h2>
+            <button
+              type="button"
+              onClick={goRoot}
+              className="text-sm text-gray-400 hover:text-[var(--accent-gold)]"
+            >
+              ← Torna alla Mappa
+            </button>
+          </div>
+          <div
+            className="flex-1 min-h-0 overflow-hidden rounded-b border border-t-0 border-[var(--border-color)]"
+            style={{
+              backgroundImage: "url('/backgrounds/darkstone.png')",
+              backgroundRepeat: "repeat",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <OrdineContent char={char} onCharUpdate={onCharUpdate} />
           </div>
         </div>
       )}

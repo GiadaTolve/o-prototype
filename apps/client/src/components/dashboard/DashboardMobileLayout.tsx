@@ -31,6 +31,7 @@ type Props = {
   gestioneTrigger: number;
   sviluppoTrigger: number;
   dojoTrigger: number;
+  ordineTrigger: number;
   sokaijuTrigger: number;
   sokaijuTab?: string;
   messages: Array<{ id: string; zone: string; characterId: string; name: string; surname?: string | null; content: string; createdAt: string }>;
@@ -53,6 +54,7 @@ type Props = {
   onOpenGestione: () => void;
   onOpenSviluppo: () => void;
   onOpenDojo: () => void;
+  onOpenOrdine: () => void;
   onOpenSokaiju: (tab?: string) => void;
   onOpenCombattimento?: () => void;
   onOpenTulpa?: () => void;
@@ -71,6 +73,7 @@ export function DashboardMobileLayout({
   gestioneTrigger,
   sviluppoTrigger,
   dojoTrigger,
+  ordineTrigger,
   sokaijuTrigger,
   sokaijuTab,
   messages,
@@ -93,6 +96,7 @@ export function DashboardMobileLayout({
   onOpenGestione,
   onOpenSviluppo,
   onOpenDojo,
+  onOpenOrdine,
   onOpenSokaiju,
   onOpenCombattimento,
   onOpenTulpa,
@@ -200,6 +204,11 @@ export function DashboardMobileLayout({
     onOpenDojo();
   };
 
+  const handleOpenOrdine = () => {
+    setActiveTab("mappa");
+    onOpenOrdine();
+  };
+
   const handleOpenSokaiju = () => {
     setActiveTab("mappa");
     onOpenSokaiju();
@@ -303,6 +312,7 @@ export function DashboardMobileLayout({
               gestioneTrigger={gestioneTrigger}
               sviluppoTrigger={sviluppoTrigger}
               dojoTrigger={dojoTrigger}
+              ordineTrigger={ordineTrigger}
               sokaijuTrigger={sokaijuTrigger}
               sokaijuTab={sokaijuTab}
               onRoomChange={onRoomChange}
@@ -318,6 +328,7 @@ export function DashboardMobileLayout({
               onOpenCombattimento={onOpenCombattimento}
               onOpenTulpa={onOpenTulpa}
               onOpenCediDrop={onOpenCediDrop}
+              onCharUpdate={onCharUpdate}
             />
           </div>
         )}
@@ -371,10 +382,17 @@ export function DashboardMobileLayout({
               <FontAwesomeIcon icon={icons.waza} className="w-6 h-6 text-[var(--accent-gold)]" />
               <span className="text-xs text-[var(--accent-violet-light)] uppercase tracking-wide">Dōjō</span>
             </button>
+            <button
+              type="button"
+              onClick={handleOpenOrdine}
+              className="py-4 px-3 rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)] flex flex-col items-center gap-2 hover:border-[var(--accent-gold)]/50 hover:bg-[color-mix(in_srgb,var(--panel-bg)_85%,black)] transition-colors"
+            >
+              <FontAwesomeIcon icon={icons.ordine} className="w-6 h-6 text-[var(--accent-gold)]" />
+              <span className="text-xs text-[var(--accent-violet-light)]">Ordine</span>
+            </button>
             {[
               { id: "mercato" as WindowId, label: "Mercato", icon: icons.mercato },
               { id: "banca" as WindowId, label: "Banca", icon: icons.banca },
-              { id: "ordine" as WindowId, label: "Ordine", icon: icons.ordine },
               { id: "bestiario" as WindowId, label: "Bestiario", icon: icons.trophy },
               { id: "presenti" as WindowId, label: "Presenti", icon: icons.presenti },
               { id: "spazioEventi" as WindowId, label: "Spazio Eventi", icon: icons.gamepad },
