@@ -12,6 +12,11 @@ import {
   type WazaLabItem,
   type WazaLabTreeNode,
 } from "@/lib/waza-lab-grouping";
+import {
+  buildWazaLabBulletin,
+  formatBulletinLine,
+  type WazaLabBulletinCounts,
+} from "@/lib/waza-lab-bulletin";
 import { resolveDefaultWazaCostExp } from "@domain/progression/waza-cost-exp";
 import {
   resolveWazaLabPoolId,
@@ -23,13 +28,44 @@ import {
 } from "@/lib/waza-lab-pool-id";
 
 type WazaLabDraft = WazaLabItem;
-type MobileTab = "albero" | "editor" | "struttura";
+type MobileTab = "albero" | "editor" | "bollettino" | "struttura";
 type WazaLabTaxonomyItem = {
   id: string;
   categoria: "genitore_do" | "genitore_madosho" | "lab_categoria_macro" | "lab_categoria_micro";
   valore: string;
   attivo: boolean;
 };
+
+function BulletinCountChips({ counts }: { counts: WazaLabBulletinCounts }) {
+  const chips: Array<{ label: string; value: number; accent?: boolean }> = [
+    { label: "Tot", value: counts.total, accent: true },
+    { label: "Pass", value: counts.passive },
+    { label: "T1", value: counts.t1 },
+    { label: "T2", value: counts.t2 },
+    { label: "T3", value: counts.t3 },
+    { label: "T4", value: counts.t4 },
+    { label: "T5", value: counts.t5 },
+  ];
+  if (counts.other > 0) chips.push({ label: "?", value: counts.other });
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {chips.map((c) => (
+        <span
+          key={c.label}
+          className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] tabular-nums min-h-[32px] ${
+            c.accent
+              ? "border-[var(--accent-gold)]/40 text-[var(--accent-gold)] bg-[var(--accent-gold)]/10"
+              : "border-[var(--border-color)] text-gray-300 bg-black/20"
+          }`}
+        >
+          <span className="uppercase tracking-wider text-gray-500">{c.label}</span>
+          <span className="font-display text-sm">{c.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function TreeBranch({
   node,
@@ -231,6 +267,49 @@ export function WazaLabPanel() {
 
   const tree = useMemo(() => buildWazaLabTree(filteredItems), [filteredItems]);
 
+  const bulletin = useMemo(() => {
+    const extraParents = taxonomy
+      .filter((t) => t.attivo !== false)
+      .flatMap((t) => {
+        if (t.categoria === "genitore_do") {
+          return [{ family: "do" as const, label: t.valore }];
+        }
+        if (t.categoria === "genitore_madosho") {
+          return [{ family: "madosho" as const, label: t.valore }];
+        }
+        if (t.categoria === "lab_categoria_macro" || t.categoria === "lab_categoria_micro") {
+          return [{ family: "generiche" as const, label: t.valore }];
+        }
+        return [];
+      });
+    // Bollettino su catalogo intero (non filtrato dalla ricerca)
+    return buildWazaLabBulletin(items, extraParents);
+  }, [items, taxonomy]);
+
+  const bulletinText = useMemo(() => {
+    const lines: string[] = [
+      `Bollettino Waza Lab · totale ${formatBulletinLine(bulletin.totals)}`,
+      "",
+    ];
+    for (const fam of bulletin.families) {
+      lines.push(`${fam.label} — ${formatBulletinLine(fam.counts)}`);
+      for (const p of fam.parents) {
+        lines.push(`  · ${p.label}: ${formatBulletinLine(p.counts)}`);
+      }
+      lines.push("");
+    }
+    return lines.join("\n").trim();
+  }, [bulletin]);
+
+  const copyBulletin = async () => {
+    try {
+      await navigator.clipboard.writeText(bulletinText);
+      setMessage("Bollettino copiato negli appunti.");
+    } catch {
+      setMessage("Impossibile copiare il bollettino.");
+    }
+  };
+
   const selectItem = useCallback((item: WazaLabItem) => {
     setSelectedPoolId(item.poolId);
     setDraft({ ...item, launchSkiruIds: [...item.launchSkiruIds], damageSkiruIds: [...item.damageSkiruIds] });
@@ -393,7 +472,8 @@ export function WazaLabPanel() {
         {[
           { id: "albero" as const, label: "Albero" },
           { id: "editor" as const, label: "Editor" },
-          { id: "struttura" as const, label: "Struttura" },
+          { id: "bollettino" as const, label: "Bollett." },
+          { id: "struttura" as const, label: "Strutt." },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -697,6 +777,60 @@ export function WazaLabPanel() {
             )}
           </section>
         </div>
+      )}
+
+      {!loading && (
+        <section
+          className={`space-y-3 rounded border border-[var(--accent-gold)]/25 bg-[var(--panel-bg)]/40 p-4 ${
+            mobileTab !== "bollettino" ? "hidden xl:block" : ""
+          }`}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-display text-[var(--accent-gold)]">Bollettino per genitore</h3>
+              <p className="text-[10px] text-gray-500 mt-1">
+                Passiva e T1–T5 per ogni Via / lignaggio / famiglia. Include genitori futuri da Struttura.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void copyBulletin()}
+              className="px-3 py-1.5 rounded border border-[var(--border-color)] text-xs text-gray-400 hover:text-[var(--accent-gold)] min-h-[44px]"
+            >
+              Copia testo
+            </button>
+          </div>
+
+          <div className="rounded border border-[var(--border-color)] bg-black/20 p-3 space-y-2">
+            <div className="text-[10px] uppercase tracking-wider text-gray-500">Totale catalogo</div>
+            <BulletinCountChips counts={bulletin.totals} />
+          </div>
+
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            {bulletin.families.map((fam) => (
+              <div
+                key={fam.family}
+                className="rounded border border-[var(--border-color)] bg-black/15 overflow-hidden"
+              >
+                <div className="px-3 py-2 border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-display text-[var(--accent-violet-light)]">{fam.label}</span>
+                  <BulletinCountChips counts={fam.counts} />
+                </div>
+                <ul className="divide-y divide-[var(--border-color)]/60">
+                  {fam.parents.map((p) => (
+                    <li
+                      key={p.id}
+                      className="px-3 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <span className="text-xs text-gray-200">{p.label}</span>
+                      <BulletinCountChips counts={p.counts} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       <section className={`space-y-3 rounded border border-[var(--border-color)] bg-[var(--panel-bg)]/40 p-4 ${mobileTab !== "struttura" ? "hidden xl:block" : ""}`}>
