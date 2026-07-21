@@ -17,6 +17,7 @@ import { WAZA_POOL, type WazaDef } from '../../../apps/tester/src/wazaPool'
 import { SAMPLE_WAZA_STATS } from '../../../apps/tester/src/wazaPool'
 import { BRANCH_LABELS, type WazaBranch } from '../../../apps/tester/src/wazaBranches'
 import { styleIdFromBranchLabel, type StyleId } from '@domain/progression'
+import { resolveDefaultWazaCostExp } from '@domain/progression/waza-cost-exp'
 
 type CatalogEntry = {
   poolId: string
@@ -211,7 +212,7 @@ function parseCalcoliManual(): CatalogEntry[] {
           name: displayName,
           isPassive: kind === 'passive',
           description: formatDescription(branch, kind === 'passive', description),
-          costExp: defaultCostExp(kind === 'passive', null),
+          costExp: defaultCostExp(kind === 'passive', null, kind === 'passive' ? null : 'T2'),
           costJigoka: 0,
           rank: kind === 'passive' ? null : 'T2',
         })
@@ -244,14 +245,12 @@ function poolCostJigoka(w: WazaDef): number {
   return 0
 }
 
-function defaultCostExp(isPassive: boolean, w: WazaDef | null): number {
-  if (w) {
-    const cs = w.costCs ?? 0
-    const jigo = poolCostJigoka(w)
-    if (w.type === 'passive') return 10 + jigo * 3 + (w.prereqGradoMin ?? 1) * 5
-    return 20 + cs * 8 + jigo
-  }
-  return isPassive ? 20 : 40
+function defaultCostExp(isPassive: boolean, w: WazaDef | null, rank: string | null): number {
+  return resolveDefaultWazaCostExp({
+    isPassive,
+    rank,
+    tier: w?.manualTier ?? null,
+  })
 }
 
 function defaultRank(w: WazaDef | null, isPassive: boolean): string | null {
@@ -266,16 +265,20 @@ function defaultRank(w: WazaDef | null, isPassive: boolean): string | null {
 }
 
 function buildPoolEntries(): CatalogEntry[] {
-  return WAZA_POOL.map((w) => ({
-    poolId: w.id,
-    branch: syncBranchFromPool(w),
-    name: w.name,
-    isPassive: w.type === 'passive',
-    description: poolDescription(w),
-    costExp: defaultCostExp(w.type === 'passive', w),
-    costJigoka: poolCostJigoka(w),
-    rank: defaultRank(w, w.type === 'passive'),
-  }))
+  return WAZA_POOL.map((w) => {
+    const isPassive = w.type === 'passive'
+    const rank = defaultRank(w, isPassive)
+    return {
+      poolId: w.id,
+      branch: syncBranchFromPool(w),
+      name: w.name,
+      isPassive,
+      description: poolDescription(w),
+      costExp: defaultCostExp(isPassive, w, rank),
+      costJigoka: poolCostJigoka(w),
+      rank,
+    }
+  })
 }
 
 function branchToStyleId(branch: string): StyleId | null {

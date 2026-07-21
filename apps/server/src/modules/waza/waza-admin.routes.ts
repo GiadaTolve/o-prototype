@@ -18,6 +18,16 @@ import {
   validateAdminWazaVersion,
   WazaAdminHttpError,
 } from "./waza-admin.service";
+import {
+  createWazaLabItem,
+  createWazaLabTaxonomy,
+  listWazaLabItems,
+  listWazaLabTaxonomy,
+  patchWazaLabItem,
+} from "./waza-lab.service";
+import { db } from "../../plugins/db";
+import { characters } from "../../db/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Gestione catalogo waza: Proprietario, Moderatore, Fixer (+ account ADMIN).
@@ -31,6 +41,21 @@ async function canAccessWazaAdmin(user: { id: string; role?: string } | null): P
 async function canPublishWazaAdmin(user: { id: string; role?: string } | null): Promise<boolean> {
   if (!user) return false;
   return userCanPublishWaza(user.id, user.role);
+}
+
+async function canAccessWazaLabOwner(user: { id: string; role?: string } | null): Promise<boolean> {
+  if (!user) return false;
+  const char = await db.query.characters.findFirst({
+    where: eq(characters.userId, user.id),
+    columns: { name: true, surname: true, uiMetadata: true },
+  });
+  if (!char) return false;
+  const name = (char.name ?? "").trim().toLowerCase();
+  const surname = (char.surname ?? "").trim().toLowerCase();
+  const roleIcon = String(
+    ((char.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? ""),
+  ).toLowerCase();
+  return name === "botan" && surname === "mizuhara" && roleIcon === "admin";
 }
 
 const versionBody = t.Object({
@@ -102,6 +127,131 @@ export const wazaAdminRoutes = new Elysia({ prefix: "/admin/waza" })
           return handleWazaAdminError(e, set);
         }
       })
+      .get("/lab", async ({ user, set }) => {
+        if (!(await canAccessWazaLabOwner(user))) {
+          set.status = 403;
+          return { error: "Accesso riservato al Proprietario Botan." };
+        }
+        try {
+          const items = await listWazaLabItems();
+          return { items, count: items.length };
+        } catch (e) {
+          return handleWazaAdminError(e, set);
+        }
+      })
+      .get("/lab/taxonomy", async ({ user, set }) => {
+        if (!(await canAccessWazaLabOwner(user))) {
+          set.status = 403;
+          return { error: "Accesso riservato al Proprietario Botan." };
+        }
+        try {
+          const items = await listWazaLabTaxonomy();
+          return { items };
+        } catch (e) {
+          return handleWazaAdminError(e, set);
+        }
+      })
+      .post(
+        "/lab/taxonomy",
+        async ({ user, body, set }) => {
+          if (!(await canAccessWazaLabOwner(user))) {
+            set.status = 403;
+            return { error: "Accesso riservato al Proprietario Botan." };
+          }
+          try {
+            const item = await createWazaLabTaxonomy(body);
+            return { item };
+          } catch (e) {
+            return handleWazaAdminError(e, set);
+          }
+        },
+        {
+          body: t.Object({
+            categoria: t.Union([
+              t.Literal("genitore_do"),
+              t.Literal("genitore_madosho"),
+              t.Literal("lab_categoria_macro"),
+              t.Literal("lab_categoria_micro"),
+            ]),
+            valore: t.String(),
+          }),
+        },
+      )
+      .post(
+        "/lab/create",
+        async ({ user, body, set }) => {
+          if (!(await canAccessWazaLabOwner(user))) {
+            set.status = 403;
+            return { error: "Accesso riservato al Proprietario Botan." };
+          }
+          try {
+            const item = await createWazaLabItem(body);
+            return { item };
+          } catch (e) {
+            return handleWazaAdminError(e, set);
+          }
+        },
+        {
+          body: t.Object({
+            poolId: t.Optional(t.String()),
+            name: t.String(),
+            family: t.Optional(
+              t.Union([
+                t.Literal("do"),
+                t.Literal("madosho"),
+                t.Literal("ordine"),
+                t.Literal("generiche"),
+                t.Literal("oni-no-mori"),
+              ]),
+            ),
+            ordineSubgroup: t.Optional(t.Nullable(t.String())),
+            description: t.Optional(t.Nullable(t.String())),
+            effect: t.Optional(t.Nullable(t.String())),
+            rank: t.Optional(t.Nullable(t.String())),
+            isPassive: t.Optional(t.Boolean()),
+            styleId: t.Optional(t.Nullable(t.String())),
+            madoshoId: t.Optional(t.Nullable(t.String())),
+            costExp: t.Optional(t.Number()),
+            cs: t.Optional(t.Nullable(t.Number())),
+          }),
+        },
+      )
+      .patch(
+        "/lab/:poolId",
+        async ({ user, params, body, set }) => {
+          if (!(await canAccessWazaLabOwner(user))) {
+            set.status = 403;
+            return { error: "Accesso riservato al Proprietario Botan." };
+          }
+          try {
+            const item = await patchWazaLabItem(params.poolId, body);
+            return { item };
+          } catch (e) {
+            if (e instanceof Error && e.message.includes("non trovata")) {
+              set.status = 404;
+              return { error: e.message };
+            }
+            return handleWazaAdminError(e, set);
+          }
+        },
+        {
+          params: t.Object({ poolId: t.String() }),
+          body: t.Object({
+            name: t.Optional(t.String()),
+            description: t.Optional(t.Nullable(t.String())),
+            effect: t.Optional(t.Nullable(t.String())),
+            rank: t.Optional(t.Nullable(t.String())),
+            isPassive: t.Optional(t.Boolean()),
+            styleId: t.Optional(t.Nullable(t.String())),
+            madoshoId: t.Optional(t.Nullable(t.String())),
+            costExp: t.Optional(t.Number()),
+            cs: t.Optional(t.Number()),
+            launchSkiruIds: t.Optional(t.Array(t.String())),
+            damageSkiruIds: t.Optional(t.Array(t.String())),
+            damageIndexKind: t.Optional(t.Nullable(t.Union([t.Literal("CAC"), t.Literal("CAD")]))),
+          }),
+        },
+      )
       .get("/", async ({ user, query, set }) => {
         if (!(await canAccessWazaAdmin(user))) {
           set.status = 403;

@@ -8,6 +8,7 @@ import { SKIRU_CATALOG } from "@domain/skiru/catalog";
 import { STYLE_LABELS, type StyleId } from "@domain/progression/style-hexagon";
 import { MADOSHO_CATALOG, resolveMadoshoIdFromPoolId } from "@domain/progression/madosho";
 import { invalidateWazaCatalogCache } from "@/hooks/useWazaCatalog";
+import { resolveDefaultWazaCostExp } from "@domain/progression/waza-cost-exp";
 
 type AdminWazaRow = {
   skillId: string | null;
@@ -349,7 +350,14 @@ export function GestioneWazaPanel({
                   <span className="text-[10px] uppercase tracking-wider text-gray-500">Tier</span>
                   <select
                     value={draft.rank ?? ""}
-                    onChange={(e) => setDraft({ ...draft, rank: e.target.value || null })}
+                    onChange={(e) => {
+                      const rank = e.target.value || null;
+                      setDraft({
+                        ...draft,
+                        rank,
+                        costExp: resolveDefaultWazaCostExp({ isPassive: draft.isPassive, rank }),
+                      });
+                    }}
                     disabled={draft.isPassive}
                     className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm disabled:opacity-50"
                   >
@@ -388,14 +396,19 @@ export function GestioneWazaPanel({
                 <input
                   type="checkbox"
                   checked={draft.isPassive}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const isPassive = e.target.checked;
                     setDraft({
                       ...draft,
-                      isPassive: e.target.checked,
-                      rank: e.target.checked ? null : draft.rank,
-                      damageIndexKind: e.target.checked ? null : draft.damageIndexKind,
-                    })
-                  }
+                      isPassive,
+                      rank: isPassive ? null : draft.rank,
+                      damageIndexKind: isPassive ? null : draft.damageIndexKind,
+                      costExp: resolveDefaultWazaCostExp({
+                        isPassive,
+                        rank: isPassive ? null : draft.rank,
+                      }),
+                    });
+                  }}
                   className="rounded border-[var(--border-color)]"
                 />
                 Waza passiva (Dō)
@@ -542,15 +555,36 @@ export function GestioneWazaPanel({
               <div className="grid grid-cols-1 gap-3">
                 <label className="block space-y-1">
                   <span className="text-[10px] uppercase tracking-wider text-gray-500">Costo EXP</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={draft.costExp}
-                    onChange={(e) =>
-                      setDraft({ ...draft, costExp: Number(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={draft.costExp}
+                      onChange={(e) =>
+                        setDraft({ ...draft, costExp: Number(e.target.value) || 0 })
+                      }
+                      className="flex-1 px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          costExp: resolveDefaultWazaCostExp({
+                            isPassive: draft.isPassive,
+                            rank: draft.rank,
+                          }),
+                        })
+                      }
+                      className="px-2 py-2 rounded border border-[var(--border-color)] text-[10px] text-gray-400 hover:text-[var(--accent-gold)] shrink-0"
+                      title="T1/Passiva 15 · T2 20 · T3 25 · T4 35 · T5 40"
+                    >
+                      Default
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-gray-500">
+                    Standard: T1/Passiva 15 · T2 20 · T3 25 · T4 35 · T5 40 EXP
+                  </span>
                 </label>
               </div>
 

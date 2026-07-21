@@ -13,10 +13,11 @@ export function ClientViewGuard() {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
+      const rawKey = typeof e.key === "string" ? e.key : "";
+      const key = rawKey.toLowerCase();
       const ctrl = e.ctrlKey || e.metaKey;
       // F12
-      if (e.key === "F12") {
+      if (rawKey === "F12") {
         e.preventDefault();
         e.stopPropagation();
         return;

@@ -56,4 +56,9 @@ export const wazaApi = {
       method: "POST",
       ...(body != null ? { body: JSON.stringify(body) } : {}),
     }),
+  patch: <T>(endpoint: string, body?: unknown) =>
+    wazaFetch<T>(endpoint, {
+      method: "PATCH",
+      ...(body != null ? { body: JSON.stringify(body) } : {}),
+    }),
 };

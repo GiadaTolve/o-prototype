@@ -15,6 +15,7 @@ import { MADOSHO_POOL, type MadoshoDef } from '../../../apps/tester/src/madoshoP
 import { SAMPLE_WAZA_STATS } from '../../../apps/tester/src/wazaPool'
 import { MADOSHO_RAMO_LABELS, type MadoshoRamo } from '../../../apps/tester/src/madoshoTaxonomy'
 import type { MadoshoId } from '@domain/progression/madosho'
+import { resolveDefaultWazaCostExp } from '@domain/progression/waza-cost-exp'
 
 type CatalogEntry = {
   poolId: string
@@ -60,16 +61,20 @@ function poolDescription(w: MadoshoDef): string {
 }
 
 function buildPoolEntries(): CatalogEntry[] {
-  return MADOSHO_POOL.map((w) => ({
-    poolId: w.id,
-    madoshoId: w.branch as MadoshoId,
-    name: w.name,
-    isPassive: w.type === 'passive',
-    description: poolDescription(w),
-    costExp: 0,
-    costJigoka: poolCostJigoka(w),
-    rank: defaultRank(w),
-  }))
+  return MADOSHO_POOL.map((w) => {
+    const isPassive = w.type === 'passive'
+    const rank = defaultRank(w)
+    return {
+      poolId: w.id,
+      madoshoId: w.branch as MadoshoId,
+      name: w.name,
+      isPassive,
+      description: poolDescription(w),
+      costExp: resolveDefaultWazaCostExp({ isPassive, rank }),
+      costJigoka: poolCostJigoka(w),
+      rank,
+    }
+  })
 }
 
 async function upsertEntry(entry: CatalogEntry) {

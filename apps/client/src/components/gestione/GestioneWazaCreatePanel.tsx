@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { STYLE_LABELS, type StyleId } from "@domain/progression/style-hexagon";
+import { resolveDefaultWazaCostExp } from "@domain/progression/waza-cost-exp";
 import { invalidateWazaCatalogCache } from "@/hooks/useWazaCatalog";
 import { useStatuti } from "@/hooks/useStatuti";
 
@@ -36,7 +37,7 @@ export function GestioneWazaCreatePanel({
   const meta = PRESET_META[preset];
   const [name, setName] = useState("");
   const [rank, setRank] = useState("T1");
-  const [costExp, setCostExp] = useState(0);
+  const [costExp, setCostExp] = useState(() => resolveDefaultWazaCostExp({ rank: "T1" }));
   const [styleId, setStyleId] = useState<string>("");
   const { state: statuti } = useStatuti();
   const [parentId, setParentId] = useState("");
@@ -73,7 +74,7 @@ export function GestioneWazaCreatePanel({
       setMessage("Waza creata con successo.");
       setName("");
       setRank("T1");
-      setCostExp(0);
+      setCostExp(resolveDefaultWazaCostExp({ rank: "T1" }));
       setStyleId("");
       setParentId("");
       onCreated?.();
@@ -106,7 +107,11 @@ export function GestioneWazaCreatePanel({
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Tier</span>
           <select
             value={rank}
-            onChange={(e) => setRank(e.target.value)}
+            onChange={(e) => {
+              const nextRank = e.target.value;
+              setRank(nextRank);
+              setCostExp(resolveDefaultWazaCostExp({ rank: nextRank }));
+            }}
             className="w-full px-3 py-2 rounded border border-[var(--border-color)] bg-[var(--background)] text-sm"
           >
             <option value="T1">T1</option>

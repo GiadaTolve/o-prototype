@@ -8,11 +8,31 @@ import {
   buildWazaTagIndex,
   type WazaTagCatalogEntry,
 } from '@domain/combat/waza-tag-preview'
+import { resolveDefaultWazaCostExp } from '@domain/progression/waza-cost-exp'
 import { db } from '../../plugins/db'
 import { skills } from '../../db/schema'
 
 let cachedEntries: WazaTagCatalogEntry[] | null = null
 let cachedIndex = buildWazaTagIndex(WAZA_TAG_CATALOG)
+
+function sanitizeWazaDescription(input: string | null | undefined): string | null {
+  if (!input) return null
+  const lines = input
+    .replace(/\r/g, '')
+    .trim()
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const cleaned = lines.filter((line, index) => {
+    if (index <= 2) {
+      if (/^(passiva|attiva)\b/i.test(line)) return false
+      if (/^\[.*\]$/.test(line)) return false
+    }
+    return true
+  })
+  if (cleaned.length === 0) return null
+  return cleaned.join('\n\n')
+}
 
 export function getWazaTagIndexSync() {
   return cachedIndex
@@ -158,17 +178,25 @@ export async function upsertAdminWazaByPoolId(
     columns: { id: true },
   })
 
+  const isPassive = input.isPassive ?? false
+  const rank = isPassive ? null : (input.rank?.trim() || null)
+
   const values = {
     name: input.name.trim(),
-    description: input.description?.trim() || null,
+    description: sanitizeWazaDescription(input.description),
     effect: input.effect?.trim() || null,
-    rank: input.isPassive ? null : (input.rank?.trim() || null),
-    isPassive: input.isPassive ?? false,
+    rank,
+    isPassive,
     styleId: input.styleId?.trim() || null,
     launchSkiruIds: launchSkiruIds.length > 0 ? launchSkiruIds : null,
     damageSkiruIds: damageSkiruIds.length > 0 ? damageSkiruIds : null,
-    damageIndexKind: input.isPassive ? null : damageIndexKind,
-    costExp: input.costExp ?? 0,
+    damageIndexKind: isPassive ? null : damageIndexKind,
+    costExp:
+      input.costExp ??
+      resolveDefaultWazaCostExp({
+        isPassive,
+        rank,
+      }),
     costJigoka: 0,
     type: 'WAZA' as const,
     poolId: pid,

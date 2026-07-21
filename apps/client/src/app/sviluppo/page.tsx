@@ -3,6 +3,7 @@
 import { hasSessionHint } from "@/lib/auth-session";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { CatalogoWaza } from "@/components/sviluppo/waza/CatalogoWaza";
 import { BestiarioManagement } from "@/components/gestione/BestiarioManagement";
 import { GestioneStatusPanel } from "@/components/gestione/GestioneStatusPanel";
@@ -164,7 +165,20 @@ export default function SviluppoPage() {
         <div>
           {activeTab === "catalogo-waza" &&
             (canAuthoring ? (
-              <CatalogoWaza />
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href="/sviluppo/waza-lab"
+                    className="text-xs text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)] border border-[var(--accent-violet)]/30 rounded px-2 py-1"
+                  >
+                    Waza Lab →
+                  </Link>
+                  <span className="text-[10px] text-gray-600">
+                    Modifica rapida EXP/CS + anteprima chat (solo staff)
+                  </span>
+                </div>
+                <CatalogoWaza />
+              </div>
             ) : (
               <p className="text-sm text-gray-400">Accesso al Catalogo Waza non disponibile.</p>
             ))}
