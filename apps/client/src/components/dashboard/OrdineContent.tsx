@@ -32,15 +32,37 @@ type Props = {
   onCharUpdate?: () => void;
 };
 
+function OrdineEditPencil({
+  label,
+  onClick,
+  className = "",
+}: {
+  label: string;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--foreground)]/35 hover:text-[var(--accent-gold)] transition-colors ${className}`}
+      title={label}
+      aria-label={label}
+    >
+      <FontAwesomeIcon icon={icons.pencil} className="w-3 h-3" />
+    </button>
+  );
+}
+
 export function OrdineContent({ char, onCharUpdate }: Props) {
-  const { state: statuti } = useStatuti();
+  const { state: statuti, setState, updateAndSave, loadFromServer } = useStatuti();
   const [factionId, setFactionId] = useState<OrdineFactionId>(() => normalizeOrdineFactionId(char?.order) ?? "chisen-tai");
   const [tab, setTab] = useState<OrdineTab>("statuto");
   const [catalog, setCatalog] = useState<CatalogWaza[]>([]);
   const [loadingWaza, setLoadingWaza] = useState(true);
   const [wazaError, setWazaError] = useState<string | null>(null);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
-  const [compendioOpen, setCompendioOpen] = useState<StatutiEntry | null>(null);
+  const [compendioOpenId, setCompendioOpenId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<OrdineStatutiEditMode | null>(null);
   const mountedRef = useRef(false);
 
@@ -52,6 +74,20 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
     () => ORDINE_FACTIONS.find((f) => f.id === factionId) ?? ORDINE_FACTIONS[0],
     [factionId],
   );
+
+  const compendioOpen = useMemo(
+    () => (compendioOpenId ? statuti.ordine.find((e) => e.id === compendioOpenId) ?? null : null),
+    [compendioOpenId, statuti.ordine],
+  );
+
+  const statutiApi = useMemo(
+    () => ({ state: statuti, setState, updateAndSave }),
+    [statuti, setState, updateAndSave],
+  );
+
+  const handleStatutiSaved = useCallback(() => {
+    void loadFromServer({ silent: true });
+  }, [loadFromServer]);
 
   const factionEntry = useMemo(() => findOrdineFactionEntry(statuti, factionId), [statuti, factionId]);
   const compendi = useMemo(() => listOrdineCompendi(statuti, factionId), [statuti, factionId]);
@@ -137,7 +173,7 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
 
   const openCompendioEdit = useCallback(
     (entry: StatutiEntry) => {
-      setEditMode({ type: "compendio", entry, factionLabel: faction.label });
+      setEditMode({ type: "compendio", entryId: entry.id, factionLabel: faction.label });
     },
     [faction.label],
   );
@@ -187,7 +223,14 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
               })}
             </div>
 
-            <div className="pt-2.5">
+            <div className="pt-2.5 relative">
+              {canEdit ? (
+                <OrdineEditPencil
+                  label="Modifica sottotitolo e statuto"
+                  onClick={openStatutoEdit}
+                  className="absolute top-0 right-0 -mt-1 -mr-1"
+                />
+              ) : null}
               <p className="ordine-hero-kicker">Ordine</p>
               <h2 className="ordine-hero-title mt-1">{faction.label}</h2>
               {heroSubtitle ? (
@@ -230,15 +273,11 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
                 Statuto
               </p>
               {canEdit ? (
-                <button
-                  type="button"
+                <OrdineEditPencil
+                  label="Modifica statuto"
                   onClick={openStatutoEdit}
-                  className="min-w-[44px] min-h-[44px] -mt-2 -mr-2 flex items-center justify-center text-[var(--foreground)]/35 hover:text-[var(--accent-gold)] transition-colors"
-                  title="Modifica statuto"
-                  aria-label="Modifica statuto"
-                >
-                  <FontAwesomeIcon icon={icons.pencil} className="w-3 h-3" />
-                </button>
+                  className="-mt-2 -mr-2"
+                />
               ) : null}
             </div>
 
@@ -260,16 +299,40 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
                 ) : null}
               </p>
             )}
-            {factionEntry?.descrizione_meccanica?.trim() ? (
+            {factionEntry?.descrizione_meccanica?.trim() || canEdit ? (
               <div>
-                <p className="text-[9px] font-display uppercase tracking-[0.16em] text-[var(--accent-violet)] mb-2">
-                  Regole d&apos;ordine
-                </p>
-                <div className="rounded border border-[var(--border-color)]/50 bg-black/40 px-3 py-2.5">
-                  <p className="text-xs text-[var(--foreground)]/60 leading-relaxed whitespace-pre-line">
-                    {factionEntry.descrizione_meccanica.trim()}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-[9px] font-display uppercase tracking-[0.16em] text-[var(--accent-violet)]">
+                    Regole d&apos;ordine
                   </p>
+                  {canEdit ? (
+                    <OrdineEditPencil
+                      label="Modifica regole d'ordine"
+                      onClick={openStatutoEdit}
+                      className="-mr-2"
+                    />
+                  ) : null}
                 </div>
+                {factionEntry?.descrizione_meccanica?.trim() ? (
+                  <div className="rounded border border-[var(--border-color)]/50 bg-black/40 px-3 py-2.5">
+                    <p className="text-xs text-[var(--foreground)]/60 leading-relaxed whitespace-pre-line">
+                      {factionEntry.descrizione_meccanica.trim()}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--foreground)]/35 italic">
+                    Nessuna regola pubblicata.
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        onClick={openStatutoEdit}
+                        className="ml-2 text-[var(--accent-violet-light)] hover:text-[var(--accent-gold)] underline-offset-2 hover:underline"
+                      >
+                        Aggiungi
+                      </button>
+                    ) : null}
+                  </p>
+                )}
               </div>
             ) : null}
           </section>
@@ -282,15 +345,10 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
                 Compendi
               </p>
               {canEdit ? (
-                <button
-                  type="button"
+                <OrdineEditPencil
+                  label="Nuovo compendio"
                   onClick={openCompendioCreate}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--foreground)]/35 hover:text-[var(--accent-gold)] transition-colors"
-                  title="Nuovo compendio"
-                  aria-label="Nuovo compendio"
-                >
-                  <FontAwesomeIcon icon={icons.pencil} className="w-3 h-3" />
-                </button>
+                />
               ) : null}
             </div>
 
@@ -313,7 +371,7 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
                   <div key={entry.id} className="relative">
                     <button
                       type="button"
-                      onClick={() => setCompendioOpen(entry)}
+                      onClick={() => setCompendioOpenId(entry.id)}
                       className="w-full min-h-[44px] text-left rounded-lg border border-[var(--border-color)] bg-black/25 px-3 py-3 hover:border-[var(--accent-violet)]/50 hover:bg-[var(--accent-violet)]/5 transition-colors"
                     >
                       <span className="block font-display text-sm text-[var(--accent-violet-light)] mb-1 pr-8">
@@ -326,15 +384,11 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
                       ) : null}
                     </button>
                     {canEdit ? (
-                      <button
-                        type="button"
+                      <OrdineEditPencil
+                        label={`Modifica ${entry.name}`}
                         onClick={() => openCompendioEdit(entry)}
-                        className="absolute top-1.5 right-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--foreground)]/30 hover:text-[var(--accent-gold)] transition-colors"
-                        title={`Modifica ${entry.name}`}
-                        aria-label={`Modifica ${entry.name}`}
-                      >
-                        <FontAwesomeIcon icon={icons.pencil} className="w-3 h-3" />
-                      </button>
+                        className="absolute top-1.5 right-1.5"
+                      />
                     ) : null}
                   </div>
                 ))}
@@ -391,16 +445,16 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
 
       <OrdineCompendioModal
         open={!!compendioOpen}
-        onClose={() => setCompendioOpen(null)}
+        onClose={() => setCompendioOpenId(null)}
         title={compendioOpen?.name ?? ""}
         factionLabel={faction.label}
         content={compendioOpen ? compendioBody(compendioOpen) : ""}
         onEdit={
           canEdit && compendioOpen
             ? () => {
-                const entry = compendioOpen;
-                setCompendioOpen(null);
-                openCompendioEdit(entry);
+                const entryId = compendioOpen.id;
+                setCompendioOpenId(null);
+                setEditMode({ type: "compendio", entryId, factionLabel: faction.label });
               }
             : undefined
         }
@@ -410,6 +464,8 @@ export function OrdineContent({ char, onCharUpdate }: Props) {
         open={!!editMode}
         mode={editMode}
         onClose={() => setEditMode(null)}
+        onSaved={handleStatutiSaved}
+        statuti={statutiApi}
       />
     </div>
   );

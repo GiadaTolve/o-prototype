@@ -45,7 +45,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
         tipo: "MANUALE",
         trigger: "AL_LANCIO",
         testo:
-          "Designi un'arma/oggetto impugnato come Tōrō (Arma Psichica). Finché lo tocchi: (1) non bersagliabile da Manipolazione/Trasformazione altrui; (2) funge da origine per lanciare le tue waza.",
+          "Designi un'arma/oggetto impugnato come [Tōrō]. Finché lo tocchi: (1) non bersagliabile da Manipolazione/Trasformazione altrui; (2) funge da origine per lanciare le tue waza.",
         mostra_a: "MASTER",
       },
     ],
@@ -368,7 +368,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
         trigger: "PRE_LANCIO",
         condizione: "grado_pg >= Sentatsu Bunsekikan",
         testo:
-          "Requisito: grado Sentatsu Bunsekikan [SB] o superiore. Per 3 turni, qualsiasi oggetto fisico impugnato diventa Tōrō (Arma Psichica) — anche senza la passiva Tōrō. Mantiene proprietà fisiche; cambiando oggetto nel turno, il precedente perde lo stato di Tōrō ed è distrutto.",
+          "Requisito: grado Sentatsu Bunsekikan [SB] o superiore. Per 3 turni, qualsiasi oggetto fisico impugnato diventa [Tōrō] — anche senza la passiva Lanterna Incisa. Mantiene proprietà fisiche; cambiando oggetto nel turno, il precedente perde lo stato di [Tōrō] ed è distrutto.",
         mostra_a: "MASTER",
       },
       {
@@ -427,7 +427,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
         trigger: "PRE_LANCIO",
         condizione: "grado_pg >= Kanteikan",
         testo:
-          "Requisito: grado Kanteikan [K] o superiore. Per la durata della waza, ogni oggetto posseduto da prima del combattimento (addosso/in tasca/inventario) diventa Tōrō (Arma Psichica) senza impugnarlo — deve restare addosso. Evoluzione di Giocattolo: da un oggetto in pugno a tutto l'equipaggiamento a mani libere.",
+          "Requisito: grado Kanteikan [K] o superiore. Per la durata della waza, ogni oggetto posseduto da prima del combattimento (addosso/in tasca/inventario) diventa [Tōrō] senza impugnarlo — deve restare addosso. Evoluzione di Giocattolo: da un oggetto in pugno a tutto l'equipaggiamento a mani libere.",
         mostra_a: "MASTER",
       },
     ],

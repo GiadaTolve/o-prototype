@@ -93,7 +93,7 @@ function syncBranchFromPool(w: WazaDef): string {
 }
 
 const PLACEHOLDER_NAMES_TO_REMOVE = [
-  'Tōrō (Arma psichica)',
+  'Tōrō (Lanterna Incisa)',
   'Michishirube (Ordine)',
   'Shoka (Ottimizzazione)',
   'Kintsugi (Legare i Frammenti)',

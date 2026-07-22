@@ -432,7 +432,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "isPassive": false,
     "description": "L'analista si ferma. Non è indecisione — è accumulo. Il Tōrō assorbe pressione per ogni istante di immobilità, e chi sa leggere il campo capisce che l'analista fermo è più pericoloso di quello in movimento.",
     "poolId": "hi-o-tsumugu-filatura-della-fiamma",
-    "effect": "L'analista sferra un colpo a [Contatto][Energetico] che infligge danno pari al T2 (T3 se il Tōrō è un [Arma Psichica]). Può scegliere di caricare prima del colpo restando immobile: ogni quarto speso in carica aggiunge +1 tier al danno, fino a un massimo di +2 tier (2 quarti). Dopo aver scaricato il colpo, il Tōrō non può essere usato per lanciare waza per 1 turno."
+    "effect": "L'analista sferra un colpo a [Contatto][Energetico] che infligge danno pari al T2 (T3 se il [Tōrō] è designato con la passiva Lanterna Incisa). Può scegliere di caricare prima del colpo restando immobile: ogni quarto speso in carica aggiunge +1 tier al danno, fino a un massimo di +2 tier (2 quarti). Dopo aver scaricato il colpo, il Tōrō non può essere usato per lanciare waza per 1 turno."
   },
   {
     "name": "Bannō · Qualunque Cosa (万能)",

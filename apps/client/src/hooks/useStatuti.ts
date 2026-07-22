@@ -283,8 +283,8 @@ export function useStatuti() {
   );
 
   return useMemo(
-    () => ({ state, setState, updateAndSave, loaded, loadError, saveError }),
-    [state, updateAndSave, loaded, loadError, saveError],
+    () => ({ state, setState, updateAndSave, loadFromServer, loaded, loadError, saveError }),
+    [state, updateAndSave, loadFromServer, loaded, loadError, saveError],
   );
 }
 

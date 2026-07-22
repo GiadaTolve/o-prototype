@@ -67,7 +67,7 @@ export type DoMechanicsUiMeta = {
   genericheIaiWazaLaunchesThisTurn?: number
   genericheIaiDamagedTargetIds?: string[]
   genericheTurnWazaUsed?: boolean
-  /** Omocha · Arma Psichica */
+  /** Omocha · Tōrō */
   tokaOmocha?: import('./toka/omocha').TokaOmochaState | null
   /** Gangushi · multi Tōrō */
   tokaGangushi?: import('./toka/gangushi').TokaGangushiState | null

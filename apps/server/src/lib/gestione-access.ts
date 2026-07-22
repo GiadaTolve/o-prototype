@@ -97,6 +97,36 @@ export async function userHasSviluppoAccess(
   return icon === 'moderatore' || icon === 'admin' || icon === 'fixer'
 }
 
+/** Proprietario (pixel-icon admin) — modifica statuti/compendi Ordine in dashboard. */
+export async function userCanEditOrdineStatuti(
+  userId: string,
+  userRole?: string | null,
+): Promise<boolean> {
+  const role = (userRole ?? '').toUpperCase()
+  if (role === 'ADMIN') return true
+
+  const char = await db.query.characters.findFirst({
+    where: eq(characters.userId, userId),
+    columns: { uiMetadata: true },
+  })
+  const icon = ((char?.uiMetadata as { roleIcon?: string } | null)?.roleIcon ?? '').toLowerCase()
+  return icon === 'admin'
+}
+
+export async function userCanUpsertStatuti(
+  userId: string,
+  userRole: string | null | undefined,
+  kind: string,
+): Promise<boolean> {
+  if (kind === 'ordine') {
+    return (
+      (await userCanEditOrdineStatuti(userId, userRole)) ||
+      (await userHasSviluppoAccess(userId, userRole))
+    )
+  }
+  return userHasSviluppoAccess(userId, userRole)
+}
+
 /** Gestione sessioni giocata / quest: creatore o staff Shinigami. */
 export function canManageGameSession(
   userRole: string | null | undefined,

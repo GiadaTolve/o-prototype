@@ -47,5 +47,5 @@ export function formatOmochaSegment(meta: TokaOmochaMeta): string | null {
   const o = readOmochaState(meta)
   if (!o) return null
   const obj = o.objectLabel ? ` · ${o.objectLabel}` : ''
-  return `Omocha: [Arma Psichica]${obj} (${o.turnsLeft} turni)`
+  return `Omocha: [Tōrō]${obj} (${o.turnsLeft} turni)`
 }

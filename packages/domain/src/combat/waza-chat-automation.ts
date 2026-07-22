@@ -643,8 +643,8 @@ export function processWazaChatAutomation(input: WazaChatAutomationInput): WazaC
     effects.push({ kind: 'omocha_activated', objectLabel: objectLabel ?? undefined })
     log.push(
       objectLabel
-        ? `Omocha: ${objectLabel} → [Arma Psichica]`
-        : 'Omocha: oggetto impugnato → [Arma Psichica]',
+        ? `Omocha: ${objectLabel} → [Tōrō]`
+        : 'Omocha: oggetto impugnato → [Tōrō]',
     )
   }
 

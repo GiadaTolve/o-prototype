@@ -156,7 +156,7 @@ Lo stile della proiezione permette di sfogare la propria Jigoka attraverso **ogg
 
 ### Passive [6]
 
-#### 1. Tōrō <small>(Arma psichica)</small>
+#### 1. Tōrō <small>(Lanterna Incisa)</small>
 
 **2J / turno** (attivabile).
 
@@ -233,7 +233,7 @@ X = 1 + floor(M / 5) + Grado
 
 #### 1. Estensione
 
-L’analista, grazie alla sua predisposizione per l’uso di oggetti, vedrà la sua Jigoka invadere l’arma che tiene tra le mani: l’energia psichica prende forma concreta attorno all’oggetto e durante l’esecuzione di un colpo d’arma la dimensione di quest’ultima aumenta di X metri. [Energetiche][Contatto]. Se l’arma è già un [Arma psichica] la tecnica dura per l’intero turno. Le armi piccole (coltelli, ecc.) possono cambiare forma durante l’esecuzione, mantenendo lo stesso tipo di danno (da coltello a spada, da martello a martello da guerra, ecc.).
+L’analista, grazie alla sua predisposizione per l’uso di oggetti, vedrà la sua Jigoka invadere l’arma che tiene tra le mani: l’energia psichica prende forma concreta attorno all’oggetto e durante l’esecuzione di un colpo d’arma la dimensione di quest’ultima aumenta di X metri. [Energetiche][Contatto]. Se l’arma è già un [Tōrō] la tecnica dura per l’intero turno. Le armi piccole (coltelli, ecc.) possono cambiare forma durante l’esecuzione, mantenendo lo stesso tipo di danno (da coltello a spada, da martello a martello da guerra, ecc.).
 
 *Avanzando la skill di grado aumentano i bonus con la passiva di riferimento.*
 
@@ -248,7 +248,7 @@ X = min(4, floor((1 + floor(M / 7) + LVL) / 2))
 
 #### 2. Sfogo Jigoka
 
-L’analista, grazie alla sua predisposizione, concentra la sua Jigoka nell’arma che tiene tra le mani. Quando viene sferrato un colpo, l’arma può rilasciare tutta la Jigoka immessa in un’esplosione di energia psichica in un cono di X metri davanti a sé. [Energetiche][Propagazione Conica]. Se l’arma è già un [Arma psichica] i danni sono maggiori. Se l’arma è soggetta a [Batteria] i danni sono molto maggiori ma l’arma si disintegra.
+L’analista, grazie alla sua predisposizione, concentra la sua Jigoka nell’arma che tiene tra le mani. Quando viene sferrato un colpo, l’arma può rilasciare tutta la Jigoka immessa in un’esplosione di energia psichica in un cono di X metri davanti a sé. [Energetiche][Propagazione Conica]. Se l’arma è già un [Tōrō] i danni sono maggiori. Se l’arma è soggetta a [Batteria] i danni sono molto maggiori ma l’arma si disintegra.
 
 *Avanzando la skill di grado aumenterà la gittata; [Batteria] non farà più disintegrare l’arma all’istante.*
 
@@ -267,7 +267,7 @@ Costo = 10 + floor(M / 2)
 
 #### 3. Laser psichico
 
-L’analista, grazie alla sua predisposizione, concentra la sua Jigoka nell’arma che tiene tra le mani; l’energia viene accumulata velocemente e l’arma deve essere tenuta con entrambe le mani. L’energia accumulata viene scaricata nella direzione puntata dando forma a un raggio energetico lungo X. [Energetiche][Raggio]. Se l’arma è già un [Arma psichica] il danno è aumentato così come le dimensioni. Se l’arma è già [Arma psichica] perde la condizione dopo l’uso; se non lo è, la guadagna.
+L’analista, grazie alla sua predisposizione, concentra la sua Jigoka nell’arma che tiene tra le mani; l’energia viene accumulata velocemente e l’arma deve essere tenuta con entrambe le mani. L’energia accumulata viene scaricata nella direzione puntata dando forma a un raggio energetico lungo X. [Energetiche][Raggio]. Se l’arma è già un [Tōrō] il danno è aumentato così come le dimensioni. Se l’arma è già [Tōrō] perde la condizione dopo l’uso; se non lo è, la guadagna.
 
 *Avanzando la skill di grado si annulla il debuff.*
 
@@ -286,7 +286,7 @@ Costo = 14 + floor(M × 0,8)
 
 #### 4. Arma animata
 
-L’analista, grazie alla sua predisposizione naturale, cede ulteriore Jigoka all’interno dell’arma che impugna, abbastanza da permettere all’arma di levitare diventando un [Costrutto]. L’arma agisce tramite ordine mentale, può muoversi solo entro una gittata X dall’analista altrimenti la connessione psichica si frantuma e l’oggetto cade. L’arma può levitare fino a due metri di altezza, attacca in maniera semplice seguendo i comandi mentali. Dopo X turni la Jigoka viene consumata e l’arma torna al suo stato originale. Se l’arma è già un [Arma psichica] ha durata maggiore.
+L’analista, grazie alla sua predisposizione naturale, cede ulteriore Jigoka all’interno dell’arma che impugna, abbastanza da permettere all’arma di levitare diventando un [Costrutto]. L’arma agisce tramite ordine mentale, può muoversi solo entro una gittata X dall’analista altrimenti la connessione psichica si frantuma e l’oggetto cade. L’arma può levitare fino a due metri di altezza, attacca in maniera semplice seguendo i comandi mentali. Dopo X turni la Jigoka viene consumata e l’arma torna al suo stato originale. Se l’arma è già un [Tōrō] ha durata maggiore.
 
 *Avanzando la skill aumentano i metri di levitazione e il numero di azioni possibili (es. cacciare una tecnica).*
 
@@ -739,7 +739,7 @@ Quando serve un tiro per colpire, resistere o controllare:
 
 | Situazione | Formula |
 |------------|---------|
-| Colpo con arma psichica | `1d20 + floor(D/2) + floor(M/3)` |
+| Colpo con Tōrō | `1d20 + floor(D/2) + floor(M/3)` |
 | Resistenza a tecnica energetica | `1d20 + C` (fisica) o `1d20 + E` (spirituale) |
 | Controllo Jigoka | `1d20 + M` |
 | Precisione lancio | `1d20 + D + floor(M/4)` |

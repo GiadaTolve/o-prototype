@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { authPlugin } from '../../plugins/auth.plugin'
 import { taxonomyStatutesService } from './taxonomy-statutes.service'
-import { userHasSviluppoAccess } from '../../lib/gestione-access'
+import { userCanUpsertStatuti } from '../../lib/gestione-access'
 
 const upsertBody = t.Object({
   statute: t.Optional(t.String()),
@@ -17,7 +17,7 @@ function registerStatutiHandlers(app: Elysia) {
       '/:kind/:entryId',
       async ({ params, body, user, error }) => {
         if (!user) return error(401, 'Non autenticato')
-        const canEdit = await userHasSviluppoAccess(user.id, user.role)
+        const canEdit = await userCanUpsertStatuti(user.id, user.role, params.kind)
         if (!canEdit) return error(403, 'Accesso riservato allo staff Sviluppo.')
         await taxonomyStatutesService.upsert(params.kind, params.entryId, body)
         return { ok: true }
@@ -41,7 +41,7 @@ export const taxonomyStatutesRoutes = new Elysia({ prefix: '/taxonomy' })
         '/statutes/:kind/:entryId',
         async ({ params, body, user, error }) => {
           if (!user) return error(401, 'Non autenticato')
-          const canEdit = await userHasSviluppoAccess(user.id, user.role)
+          const canEdit = await userCanUpsertStatuti(user.id, user.role, params.kind)
           if (!canEdit) return error(403, 'Accesso riservato allo staff Sviluppo.')
           await taxonomyStatutesService.upsert(params.kind, params.entryId, body)
           return { ok: true }

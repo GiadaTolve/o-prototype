@@ -1,6 +1,6 @@
 /**
  * Meccanica Tōrō — Tōka-dō
- * Passiva «Tōrō - Lanterna Incisa»: arma psichica, tag `toro`, protezione da manipolazione a contatto.
+ * Passiva «Tōrō - Lanterna Incisa»: tag `toro`, protezione da manipolazione a contatto.
  */
 
 export const TORO_PASSIVE_POOL_ID = 'toro-lanterna-incisa'

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
-import { useStatuti, type StatutiEntry } from "@/hooks/useStatuti";
+import type { StatutiEntry, StatutiKind, StatutiState } from "@/hooks/useStatuti";
 import {
   findOrdineFactionEntry,
   slugifyOrdineEntryId,
@@ -13,13 +13,31 @@ import {
 
 export type OrdineStatutiEditMode =
   | { type: "statuto"; factionId: OrdineFactionId; factionLabel: string }
-  | { type: "compendio"; entry: StatutiEntry; factionLabel: string }
+  | { type: "compendio"; entryId: string; factionLabel: string }
   | { type: "compendio-new"; factionId: OrdineFactionId; factionLabel: string };
+
+type StatutiApi = {
+  state: StatutiState;
+  setState: React.Dispatch<React.SetStateAction<StatutiState>>;
+  updateAndSave: (
+    kind: StatutiKind,
+    id: string,
+    patch: {
+      name?: string;
+      statute?: string;
+      atto?: string;
+      sottotitolo?: string;
+      descrizione_meccanica?: string;
+    },
+  ) => Promise<void>;
+};
 
 type Props = {
   open: boolean;
   mode: OrdineStatutiEditMode | null;
   onClose: () => void;
+  onSaved?: () => void;
+  statuti: StatutiApi;
 };
 
 type Draft = {
@@ -38,16 +56,40 @@ const EMPTY_DRAFT: Draft = {
   descrizione_meccanica: "",
 };
 
-export function OrdineStatutiEditModal({ open, mode, onClose }: Props) {
-  const { state, setState, updateAndSave } = useStatuti();
+function modeKey(mode: OrdineStatutiEditMode | null): string {
+  if (!mode) return "";
+  if (mode.type === "statuto") return `statuto:${mode.factionId}`;
+  if (mode.type === "compendio") return `compendio:${mode.entryId}`;
+  return `compendio-new:${mode.factionId}`;
+}
+
+function draftFromCompendio(entry: StatutiEntry): Draft {
+  return {
+    name: entry.name,
+    sottotitolo: entry.sottotitolo ?? "",
+    statute: entry.statute ?? "",
+    atto: entry.atto?.trim() || entry.statute?.trim() || "",
+    descrizione_meccanica: entry.descrizione_meccanica ?? "",
+  };
+}
+
+export function OrdineStatutiEditModal({ open, mode, onClose, onSaved, statuti }: Props) {
+  const { state, setState, updateAndSave } = statuti;
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const activeModeKey = modeKey(mode);
+
+  const compendioEntry = useMemo(() => {
+    if (!mode || mode.type !== "compendio") return null;
+    return state.ordine.find((e) => e.id === mode.entryId) ?? null;
+  }, [mode, state.ordine]);
+
   const entryId = useMemo(() => {
     if (!mode) return null;
     if (mode.type === "statuto") return mode.factionId;
-    if (mode.type === "compendio") return mode.entry.id;
+    if (mode.type === "compendio") return mode.entryId;
     return null;
   }, [mode]);
 
@@ -71,25 +113,24 @@ export function OrdineStatutiEditModal({ open, mode, onClose }: Props) {
     }
 
     if (mode.type === "compendio") {
-      setDraft({
-        name: mode.entry.name,
-        sottotitolo: mode.entry.sottotitolo ?? "",
-        statute: mode.entry.statute ?? "",
-        atto: mode.entry.atto?.trim() || mode.entry.statute?.trim() || "",
-        descrizione_meccanica: mode.entry.descrizione_meccanica ?? "",
-      });
+      const entry = state.ordine.find((e) => e.id === mode.entryId);
+      if (entry) setDraft(draftFromCompendio(entry));
       return;
     }
 
     setDraft(EMPTY_DRAFT);
-  }, [open, mode, state]);
+    // Solo all'apertura o cambio sezione — non ad ogni refresh dello state durante la digitazione.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activeModeKey]);
 
   const title = useMemo(() => {
     if (!mode) return "";
     if (mode.type === "statuto") return `Statuto · ${mode.factionLabel}`;
-    if (mode.type === "compendio") return `Compendio · ${mode.entry.name}`;
+    if (mode.type === "compendio") {
+      return `Compendio · ${compendioEntry?.name ?? mode.entryId}`;
+    }
     return `Nuovo compendio · ${mode.factionLabel}`;
-  }, [mode]);
+  }, [compendioEntry?.name, mode]);
 
   const handleSave = useCallback(async () => {
     if (!mode) return;
@@ -103,21 +144,28 @@ export function OrdineStatutiEditModal({ open, mode, onClose }: Props) {
           statute: draft.statute,
           descrizione_meccanica: draft.descrizione_meccanica,
         });
+        onSaved?.();
         onClose();
         return;
       }
 
       if (mode.type === "compendio") {
-        const name = draft.name.trim() || mode.entry.name;
+        const existing = state.ordine.find((e) => e.id === mode.entryId);
+        if (!existing) {
+          setError("Compendio non trovato.");
+          return;
+        }
+        const name = draft.name.trim() || existing.name;
         setState((prev) => ({
           ...prev,
-          ordine: prev.ordine.map((e) => (e.id === mode.entry.id ? { ...e, name } : e)),
+          ordine: prev.ordine.map((e) => (e.id === mode.entryId ? { ...e, name } : e)),
         }));
-        await updateAndSave("ordine", mode.entry.id, {
+        await updateAndSave("ordine", mode.entryId, {
           atto: draft.atto,
           sottotitolo: draft.sottotitolo,
           descrizione_meccanica: draft.descrizione_meccanica,
         });
+        onSaved?.();
         onClose();
         return;
       }
@@ -144,7 +192,7 @@ export function OrdineStatutiEditModal({ open, mode, onClose }: Props) {
       const entry: StatutiEntry = {
         id,
         name,
-        statute: draft.statute,
+        statute: "",
         atto: draft.atto,
         sottotitolo: draft.sottotitolo,
         descrizione_meccanica: draft.descrizione_meccanica,
@@ -160,15 +208,40 @@ export function OrdineStatutiEditModal({ open, mode, onClose }: Props) {
         sottotitolo: draft.sottotitolo,
         descrizione_meccanica: draft.descrizione_meccanica,
       });
+      onSaved?.();
       onClose();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Salvataggio non riuscito.");
     } finally {
       setSaving(false);
     }
-  }, [draft, mode, onClose, setState, state.ordine, updateAndSave]);
+  }, [draft, mode, onClose, onSaved, setState, state.ordine, updateAndSave]);
 
   if (!open || !mode) return null;
+
+  if (mode.type === "compendio" && !compendioEntry) {
+    return createPortal(
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/75 border-0"
+          aria-label="Chiudi"
+          onClick={onClose}
+        />
+        <div className="relative z-10 rounded-lg border border-[var(--border-color)] bg-[var(--panel-bg)] p-4 max-w-sm">
+          <p className="text-sm text-[var(--foreground)]/70 mb-3">Compendio non trovato.</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-[44px] w-full rounded border border-[var(--border-color)] text-xs uppercase tracking-wider"
+          >
+            Chiudi
+          </button>
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   return createPortal(
     <div

@@ -490,7 +490,7 @@ function WazaCard({
           <span style={{ fontWeight: 600, color: '#fff' }}>
             {waza.id === 'arma-psichica' ? (
               <>
-                Tōrō <span style={{ fontSize: '0.75em', opacity: 0.9 }}>(Arma psichica)</span>
+                Tōrō
               </>
             ) : (
               waza.name

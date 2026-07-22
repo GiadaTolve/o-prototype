@@ -25,7 +25,7 @@ export function calcWazaFormulas(stats: StatsMap): WazaResult[] {
   return [
     // ─── PASSIVE ───
     {
-      name: 'Arma psichica',
+      name: 'Tōrō (Lanterna Incisa)',
       type: 'passive',
       cost: 5 + floor(M / 4),
       formula: '5 + floor($M/4)',
