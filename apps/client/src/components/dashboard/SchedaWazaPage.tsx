@@ -6,12 +6,18 @@ import { icons } from "@/lib/icons";
 import { api } from "@/lib/api";
 import { parseWazaTierFromRank, wazaTierMeta } from "./waza-display";
 import { WazaTaxonomyChips, stripWazaBranchHeader } from "./WazaTaxonomyChips";
+import { WazaBracketProse } from "./WazaBracketProse";
+import {
+  formatWazaGradeRequirementLabel,
+  resolveWazaRequiredGrade,
+} from "@domain/progression/waza-grade-req";
 import { WazaByFamilySections } from "./WazaByFamilySections";
 
 export type CharacterWaza = {
   id: string;
   name: string;
   description?: string | null;
+  effect?: string | null;
   type?: string | null;
   costJigoka?: number | null;
   level?: number | null;
@@ -41,6 +47,13 @@ function WazaRegistroSkeleton() {
 function WazaCard({ waza }: { waza: CharacterWaza }) {
   const tier = parseWazaTierFromRank(waza.rank);
   const tierInfo = tier != null ? wazaTierMeta(tier) : null;
+  const flavor = waza.description?.trim() ? stripWazaBranchHeader(waza.description) : "";
+  const effect = waza.effect?.trim() || "";
+  const requiredGrade = resolveWazaRequiredGrade({
+    poolId: waza.poolId,
+    description: waza.description,
+    effect: waza.effect,
+  });
 
   return (
     <article className="waza-do-card waza-do-card--owned rounded-md border border-[var(--accent-gold)]/30 bg-[var(--accent-gold)]/5 pl-3.5 pr-3 py-3 shadow-[var(--shadow-gold)] hover:border-[var(--accent-gold)]/45 transition-colors">
@@ -57,13 +70,24 @@ function WazaCard({ waza }: { waza: CharacterWaza }) {
           </span>
         </div>
       </div>
-      {waza.description?.trim() && (
+      {(flavor || effect) && (
         <>
-          <WazaTaxonomyChips description={waza.description} />
-          <p className="mt-2 waza-description whitespace-pre-line">
-            {stripWazaBranchHeader(waza.description)}
-          </p>
+          <WazaTaxonomyChips description={waza.description} effect={waza.effect} />
+          {flavor ? (
+            <WazaBracketProse text={flavor} className="mt-2 waza-description whitespace-pre-line" />
+          ) : null}
+          {effect ? (
+            <WazaBracketProse
+              text={effect}
+              className="mt-2 waza-description whitespace-pre-line text-[var(--accent-violet-light)]/90"
+            />
+          ) : null}
         </>
+      )}
+      {requiredGrade && (
+        <p className="mt-2 text-[9px] font-display uppercase tracking-wider text-[var(--accent-gold)]/80">
+          {formatWazaGradeRequirementLabel(requiredGrade)}
+        </p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-display uppercase tracking-wider">
         {tierInfo && (

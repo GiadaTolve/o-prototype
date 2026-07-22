@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  resolveDefaultWazaCostCs,
   resolveDefaultWazaCostExp,
   WAZA_DEFAULT_COST_EXP_BY_TIER,
+  WAZA_DEFAULT_PASSIVE_COST_CS,
   WAZA_DEFAULT_PASSIVE_COST_EXP,
 } from './waza-cost-exp'
 
@@ -26,5 +28,21 @@ describe('resolveDefaultWazaCostExp', () => {
 
   it('fallback T1 when rank assente', () => {
     expect(resolveDefaultWazaCostExp({ isPassive: false, rank: null })).toBe(15)
+  })
+})
+
+describe('resolveDefaultWazaCostCs', () => {
+  it('passive → 0 CS', () => {
+    expect(resolveDefaultWazaCostCs({ isPassive: true, rank: 'T4' })).toBe(
+      WAZA_DEFAULT_PASSIVE_COST_CS,
+    )
+  })
+
+  it('active by rank T1–T5', () => {
+    expect(resolveDefaultWazaCostCs({ rank: 'T1' })).toBe(2)
+    expect(resolveDefaultWazaCostCs({ rank: 'T2' })).toBe(4)
+    expect(resolveDefaultWazaCostCs({ rank: 'T3' })).toBe(6)
+    expect(resolveDefaultWazaCostCs({ rank: 'T4' })).toBe(8)
+    expect(resolveDefaultWazaCostCs({ rank: 'T5' })).toBe(10)
   })
 })

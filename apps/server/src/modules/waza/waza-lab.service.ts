@@ -176,6 +176,7 @@ function sanitizeUserDescription(input: string | null | undefined): string | nul
     .filter(Boolean);
 
   const cleaned = lines.filter((line, index) => {
+    if (/^\[req_grade:/i.test(line)) return true;
     if (index <= 2) {
       if (/^(passiva|attiva)\b/i.test(line)) return false;
       if (/^\[.*\]$/.test(line)) return false;

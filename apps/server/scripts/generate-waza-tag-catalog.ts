@@ -17,10 +17,11 @@ type PoolEntry = { id: string; name: string; type: string; branch: string; costC
 function defaultRank(w: PoolEntry, isPassive: boolean): string | null {
   if (isPassive) return null
   const cs = w.costCs ?? 0
-  if (cs <= 1) return 'T1'
-  if (cs <= 3) return 'T2'
-  if (cs <= 5) return 'T3'
-  return 'T4'
+  if (cs <= 2) return 'T1'
+  if (cs <= 4) return 'T2'
+  if (cs <= 6) return 'T3'
+  if (cs <= 8) return 'T4'
+  return 'T5'
 }
 
 function catalogDescription(w: PoolEntry): string | undefined {

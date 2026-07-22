@@ -4,8 +4,13 @@ import { useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { icons } from "@/lib/icons";
 import { WazaTaxonomyChips, stripWazaBranchHeader } from "./WazaTaxonomyChips";
+import { WazaBracketProse } from "./WazaBracketProse";
 import { parseWazaTierFromRank, wazaTierMeta } from "./waza-display";
 import { resolveWazaPersonalValues, type WazaPersonalValues } from "@domain/combat/waza-resolve";
+import {
+  formatWazaGradeRequirementLabel,
+  resolveWazaRequiredGrade,
+} from "@domain/progression/waza-grade-req";
 import type { SkiruSheet } from "@domain/skiru";
 import type { WazaResolveExtras } from "@/hooks/useDoMechanicsSnapshot";
 import type { CatalogWaza } from "./waza-catalog-types";
@@ -61,24 +66,33 @@ export function WazaCatalogRow({
 }) {
   const tier = parseWazaTierFromRank(waza.rank ?? null);
   const tierInfo = tier != null ? wazaTierMeta(tier) : null;
+  const flavor = waza.description?.trim() ? stripWazaBranchHeader(waza.description) : "";
+  const effect = waza.effect?.trim() || "";
+  const requiredGrade = resolveWazaRequiredGrade({
+    poolId: waza.poolId,
+    description: waza.description,
+    effect: waza.effect,
+  });
   const personalValues = useMemo(() => {
     if (!skiruSheet || !waza.poolId) return null;
     return resolveWazaPersonalValues(waza.poolId, {
       sheet: skiruSheet,
       wazaTier: tier,
-      isConstructWaza: waza.description?.includes("[Costrutto]") ?? false,
+      isConstructWaza:
+        (waza.description?.includes("[Costrutto]") ?? false) ||
+        (waza.effect?.includes("[Costrutto]") ?? false),
       styleId: waza.styleId,
       description: waza.description,
       ...resolveExtrasProp,
     });
-  }, [skiruSheet, waza.poolId, waza.description, waza.styleId, tier, resolveExtrasProp]);
+  }, [skiruSheet, waza.poolId, waza.description, waza.effect, waza.styleId, tier, resolveExtrasProp]);
   const dimmed = !waza.owned && !branchUnlocked;
   const canBuy = branchUnlocked && !!waza.canPurchase && !waza.owned;
   const cardTone = waza.owned
     ? "waza-do-card--owned border-[var(--accent-gold)]/35 bg-[var(--accent-gold)]/5"
     : dimmed
-      ? "border-[var(--border-color)]/35 bg-black/10 opacity-55"
-      : "waza-do-card--available border-[var(--border-color)] bg-black/25 hover:border-[var(--accent-violet)]/40 hover:shadow-[var(--shadow-violet)]";
+    ? "border-[var(--border-color)]/35 bg-black/10 opacity-55"
+    : "waza-do-card--available border-[var(--border-color)] bg-black/25 hover:border-[var(--accent-violet)]/40 hover:shadow-[var(--shadow-violet)]";
   const btnClass =
     "shrink-0 px-3 py-1.5 rounded border text-[10px] font-display uppercase tracking-wide transition-colors disabled:opacity-50";
 
@@ -116,6 +130,11 @@ export function WazaCatalogRow({
                 Appresa
               </span>
             )}
+            {requiredGrade && (
+              <span className="text-[8px] uppercase tracking-wider text-[var(--accent-gold)]/90 border border-[var(--accent-gold)]/35 rounded px-1.5 py-0.5 font-display">
+                {formatWazaGradeRequirementLabel(requiredGrade)}
+              </span>
+            )}
             {waza.costExp != null && waza.costExp > 0 && !waza.owned && (
               <span
                 className={`text-[10px] tabular-nums font-display ${
@@ -127,12 +146,18 @@ export function WazaCatalogRow({
             )}
           </div>
 
-          {waza.description?.trim() && (
+          {(flavor || effect) && (
             <>
-              <WazaTaxonomyChips description={waza.description} />
-              <p className="mt-2 waza-description whitespace-pre-line">
-                {stripWazaBranchHeader(waza.description)}
-              </p>
+              <WazaTaxonomyChips description={waza.description} effect={waza.effect} />
+              {flavor ? (
+                <WazaBracketProse text={flavor} className="mt-2 waza-description whitespace-pre-line" />
+              ) : null}
+              {effect ? (
+                <WazaBracketProse
+                  text={effect}
+                  className="mt-2 waza-description whitespace-pre-line text-[var(--foreground)]/75"
+                />
+              ) : null}
             </>
           )}
 

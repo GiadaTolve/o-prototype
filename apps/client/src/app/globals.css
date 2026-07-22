@@ -1929,6 +1929,130 @@ body {
   animation: ordine-glitch 0.25s ease-in-out;
 }
 
+/* Ordine — hero banner (fazioni + titolo) */
+.ordine-faction-switch {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.ordine-faction-switch__item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ordine-faction-switch__sep {
+  width: 1px;
+  height: 0.85rem;
+  margin: 0 0.55rem;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--border-color) 90%, var(--accent-violet)),
+    transparent
+  );
+}
+
+.ordine-faction-switch__btn {
+  min-height: 44px;
+  padding: 0.35rem 0.1rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 42%, transparent);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    text-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+@media (min-width: 400px) {
+  .ordine-faction-switch__btn {
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    padding-inline: 0.15rem;
+  }
+}
+
+.ordine-faction-switch__btn:hover {
+  color: var(--accent-violet-light);
+}
+
+.ordine-faction-switch__btn--active.ordine-faction-switch__btn--violet {
+  color: var(--accent-violet-light);
+  border-bottom-color: var(--accent-violet);
+  text-shadow: 0 0 16px var(--glow-violet);
+}
+
+.ordine-faction-switch__btn--active.ordine-faction-switch__btn--gold {
+  color: var(--accent-gold);
+  border-bottom-color: var(--accent-gold);
+  text-shadow: 0 0 16px var(--glow-gold);
+}
+
+.ordine-faction-switch__btn:not(.ordine-faction-switch__btn--active) {
+  opacity: 0.72;
+}
+
+.ordine-faction-switch__btn:not(.ordine-faction-switch__btn--active):hover {
+  opacity: 1;
+}
+
+.ordine-hero-kicker {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent-violet-light);
+  opacity: 0.9;
+}
+
+.ordine-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.625rem, 5.5vw, 2.25rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  text-shadow:
+    0 0 28px var(--glow-gold),
+    0 2px 12px var(--shadow-dark);
+  line-height: 1.05;
+}
+
+.ordine-hero-subtitle {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: clamp(0.8125rem, 2.8vw, 0.9375rem);
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--accent-violet-light) 88%, var(--accent-gold));
+  max-width: 28rem;
+}
+
+.ordine-hero-rule {
+  width: 3.5rem;
+  height: 1px;
+  margin-top: 0.55rem;
+  background: linear-gradient(
+    90deg,
+    var(--accent-gold),
+    color-mix(in srgb, var(--accent-violet) 40%, transparent) 55%,
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ordine-faction-switch__btn {
+    transition: none;
+  }
+}
+
 /* SMS — animazione leggera quando ci sono messaggi non letti */
 @keyframes sms-badge-pulse {
   0%, 100% {
@@ -2034,6 +2158,13 @@ body {
   font-size: 0.9375rem;
   line-height: 1.65;
   color: color-mix(in srgb, var(--foreground) 88%, transparent);
+}
+
+/* Tag [bracket] nel testo waza (catalogo, scheda, lab) */
+.wit-bracket-tag {
+  font-weight: 700;
+  color: var(--accent-violet-light);
+  font-style: normal;
 }
 
 .waza-do-statute-scroll {

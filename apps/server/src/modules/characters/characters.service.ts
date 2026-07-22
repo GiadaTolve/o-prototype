@@ -84,6 +84,9 @@ import {
   isOrdineCatalogWaza,
   isOnimoriCatalogWaza,
   canPurchaseOrdineWaza,
+  characterMeetsGradeRequirement,
+  formatWazaGradeRequirementLabel,
+  resolveWazaRequiredGrade,
   type StyleHexUiMeta,
   type StyleId,
 } from '@domain/progression';
@@ -572,6 +575,7 @@ export class CharacterService {
           id: true,
           name: true,
           description: true,
+          effect: true,
           type: true,
           costExp: true,
           costKeys: true,
@@ -592,6 +596,7 @@ export class CharacterService {
           uiMetadata: true,
           madoshoId: true,
           order: true,
+          grade: true,
           skiruSheet: true,
           strength: true,
           constitution: true,
@@ -690,6 +695,19 @@ export class CharacterService {
             }
           }
         }
+
+        const requiredGrade = resolveWazaRequiredGrade({
+          poolId: s.poolId,
+          description: s.description,
+          effect: s.effect,
+        });
+        if (
+          requiredGrade &&
+          !characterMeetsGradeRequirement(char?.grade, requiredGrade)
+        ) {
+          canPurchase = false;
+          hexagonBlockedReason = formatWazaGradeRequirementLabel(requiredGrade);
+        }
       }
 
       return {
@@ -718,6 +736,7 @@ export class CharacterService {
           uiMetadata: true,
           madoshoId: true,
           order: true,
+          grade: true,
           skiruSheet: true,
           strength: true,
           constitution: true,
@@ -733,6 +752,7 @@ export class CharacterService {
           name: true,
           type: true,
           description: true,
+          effect: true,
           styleId: true,
           madoshoId: true,
           poolId: true,
@@ -749,6 +769,14 @@ export class CharacterService {
     if (existing) throw new Error('Hai già appreso questa skill');
 
     if (skill.type === 'WAZA') {
+      const requiredGrade = resolveWazaRequiredGrade({
+        poolId: skill.poolId,
+        description: skill.description,
+        effect: skill.effect,
+      });
+      if (requiredGrade && !characterMeetsGradeRequirement(char.grade, requiredGrade)) {
+        throw new Error(formatWazaGradeRequirementLabel(requiredGrade));
+      }
       if (skill.madoshoId) {
         if (!char.madoshoId || char.madoshoId !== skill.madoshoId) {
           throw new Error('Waza riservata al tuo lignaggio Madoshō.');

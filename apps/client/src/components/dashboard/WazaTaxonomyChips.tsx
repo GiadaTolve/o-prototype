@@ -2,16 +2,23 @@
 
 import { useMemo } from "react";
 import { extractWazaTaxonomyFromText } from "@domain/combat/waza-taxonomy";
+import { stripWazaSystemMarkers } from "@domain/progression/waza-grade-req";
 
 export function stripWazaBranchHeader(description: string): string {
-  return description.replace(/^\[[^\]]+\]\s*\n\n?/, "");
+  return stripWazaSystemMarkers(description);
 }
 
-export function WazaTaxonomyChips({ description }: { description?: string | null }) {
-  const { consistencies, categories } = useMemo(
-    () => extractWazaTaxonomyFromText(description ?? ""),
-    [description],
-  );
+export function WazaTaxonomyChips({
+  description,
+  effect,
+}: {
+  description?: string | null;
+  effect?: string | null;
+}) {
+  const { consistencies, categories } = useMemo(() => {
+    const blob = [description, effect].filter(Boolean).join("\n");
+    return extractWazaTaxonomyFromText(blob);
+  }, [description, effect]);
 
   if (consistencies.length === 0 && categories.length === 0) return null;
 

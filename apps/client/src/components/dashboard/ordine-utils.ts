@@ -1,13 +1,52 @@
 import type { StatutiEntry, StatutiState } from "@/hooks/useStatuti";
 import type { CatalogWaza } from "./waza-catalog-types";
+import type { CharacterSummary } from "./types";
 import { isOrdineCatalogWaza } from "@domain/progression/waza-catalog-family";
 
 export const ORDINE_FACTIONS = [
-  { id: "chisen-tai" as const, label: "Chisen-Tai", portrait: "/ordine/chisen.png" },
-  { id: "mugen-tai" as const, label: "Mugen-Tai", portrait: "/ordine/mugen.png" },
+  {
+    id: "chisen-tai" as const,
+    label: "Chisen-Tai",
+    portrait: "/ordine/chisen.png",
+    banner: "/ordine/banner-chisen.png",
+    accent: "violet" as const,
+  },
+  {
+    id: "mugen-tai" as const,
+    label: "Mugen-Tai",
+    portrait: "/ordine/mugen.png",
+    banner: "/ordine/banner-mugen.png",
+    accent: "gold" as const,
+  },
 ] as const;
 
 export type OrdineFactionId = (typeof ORDINE_FACTIONS)[number]["id"];
+
+/** Proprietario (pixel-icon admin o account ADMIN). */
+export function canEditOrdineStatuti(char?: CharacterSummary | null): boolean {
+  if (!char) return false;
+  if (char.userRole === "ADMIN") return true;
+  return char.pixelIcons?.ruolo?.includes("admin") === true;
+}
+
+export function slugifyOrdineEntryId(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+export function ordineEntryDisplayName(entryId: string): string {
+  const slug = entryId.replace(/^(chisen-tai|mugen-tai)-/, "");
+  if (slug === entryId) return entryId;
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 export function normalizeOrdineFactionId(order?: string | null): OrdineFactionId | null {
   const raw = order?.toLowerCase().replace(/_/g, "-") ?? "";

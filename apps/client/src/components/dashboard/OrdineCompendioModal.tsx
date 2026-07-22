@@ -12,6 +12,7 @@ type Props = {
   title: string;
   factionLabel: string;
   content: string;
+  onEdit?: () => void;
 };
 
 const WINDOW_W = 1024;
@@ -30,7 +31,7 @@ function CompendioRichContent({ text }: { text: string }) {
   );
 }
 
-export function OrdineCompendioModal({ open, onClose, title, factionLabel, content }: Props) {
+export function OrdineCompendioModal({ open, onClose, title, factionLabel, content, onEdit }: Props) {
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
   const isDraggingRef = useRef(false);
@@ -120,6 +121,17 @@ export function OrdineCompendioModal({ open, onClose, title, factionLabel, conte
             </h3>
           </div>
           <div className="flex items-center gap-1 pointer-events-auto" onMouseDown={(e) => e.stopPropagation()}>
+            {onEdit ? (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-[var(--accent-gold)] hover:bg-white/10 rounded transition-colors"
+                title="Modifica compendio"
+                aria-label="Modifica compendio"
+              >
+                <FontAwesomeIcon icon={icons.pencil} className="w-3.5 h-3.5" />
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onClose}

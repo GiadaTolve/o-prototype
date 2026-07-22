@@ -1,12 +1,13 @@
 import { getTierRow, type WazaTier } from './tier'
 
-/** Allinea defaultRank di sync-waza-manual / authoring tester. */
+/** Allinea defaultRank di sync-waza-manual / authoring tester ai CS di base T1–T5. */
 export function inferWazaTierFromCs(costCs: number): WazaTier | null {
   if (costCs <= 0) return null
-  if (costCs <= 1) return 1
-  if (costCs <= 3) return 2
-  if (costCs <= 5) return 3
-  return 4
+  if (costCs <= 2) return 1
+  if (costCs <= 4) return 2
+  if (costCs <= 6) return 3
+  if (costCs <= 8) return 4
+  return 5
 }
 
 export function inferWazaRankLabelFromCs(costCs: number): string | null {

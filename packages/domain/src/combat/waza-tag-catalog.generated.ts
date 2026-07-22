@@ -76,7 +76,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Shikigami (式神) — Forma dello Spirito",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Tenere la Jigo-Ka coesa e stabile una volta uscita dal corpo. L'analista la modella nella sagoma di un piccolo animale trasparente che si stacca da lui e avanza per conto proprio.",
@@ -175,7 +175,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Rasui (螺錐) — Trivella Psionica",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista materializza un'asta di materia compressa che si allunga rapidamente in avanti ruotando su sé stessa come una punta da trapano. La trivella cresce nella direzione scelta, fora il primo bersaglio che incontra e poi si dissolve. È il raggio più meccanico del repertorio: non brucia né lacera, perfora.",
@@ -184,7 +184,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Funki (噴気) — Bollore Onirico",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista rilascia un'eruzione istantanea di gas ad altissima pressione in una direzione a scelta. Il getto si estende in linea retta come un soffio violento, investe ciò che incontra e lo respinge per la forza stessa con cui esce. Più che ferire, sfonda e allontana.",
@@ -193,7 +193,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Suishin (水針) — Acupressione Liquida",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista proietta un getto di liquido ultra-concentrato ad altissima pressione, sottile e preciso come un ago. Non è un'ondata: è un filo d'acqua tagliente che incide il primo bersaglio lungo la linea di tiro. La ferita che lascia continua a sanguinare.",
@@ -202,7 +202,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Fukyōon (不協音) — Dissonanza",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista emette un fascio di onde sonore concentrate a una frequenza distruttiva, indirizzandolo in linea retta. Il fascio non è un punto ma una colonna di suono che investe il primo bersaglio e tutto ciò che gli sta stretto attorno. Dove passa, l'aria stessa vibra fino a far male.",
@@ -211,7 +211,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hibana (火花) — Scintilla d'Ego",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista proietta un fascio elementale concentrato in linea retta, lanciato ad alta velocità verso il bersaglio. Veste la Jigo-Ka del proprio elemento e la spara come un dardo di luce densa. Veloce e lineare, è il raggio elementale di base da cui partono le varianti più elaborate.",
@@ -220,7 +220,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Sandan (散弾) — Shrapnel Psichico",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista materializza un ventaglio di schegge solide e lo libera tutto in una volta in un cono davanti a sé. Le schegge si aprono a raggiera coprendo l'intero arco frontale e colpiscono chiunque vi si trovi. È una tecnica d'area grezza, fatta per saturare lo spazio vicino più che per centrare un singolo nemico.",
@@ -229,7 +229,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Bakufū (爆風) — Decompressione Onirica",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista rilascia di colpo il gas compresso accumulato nel corpo, scaricandolo in un cono frontale. L'onda di pressione investe tutta l'area davanti a lui, colpendo e spingendo via chiunque ne sia preso. Pulisce lo spazio immediato tanto quanto lo danneggia.",
@@ -238,7 +238,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Nenmō (粘網) — Ragnatela di Mercurio",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista proietta un ventaglio di liquido viscoso e denso, simile a una rete lanciata in un cono davanti a sé. Il liquido investe i bersagli e ne impasta i movimenti, poi ricade a terra restando come una pozza appiccicosa che continua a intralciare chi vi cammina. Non uccide: rallenta, blocca, tiene fermo abbastanza a lungo.",
@@ -247,7 +247,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kyōkan (叫喚) — Urlo del Lobo Frontale",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista emette un'onda sonora concentrata in un cono frontale, un urlo psichico che non passa per la gola ma direttamente per la Jigo-Ka. Il suono investe tutti i bersagli davanti a lui, e chi lo incassa perde l'equilibrio e l'orientamento. Più che ferire la carne, scuote la mente.",
@@ -256,7 +256,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kyōshin (共振) — Frequenza Disarmante",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista fa vibrare le proprie ossa a una frequenza precisa e la trasmette al bersaglio attraverso il contatto fisico. La vibrazione si annida nel corpo altrui e ne disturba il flusso: la prossima tecnica gli costerà più fatica del dovuto. E se il bersaglio non la scarica usando una waza, la frequenza trattenuta finisce per ferirlo da sola.",
@@ -265,7 +265,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Dendō (伝導) — Propagazione Acustica",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista scarica un'onda sonora non nell'aria ma nella materia solida su cui poggia — pavimento, muro, soffitto — e la fa correre lungo la superficie in un cerchio che si allarga. Chiunque sia in contatto con quella superficie lungo il percorso viene raggiunto dalla vibrazione. Chi si è staccato da terra, invece, non sente nulla.",
@@ -274,7 +274,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hankyō (反響) — Eco dell'Astio",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista sceglie un punto a distanza e vi fa detonare un'esplosione sonora che si diffonde in ogni direzione. Non parte da lui ma dal punto designato, raggiungendo bersagli che un cono frontale non toccherebbe. Chi ne è investito incassa il colpo e ne esce stordito.",
@@ -283,7 +283,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kihō (気泡) — Bolla Pressurizzata",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista comprime gas psichico in una bolla sferica davanti a sé, una membrana tesa che fa da scudo finché regge. Quando cede, però, non si limita a rompersi: il gas trattenuto si libera di colpo in un'esplosione di pressione che respinge tutto ciò che le sta intorno. Una difesa che, nel rompersi, contrattacca.",
@@ -292,7 +292,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Suimaku (水幕) — Velo Liquido",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista genera davanti a sé una cortina di liquido psichico denso, una lastra d'acqua sospesa che frena ciò che la attraversa. I proiettili che la perforano ne escono più lenti e più deboli, avendo speso parte della loro spinta nel liquido. Se la cortina sopravvive al colpo, resta su fino alla fine del turno.",
@@ -315,7 +315,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "isPassive": true,
     "description": "La Jigo-Ka cola dal terzo occhio fino al palmo e affonda nell'oggetto stretto in pugno: legno, acciaio o vetro si accendono di una brace interna che solo l'analista vede. La lanterna è la soglia in cui Meiju e Shiju condividono un'unica fiamma — l'oggetto smette di essere tale e diventa il vaso che la custodisce.",
     "poolId": "toro-lanterna-incisa",
-    "effect": "Passiva · CS 0. Designi un'arma o un oggetto impugnato come Tōrō. Finché lo tocchi, non può essere bersaglio di waza di Manipolazione o Trasformazione altrui, e funge da origine per lanciare le tue waza."
+    "effect": "Il [Tōrō]: designi un'arma o un oggetto impugnato. Finché lo tocchi, non può essere bersaglio di waza di Manipolazione o Trasformazione altrui, e funge da origine per lanciare le tue waza."
   },
   {
     "name": "Michishirube (道標) — Luce Guida",
@@ -324,7 +324,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "isPassive": true,
     "description": "La fiamma non scalda soltanto: indica. Punti il Tōrō e la luce traccia nell'aria la via che il colpo dovrà percorrere, limpida come la corona dell'albero della Vita. È Meiju che parla: la chiarezza che precede il gesto.",
     "poolId": "michishirube-luce-guida",
-    "effect": "Passiva · CS 0. Impugnando il Tōrō, le tue waza Energetiche a Contatto diventano Energetiche a Proiettile, con origine dal Tōrō che usi per mirare. Gittata = 8 m + 1 m per punto di Seimitsu."
+    "effect": "Impugnando il [Tōrō], le tue waza [Energetiche] a [Contatto] diventano [Energetiche] a [Proiettile], con origine dal Tōrō che usi per mirare. Gittata = 8 m + 1 m per punto di Seimitsu."
   },
   {
     "name": "Shōka (小火) — Fiamma Docile",
@@ -333,124 +333,133 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "isPassive": true,
     "description": "Chi conosce la propria fiamma non la spreca. L'analista la piega, la addomestica, la fa bruciare lenta. Ciò che prima costava, ora basta sussurrarlo.",
     "poolId": "shoka-fiamma-docile",
-    "effect": "Passiva · CS 0. Ogni waza lanciata attraverso il Tōrō costa −1 CS, minimo 1."
+    "effect": "Ogni waza lanciata attraverso il [Tōrō] costa −1 CS, minimo 1."
   },
   {
-    "name": "Nokuribi (残り火) — Fuoco Residuo",
+    "name": "Nokuribi · Cenere Rimasta (残り火)",
     "rank": null,
     "styleId": "toka",
     "isPassive": true,
-    "description": "Quando la fiamma elementale si spegne, qualcosa resta aggrappato al vetro: una brace che non vuole morire, il residuo indesiderato di Shiju che sopravvive a sé stesso. E ciò che la lanterna trattiene oltre la propria morte, lo restituisce.",
+    "description": "L'impronta di un elemento non sparisce nel momento in cui la tecnica si esaurisce: resta depositata sulle pareti del Tōrō come brina, come bruciatura, come carica statica. La tecnica successiva la porta con sé, anche se era pensata per essere qualcosa di diverso.",
     "poolId": "nokuribi-fuoco-residuo",
-    "effect": "Passiva · CS 0. Il Tōrō trattiene il residuo dell'ultima tua waza Elementale fino alla fine del turno successivo. Finché l'elemento permane, ogni tua waza Energetica lanciata dal Tōrō diventa Elementale (e applica lo status di riferimento); applicato l'effetto, l'arma perde l'elemento."
+    "effect": "Il [Tōrō] trattiene il residuo dell'ultima waza [Elementale] lanciata fino alla fine del turno successivo. Durante questo periodo, la prima waza [Energetica] lanciata dal Tōrō acquisisce l'elemento trattenuto e ne applica lo status di riferimento al bersaglio. Dopo il primo utilizzo, il residuo si consuma."
   },
   {
-    "name": "Kintsugi (金継ぎ) — Legame dei Frammenti",
+    "name": "Kintsugi · Legame dei Frammenti (金継ぎ)",
     "rank": null,
     "styleId": "toka",
     "isPassive": true,
-    "description": "Nulla, sotto la mano dell'analista, è davvero rotto. Le crepe si riempiono d'oro-Ego e ciò che era spezzato torna intero lungo le sue stesse ferite: è Meiju, la Vita che ricuce, più bella perché ha conosciuto la frattura.",
+    "description": "Un'arma rotta è ancora un'arma finché l'analista non rinuncia a tenerla. La Jigo-Ka che aveva già impregnato la materia non è andata da nessuna parte — basta richiamarla, e le crepe si riempiono di qualcosa che non è il materiale originale ma regge lo stesso.",
     "poolId": "kintsugi-legame-dei-frammenti",
-    "effect": "Passiva · CS 0. Puoi richiamare la Jigo-Ka immessa in un oggetto rotto o in un Costrutto distrutto nel turno precedente, ricreandolo; dura fino alla fine del prossimo turno. Non è ricostruibile ciò che è stato distrutto da energia psichica."
+    "effect": "Se nel turno precedente un'arma impugnata o un [Costrutto] dell'analista è stato distrutto, l'analista può richiamare la Jigo-Ka residua e ricrearlo. L'oggetto ricreato dura fino alla fine del turno successivo. Non applicabile a ciò che è stato distrutto da energia puramente psichica."
   },
   {
-    "name": "Kakuchō (拡張) — Espansione della Luce",
+    "name": "Kakuchō · Espansione (拡張)",
     "rank": "T1",
     "styleId": "toka",
     "isPassive": false,
-    "description": "La luce non conosce confini di forma. Trabocca dal filo della lama e la fa crescere — il coltello si fa spada, la spada si fa zanna — come la gloria che dilaga sull'albero della Vita.",
+    "description": "La Jigo-Ka forza la struttura del Tōrō oltre la sua forma. Un coltello che si allunga in spada lo fa in modo grezzo — il profilo si distende, non si rifà da capo. L'arma porta i segni di quella tensione per tutto il tempo che dura.",
     "poolId": "kakucho-espansione-della-luce",
-    "effect": "Attiva · [Potenziamento][Nessuna] · Tier base 1 · CS 1 · 1/4. Durante un colpo, il Tōrō sale di una taglia (mantenendo il tipo di danno). Per la durata, i colpi a Contatto con esso ottengono +1 tier di danno e +1 m di gittata. Se è già un Tōrō, dura l'intero turno."
+    "effect": "Per 1 turno, il [Tōrō] sale di una taglia (mantiene il tipo di danno originale). I colpi a [Contatto] inflitti con esso ottengono +1 tier di danno e +1 m di gittata."
   },
   {
-    "name": "Hōshutsu (放出) — Rilascio della Fiamma",
+    "name": "Kaeribi · Richiamo (返し火)",
+    "rank": "T1",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "Il Tōrō scagliato o perduto sul campo non è uno strumento abbandonato — è ancora suo. Basta aprire la mano nella sua direzione perché la Jigo-Ka rimasta nell'oggetto risponda, riportandolo.",
+    "poolId": "kaeribi-fiamma-del-ritorno",
+    "effect": "L'analista richiama a sé un'arma entro 8 m, a patto che sia ancora un proprio [Costrutto] integro. L'arma vola direttamente in mano. Se l'arma è un [Tōrō] attivo, la gittata massima sale a 16 m."
+  },
+  {
+    "name": "Fuin no Hi · Sigillo (封印の火)",
     "rank": "T2",
     "styleId": "toka",
     "isPassive": false,
-    "description": "Tutto ciò che la lanterna ha trattenuto, in un solo respiro, fuori. Il vetro si frantuma e la fiamma divampa in avanti: una luce di Shiju che non illumina, ma consuma.",
-    "poolId": "hoshutsu-rilascio-della-fiamma",
-    "effect": "Attiva · [Propagazione Conica][Energetica] · Tier base 2 · CS 2 · 1/4. Scarichi la Jigo-Ka del Tōrō in un cono di 6 m davanti a te; danno = tier a ogni bersaglio nell'area. Se il Tōrō ha accumulato carica propria, danno +1 tier ma l'arma si disintegra — dal grado Sentatsu Bunsekikan, la disintegrazione non avviene più."
-  },
-  {
-    "name": "Ukabu Tōrō (浮かぶ灯籠) — Lanterna Fluttuante",
-    "rank": "T2",
-    "styleId": "toka",
-    "isPassive": false,
-    "description": "L'analista scioglie l'ormeggio. La lanterna si stacca dalla mano e galleggia come quelle affidate alla corrente per accompagnare i morti. Obbedisce solo al pensiero, e brucia per chi la guida.",
-    "poolId": "ukabu-toro-lanterna-fluttuante",
-    "effect": "Attiva · [Costrutto] · Tier base 2 · CS 2 · 1/4 + mantenimento. Il Tōrō levita come Costrutto, guidato dalla mente entro 8 m da te (oltre, la connessione si spezza e cade). Sale fino a 2 m, attacca in modo semplice (danno = tier), segue i tuoi comandi. Dura 3 turni, poi torna oggetto."
-  },
-  {
-    "name": "Fuin no Hi (封印の火) — Sigillo della Fiamma",
-    "rank": "T2",
-    "styleId": "toka",
-    "isPassive": false,
-    "description": "Una fiamma chiusa nel vetro non muore: aspetta. L'analista la sigilla nel Tōrō, e il momento del suo rilascio sarà una sorpresa scritta nel silenzio.",
+    "description": "L'analista comprime una tecnica dentro il Tōrō invece di lanciarla. L'arma non fa nulla di visibile — vibra appena, come se contenesse qualcosa di trattenuto. Poi arriva il momento in cui non la contiene più.",
     "poolId": "fuin-no-hi-sigillo-della-fiamma",
-    "effect": "Attiva · setup · Tier base 2 · CS 2 · 1/4. Sigilli nel Tōrō una waza che conosci (la lanci anche ora). Per 3 turni può essere liberata: per impatto (stesso danno della waza sigillata) oppure per fendente nell'etere, generando un Proiettile Energetico con le proprietà della waza. Se non liberata in tempo, il Tōrō si rompe in Emanazione, infliggendo comunque il danno della waza sigillata."
+    "effect": "L'analista sigilla una waza a scelta dentro il [Tōrō] (la tecnica viene comunque pagata al momento del sigillo). La waza rimane dormiente per un massimo di 3 turni e può essere rilasciata in tre modi: all'impatto fisico del Tōrō su un bersaglio; a comando dell'analista come [Proiettile][Energetico] con le proprietà della waza sigillata; oppure si libera automaticamente allo scadere dei 3 turni come [Emanazione] centrata sul Tōrō. In tutti i casi il danno è quello della waza originale."
   },
   {
-    "name": "Kyōmei (共鳴) — Risonanza della Fiamma",
+    "name": "Tomoshibi no Ato · Traccia (灯火の跡)",
     "rank": "T2",
     "styleId": "toka",
     "isPassive": false,
-    "description": "L'arma e le braccia vibrano sulla stessa nota. Ogni passo dell'analista diventa un fendente che non smette mai di cantare, e chi gli si para accanto viene reciso dal suono.",
-    "poolId": "kyomei-risonanza-della-fiamma",
-    "effect": "Attiva · [Contatto] · Tier base 2 · CS 2 · 1/4. Per un turno, durante ogni tuo movimento il Tōrō trascina gli arti, colpendo ogni nemico a gittata corpo a corpo lungo il percorso (danno = tier). Non puoi mirare a punti vitali. Un colpo ogni 2 m percorsi — scala col Movimento."
+    "description": "Il fendente del Tōrō non finisce dove finisce il colpo. Nello spazio attraversato rimane qualcosa di teso, una linea che non si vede bene ma che si sente attraversando — come toccare un filo nel buio che non sapevi fosse lì.",
+    "poolId": "tomoshibi-no-ato-traccia-della-luce",
+    "effect": "L'analista sferra un fendente con il [Tōrō], tracciando una linea di energia lunga 8 m che permane in campo per 3 turni. Chiunque la attraversi subisce danno pari al T2 [Energetico]. L'analista può mantenere attiva una sola traccia alla volta — una seconda traccia cancella la precedente."
   },
   {
-    "name": "Omocha (玩具) — Il Giocattolo",
+    "name": "Kyōmei · Risonanza (共鳴)",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "Durante il movimento, l'analista non smette di usare il Tōrō — lo usa continuamente, senza separare lo spostamento dal combattimento. L'arma trascina gli arti, non il contrario.",
+    "poolId": "kyomei-risonanza-della-fiamma",
+    "effect": "Per 1 turno, durante qualsiasi movimento effettuato, il [Tōrō] colpisce automaticamente ogni nemico che si trova a gittata corpo a corpo lungo il percorso, infliggendo danno pari al T2 per ogni colpo. Si ottiene 1 colpo ogni 2 m percorsi. Non è possibile mirare a punti specifici del corpo."
+  },
+  {
+    "name": "Hōshutsu · Scarica (放出)",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "Il Tōrō non viene brandito — viene aperto. La Jigo-Ka compressa al suo interno si riversa fuori in una direzione sola, un'onda che parte dall'arma e si allarga davanti all'analista senza chiedere il permesso a nessuno.",
+    "poolId": "hoshutsu-rilascio-della-fiamma",
+    "effect": "L'analista scarica la Jigo-Ka del [Tōrō] in un cono di 6 m davanti a sé, infliggendo danno pari al T2 [Energetico] a tutti i bersagli nell'area. Se il Tōrō aveva [Batteria] attiva, il danno sale a T3, ma il Tōrō si disintegra al termine. Dal grado [SB] in poi, la disintegrazione non avviene più anche con [Batteria] attiva."
+  },
+  {
+    "name": "Ukabu Tōrō · Lanterna Abbandonata (浮かぶ灯籠)",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "L'analista apre la mano e non trattiene. Il Tōrō si stacca e resta lì — non cade, si sostiene da solo, come se avesse trovato una corrente che solo esso riesce a percepire. Obbedisce ancora, ma non ha bisogno di essere tenuto per farlo.",
+    "poolId": "ukabu-toro-lanterna-fluttuante",
+    "effect": "Il [Tōrō] si stacca dalla mano e levita come [Costrutto] di taglia Media per un massimo di 3 turni. Può elevarsi fino a 2 m dal suolo e risponde ai comandi dell'analista entro 8 m, infliggendo danno pari al T2 per ogni attacco. Se supera gli 8 m di distanza, precipita e torna un oggetto inerte."
+  },
+  {
+    "name": "Tōrō Nagashi · Alla Corrente (灯籠流し)",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "Il Tōrō viene lanciato e non recuperato. Come le lanterne lasciate andare sul pelo dell'acqua durante i riti funebri — ci si congeda, ma la luce resta accesa. L'arma conficcata in un muro o in un corpo continua a essere un punto da cui l'analista può agire.",
+    "poolId": "toro-nagashi-lanterna-alla-corrente",
+    "effect": "L'analista lancia il proprio [Tōrō] in linea retta fino a 12 m, infliggendo danno pari al T2 al primo bersaglio colpito. Il Tōrō si conficca nella prima superficie solida incontrata e, finché rimane conficcato, conta come [Costrutto] attivo dell'analista. Le waza possono essere lanciate originandole dalla posizione del Tōrō anziché dall'analista."
+  },
+  {
+    "name": "Hi o Tsumugu · Carica Trattenuta (火を紡ぐ)",
+    "rank": "T2",
+    "styleId": "toka",
+    "isPassive": false,
+    "description": "L'analista si ferma. Non è indecisione — è accumulo. Il Tōrō assorbe pressione per ogni istante di immobilità, e chi sa leggere il campo capisce che l'analista fermo è più pericoloso di quello in movimento.",
+    "poolId": "hi-o-tsumugu-filatura-della-fiamma",
+    "effect": "L'analista sferra un colpo a [Contatto][Energetico] che infligge danno pari al T2 (T3 se il Tōrō è un [Arma Psichica]). Può scegliere di caricare prima del colpo restando immobile: ogni quarto speso in carica aggiunge +1 tier al danno, fino a un massimo di +2 tier (2 quarti). Dopo aver scaricato il colpo, il Tōrō non può essere usato per lanciare waza per 1 turno."
+  },
+  {
+    "name": "Bannō · Qualunque Cosa (万能)",
     "rank": "T3",
     "styleId": "toka",
     "isPassive": false,
-    "description": "Il pugno si chiude su un tubo di ferro, una sedia, un coccio — non importa cosa. La Jigo-Ka cola dal terzo occhio e affonda nell'oggetto, che si accende di brace interna verso l'estremità: il metallo resta metallo, il legno resta legno, ma ora è il vaso in cui Meiju e Shiju condividono un'unica fiamma. E un vaso troppo pieno, prima o poi, si crepa.",
+    "description": "Un tubo di ferro. Un manico di legno. La gamba rotta di una sedia. Niente di tutto questo è un'arma, ma nelle mani dell'analista che ha raggiunto questa soglia non fa differenza — la Jigo-Ka non chiede materiale nobile, chiede solo una presa. L'oggetto regge finché può, poi cede di schianto.",
     "poolId": "omocha-il-giocattolo",
-    "effect": "Attiva · [Nessuna][Potenziamento] · Tier base 4 · CS 5 · 1/4 · grado richiesto: Sentatsu Bunsekikan [SB]. Per 3 turni, qualunque oggetto fisico che impugni diventa [Arma Psichica] — anche senza Tōrō · Lanterna Incisa. L'oggetto conserva le proprietà fisiche e funge da [Tōrō] per le tue waza. Puoi cambiare oggetto durante il turno: il precedente perde all'istante lo status e si distrugge.\n\n↳ Sovraccarico: quando lanci una waza attraverso il [Tōrō], la sua punta diventa [Instabile]. Al primo impatto successivo oppure al lancio della waza seguente attraverso di essa, l'oggetto esplode in una [Propagazione][Energetica] di raggio 3 m — danno = tier (17) a ogni bersaglio nell'area — e viene consumato."
+    "effect": "Per 3 turni, qualsiasi oggetto fisico impugnato dall'analista diventa [Tōrō], anche senza la passiva Tōrō. L'oggetto mantiene le sue proprietà fisiche ma funge da medium per le waza. Se l'analista cambia oggetto durante il turno, il precedente perde lo status di [Tōrō] e viene distrutto. Ogni waza lanciata attraverso questo Tōrō improvvisato accumula carica: al successivo impatto o lancio, l'oggetto esplode in una sfera [Propagazione][Energetica] di 3 m che infligge danno T3 a tutti i bersagli nell'area, e l'oggetto si distrugge."
   },
   {
-    "name": "Gangushi (玩具師) — Il Giocattolaio",
+    "name": "Kishin no Tō · Il Fuoco che Porti Addosso (器心の灯)",
     "rank": "T4",
     "styleId": "toka",
     "isPassive": false,
-    "description": "Non serve più stringere nulla. La Jigo-Ka risale fino a ciò che porta addosso da sempre — la cintura, gli anelli, le monete in tasca — e ognuno di quegli oggetti, legato all'Ego come una vena d'oro, si accende di una luce propria. L'analista cammina al centro di un cerchio di lanterne che obbediscono al suo pensiero: ha smesso di impugnare un'arma, ed è diventato il punto da cui tutte le armi partono.",
+    "description": "Non è più necessario stringere nulla. La Jigo-Ka riconosce ciò che appartiene all'analista per Ego, non per contatto — ogni oggetto portato addosso è già suo quanto la propria ombra, e il vincolo lo trova da solo.",
     "poolId": "gangushi-il-giocattolaio",
-    "effect": "Attiva · [Nessuna][Potenziamento] · CS 7 · 1/4 · grado richiesto: Kanteikan [K]. Per 3 turni, ogni oggetto che possedevi da prima dello scontro (indossato, in tasca, nell'inventario) diventa [Tōrō] simultaneamente, senza bisogno di impugnarlo, finché resta addosso a te. Ognuno funge da [Tōrō]: per ogni waza scegli liberamente da quale oggetto-origine parte (angoli e direzioni multiple). Se un oggetto lascia il tuo corpo — lanciato, strappato, fatto cadere — perde lo status."
+    "effect": "Per 4 turni, ogni oggetto nell'inventario dell'analista o indossato prima dell'inizio del combattimento acquisisce lo status di [Tōrō] senza necessità di essere impugnato. È sufficiente che l'oggetto resti a contatto con il corpo o nell'equipaggiamento dell'analista."
   },
   {
-    "name": "Hi o Tsumugu (火を紡ぐ) — Filatura della Fiamma",
-    "rank": "T2",
+    "name": "Tomurai no Tō · Rito Funebre (弔いの灯)",
+    "rank": "T5",
     "styleId": "toka",
     "isPassive": false,
-    "description": "Non si colpisce: si aspetta. L'analista tiene il Tōrō immobile e fila Jigo-Ka nel vaso, quarto dopo quarto, come chi versa olio nelle lanterne dei defunti senza fretta.",
-    "poolId": "hi-o-tsumugu-filatura-della-fiamma",
-    "effect": "Attiva · [Energetico][Contatto] · Tier 2 · CS 2 · 1/4 (fino a +2 quarti immobile in carica). Colpo a contatto: danno = tier [Energetico][Contatto]. Se [Arma Psichica]: +1 tier. Per ogni quarto extra passato immobile a caricare: +1 tier (max 2 quarti). Dopo il colpo l'arma non può lanciare waza per 1 turno."
-  },
-  {
-    "name": "Kaeribi (帰り火) — Fiamma del Ritorno",
-    "rank": "T1",
-    "styleId": "toka",
-    "isPassive": false,
-    "description": "Come le lanterne che il fiume restituisce alla riva, l'analista chiama a sé ciò che ha già acceso in battaglia. Un filo d'Ego tira attraverso l'aria il Tōrō perduto verso il palmo.",
-    "poolId": "kaeribi-fiamma-del-ritorno",
-    "effect": "Attiva · [Nessuna] · CS 1 · 1/4. Richiami un'arma che hai impugnato in precedenza durante il combattimento, entro 8 m, se è ancora un tuo [Costrutto] integro. L'arma vola verso di te e torna in mano. Se [Arma Psichica]: gittata del richiamo raddoppiata (16 m)."
-  },
-  {
-    "name": "Tomoshibi no Ato (灯し火の跡) — Traccia della Luce",
-    "rank": "T2",
-    "styleId": "toka",
-    "isPassive": false,
-    "description": "Il fendente passa e non si chiude. Lungo la traiettoria resta una linea sottile di luce morente — il solco che una lanterna lascia sull'acqua quando è già scivolata via.",
-    "poolId": "tomoshibi-no-ato-traccia-della-luce",
-    "effect": "Attiva · [Propagazione][Energetica] · Tier 2 · CS 2 · 1/4. Fendente con l'arma impugnata: lascia una cicatrice energetica linea 8 m per 3 turni. Chi la attraversa subisce danno = tier [Energetico]. La lunghezza può variare con la taglia dell'arma (Master). Una cicatrice attiva alla volta (base)."
-  },
-  {
-    "name": "Tōrō Nagashi (灯籠流し) — Lanterna alla Corrente",
-    "rank": "T2",
-    "styleId": "toka",
-    "isPassive": false,
-    "description": "L'analista allenta la presa e il Tōrō scivola via come nel rito delle acque: una brace lasciata alla corrente che non chiede più di essere portata, solo di trovare chi accenderà il prossimo passo.",
-    "poolId": "toro-nagashi-lanterna-alla-corrente",
-    "effect": "Attiva · [Proiettile][Energetica] · Tier 2 · CS 2 · 1/4. Scagli la tua [Arma Psichica] in linea retta (12 m): danno = tier al primo bersaglio colpito; l'arma si conficca nella prima superficie solida. Finché è conficcata conta come tuo [Costrutto]: puoi lanciare waza dal punto dell'arma (gittata e direzione dalla posizione dell'arma)."
+    "description": "L'atto ultimo si traduce in una festa di lanterne, dove il concetto di lanterna è ormai da tempo labile per l'analista. Ciò che impugna, già dichiarato Tōrō, muta la sua forma in una lanterna di ferro da rito funebre. Gli basterà sollevarla e lasciarla oscillare. Dalla lanterna scivolerà un fumo denso — nero se i nodi favoriti dall'analista sono di Shiju, rosso se sono di Meiju — che dilaga sul campo inghiottendo ogni suono. Nel silenzio che segue, appaiono lanterne di carta sospese a un metr…",
+    "poolId": "tomurai-no-to-rito-funebre",
+    "effect": "Il [Tōrō] dell'analista assume la forma di una lanterna di ferro da rito funebre. Un fumo denso si propaga coprendo un raggio di 10 m attorno all'analista per 5 turni: l'area diventa muta, annullando ogni waza [Sonoro]. Nell'area compaiono lanterne di carta sospese a 1 m da terra ([Costrutto][Tōrō]), in numero pari al totale delle stack di status presenti su tutti i soggetti nell'area. Ogni lanterna consuma 1 stack di status in campo e la converte in danno pari al T5, suddiviso equamente tra tutti i bersagli colpiti. Se la stack appartiene a un avversario non consenziente, è necessario superare un confronto tra l'IR dell'analista e la Fermezza del bersaglio."
   },
   {
     "name": "Nikutai-Mei (肉体銘) — Carne Iscritta",
@@ -544,7 +553,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Tōki (闘気) — Aura Dichiarata",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "genzai",
     "isPassive": false,
     "description": "L'analista rende visibile ciò che gli circola dentro: l'aura si fa materia, scudo o lancia.",
@@ -562,7 +571,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Yōki no Iki (妖気の息) — Soffio dello Yōkai",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "genzai",
     "isPassive": false,
     "description": "Dal respiro dell'analista esala una nebbia che annebbia i sensi e attende solo una scintilla.",
@@ -571,7 +580,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Onnen-dama (怨念玉) — Globo del Rancore",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "genzai",
     "isPassive": false,
     "description": "Una sfera di astio fluttua accanto all'analista, e si avventa su chiunque osi colpirlo.",
@@ -580,7 +589,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hashira (柱) — Colonne Incise",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "genzai",
     "isPassive": false,
     "description": "Due colonne si scrivono dal suolo, pazienti come pilastri di un tempio.",
@@ -589,7 +598,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Utsushi (写し) — Copia Conforme",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "genzai",
     "isPassive": false,
     "description": "L'analista riscrive la stessa frase due volte: due realtà identiche, una appena più breve.",
@@ -625,7 +634,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Jiban (地盤) — Terreno Ostile",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "genzai",
     "isPassive": false,
     "description": "Il suolo stesso viene riscritto: ciò che era terra diventa l'elemento dell'analista.",
@@ -634,7 +643,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Meisaku (銘作) — Opera Prima",
-    "rank": "T4",
+    "rank": "T3",
     "styleId": "genzai",
     "isPassive": false,
     "description": "L'analista non scrive una frase: scrive la frase. Le linee si tracciano fitte e lente, geometria precisa e caotica insieme, finché il sigillo si chiude su sé stesso e non sbiadisce più. È il gesto di Tenkan, la Corona che nomina, portato fino in fondo: una cosa dichiarata esistente che il mondo non riesce più a dimenticare. Finché la regge, Shiju non ha presa su di lei.",
@@ -715,7 +724,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hajiki (弾き) — Fionda del Filo",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "ito",
     "isPassive": false,
     "description": "Il filo si tende fino al limite, poi lascia: la marionetta vola via come una pietra dalla fionda.",
@@ -733,7 +742,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Mayu-Wari (繭割り) — Bozzolo Squarciato",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "ito",
     "isPassive": false,
     "description": "Il bozzolo di filo si lacera dall'interno e sputa schegge guidate.",
@@ -742,7 +751,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hikiyose (引き寄せ) — Richiamo dei Fili",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "ito",
     "isPassive": false,
     "description": "Fili di carica opposta: ciò che respinge e ciò che attrae, intrecciati.",
@@ -751,7 +760,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Musubi (結び) — Nodo Gemello",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "ito",
     "isPassive": false,
     "description": "Due marionette annodate allo stesso filo: feriscine una, sanguina l'altra.",
@@ -769,7 +778,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Ubaiito (奪い糸) — Filo Rubato",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "ito",
     "isPassive": false,
     "description": "L'analista afferra il filo altrui e lo strappa di mano al suo padrone.",
@@ -778,7 +787,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Unari (唸り) — Ronzio del Filo",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "ito",
     "isPassive": false,
     "description": "Il filo teso non tace: vibra di una nota bassa che fa girare la testa a chi gli sta vicino.",
@@ -805,7 +814,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kankatsu (管轄) — Giurisdizione",
-    "rank": "T3",
+    "rank": "T2",
     "styleId": "ito",
     "isPassive": false,
     "description": "L'analista tende un filo e lo pianta nell'aria attorno a sé, tracciando un cerchio invisibile di cui si dichiara padrone. Ogni colpo nemico che varca quel confine viene afferrato a metà volo da capi di filo che lo intingono del colore della sua Jigo-Ka: per un istante la corda di Retsuja lo trattiene, poi la mano che lo guida non è più quella che l'ha lanciato.",
@@ -814,7 +823,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Chokurei (勅令) — Decreto",
-    "rank": "T4",
+    "rank": "T3",
     "styleId": "ito",
     "isPassive": false,
     "description": "L'analista non muove più la marionetta: muove la legge che la regge. Un filo di luce scrive nell'aria un'unica sentenza, breve come un nodo, e il campo è costretto a obbedirle — perché ogni cosa, anche la più libera, era già legata al filo del destino di Meiju.",
@@ -886,7 +895,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Datsui-Tate (脱衣盾) — Lo Scudo Spogliato",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "naikan",
     "isPassive": false,
     "description": "L'analista si spoglia di tutto ciò che si era costruito addosso e lo proietta appena oltre la pelle, come un samurai depone l'armatura davanti a un altare.",
@@ -895,7 +904,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Datsui-Yumi (脱衣弓) — L'Arco Spogliato",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "naikan",
     "isPassive": false,
     "description": "Invece di una freccia, l'analista incocca la propria armatura: la Jigo-Ka compressa diventa un dardo che fende l'aria col peso intero della forza appena rinunciata.",
@@ -904,7 +913,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hari-Tsume (張り詰め) — Carico Trattenuto",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "naikan",
     "isPassive": false,
     "description": "L'analista spinge la Jigo-Ka contro l'osso come acqua forzata in un tubo già pieno. L'arto diventa una molla in attesa del rilascio.",
@@ -913,7 +922,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Sen'i-Gake (繊維掛け) — Avvolgimento delle Fibre",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "naikan",
     "isPassive": false,
     "description": "La Jigo-Ka scende lungo le fibre e le rinforza, avvolgendole come filo intorno a un'anima di legno; il resto del corpo perde lucentezza.",
@@ -922,7 +931,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Geki-Ryū (激流) — Corrente Violenta",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "naikan",
     "isPassive": false,
     "description": "L'analista apre tutti i nodi e lascia che la Jigo-Ka li attraversi a una velocità non concepita per essere sostenuta. Poi le camere svuotate restano vuote.",
@@ -931,7 +940,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hada-Yuzuri (肌譲り) — Cessione attraverso la Pelle",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "naikan",
     "isPassive": false,
     "description": "L'analista apre i nodi verso l'esterno non per emettere ma per cedere: lo status trova un nuovo contenitore nella carne avversaria.",
@@ -949,7 +958,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Shōka (昇華) — Sublimazione",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "naikan",
     "isPassive": false,
     "description": "L'analista riconosce lo status che lo affligge non come ferita ma come materiale grezzo, e lo lavora dentro di sé: il dolore diviene forza, la sofferenza testardaggine.",
@@ -967,7 +976,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kōmei (抗命) — Chi lo ha Deciso?",
-    "rank": "T4",
+    "rank": "T3",
     "styleId": "naikan",
     "isPassive": false,
     "description": "L'analista guarda ciò che lo affligge e si rifiuta di subirlo. La Jigo-Ka inverte la corrente nei nodi: il fuoco che lo bruciava ora gli riveste i pugni, il peso che lo inchiodava diventa slancio, le vertigini si fanno furia. Il dolore non viene sopportato e nemmeno solo bruciato come carburante — viene ribaltato, costretto a lavorare per chi avrebbe dovuto piegare.",
@@ -1057,7 +1066,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Ihen (異変) — Aberrazione",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hensei",
     "isPassive": false,
     "description": "L'arto cede il posto all'arma: carne che diventa costrutto.",
@@ -1066,7 +1075,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Bōgai (妨害) — Disturbo",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hensei",
     "isPassive": false,
     "description": "La tua energia si fa ronzio e acceca i sensi altrui.",
@@ -1075,7 +1084,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Oboro (朧) — Velo Onirico",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hensei",
     "isPassive": false,
     "description": "Un velo invisibile, e ciò che vi sta sotto smette di mostrarsi al mondo.",
@@ -1093,7 +1102,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kōkan (交換) — Scambio di Consistenza",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hensei",
     "isPassive": false,
     "description": "Il muro diventa nebbia, la nebbia diventa muro.",
@@ -1111,7 +1120,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Shoku (蝕) — Corrosione",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hensei",
     "isPassive": false,
     "description": "Lenta, inesorabile: la materia si arrende al tuo elemento.",
@@ -1129,7 +1138,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Shokubai (触媒) — Catalisi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hensei",
     "isPassive": false,
     "description": "Ogni mutazione, da ora, lascia il segno.",
@@ -1246,7 +1255,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Tanraku (短絡) — Corto Circuito",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hado",
     "isPassive": false,
     "description": "L'analista riversa la sua energia in un oggetto fino a renderlo una bomba.",
@@ -1255,7 +1264,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hōsha (放射) — Raffica Psichica",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hado",
     "isPassive": false,
     "description": "Dai palmi e dalle piante, l'energia erompe in una scarica di colpi.",
@@ -1264,7 +1273,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Tameru (溜め) — Impeto Trattenuto",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hado",
     "isPassive": false,
     "description": "Comprime, comprime ancora — e poi cede.",
@@ -1273,7 +1282,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hōden (放電) — Scarica d'Impatto",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hado",
     "isPassive": false,
     "description": "L'energia accumulata in un arto si scarica al contatto, sfondando tutto.",
@@ -1282,7 +1291,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Mugen no Tsukai (夢幻の使い) — Famiglio Onirico",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hado",
     "isPassive": false,
     "description": "L'analista scinde da sé un frammento vivo della propria energia.",
@@ -1300,7 +1309,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kasan (加算) — Carica Detonante",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hado",
     "isPassive": false,
     "description": "Un colpo che non ferisce: aggrava.",
@@ -1336,7 +1345,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Tōshi (投資) — Investimento Energetico",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": "hado",
     "isPassive": false,
     "description": "L'analista smette di spendere e comincia a versare. Ogni gesto, ogni colpo, lascia una parte di sé in un serbatoio che porta sotto la pelle: le venature di luce si moltiplicano, il respiro si fa corto, il corpo si gonfia di una pressione che non scarica — la trattiene, la conserva, la fa fruttare. Poi, in un solo istante scelto, riscuote tutto in un'unica onda nera.",
@@ -1381,7 +1390,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Handō",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Un costrutto richiamato non si teletrasporta: torna, e basta — ad alta velocità, come un elastico tirato fino al punto di rottura.",
@@ -1399,7 +1408,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hedo",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Un fiotto di energia psichica liquida, vomitato attraverso un arto o la bocca: non è un colpo composto, è un cedimento controllato.",
@@ -1408,7 +1417,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Tamashii no Hake",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'arma muta in un pennello dalla taglia media: non è fatto per colpire, è fatto per raccogliere ciò che l'analista stessa ha lasciato indietro.",
@@ -1417,7 +1426,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Yobimodoshi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Ogni macchia lasciata indietro torna a casa in un solo richiamo: il corpo si riempie di tutto ciò che aveva scartato.",
@@ -1426,7 +1435,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Buttō",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "La Jigo-Ka liquida esplode in avanti in un cono di rabbia indistinta — non è un attacco mirato, è una pentola che ha smesso di reggere il proprio bollore.",
@@ -1435,7 +1444,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kugutsushi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Una copia di sé stessa, fatta di Jigo-Ka liquida: si lancia, colpisce una volta sola, e si scioglie — lasciando dietro di sé solo una macchia e un ordine compiuto.",
@@ -1489,7 +1498,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Oni no Ago",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista convoglia la Pressione nella propria mandibola: i denti si ispessiscono e si allungano in zanne irregolari, indurite dalla Jigo-Ka.",
@@ -1498,7 +1507,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Jūshi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista concentra la trasformazione in una sola parte del corpo, e la spinge oltre ogni proporzione naturale.",
@@ -1507,7 +1516,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Oni no Hōkō",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista apre la bocca, e l'aria stessa si piega sotto il peso del suono.",
@@ -1516,7 +1525,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Mōshin",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'analista si lancia in avanti senza più calcolare la distanza che lo separa dall'ostacolo.",
@@ -1534,7 +1543,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Jiware",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Il colpo non cerca un bersaglio: cerca il terreno, e lascia che sia il terreno a portare il colpo agli altri.",
@@ -1579,7 +1588,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Ketsumyaku no Yaiba",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Il Nakigara apre la propria pelle e lascia che il sangue prenda forma fra le dita: non un'arma qualunque, ma un'estensione di sé.",
@@ -1588,7 +1597,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Chi no Hōyō",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Il sangue che esce non scorre via: si addensa contro la pelle, vetroso, e diventa scudo.",
@@ -1597,7 +1606,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Hirui",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Le proprie ferite diventano bocche da fuoco: grumi di sangue espulsi come proiettili, ciascuno una piccola parte di sé lanciata contro il nemico.",
@@ -1606,7 +1615,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Chi no Kizuna",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Un filamento di sangue addensato si allunga dalla ferita e si aggrappa a chi incontra: da quel momento, ciò che accade a uno scorre nelle vene dell'altro.",
@@ -1624,7 +1633,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kaketsu",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Per qualche istante, una parte del corpo smette di essere carne e diventa esattamente ciò che la regge: sangue, e niente altro.",
@@ -1687,7 +1696,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Kanmusubi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Una corona di filo che non incorona: comanda. Chi la porta si muove, per un istante, secondo un'altra volontà.",
@@ -1696,7 +1705,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Jūji-musubi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Una croce di filo che non protegge soltanto: rispedisce al mittente ciò che la colpisce.",
@@ -1705,7 +1714,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Mitsuba-musubi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Due nodi, un solo filo: ciò che accade a uno, l'altro lo sente come fosse suo.",
@@ -1723,7 +1732,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Sōsen-musubi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Un cerchio di filo che premia chi già porta un suo segno: le tecniche di chi lo attraversa volano più dure, più veloci.",
@@ -1732,7 +1741,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Ai no Musubi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Il legame fra l'Hataori e i propri Sigilli si fa così intenso da trascendere il semplice glifo: il Nodo dell'Amore pulsa contro il suo petto a ogni battito del cuore.",
@@ -1777,7 +1786,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Chōkafun",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Concentrando la Jigo-Ka in bocca e saturandola di polline, l'Ikiryō esala davanti a sé una coltre funerea che si attacca ai polmoni di chi la respira.",
@@ -1786,7 +1795,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Himawari no Kushi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Il polline scava in silenzio sotto i piedi del bersaglio, e quando trova il punto giusto sboccia dal basso verso l'alto.",
@@ -1795,7 +1804,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Ibara no Batsu",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Il polline affonda nel terreno e ne risale come un groviglio di spine, deciso a far pagare a chiunque lo tocchi.",
@@ -1804,7 +1813,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Bara no Shokei",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Un campo di rose macabre sboccia dal nulla, e punisce chiunque osi attraversarne i confini.",
@@ -1813,7 +1822,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Tanpopo no Noroi",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Centinaia di denti di leone fluttuano sospesi nell'aria, in attesa di un solo comando per abbattersi come pioggia.",
@@ -1840,7 +1849,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Yume ga Saku",
-    "rank": "T4",
+    "rank": "T3",
     "styleId": null,
     "isPassive": false,
     "description": "Nella mente dell'Ikiryō, fra le sue emozioni più irruenti, sboccia un fiore: il punto in cui psiche e Jigo-Ka smettono di essere due cose distinte. Una macabra corona di fiori adorna il suo capo — il simbolo della sua illuminazione.",
@@ -1885,7 +1894,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Shibari del Debito",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Fili invisibili di patto si avvolgono al polso nemico: non stringono la carne, stringono l'obbligo.",
@@ -1894,7 +1903,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Shihai della Lama",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "L'arma prestata non vuole restare ferma: l'analista la scaglia e il patto la richiama, già pronta per un secondo morso.",
@@ -1903,7 +1912,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Senrei Imposta",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Non si chiede favore: si impone una clausola. Il bersaglio può piegarsi o portare sulle spalle un debito che non aveva chiesto.",
@@ -1930,7 +1939,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
   },
   {
     "name": "Nemuri dello Scrigno",
-    "rank": "T2",
+    "rank": "T1",
     "styleId": null,
     "isPassive": false,
     "description": "Il Komonoire si spalanca un istante e inghiotte un frammento di volontà altrui: non una prigione di carne, ma un sonno contrattuale.",

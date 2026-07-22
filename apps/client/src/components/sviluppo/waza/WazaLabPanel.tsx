@@ -17,7 +17,7 @@ import {
   formatBulletinLine,
   type WazaLabBulletinCounts,
 } from "@/lib/waza-lab-bulletin";
-import { resolveDefaultWazaCostExp } from "@domain/progression/waza-cost-exp";
+import { resolveDefaultWazaCostCs, resolveDefaultWazaCostExp } from "@domain/progression/waza-cost-exp";
 import {
   resolveWazaLabPoolId,
   WAZA_LAB_FAMILY_LABELS,
@@ -204,7 +204,7 @@ export function WazaLabPanel() {
     isPassive: false,
     description: "",
     effect: "",
-    cs: "",
+    cs: String(resolveDefaultWazaCostCs({ rank: "T1" })),
     costExp: resolveDefaultWazaCostExp({ rank: "T1" }),
   });
 
@@ -312,7 +312,16 @@ export function WazaLabPanel() {
 
   const selectItem = useCallback((item: WazaLabItem) => {
     setSelectedPoolId(item.poolId);
-    setDraft({ ...item, launchSkiruIds: [...item.launchSkiruIds], damageSkiruIds: [...item.damageSkiruIds] });
+    const defaultCs = resolveDefaultWazaCostCs({
+      isPassive: item.isPassive,
+      rank: item.rank,
+    });
+    setDraft({
+      ...item,
+      launchSkiruIds: [...item.launchSkiruIds],
+      damageSkiruIds: [...item.damageSkiruIds],
+      cs: item.cs ?? defaultCs,
+    });
     setMessage(null);
     setSandboxOpen(false);
     setMobileTab("editor");
@@ -417,7 +426,7 @@ export function WazaLabPanel() {
         isPassive: false,
         description: "",
         effect: "",
-        cs: "",
+        cs: String(resolveDefaultWazaCostCs({ rank: "T1" })),
         costExp: resolveDefaultWazaCostExp({ rank: "T1" }),
       });
       await load();
@@ -579,6 +588,7 @@ export function WazaLabPanel() {
                             isPassive,
                             rank,
                             costExp: resolveDefaultWazaCostExp({ isPassive, rank }),
+                            cs: resolveDefaultWazaCostCs({ isPassive, rank }),
                           });
                         }}
                         className="w-full rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
@@ -598,6 +608,10 @@ export function WazaLabPanel() {
                             ...draft,
                             rank,
                             costExp: resolveDefaultWazaCostExp({
+                              isPassive: false,
+                              rank,
+                            }),
+                            cs: resolveDefaultWazaCostCs({
                               isPassive: false,
                               rank,
                             }),
@@ -658,20 +672,51 @@ export function WazaLabPanel() {
                     </label>
                     <label className="block space-y-1">
                       <span className="text-[10px] uppercase tracking-wider text-gray-500">CS</span>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        value={draft.cs ?? ""}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            cs: e.target.value === "" ? null : Math.max(0, Number(e.target.value) || 0),
-                          })
-                        }
-                        className="w-full rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
-                        disabled={!draft.hasAuthoring}
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          value={draft.cs ?? ""}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              cs: e.target.value === "" ? null : Math.max(0, Number(e.target.value) || 0),
+                            })
+                          }
+                          className="flex-1 rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
+                          disabled={!draft.hasAuthoring}
+                          title={
+                            draft.hasAuthoring
+                              ? "Costo CS (override; default da tier)"
+                              : "CS modificabile dopo authoring"
+                          }
+                        />
+                        <button
+                          type="button"
+                          disabled={!draft.hasAuthoring}
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              cs: resolveDefaultWazaCostCs({
+                                isPassive: draft.isPassive,
+                                rank: draft.rank,
+                              }),
+                            })
+                          }
+                          className="px-2 rounded border border-[var(--border-color)] text-[10px] text-gray-400 hover:text-[var(--accent-gold)] min-h-[44px] disabled:opacity-40"
+                        >
+                          Std
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-gray-500">
+                        Default:{" "}
+                        {resolveDefaultWazaCostCs({
+                          isPassive: draft.isPassive,
+                          rank: draft.rank,
+                        })}{" "}
+                        CS
+                      </span>
                     </label>
                   </div>
 
@@ -924,7 +969,14 @@ export function WazaLabPanel() {
           )}
           <select
             value={newWaza.rank}
-            onChange={(e) => setNewWaza((p) => ({ ...p, rank: e.target.value, costExp: resolveDefaultWazaCostExp({ rank: e.target.value, isPassive: p.isPassive }) }))}
+            onChange={(e) =>
+              setNewWaza((p) => ({
+                ...p,
+                rank: e.target.value,
+                costExp: resolveDefaultWazaCostExp({ rank: e.target.value, isPassive: p.isPassive }),
+                cs: String(resolveDefaultWazaCostCs({ rank: e.target.value, isPassive: p.isPassive })),
+              }))
+            }
             className="rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
             disabled={newWaza.isPassive}
           >
@@ -938,7 +990,14 @@ export function WazaLabPanel() {
             <input
               type="checkbox"
               checked={newWaza.isPassive}
-              onChange={(e) => setNewWaza((p) => ({ ...p, isPassive: e.target.checked, costExp: resolveDefaultWazaCostExp({ isPassive: e.target.checked, rank: p.rank }) }))}
+              onChange={(e) =>
+                setNewWaza((p) => ({
+                  ...p,
+                  isPassive: e.target.checked,
+                  costExp: resolveDefaultWazaCostExp({ isPassive: e.target.checked, rank: p.rank }),
+                  cs: String(resolveDefaultWazaCostCs({ isPassive: e.target.checked, rank: p.rank })),
+                }))
+              }
             />
             Passiva
           </label>

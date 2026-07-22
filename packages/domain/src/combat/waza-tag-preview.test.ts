@@ -11,7 +11,10 @@ import {
   removeWazaTagsFromText,
   resolveWazaTagPreview,
 } from './waza-tag-preview.ts'
+import { buildFullWazaLaunchLine } from './waza-launch.ts'
 import { WAZA_TAG_CATALOG, WAZA_TAG_INDEX } from './waza-tag-index.ts'
+
+const HOSHUTSU_NAME = 'Hōshutsu · Scarica (放出)'
 
 describe('waza tag preview', () => {
   it('normalizza nomi per lookup accent-insensitive', () => {
@@ -21,11 +24,11 @@ describe('waza tag preview', () => {
   })
 
   it('risolve tier, CS e descrizione da catalogo PDF', () => {
-    const preview = resolveWazaTagPreview('Hōshutsu (放出) — Rilascio della Fiamma', WAZA_TAG_INDEX)
+    const preview = resolveWazaTagPreview(HOSHUTSU_NAME, WAZA_TAG_INDEX)
     expect(preview.found).toBe(true)
     expect(preview.isPassive).toBe(false)
-    expect(preview.tier).toBeGreaterThan(0)
-    expect(preview.csCost).toBeGreaterThan(0)
+    expect(preview.tier).toBe(2)
+    expect(preview.csCost).toBe(4)
     expect(preview.description).toBeTruthy()
   })
 
@@ -38,23 +41,19 @@ describe('waza tag preview', () => {
   })
 
   it('formatta [waza:Nome] con meta tier/CS', () => {
-    const html = formatWazaTagsInText(
-      'Attacco [waza:Hōshutsu (放出) — Rilascio della Fiamma]!',
-      WAZA_TAG_INDEX,
-    )
+    const html = formatWazaTagsInText(`Attacco [waza:${HOSHUTSU_NAME}]!`, WAZA_TAG_INDEX)
     expect(html).toContain('waza-tag')
     expect(html).toContain('waza-tag-meta')
     expect(html).toContain('CS')
   })
 
   it('estrae nomi waza, IR e costruisce riga lancio', () => {
-    const line =
-      '«Colpo» [waza:Tōrō (灯籠) — Lanterna Incisa] poi [waza:Hōshutsu (放出) — Rilascio della Fiamma] [ir:7]'
+    const line = `«Colpo» [waza:Tōrō (灯籠) — Lanterna Incisa] poi [waza:${HOSHUTSU_NAME}] [ir:7]`
     expect(extractWazaTagNames(line)).toHaveLength(2)
     expect(extractIrTagFromText(line)).toBe(7)
     expect(removeWazaTagsFromText(line)).not.toContain('[waza:')
     expect(removeWazaTagsFromText(line)).not.toContain('[ir:')
-    const insert = buildWazaLaunchInsertLine('Hōshutsu (放出) — Rilascio della Fiamma', WAZA_TAG_INDEX, {
+    const insert = buildWazaLaunchInsertLine(HOSHUTSU_NAME, WAZA_TAG_INDEX, {
       skiruSheet: { kensei: 8, 'itten-kokan': 6 },
     })
     expect(insert).toMatch(/\[waza:/)
@@ -94,8 +93,8 @@ describe('waza tag preview', () => {
   })
 
   it('catalogo generato ha poolId ed effect', () => {
-    expect(WAZA_TAG_CATALOG.length).toBe(216)
-    expect(buildWazaTagIndex(WAZA_TAG_CATALOG).size).toBe(216)
+    expect(WAZA_TAG_CATALOG.length).toBe(217)
+    expect(buildWazaTagIndex(WAZA_TAG_CATALOG).size).toBe(217)
     const hari = WAZA_TAG_CATALOG.find((w) => w.poolId === 'hari-tsume-carico-trattenuto')
     expect(hari?.effect).toContain('Potenziamento')
   })

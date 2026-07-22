@@ -12,6 +12,7 @@ export type CatalogWaza = {
   id: string;
   name: string;
   description: string | null;
+  effect?: string | null;
   type: string;
   costExp: number | null;
   isPassive?: boolean;

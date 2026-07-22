@@ -5,6 +5,7 @@ import { MADOSHO_CATALOG } from "@domain/progression/madosho";
 import { ORDER_REQUEST_VALUES } from "@domain/progression/player-requests";
 import { STYLE_HEX_ORDER, STYLE_LABELS } from "@domain/progression/style-hexagon";
 import { getAccessToken } from "@/lib/auth-session";
+import { isOrdineFactionEntry, ordineEntryDisplayName } from "@/components/dashboard/ordine-utils";
 
 export type StatutiKind = "do" | "madosho" | "ordine" | "premio";
 
@@ -116,6 +117,17 @@ export function mergeDbRows(base: StatutiState, rows: DbRow[]): StatutiState {
         atto: row.atto ?? "",
         descrizione_meccanica: row.descrizione_meccanica ?? "",
       });
+    } else if (kind === "ordine" && row.entryId && !isOrdineFactionEntry(row.entryId)) {
+      if (!result.ordine.some((e) => e.id === row.entryId)) {
+        result.ordine.push({
+          id: row.entryId,
+          name: ordineEntryDisplayName(row.entryId),
+          statute: row.statute ?? "",
+          atto: row.atto ?? "",
+          sottotitolo: row.sottotitolo ?? "",
+          descrizione_meccanica: row.descrizione_meccanica ?? "",
+        });
+      }
     }
   }
   return result;
