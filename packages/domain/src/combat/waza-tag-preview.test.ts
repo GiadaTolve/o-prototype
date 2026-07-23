@@ -15,6 +15,7 @@ import { buildFullWazaLaunchLine } from './waza-launch.ts'
 import { WAZA_TAG_CATALOG, WAZA_TAG_INDEX } from './waza-tag-index.ts'
 
 const HOSHUTSU_NAME = 'Hōshutsu · Scarica (放出)'
+const TORO_NAME = 'Tōrō · Lanterna Incisa (灯籠)'
 
 describe('waza tag preview', () => {
   it('normalizza nomi per lookup accent-insensitive', () => {
@@ -33,7 +34,7 @@ describe('waza tag preview', () => {
   })
 
   it('passive Dō senza tier', () => {
-    const preview = resolveWazaTagPreview('Tōrō (灯籠) — Lanterna Incisa', WAZA_TAG_INDEX)
+    const preview = resolveWazaTagPreview(TORO_NAME, WAZA_TAG_INDEX)
     expect(preview.found).toBe(true)
     expect(preview.isPassive).toBe(true)
     expect(preview.tier).toBeNull()
@@ -48,7 +49,7 @@ describe('waza tag preview', () => {
   })
 
   it('estrae nomi waza, IR e costruisce riga lancio', () => {
-    const line = `«Colpo» [waza:Tōrō (灯籠) — Lanterna Incisa] poi [waza:${HOSHUTSU_NAME}] [ir:7]`
+    const line = `«Colpo» [waza:${TORO_NAME}] poi [waza:${HOSHUTSU_NAME}] [ir:7]`
     expect(extractWazaTagNames(line)).toHaveLength(2)
     expect(extractIrTagFromText(line)).toBe(7)
     expect(removeWazaTagsFromText(line)).not.toContain('[waza:')

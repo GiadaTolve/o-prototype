@@ -1,4 +1,4 @@
-/** Tōka-dō (灯火道) — canone Lab (passivi keystone + attive T1–T5). */
+/** Tōka-dō (灯火道) — canone definitivo (passivi keystone + attive T1–T5). */
 import type { WazaDef } from '../wazaPool'
 import { makeActive, makePassive } from './waza-pool-builders'
 
@@ -8,24 +8,24 @@ export const TOKA_WAZA_POOL: WazaDef[] = [
   makePassive(
     B,
     'toro-lanterna-incisa',
-    'Tōrō (灯籠) — Lanterna Incisa',
-    "La Jigo-Ka cola dal terzo occhio fino al palmo e affonda nell'oggetto stretto in pugno: legno, acciaio o vetro si accendono di una brace interna che solo l'analista vede. La lanterna è la soglia in cui Meiju e Shiju condividono un'unica fiamma — l'oggetto smette di essere tale e diventa il vaso che la custodisce.",
-    "Il [Tōrō]: designi un'arma o un oggetto impugnato. Finché lo tocchi, non può essere bersaglio di waza di Manipolazione o Trasformazione altrui, e funge da origine per lanciare le tue waza.",
+    'Tōrō · Lanterna Incisa (灯籠)',
+    "L'analista chiude la mano attorno all'arma e smette di stringerla come si stringe uno strumento — la tiene come si tiene una lanterna. La Jigo-Ka scende dal terzo occhio fino al palmo e penetra nella materia: il Tōrō diventa il punto in cui Meiju e Shiju si toccano, e nessuno può strapparglielo via finché lo regge.",
+    "L'analista designa un'arma impugnata come [Tōrō]. Finché la mantiene a contatto diretto, non può essere bersaglio di waza di [Manipolazione] o [Trasformazione] altrui e funge da punto di origine per tutte le proprie waza.",
     { weaponTagsOnLaunch: ['toro'], costJigo: () => 0 },
   ),
   makePassive(
     B,
     'michishirube-luce-guida',
-    'Michishirube (道標) — Luce Guida',
-    'La fiamma non scalda soltanto: indica. Punti il Tōrō e la luce traccia nell\'aria la via che il colpo dovrà percorrere, limpida come la corona dell\'albero della Vita. È Meiju che parla: la chiarezza che precede il gesto.',
-    'Impugnando il [Tōrō], le tue waza [Energetiche] a [Contatto] diventano [Energetiche] a [Proiettile], con origine dal Tōrō che usi per mirare. Gittata = 8 m + 1 m per punto di Seimitsu.',
+    'Michishirube · Luce Guida (道標)',
+    "Il Tōrō puntato verso un bersaglio traccia nell'aria una linea invisibile agli altri — l'analista la vede, e la segue. I colpi che normalmente richiederebbero il contatto fisico diretto percorrono quella traiettoria come se il Tōrō stesso li proiettasse verso la destinazione già segnata.",
+    'Impugnando il [Tōrō], tutte le waza dell\'analista con tag [Energetica][Contatto] diventano [Energetica][Proiettile] con origine dal Tōrō. La gittata è pari a 8 m + 1 m per ogni punto di Seimitsu dell\'analista.',
   ),
   makePassive(
     B,
     'shoka-fiamma-docile',
-    'Shōka (小火) — Fiamma Docile',
-    "Chi conosce la propria fiamma non la spreca. L'analista la piega, la addomestica, la fa bruciare lenta. Ciò che prima costava, ora basta sussurrarlo.",
-    'Ogni waza lanciata attraverso il [Tōrō] costa −1 CS, minimo 1.',
+    'Shōka · Addomesticata (消火)',
+    "Quando l'analista conosce perfettamente il proprio Tōrō, ogni tecnica attraverso di esso scorre senza attrito. Non è risparmio — è che non c'è niente da sprecare quando la via è già aperta.",
+    'Ogni waza lanciata attraverso il [Tōrō] costa −1 CS (minimo 1 CS).',
   ),
   makePassive(
     B,
@@ -41,6 +41,7 @@ export const TOKA_WAZA_POOL: WazaDef[] = [
     "Un'arma rotta è ancora un'arma finché l'analista non rinuncia a tenerla. La Jigo-Ka che aveva già impregnato la materia non è andata da nessuna parte — basta richiamarla, e le crepe si riempiono di qualcosa che non è il materiale originale ma regge lo stesso.",
     "Se nel turno precedente un'arma impugnata o un [Costrutto] dell'analista è stato distrutto, l'analista può richiamare la Jigo-Ka residua e ricrearlo. L'oggetto ricreato dura fino alla fine del turno successivo. Non applicabile a ciò che è stato distrutto da energia puramente psichica.",
   ),
+  // Attive narrative (no IR/danno al lancio) — CS = base tier
   makeActive(
     B,
     'kakucho-espansione-della-luce',
@@ -119,7 +120,7 @@ export const TOKA_WAZA_POOL: WazaDef[] = [
     'Bannō · Qualunque Cosa (万能)',
     "Un tubo di ferro. Un manico di legno. La gamba rotta di una sedia. Niente di tutto questo è un'arma, ma nelle mani dell'analista che ha raggiunto questa soglia non fa differenza — la Jigo-Ka non chiede materiale nobile, chiede solo una presa. L'oggetto regge finché può, poi cede di schianto.",
     "Per 3 turni, qualsiasi oggetto fisico impugnato dall'analista diventa [Tōrō], anche senza la passiva Tōrō. L'oggetto mantiene le sue proprietà fisiche ma funge da medium per le waza. Se l'analista cambia oggetto durante il turno, il precedente perde lo status di [Tōrō] e viene distrutto. Ogni waza lanciata attraverso questo Tōrō improvvisato accumula carica: al successivo impatto o lancio, l'oggetto esplode in una sfera [Propagazione][Energetica] di 3 m che infligge danno T3 a tutti i bersagli nell'area, e l'oggetto si distrugge.",
-    { costCs: 6, costJigo: () => 10, hasDamage: true, durata: 'tre_turni', prereqGradoMin: 4 },
+    { costCs: 6, costJigo: () => 10, hasDamage: false, durata: 'tre_turni', prereqGradoMin: 4 },
   ),
   makeActive(
     B,
@@ -134,7 +135,7 @@ export const TOKA_WAZA_POOL: WazaDef[] = [
     'tomurai-no-to-rito-funebre',
     'Tomurai no Tō · Rito Funebre (弔いの灯)',
     "L'atto ultimo si traduce in una festa di lanterne, dove il concetto di lanterna è ormai da tempo labile per l'analista. Ciò che impugna, già dichiarato Tōrō, muta la sua forma in una lanterna di ferro da rito funebre. Gli basterà sollevarla e lasciarla oscillare. Dalla lanterna scivolerà un fumo denso — nero se i nodi favoriti dall'analista sono di Shiju, rosso se sono di Meiju — che dilaga sul campo inghiottendo ogni suono. Nel silenzio che segue, appaiono lanterne di carta sospese a un metro da terra, una per ogni stack di status presente nell'area. Ognuna brucia ciò che ha trovato.",
-    "Il [Tōrō] dell'analista assume la forma di una lanterna di ferro da rito funebre. Un fumo denso si propaga coprendo un raggio di 10 m attorno all'analista per 5 turni: l'area diventa muta, annullando ogni waza [Sonoro]. Nell'area compaiono lanterne di carta sospese a 1 m da terra ([Costrutto][Tōrō]), in numero pari al totale delle stack di status presenti su tutti i soggetti nell'area. Ogni lanterna consuma 1 stack di status in campo e la converte in danno pari al T5, suddiviso equamente tra tutti i bersagli colpiti. Se la stack appartiene a un avversario non consenziente, è necessario superare un confronto tra l'IR dell'analista e la Fermezza del bersaglio.",
+    "Il [Tōrō] dell'analista assume la forma di una lanterna di ferro da rito funebre. Un fumo denso si propaga coprendo un raggio di 10 m attorno all'analista per 5 turni: l'area diventa muta, annullando ogni waza [Sonoro]. Nell'area compaiono lanterne di carta sospese a 1 m da terra ([Costrutto][Tōrō]), in numero pari al totale delle stack di status presenti su tutti i soggetti nell'area. Ogni lanterna consuma 1 stack di status in campo e la converte in danno pari al T5 per lanterna, suddiviso equamente tra tutti i bersagli colpiti. Se la stack appartiene a un avversario non consenziente, è necessario superare un confronto tra l'IR dell'analista e la Fermezza del bersaglio.",
     { costCs: 10, costJigo: () => 16, hasDamage: true, durata: 'tre_turni', prereqGradoMin: 6 },
   ),
 ]

@@ -8,12 +8,24 @@ import {
   buildWazaTagIndex,
   type WazaTagCatalogEntry,
 } from '@domain/combat/waza-tag-preview'
+import { WAZA_LAUNCH_PROFILE_DATA } from '@domain/combat/waza-launch-profile-data'
 import { resolveDefaultWazaCostExp } from '@domain/progression/waza-cost-exp'
 import { db } from '../../plugins/db'
 import { skills } from '../../db/schema'
 
 let cachedEntries: WazaTagCatalogEntry[] | null = null
 let cachedIndex = buildWazaTagIndex(WAZA_TAG_CATALOG)
+
+function withLaunchProfiles(entries: WazaTagCatalogEntry[]): WazaTagCatalogEntry[] {
+  return entries.map((entry) => {
+    const fromProfile = entry.poolId ? WAZA_LAUNCH_PROFILE_DATA[entry.poolId] : undefined
+    if (!fromProfile) return entry
+    return {
+      ...entry,
+      launchFlags: { ...fromProfile, ...entry.launchFlags },
+    }
+  })
+}
 
 function sanitizeWazaDescription(input: string | null | undefined): string | null {
   if (!input) return null
@@ -55,6 +67,7 @@ export async function reloadWazaCatalog(): Promise<{
       effect: true,
       rank: true,
       isPassive: true,
+      isNarrativa: true,
       styleId: true,
       launchSkiruIds: true,
     },
@@ -69,11 +82,12 @@ export async function reloadWazaCatalog(): Promise<{
       effect: r.effect,
       rank: r.rank,
       isPassive: r.isPassive,
+      isNarrativa: r.isNarrativa,
       styleId: r.styleId,
       launchSkiruIds: Array.isArray(r.launchSkiruIds) ? r.launchSkiruIds : null,
     }))
 
-  const merged = mergeWazaTagCatalog(WAZA_TAG_CATALOG, dbRows)
+  const merged = withLaunchProfiles(mergeWazaTagCatalog(WAZA_TAG_CATALOG, dbRows))
   cachedEntries = merged
   cachedIndex = buildWazaTagIndex(merged)
   return { entries: merged, index: cachedIndex }
@@ -87,6 +101,7 @@ export type AdminWazaListItem = {
   effect: string | null
   rank: string | null
   isPassive: boolean
+  isNarrativa: boolean
   styleId: string | null
   launchSkiruIds: string[]
   damageSkiruIds: string[]
@@ -108,6 +123,7 @@ export async function listAdminWaza(): Promise<AdminWazaListItem[]> {
         effect: true,
         rank: true,
         isPassive: true,
+        isNarrativa: true,
         styleId: true,
         launchSkiruIds: true,
         damageSkiruIds: true,
@@ -133,6 +149,7 @@ export async function listAdminWaza(): Promise<AdminWazaListItem[]> {
       effect: entry.effect ?? skill?.effect ?? null,
       rank: entry.isPassive ? null : (entry.rank ?? skill?.rank ?? null),
       isPassive: entry.isPassive,
+      isNarrativa: Boolean(skill?.isNarrativa) || Boolean(entry.launchFlags?.isNarrativa || entry.launchFlags?.masterOnlyCard),
       styleId: entry.styleId ?? skill?.styleId ?? null,
       launchSkiruIds: entry.launchSkiruIds ?? [],
       damageSkiruIds: Array.isArray(skill?.damageSkiruIds) ? skill!.damageSkiruIds : [],
@@ -152,6 +169,7 @@ export type AdminWazaUpdateInput = {
   effect?: string | null
   rank?: string | null
   isPassive?: boolean
+  isNarrativa?: boolean
   styleId?: string | null
   launchSkiruIds?: string[]
   damageSkiruIds?: string[]
@@ -179,6 +197,7 @@ export async function upsertAdminWazaByPoolId(
   })
 
   const isPassive = input.isPassive ?? false
+  const isNarrativa = !isPassive && Boolean(input.isNarrativa)
   const rank = isPassive ? null : (input.rank?.trim() || null)
 
   const values = {
@@ -187,6 +206,7 @@ export async function upsertAdminWazaByPoolId(
     effect: input.effect?.trim() || null,
     rank,
     isPassive,
+    isNarrativa,
     styleId: input.styleId?.trim() || null,
     launchSkiruIds: launchSkiruIds.length > 0 ? launchSkiruIds : null,
     damageSkiruIds: damageSkiruIds.length > 0 ? damageSkiruIds : null,

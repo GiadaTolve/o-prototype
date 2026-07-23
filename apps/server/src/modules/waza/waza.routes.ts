@@ -63,6 +63,7 @@ export const wazaRoutes = new Elysia({ prefix: '/waza' })
             effect: t.Optional(t.Nullable(t.String())),
             rank: t.Optional(t.Nullable(t.String())),
             isPassive: t.Optional(t.Boolean()),
+            isNarrativa: t.Optional(t.Boolean()),
             styleId: t.Optional(t.Nullable(t.String())),
             launchSkiruIds: t.Optional(t.Array(t.String())),
             damageSkiruIds: t.Optional(t.Array(t.String())),

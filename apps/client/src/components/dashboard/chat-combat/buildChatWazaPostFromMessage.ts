@@ -21,6 +21,8 @@ import {
   type WazaTagCatalogEntry,
   type WazaTagPreview,
 } from "@domain/combat/waza-tag-preview";
+import { isNarrativaLaunchFlags } from "@domain/combat/waza-launch-profile-data";
+import { WAZA_LAUNCH_PROFILE_DATA } from "@domain/combat/waza-launch-profile-data";
 import { getSkiruDef } from "@domain/skiru/catalog";
 import { getSkiruPoints } from "@domain/skiru/progression";
 import { calculateSokaijuMeijuIrMultiplier } from "@domain/skiru/sokaiju-face-effects";
@@ -91,7 +93,10 @@ export type BuildChatWazaPostInput = {
   messageContent: string;
   characterName: string;
   preview: WazaTagPreview;
-  entry?: Pick<WazaTagCatalogEntry, "poolId" | "effect" | "description" | "isPassive"> | null;
+  entry?: Pick<
+    WazaTagCatalogEntry,
+    "poolId" | "effect" | "description" | "isPassive" | "launchFlags"
+  > | null;
   actorSkiruSheet?: SkiruSheet | null;
   /** Mod equip (per + in chat / DMG flat). */
   equipmentMods?: {
@@ -105,6 +110,11 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   const { messageContent, characterName, preview, entry, actorSkiruSheet, equipmentMods } = input;
   const sheet = actorSkiruSheet ?? null;
   const effectText = entry?.effect ?? entry?.description ?? null;
+  const narrativaFlags =
+    entry?.launchFlags ??
+    (entry?.poolId ? WAZA_LAUNCH_PROFILE_DATA[entry.poolId] : undefined) ??
+    null;
+  const isNarrativa = !preview.isPassive && isNarrativaLaunchFlags(narrativaFlags);
   const messageIr = extractIrTagFromText(messageContent);
   const launchSkiruId = extractLaunchSkiruId(messageContent);
   const launchTargetSpec = extractWazaLaunchTargetSpec(messageContent);
@@ -124,7 +134,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   const { romaji, italiano } = splitWazaDisplayName(preview.name);
 
   const papabili =
-    sheet && entry && !entry.isPassive
+    sheet && entry && !entry.isPassive && !isNarrativa
       ? resolveRelevantLaunchSkiruCandidates(sheet, entry).map((id) => ({
           label: getSkiruDef(id)?.name ?? id,
           rank: getSkiruPoints(sheet, id),
@@ -134,7 +144,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
   const wazaTags = extractMechanicTagsFromEffect(effectText);
   let irBreakdown: ReturnType<typeof calculateSuccessIndex> | null = null;
 
-  if (sheet) {
+  if (sheet && !preview.isPassive && !isNarrativa) {
     const actionInput = launchSkiruId
       ? buildActionIndexFromDeclaredSkiru(sheet, launchSkiruId)
       : buildIndicativeActionIndex(sheet);
@@ -144,10 +154,11 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
     });
   }
 
-  const irFinale =
-    resolveLaunchIrFromMessage(messageContent, sheet, messageIr, effectText) ??
-    irBreakdown?.successIndex ??
-    (preview.isPassive ? 0 : null);
+  const irFinale = isNarrativa
+    ? 0
+    : resolveLaunchIrFromMessage(messageContent, sheet, messageIr, effectText) ??
+      irBreakdown?.successIndex ??
+      (preview.isPassive ? 0 : null);
 
   const kadenTierBonus =
     kadenTag === 'overheat' ? 2
@@ -155,7 +166,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
     : 0;
 
   const dmg =
-    !preview.isPassive && launchTier != null
+    !preview.isPassive && !isNarrativa && launchTier != null
       ? computeLaunchDamagePreview({
           tier: Math.min(5, launchTier + kadenTierBonus) as 1 | 2 | 3 | 4 | 5,
           attackerSheet: sheet,
@@ -263,7 +274,7 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
     dannoFinale,
     dannoLordo: dannoLordo ?? undefined,
     isPassive: preview.isPassive,
-    isNarrativa: preview.isPassive,
+    isNarrativa,
     notInCatalog: !preview.found,
     setupPending: setupPending || undefined,
     expanded: {
@@ -272,9 +283,9 @@ export function buildChatWazaPostFromMessage(input: BuildChatWazaPostInput): Waz
       wazaDescription: entry?.description ?? null,
       wazaEffect: effectText,
       dannoTier:
-        launchTier != null && dmg
+        !isNarrativa && launchTier != null && dmg
           ? { tier: launchTier, valore: dmg.tierValue }
-          : launchTier != null && preview.damage != null
+          : !isNarrativa && launchTier != null && preview.damage != null
             ? { tier: launchTier, valore: preview.damage }
             : undefined,
       dannoModifiers: dannoModifiers.length > 0 ? dannoModifiers : undefined,

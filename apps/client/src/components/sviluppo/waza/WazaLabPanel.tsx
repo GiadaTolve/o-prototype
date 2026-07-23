@@ -114,7 +114,7 @@ function TreeBranch({
             >
               <span className="block truncate">{item.name}</span>
               <span className="block text-[10px] text-gray-500 mt-0.5">
-                {item.isPassive ? "Passiva" : item.rank ?? "Attiva"}
+                {item.isPassive ? "Passiva" : item.isNarrativa ? `Narr. ${item.rank ?? ""}` : item.rank ?? "Attiva"}
                 {item.cs != null ? ` · CS ${item.cs}` : ""}
                 {item.costExp > 0 ? ` · ${item.costExp} EXP` : ""}
               </span>
@@ -314,6 +314,7 @@ export function WazaLabPanel() {
     setSelectedPoolId(item.poolId);
     const defaultCs = resolveDefaultWazaCostCs({
       isPassive: item.isPassive,
+      isNarrativa: item.isNarrativa ?? false,
       rank: item.rank,
     });
     setDraft({
@@ -341,7 +342,7 @@ export function WazaLabPanel() {
     try {
       return buildFullWazaLaunchLine(draft.chatName, wazaTagIndex, {
         csOverride: draft.cs,
-        declareHit: !draft.isPassive && Boolean(draft.rank),
+        declareHit: !draft.isPassive && !draft.isNarrativa && Boolean(draft.rank),
         poolId: draft.poolId,
       });
     } catch {
@@ -362,6 +363,7 @@ export function WazaLabPanel() {
           effect: draft.effect,
           rank: draft.rank,
           isPassive: draft.isPassive,
+          isNarrativa: draft.isNarrativa,
           styleId: draft.styleId,
           madoshoId: draft.madoshoId,
           costExp: draft.costExp,
@@ -571,7 +573,7 @@ export function WazaLabPanel() {
                     <CostBadge label="CS" value={draft.cs != null ? String(draft.cs) : "—"} accent />
                     <CostBadge
                       label="Tier"
-                      value={draft.isPassive ? "Passiva" : draft.rank ?? "—"}
+                      value={draft.isPassive ? "Passiva" : draft.isNarrativa ? "Narrativa" : draft.rank ?? "—"}
                     />
                   </div>
 
@@ -579,13 +581,16 @@ export function WazaLabPanel() {
                     <label className="block space-y-1">
                       <span className="text-[10px] uppercase tracking-wider text-gray-500">Tipo</span>
                       <select
-                        value={draft.isPassive ? "passiva" : "attiva"}
+                        value={draft.isPassive ? "passiva" : draft.isNarrativa ? "narrativa" : "attiva"}
                         onChange={(e) => {
-                          const isPassive = e.target.value === "passiva";
+                          const v = e.target.value;
+                          const isPassive = v === "passiva";
+                          const isNarrativa = v === "narrativa";
                           const rank = isPassive ? null : draft.rank ?? "T1";
                           setDraft({
                             ...draft,
                             isPassive,
+                            isNarrativa,
                             rank,
                             costExp: resolveDefaultWazaCostExp({ isPassive, rank }),
                             cs: resolveDefaultWazaCostCs({ isPassive, rank }),
@@ -594,6 +599,7 @@ export function WazaLabPanel() {
                         className="w-full rounded border border-[var(--border-color)] bg-black/30 px-3 py-2 text-sm min-h-[44px]"
                       >
                         <option value="attiva">Attiva</option>
+                        <option value="narrativa">Attiva narrativa</option>
                         <option value="passiva">Passiva</option>
                       </select>
                     </label>

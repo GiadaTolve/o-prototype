@@ -7,6 +7,7 @@ export type WazaDbAuthoringRow = {
   effect?: string | null
   rank?: string | null
   isPassive?: boolean | null
+  isNarrativa?: boolean | null
   styleId?: string | null
   launchSkiruIds?: string[] | null
 }
@@ -25,6 +26,11 @@ export function applyWazaDbOverride(
   const launchSkiruIds =
     normalizeLaunchSkiruIds(row.launchSkiruIds) ?? base.launchSkiruIds
 
+  const isNarrativa = Boolean(row.isNarrativa) && !(row.isPassive ?? base.isPassive)
+  const launchFlags = isNarrativa
+    ? { ...base.launchFlags, masterOnlyCard: true, isNarrativa: true }
+    : base.launchFlags
+
   return {
     ...base,
     name: row.name?.trim() || base.name,
@@ -38,6 +44,7 @@ export function applyWazaDbOverride(
     isPassive: row.isPassive ?? base.isPassive,
     styleId: (row.styleId as WazaTagCatalogEntry['styleId']) ?? base.styleId,
     launchSkiruIds,
+    launchFlags,
   }
 }
 
@@ -77,6 +84,10 @@ export function mergeWazaTagCatalog(
       poolId: pid,
       effect: row.effect?.trim() || undefined,
       launchSkiruIds: normalizeLaunchSkiruIds(row.launchSkiruIds),
+      launchFlags:
+        row.isNarrativa && !row.isPassive
+          ? { masterOnlyCard: true, isNarrativa: true }
+          : undefined,
     })
   }
 

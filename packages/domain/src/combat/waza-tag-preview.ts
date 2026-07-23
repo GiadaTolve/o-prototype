@@ -22,8 +22,14 @@ export type WazaLaunchFlags = {
   needsMeisakuLabel?: boolean
   needsQuarto?: boolean
   needsDelayedEffect?: boolean
-  /** Card vai solo al Master (effetto mediato, nessun confronto IR/Danno visibile a tutti). */
+  /**
+   * Waza attiva **narrativa**: nessun confronto IR né danno al lancio.
+   * In chat la card mostra badge «Narrativa»; il [+] espande solo descrizione/effetto.
+   * (Alias storico: masterOnlyCard — stessa semantica.)
+   */
   masterOnlyCard?: boolean
+  /** Alias esplicito di masterOnlyCard (preferito in codice nuovo). */
+  isNarrativa?: boolean
   needsMacchiatoSpend?: boolean
   needsTrasformaTag?: boolean
   trasformaDimensione?: 'consistenza' | 'categoria'

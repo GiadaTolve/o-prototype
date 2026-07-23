@@ -1,6 +1,7 @@
 /**
- * Applica il canone Tōka-dō (testi Giada) su Neon.
- * EXP da sistema (Passiva/T1=15 … T5=40). Ignora EXP nel testo narrativo.
+ * Applica il canone Tōka-dō (testi definitivi) su Neon.
+ * EXP/CS da sistema (Passiva/T1=15 EXP · CS 2/4/6/8/10). Ignora EXP/CS nel testo narrativo.
+ * Marca le attive narrative (is_narrativa).
  *
  * Uso: cd apps/server && bun run scripts/apply-toka-canon.ts
  */
@@ -8,7 +9,7 @@ import { config } from 'dotenv'
 import { resolve } from 'path'
 config({ path: resolve(process.cwd(), '../../.env') })
 
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { db } from '../src/plugins/db'
 import { skills } from '../src/db/schema'
 import { resolveDefaultWazaCostExp } from '@domain/progression/waza-cost-exp'
@@ -24,12 +25,50 @@ type CanonRow = {
   flavor: string
   effect: string
   isPassive: boolean
+  isNarrativa?: boolean
   rank: string | null
-  /** Solo se nuovo (assente in DB). */
   createIfMissing?: boolean
 }
 
+/** Pool attive narrative Tōka (niente IR/danno in chat). */
+const TOKA_NARRATIVA_POOL_IDS = new Set([
+  'kakucho-espansione-della-luce',
+  'kaeribi-fiamma-del-ritorno',
+  'fuin-no-hi-sigillo-della-fiamma',
+  'omocha-il-giocattolo',
+  'gangushi-il-giocattolaio',
+])
+
 const CANON: CanonRow[] = [
+  {
+    poolId: 'toro-lanterna-incisa',
+    name: 'Tōrō · Lanterna Incisa (灯籠)',
+    flavor:
+      "L'analista chiude la mano attorno all'arma e smette di stringerla come si stringe uno strumento — la tiene come si tiene una lanterna. La Jigo-Ka scende dal terzo occhio fino al palmo e penetra nella materia: il Tōrō diventa il punto in cui Meiju e Shiju si toccano, e nessuno può strapparglielo via finché lo regge.",
+    effect:
+      "L'analista designa un'arma impugnata come [Tōrō]. Finché la mantiene a contatto diretto, non può essere bersaglio di waza di [Manipolazione] o [Trasformazione] altrui e funge da punto di origine per tutte le proprie waza.",
+    isPassive: true,
+    rank: null,
+  },
+  {
+    poolId: 'michishirube-luce-guida',
+    name: 'Michishirube · Luce Guida (道標)',
+    flavor:
+      "Il Tōrō puntato verso un bersaglio traccia nell'aria una linea invisibile agli altri — l'analista la vede, e la segue. I colpi che normalmente richiederebbero il contatto fisico diretto percorrono quella traiettoria come se il Tōrō stesso li proiettasse verso la destinazione già segnata.",
+    effect:
+      "Impugnando il [Tōrō], tutte le waza dell'analista con tag [Energetica][Contatto] diventano [Energetica][Proiettile] con origine dal Tōrō. La gittata è pari a 8 m + 1 m per ogni punto di Seimitsu dell'analista.",
+    isPassive: true,
+    rank: null,
+  },
+  {
+    poolId: 'shoka-fiamma-docile',
+    name: 'Shōka · Addomesticata (消火)',
+    flavor:
+      "Quando l'analista conosce perfettamente il proprio Tōrō, ogni tecnica attraverso di esso scorre senza attrito. Non è risparmio — è che non c'è niente da sprecare quando la via è già aperta.",
+    effect: 'Ogni waza lanciata attraverso il [Tōrō] costa −1 CS (minimo 1 CS).',
+    isPassive: true,
+    rank: null,
+  },
   {
     poolId: 'nokuribi-fuoco-residuo',
     name: 'Nokuribi · Cenere Rimasta (残り火)',
@@ -58,6 +97,7 @@ const CANON: CanonRow[] = [
     effect:
       'Per 1 turno, il [Tōrō] sale di una taglia (mantiene il tipo di danno originale). I colpi a [Contatto] inflitti con esso ottengono +1 tier di danno e +1 m di gittata.',
     isPassive: false,
+    isNarrativa: true,
     rank: 'T1',
   },
   {
@@ -68,6 +108,7 @@ const CANON: CanonRow[] = [
     effect:
       "L'analista richiama a sé un'arma entro 8 m, a patto che sia ancora un proprio [Costrutto] integro. L'arma vola direttamente in mano. Se l'arma è un [Tōrō] attivo, la gittata massima sale a 16 m.",
     isPassive: false,
+    isNarrativa: true,
     rank: 'T1',
   },
   {
@@ -78,6 +119,7 @@ const CANON: CanonRow[] = [
     effect:
       "L'analista sigilla una waza a scelta dentro il [Tōrō] (la tecnica viene comunque pagata al momento del sigillo). La waza rimane dormiente per un massimo di 3 turni e può essere rilasciata in tre modi: all'impatto fisico del Tōrō su un bersaglio; a comando dell'analista come [Proiettile][Energetico] con le proprietà della waza sigillata; oppure si libera automaticamente allo scadere dei 3 turni come [Emanazione] centrata sul Tōrō. In tutti i casi il danno è quello della waza originale.",
     isPassive: false,
+    isNarrativa: true,
     rank: 'T2',
   },
   {
@@ -148,6 +190,7 @@ const CANON: CanonRow[] = [
     effect:
       "Per 3 turni, qualsiasi oggetto fisico impugnato dall'analista diventa [Tōrō], anche senza la passiva Tōrō. L'oggetto mantiene le sue proprietà fisiche ma funge da medium per le waza. Se l'analista cambia oggetto durante il turno, il precedente perde lo status di [Tōrō] e viene distrutto. Ogni waza lanciata attraverso questo Tōrō improvvisato accumula carica: al successivo impatto o lancio, l'oggetto esplode in una sfera [Propagazione][Energetica] di 3 m che infligge danno T3 a tutti i bersagli nell'area, e l'oggetto si distrugge.",
     isPassive: false,
+    isNarrativa: true,
     rank: 'T3',
   },
   {
@@ -158,6 +201,7 @@ const CANON: CanonRow[] = [
     effect:
       "Per 4 turni, ogni oggetto nell'inventario dell'analista o indossato prima dell'inizio del combattimento acquisisce lo status di [Tōrō] senza necessità di essere impugnato. È sufficiente che l'oggetto resti a contatto con il corpo o nell'equipaggiamento dell'analista.",
     isPassive: false,
+    isNarrativa: true,
     rank: 'T4',
   },
   {
@@ -166,7 +210,7 @@ const CANON: CanonRow[] = [
     flavor:
       "L'atto ultimo si traduce in una festa di lanterne, dove il concetto di lanterna è ormai da tempo labile per l'analista. Ciò che impugna, già dichiarato Tōrō, muta la sua forma in una lanterna di ferro da rito funebre. Gli basterà sollevarla e lasciarla oscillare. Dalla lanterna scivolerà un fumo denso — nero se i nodi favoriti dall'analista sono di Shiju, rosso se sono di Meiju — che dilaga sul campo inghiottendo ogni suono. Nel silenzio che segue, appaiono lanterne di carta sospese a un metro da terra, una per ogni stack di status presente nell'area. Ognuna brucia ciò che ha trovato.",
     effect:
-      "Il [Tōrō] dell'analista assume la forma di una lanterna di ferro da rito funebre. Un fumo denso si propaga coprendo un raggio di 10 m attorno all'analista per 5 turni: l'area diventa muta, annullando ogni waza [Sonoro]. Nell'area compaiono lanterne di carta sospese a 1 m da terra ([Costrutto][Tōrō]), in numero pari al totale delle stack di status presenti su tutti i soggetti nell'area. Ogni lanterna consuma 1 stack di status in campo e la converte in danno pari al T5, suddiviso equamente tra tutti i bersagli colpiti. Se la stack appartiene a un avversario non consenziente, è necessario superare un confronto tra l'IR dell'analista e la Fermezza del bersaglio.",
+      "Il [Tōrō] dell'analista assume la forma di una lanterna di ferro da rito funebre. Un fumo denso si propaga coprendo un raggio di 10 m attorno all'analista per 5 turni: l'area diventa muta, annullando ogni waza [Sonoro]. Nell'area compaiono lanterne di carta sospese a 1 m da terra ([Costrutto][Tōrō]), in numero pari al totale delle stack di status presenti su tutti i soggetti nell'area. Ogni lanterna consuma 1 stack di status in campo e la converte in danno pari al T5 per lanterna, suddiviso equamente tra tutti i bersagli colpiti. Se la stack appartiene a un avversario non consenziente, è necessario superare un confronto tra l'IR dell'analista e la Fermezza del bersaglio.",
     isPassive: false,
     rank: 'T5',
     createIfMissing: true,
@@ -189,6 +233,7 @@ async function main() {
       rank: row.rank,
     })
     const description = buildDescription(row.flavor, row.poolId)
+    const isNarrativa = !row.isPassive && (row.isNarrativa || TOKA_NARRATIVA_POOL_IDS.has(row.poolId))
     const existing = await db.query.skills.findFirst({
       where: eq(skills.poolId, row.poolId),
       columns: { id: true },
@@ -207,13 +252,14 @@ async function main() {
         type: 'WAZA',
         rank: row.rank,
         isPassive: row.isPassive,
+        isNarrativa,
         styleId: 'toka',
         costExp,
         costKeys: 0,
         costJigoka: 0,
       })
       created += 1
-      console.log(`+ creata ${row.poolId} · ${row.name} · EXP ${costExp}`)
+      console.log(`+ creato ${row.poolId}${isNarrativa ? ' [narrativa]' : ''}`)
       continue
     }
 
@@ -225,18 +271,28 @@ async function main() {
         effect: row.effect,
         rank: row.rank,
         isPassive: row.isPassive,
+        isNarrativa,
         styleId: 'toka',
         costExp,
       })
       .where(eq(skills.id, existing.id))
     updated += 1
-    console.log(`✓ ${row.poolId} → ${row.name} · EXP ${costExp}`)
+    console.log(`✓ ${row.poolId}${isNarrativa ? ' [narrativa]' : ''}`)
   }
 
-  console.log(`\nAggiornate: ${updated} · create: ${created}`)
+  // Assicura flag narrativa anche se già presenti fuori CANON loop edge cases
+  const narrativaIds = [...TOKA_NARRATIVA_POOL_IDS]
+  await db
+    .update(skills)
+    .set({ isNarrativa: true })
+    .where(inArray(skills.poolId, narrativaIds))
+
+  console.log(`\nFatto: ${updated} aggiornate, ${created} create.`)
 }
 
-main().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })

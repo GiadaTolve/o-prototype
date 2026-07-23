@@ -860,7 +860,10 @@ export class CharacterService {
         costJigoka: row.skill!.costJigoka,
         rank: row.skill!.rank,
         isPassive: row.skill!.isPassive ?? false,
-        isNarrativa: WAZA_LAUNCH_PROFILE_DATA[row.skill!.poolId ?? '']?.masterOnlyCard ?? false,
+        isNarrativa: row.skill!.isNarrativa
+          || WAZA_LAUNCH_PROFILE_DATA[row.skill!.poolId ?? '']?.masterOnlyCard
+          || WAZA_LAUNCH_PROFILE_DATA[row.skill!.poolId ?? '']?.isNarrativa
+          || false,
         level: row.level,
         styleId: this.resolveSkillStyleId(row.skill!),
         madoshoId: row.skill!.madoshoId ?? null,

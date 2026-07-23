@@ -309,31 +309,31 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "effect": "Attiva · [Energetica][Emanazione] · Tier base 3 · CS 3 · 1/4. Esplosione elementale in tutte le direzioni, raggio 5 m; danno = tier a ogni bersaglio nell'area (te escluso)."
   },
   {
-    "name": "Tōrō (灯籠) — Lanterna Incisa",
+    "name": "Tōrō · Lanterna Incisa (灯籠)",
     "rank": null,
     "styleId": "toka",
     "isPassive": true,
-    "description": "La Jigo-Ka cola dal terzo occhio fino al palmo e affonda nell'oggetto stretto in pugno: legno, acciaio o vetro si accendono di una brace interna che solo l'analista vede. La lanterna è la soglia in cui Meiju e Shiju condividono un'unica fiamma — l'oggetto smette di essere tale e diventa il vaso che la custodisce.",
+    "description": "L'analista chiude la mano attorno all'arma e smette di stringerla come si stringe uno strumento — la tiene come si tiene una lanterna. La Jigo-Ka scende dal terzo occhio fino al palmo e penetra nella materia: il Tōrō diventa il punto in cui Meiju e Shiju si toccano, e nessuno può strapparglielo via finché lo regge.",
     "poolId": "toro-lanterna-incisa",
-    "effect": "Il [Tōrō]: designi un'arma o un oggetto impugnato. Finché lo tocchi, non può essere bersaglio di waza di Manipolazione o Trasformazione altrui, e funge da origine per lanciare le tue waza."
+    "effect": "L'analista designa un'arma impugnata come [Tōrō]. Finché la mantiene a contatto diretto, non può essere bersaglio di waza di [Manipolazione] o [Trasformazione] altrui e funge da punto di origine per tutte le proprie waza."
   },
   {
-    "name": "Michishirube (道標) — Luce Guida",
+    "name": "Michishirube · Luce Guida (道標)",
     "rank": null,
     "styleId": "toka",
     "isPassive": true,
-    "description": "La fiamma non scalda soltanto: indica. Punti il Tōrō e la luce traccia nell'aria la via che il colpo dovrà percorrere, limpida come la corona dell'albero della Vita. È Meiju che parla: la chiarezza che precede il gesto.",
+    "description": "Il Tōrō puntato verso un bersaglio traccia nell'aria una linea invisibile agli altri — l'analista la vede, e la segue. I colpi che normalmente richiederebbero il contatto fisico diretto percorrono quella traiettoria come se il Tōrō stesso li proiettasse verso la destinazione già segnata.",
     "poolId": "michishirube-luce-guida",
-    "effect": "Impugnando il [Tōrō], le tue waza [Energetiche] a [Contatto] diventano [Energetiche] a [Proiettile], con origine dal Tōrō che usi per mirare. Gittata = 8 m + 1 m per punto di Seimitsu."
+    "effect": "Impugnando il [Tōrō], tutte le waza dell'analista con tag [Energetica][Contatto] diventano [Energetica][Proiettile] con origine dal Tōrō. La gittata è pari a 8 m + 1 m per ogni punto di Seimitsu dell'analista."
   },
   {
-    "name": "Shōka (小火) — Fiamma Docile",
+    "name": "Shōka · Addomesticata (消火)",
     "rank": null,
     "styleId": "toka",
     "isPassive": true,
-    "description": "Chi conosce la propria fiamma non la spreca. L'analista la piega, la addomestica, la fa bruciare lenta. Ciò che prima costava, ora basta sussurrarlo.",
+    "description": "Quando l'analista conosce perfettamente il proprio Tōrō, ogni tecnica attraverso di esso scorre senza attrito. Non è risparmio — è che non c'è niente da sprecare quando la via è già aperta.",
     "poolId": "shoka-fiamma-docile",
-    "effect": "Ogni waza lanciata attraverso il [Tōrō] costa −1 CS, minimo 1."
+    "effect": "Ogni waza lanciata attraverso il [Tōrō] costa −1 CS (minimo 1 CS)."
   },
   {
     "name": "Nokuribi · Cenere Rimasta (残り火)",
@@ -459,7 +459,7 @@ export const WAZA_TAG_CATALOG: readonly WazaTagCatalogEntry[] = [
     "isPassive": false,
     "description": "L'atto ultimo si traduce in una festa di lanterne, dove il concetto di lanterna è ormai da tempo labile per l'analista. Ciò che impugna, già dichiarato Tōrō, muta la sua forma in una lanterna di ferro da rito funebre. Gli basterà sollevarla e lasciarla oscillare. Dalla lanterna scivolerà un fumo denso — nero se i nodi favoriti dall'analista sono di Shiju, rosso se sono di Meiju — che dilaga sul campo inghiottendo ogni suono. Nel silenzio che segue, appaiono lanterne di carta sospese a un metr…",
     "poolId": "tomurai-no-to-rito-funebre",
-    "effect": "Il [Tōrō] dell'analista assume la forma di una lanterna di ferro da rito funebre. Un fumo denso si propaga coprendo un raggio di 10 m attorno all'analista per 5 turni: l'area diventa muta, annullando ogni waza [Sonoro]. Nell'area compaiono lanterne di carta sospese a 1 m da terra ([Costrutto][Tōrō]), in numero pari al totale delle stack di status presenti su tutti i soggetti nell'area. Ogni lanterna consuma 1 stack di status in campo e la converte in danno pari al T5, suddiviso equamente tra tutti i bersagli colpiti. Se la stack appartiene a un avversario non consenziente, è necessario superare un confronto tra l'IR dell'analista e la Fermezza del bersaglio."
+    "effect": "Il [Tōrō] dell'analista assume la forma di una lanterna di ferro da rito funebre. Un fumo denso si propaga coprendo un raggio di 10 m attorno all'analista per 5 turni: l'area diventa muta, annullando ogni waza [Sonoro]. Nell'area compaiono lanterne di carta sospese a 1 m da terra ([Costrutto][Tōrō]), in numero pari al totale delle stack di status presenti su tutti i soggetti nell'area. Ogni lanterna consuma 1 stack di status in campo e la converte in danno pari al T5 per lanterna, suddiviso equamente tra tutti i bersagli colpiti. Se la stack appartiene a un avversario non consenziente, è necessario superare un confronto tra l'IR dell'analista e la Fermezza del bersaglio."
   },
   {
     "name": "Nikutai-Mei (肉体銘) — Carne Iscritta",

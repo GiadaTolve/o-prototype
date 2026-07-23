@@ -384,6 +384,11 @@ export const skills = pgTable('skills', {
   rank: text('rank'),
   /** Waza sempre attiva. */
   isPassive: boolean('is_passive').default(false).notNull(),
+  /**
+   * Attiva narrativa: lanciabile con CS/EXP di tier, ma senza IR né danno in chat.
+   * Mutualmente esclusivo con isPassive (se passiva, ignorato).
+   */
+  isNarrativa: boolean('is_narrativa').default(false).notNull(),
   /** Slug stabile (wazaPool / catalogo Dō Ultimate Manual). */
   poolId: text('pool_id'),
   /** Ramo Esagono: toka | genzai | ito | naikan | hensei | hado */

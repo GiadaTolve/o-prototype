@@ -16,7 +16,11 @@ import { resolveDefaultWazaCostCs } from '@domain/progression/waza-cost-exp'
 import { stripWazaSystemMarkers } from '@domain/progression/waza-grade-req'
 import { parseWazaTierFromRank } from '@domain/combat/waza-rank'
 
+/** Tutte le waza Tōka-dō del canone (skills → authoring Lab / chat). */
 const MODIFIED_TOKA_POOL_IDS = [
+  'toro-lanterna-incisa',
+  'michishirube-luce-guida',
+  'shoka-fiamma-docile',
   'nokuribi-fuoco-residuo',
   'kintsugi-legame-dei-frammenti',
   'kakucho-espansione-della-luce',

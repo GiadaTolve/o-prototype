@@ -111,7 +111,7 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
                 Waza passiva — nessun confronto IR o danno al lancio.
               </p>
             </section>
-          ) : (
+          ) : data.isNarrativa ? null : (
             <>
 
           <section className="chat-waza-launch-post__detail-section">
@@ -230,21 +230,26 @@ export function ChatWazaResolutionPost({ data }: { data: WazaResolutionPostData 
 
           {(data.expanded.wazaDescription || data.expanded.wazaEffect) ? (
             <section className="chat-waza-launch-post__detail-section">
-              <h4 className="chat-waza-launch-post__detail-title">Descrizione</h4>
               {data.expanded.wazaDescription && (
-                <p className="chat-waza-launch-post__detail-text chat-waza-launch-post__detail-text--lore">
-                  {data.expanded.wazaDescription}
-                </p>
+                <>
+                  <h4 className="chat-waza-launch-post__detail-title">Descrizione</h4>
+                  <p className="chat-waza-launch-post__detail-text chat-waza-launch-post__detail-text--lore">
+                    {data.expanded.wazaDescription}
+                  </p>
+                </>
               )}
               {data.expanded.wazaEffect && (
-                <p className="chat-waza-launch-post__detail-text">
-                  {data.expanded.wazaEffect}
-                </p>
+                <>
+                  <h4 className="chat-waza-launch-post__detail-title">Effetto</h4>
+                  <p className="chat-waza-launch-post__detail-text">
+                    {data.expanded.wazaEffect}
+                  </p>
+                </>
               )}
             </section>
           ) : null}
 
-          {(data.expanded.statusAttivi?.length ?? 0) > 0 ? (
+          {!data.isNarrativa && (data.expanded.statusAttivi?.length ?? 0) > 0 ? (
             <section className="chat-waza-launch-post__detail-section">
               <h4 className="chat-waza-launch-post__detail-title">Bonus, malus e status</h4>
               <ul className="chat-waza-launch-post__tags">

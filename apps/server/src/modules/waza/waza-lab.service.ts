@@ -18,6 +18,7 @@ export type WazaLabItem = {
   effect: string | null;
   rank: string | null;
   isPassive: boolean;
+  isNarrativa: boolean;
   styleId: string | null;
   madoshoId: string | null;
   costExp: number;
@@ -44,6 +45,7 @@ export type WazaLabPatchInput = {
   effect?: string | null;
   rank?: string | null;
   isPassive?: boolean;
+  isNarrativa?: boolean;
   styleId?: string | null;
   madoshoId?: string | null;
   costExp?: number;
@@ -62,6 +64,7 @@ export type WazaLabCreateInput = {
   effect?: string | null;
   rank?: string | null;
   isPassive?: boolean;
+  isNarrativa?: boolean;
   styleId?: string | null;
   madoshoId?: string | null;
   costExp?: number;
@@ -207,6 +210,7 @@ function mergeLabItem(
     effect: admin.effect,
     rank: admin.rank,
     isPassive: admin.isPassive,
+    isNarrativa: admin.isNarrativa,
     styleId: admin.styleId,
     madoshoId: skillExtras?.madoshoId ?? null,
     costExp: admin.costExp,
@@ -303,6 +307,7 @@ export async function patchWazaLabItem(
           ? skill.damageSkiruIds
           : [];
     const isPassive = input.isPassive ?? skill.isPassive ?? false;
+    const isNarrativa = !isPassive && (input.isNarrativa ?? skill.isNarrativa ?? false);
     const damageIndexKind =
       input.damageIndexKind === "CAC" || input.damageIndexKind === "CAD"
         ? input.damageIndexKind
@@ -326,6 +331,7 @@ export async function patchWazaLabItem(
               ? input.rank?.trim() || null
               : skill.rank,
         isPassive,
+        isNarrativa,
         styleId:
           input.styleId !== undefined ? input.styleId?.trim() || null : skill.styleId,
         madoshoId:
@@ -333,7 +339,7 @@ export async function patchWazaLabItem(
         costExp: input.costExp ?? skill.costExp ?? resolveDefaultWazaCostExp({ isPassive, rank: isPassive ? null : (input.rank !== undefined ? input.rank?.trim() || null : skill.rank) }),
         launchSkiruIds: launchSkiruIds.length > 0 ? launchSkiruIds : null,
         damageSkiruIds: damageSkiruIds.length > 0 ? damageSkiruIds : null,
-        damageIndexKind: isPassive ? null : damageIndexKind,
+        damageIndexKind: isPassive || isNarrativa ? null : damageIndexKind,
       })
       .where(eq(skills.id, skill.id));
 
@@ -410,6 +416,7 @@ export async function createWazaLabItem(input: WazaLabCreateInput): Promise<Waza
   });
 
   const isPassive = input.isPassive ?? false;
+  const isNarrativa = !isPassive && Boolean(input.isNarrativa);
   const rank = isPassive ? null : (input.rank?.trim() || "T1");
 
   await db.insert(skills).values({
@@ -420,6 +427,7 @@ export async function createWazaLabItem(input: WazaLabCreateInput): Promise<Waza
     type: "WAZA",
     rank,
     isPassive,
+    isNarrativa,
     styleId: input.styleId?.trim() || null,
     madoshoId: input.madoshoId?.trim() || null,
     costExp:

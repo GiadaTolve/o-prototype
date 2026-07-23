@@ -36,7 +36,7 @@ describe('waza launch', () => {
   })
 
   it('buildFullWazaLaunchLine include skiru e target', () => {
-    const line = buildFullWazaLaunchLine('Hōshutsu (放出) — Rilascio della Fiamma', WAZA_TAG_INDEX, {
+    const line = buildFullWazaLaunchLine('Hōshutsu · Scarica (放出)', WAZA_TAG_INDEX, {
       skiruSheet: { seimitsu: 5, kensei: 6, 'itten-kokan': 4 },
       declaredSkiruId: 'seimitsu',
       csOverride: 2,
@@ -74,7 +74,7 @@ describe('waza launch', () => {
   })
 
   it('buildWazaLaunchInsertLine con declaredSkiruId usa IR dichiarato', () => {
-    const insert = buildWazaLaunchInsertLine('Hōshutsu (放出) — Rilascio della Fiamma', WAZA_TAG_INDEX, {
+    const insert = buildWazaLaunchInsertLine('Hōshutsu · Scarica (放出)', WAZA_TAG_INDEX, {
       skiruSheet: { seimitsu: 6, kensei: 4, 'itten-kokan': 8 },
       declaredSkiruId: 'seimitsu',
     })
@@ -106,7 +106,7 @@ describe('waza launch', () => {
   })
 
   it('buildFullWazaLaunchLine con hit e tier', () => {
-    const line = buildFullWazaLaunchLine('Hōshutsu (放出) — Rilascio della Fiamma', WAZA_TAG_INDEX, {
+    const line = buildFullWazaLaunchLine('Hōshutsu · Scarica (放出)', WAZA_TAG_INDEX, {
       skiruSheet: { seimitsu: 5, kensei: 6 },
       declaredSkiruId: 'seimitsu',
       target: { nameQuery: 'Aoi' },
@@ -139,7 +139,7 @@ describe('waza launch', () => {
       fudoshin: 4,
     }
     const entry = WAZA_TAG_INDEX.get(
-      normalizeWazaLookupKey('Hōshutsu (放出) — Rilascio della Fiamma'),
+      normalizeWazaLookupKey('Hōshutsu · Scarica (放出)'),
     )
     expect(entry).toBeTruthy()
     const candidates = resolveRelevantLaunchSkiruCandidates(sheet, entry)
@@ -166,7 +166,7 @@ describe('waza launch', () => {
       { skiruSheet: { seimitsu: 6, kensei: 4, 'itten-kokan': 3, bakuryoku: 2 } },
     )
     expect(expanded).toMatch(/\[skiru:seimitsu\]/)
-    expect(expanded).toMatch(/\[cs:1\]/)
+    expect(expanded).toMatch(/\[cs:2\]/)
   })
 
   it('buildWazaLaunchExtraTags per Giurisdizione e Sorpresa', () => {
@@ -220,11 +220,11 @@ describe('waza launch', () => {
 
   it('validateWazaChatPrerequisites blocca waza non posseduta e CS insufficienti', () => {
     const entry = WAZA_TAG_INDEX.get(
-      normalizeWazaLookupKey('Hōshutsu (放出) — Rilascio della Fiamma'),
+      normalizeWazaLookupKey('Hōshutsu · Scarica (放出)'),
     )
     expect(entry?.poolId).toBeTruthy()
     const noOwned = validateWazaChatPrerequisites({
-      content: '[waza:Hōshutsu (放出) — Rilascio della Fiamma] [cs:5]',
+      content: '[waza:Hōshutsu · Scarica (放出)] [cs:5]',
       wazaIndex: WAZA_TAG_INDEX,
       chronoCsAvailable: 10,
       ownedWazaPoolIds: new Set<string>(),
@@ -233,7 +233,7 @@ describe('waza launch', () => {
     expect(noOwned.errors.some((e) => /non possiedi/i.test(e))).toBe(true)
 
     const noCs = validateWazaChatPrerequisites({
-      content: '[waza:Hōshutsu (放出) — Rilascio della Fiamma] [cs:8]',
+      content: '[waza:Hōshutsu · Scarica (放出)] [cs:8]',
       wazaIndex: WAZA_TAG_INDEX,
       chronoCsAvailable: 3,
       ownedWazaPoolIds: new Set([entry!.poolId!]),

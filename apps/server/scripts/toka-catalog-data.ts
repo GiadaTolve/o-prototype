@@ -34,7 +34,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
     nomeRomaji: "Tōrō",
     nomeItaliano: "Lanterna Incisa",
     kanji: "灯籠",
-    poolName: "Tōrō (灯籠) — Lanterna Incisa",
+    poolName: "Tōrō · Lanterna Incisa (灯籠)",
     flavor:
       "La Jigo-Ka cola dal terzo occhio fino al palmo e affonda nell'oggetto stretto in pugno: legno, acciaio o vetro si accendono di una brace interna che solo l'analista vede.",
     meccanica:
@@ -86,12 +86,12 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
   {
     slug: "shoka-fiamma-docile",
     nomeRomaji: "Shōka",
-    nomeItaliano: "Fiamma Docile",
-    kanji: "小火",
-    poolName: "Shōka (小火) — Fiamma Docile",
+    nomeItaliano: "Addomesticata",
+    kanji: "消火",
+    poolName: "Shōka · Addomesticata (消火)",
     flavor:
-      "Chi conosce la propria fiamma non la spreca. L'analista la piega, la addomestica, la fa bruciare lenta.",
-    meccanica: "Passiva · CS 0. Ogni waza lanciata attraverso il Tōrō costa −1 CS, minimo 1.",
+      "Quando l'analista conosce perfettamente il proprio Tōrō, ogni tecnica attraverso di esso scorre senza attrito. Non è risparmio — è che non c'è niente da sprecare quando la via è già aperta.",
+    meccanica: "Passiva · CS 0. Ogni waza lanciata attraverso il [Tōrō] costa −1 CS (minimo 1 CS).",
     tier: null,
     effetti: [
       {
@@ -160,7 +160,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
       "Attiva · [Potenziamento][Nessuna] · Tier 1 · CS 1 · 1/4. +1 tier danno e +1 m gittata ai colpi a Contatto col Tōrō per 1 turno. Il Tōrō sale di una taglia (mantiene il tipo di danno); se è già un Tōrō, dura l'intero turno.",
     tier: 1,
     tags: ["Potenziamento", "Nessuna"],
-    cs: 1,
+    cs: 2,
     tempoQuarti: 1,
     skiruIr: [...PAPABILE_ARMA, "seimitsu"],
     effetti: [
@@ -194,7 +194,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
       "Attiva · [Propagazione Conica][Energetica] · Tier 2 · CS 2 · 1/4. Cono 6 m, danno = tier. Con carica Tōrō: +1 tier ma l'arma si disintegra (no disintegrazione da grado Sentatsu Bunsekikan).",
     tier: 2,
     tags: ["Propagazione Conica", "Energetica"],
-    cs: 2,
+    cs: 4,
     tempoQuarti: 1,
     skiruIr: [...PAPABILE_ARMA, "seimitsu"],
     effetti: [
@@ -241,7 +241,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
       "Attiva · [Costrutto] · Tier 2 · CS 2 · 1/4 + mantenimento. Tōrō levita (Media), danno = tier, 3 turni, controllo 8 m, sale 2 m, comandato. Oltre 8 m cade; poi torna oggetto.",
     tier: 2,
     tags: ["Costrutto"],
-    cs: 2,
+    cs: 4,
     tempoQuarti: 1,
     skiruIr: [...PAPABILE_ARMA, "kongen"],
     effetti: [
@@ -275,7 +275,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
       "Attiva · [Nessuna] · Tier 2 · CS 2 · 1/4. Sigilli una waza nel Tōrō per 3 turni; 3 rilasci (impatto / a comando / scadenza).",
     tier: 2,
     tags: ["Nessuna"],
-    cs: 2,
+    cs: 4,
     tempoQuarti: 1,
     skiruIr: [...PAPABILE_ARMA, "seimitsu"],
     effetti: [
@@ -324,7 +324,7 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
       "Attiva · [Contatto] · Tier 2 · CS 2 · 1/4. Per 1 turno, durante il movimento il Tōrō colpisce i nemici a gittata corpo a corpo lungo il percorso (danno = tier). Un colpo ogni 2 m percorsi.",
     tier: 2,
     tags: ["Contatto"],
-    cs: 2,
+    cs: 4,
     tempoQuarti: 1,
     skiruIr: [...PAPABILE_ARMA, "undo"],
     effetti: [
@@ -349,17 +349,17 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
   },
   {
     slug: "omocha-il-giocattolo",
-    nomeRomaji: "Omocha",
-    nomeItaliano: "Giocattolo",
-    kanji: "玩具",
-    poolName: "Omocha (玩具) — Giocattolo",
+    nomeRomaji: "Bannō",
+    nomeItaliano: "Qualunque Cosa",
+    kanji: "万能",
+    poolName: "Bannō · Qualunque Cosa (万能)",
     flavor:
       "La fiamma non distingue più tra un'arma forgiata e un tubo di ferro raccolto da terra — tutto, in pugno all'analista, diventa Tōrō.",
     meccanica:
       "Attiva · [Nessuna][Potenziamento] · Tier 3 · CS 3 · 1/4 · 3 turni · grado Sentatsu Bunsekikan [SB]. Qualsiasi oggetto impugnato diventa Tōrō. Sovraccarico: waza dal Tōrō → esplosione Energetica raggio 3 m al prossimo impatto/lancio.",
     tier: 3,
     tags: ["Nessuna", "Potenziamento"],
-    cs: 3,
+    cs: 6,
     tempoQuarti: 1,
     skiruIr: [...PAPABILE_ARMA, "seimitsu"],
     effetti: [
@@ -408,17 +408,17 @@ export const TOKA_CATALOG: TokaCatalogEntry[] = [
   },
   {
     slug: "gangushi-il-giocattolaio",
-    nomeRomaji: "Gangushi",
-    nomeItaliano: "Giocattolaio",
-    kanji: "玩具師",
-    poolName: "Gangushi (玩具師) — Giocattolaio",
+    nomeRomaji: "Kishin no Tō",
+    nomeItaliano: "Il Fuoco che Porti Addosso",
+    kanji: "器心の灯",
+    poolName: "Kishin no Tō · Il Fuoco che Porti Addosso (器心の灯)",
     flavor:
       "Non serve più la mano. Ciò che l'analista porta con sé si accende all'unisono: ogni oggetto addosso diventa Tōrō insieme.",
     meccanica:
       "Attiva · [Nessuna][Potenziamento] · Tier 4 · CS 3 · 1/4 · grado Kanteikan [K]. Per la durata della waza, ogni oggetto posseduto da prima del combattimento (addosso/inventario) diventa Tōrō senza impugnarlo.",
     tier: 4,
     tags: ["Nessuna", "Potenziamento"],
-    cs: 3,
+    cs: 8,
     tempoQuarti: 1,
     skiruIr: [...PAPABILE_ARMA, "seimitsu"],
     effetti: [

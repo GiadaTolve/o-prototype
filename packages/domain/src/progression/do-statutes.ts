@@ -20,7 +20,7 @@ export type StyleKeystoneDef = {
 
 /** Dō passiva keystone per ramo (solo stili che la dichiarano nel manuale PDF). */
 export const STYLE_KEYSTONE: Partial<Record<StyleId, StyleKeystoneDef>> = {
-  toka: { poolId: 'toro-lanterna-incisa', label: 'Tōrō (灯籠) — Lanterna Incisa' },
+  toka: { poolId: 'toro-lanterna-incisa', label: 'Tōrō · Lanterna Incisa (灯籠)' },
   genzai: { poolId: 'honshitsu-essenza-affine', label: 'Honshitsu (本質) — Essenza Affine' },
   hensei: { poolId: 'ishi-volere', label: 'Ishi (意志) — Volere' },
   hado: { poolId: 'chikuden-batteria', label: 'Chikuden (蓄電) — Batteria' },

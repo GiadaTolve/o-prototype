@@ -13,6 +13,7 @@ import {
 } from "@domain/combat/waza-launch";
 import { MACCHIATO_SPEND_OPTIONS, SENI_GAKE_FIBRE, SENI_GAKE_SETTORI, SENI_GAKE_FIBRA_LABELS } from "@domain/combat/waza-launch-extras";
 import type { WazaLaunchFlags } from "@domain/combat/waza-tag-preview";
+import { isNarrativaLaunchFlags } from "@domain/combat/waza-launch-profile-data";
 import {
   computeLaunchDamagePreview,
   extractMechanicTagsFromEffect,
@@ -469,14 +470,14 @@ export function LancioWazaPanel({
     lanciabile(sel) &&
     !missingTarget &&
     !missingDecreto &&
-    (launchProfile?.masterOnlyCard ? true : !!skiruA && !!skiruB);
+    (launchProfile?.masterOnlyCard || launchProfile?.isNarrativa ? true : !!skiruA && !!skiruB);
 
   const buildBody = useCallback(() => {
     if (!sel) return null;
     const target = targetId ? { characterId: targetId } : null;
     const line = buildFullWazaLaunchLine(sel.name, WAZA_TAG_INDEX, {
       skiruSheet: skiruSheet ?? null,
-      declaredSkiruId: launchProfile?.masterOnlyCard ? null : (skiruA || null),
+      declaredSkiruId: isNarrativaLaunchFlags(launchProfile) ? null : (skiruA || null),
       irOverride: ir,
       poolId: sel.poolId,
       launchExtras,
@@ -646,7 +647,7 @@ export function LancioWazaPanel({
           <div className="lwz__label">Configura · {sel.name}</div>
 
           {/* due Skiru papabili per l'IR — nascosti per waza solo-narrazione */}
-          {!launchProfile?.masterOnlyCard && (
+          {!isNarrativaLaunchFlags(launchProfile) && (
             <div>
               <div className="lwz__label" style={{ marginBottom: 4, opacity: 0.8 }}>
                 Skiru per l&apos;Indice (due papabili)
@@ -947,16 +948,16 @@ export function LancioWazaPanel({
           <div className="lwz__card">
             <div className="lwz__label" style={{ marginBottom: 8 }}>
               Anteprima in chat
-              {launchProfile?.masterOnlyCard && (
-                <span className="lwz__badge lwz__badge--do" style={{ marginLeft: 6 }}>solo narrazione</span>
+              {isNarrativaLaunchFlags(launchProfile) && (
+                <span className="lwz__badge lwz__badge--do" style={{ marginLeft: 6 }}>narrativa</span>
               )}
             </div>
-            {launchProfile?.masterOnlyCard && (
+            {isNarrativaLaunchFlags(launchProfile) && (
               <p className="text-[9px] text-[var(--accent-violet-light)] italic mb-2">
-                Waza nota-master: nessun IR/danno visibile — aggiungi il tuo testo di narrazione.
+                Waza narrativa: nessun IR/danno in chat — il [+] mostra solo descrizione ed effetto.
               </p>
             )}
-            <div className="lwz__card-nums" style={launchProfile?.masterOnlyCard ? { display: "none" } : {}}>
+            <div className="lwz__card-nums" style={isNarrativaLaunchFlags(launchProfile) ? { display: "none" } : {}}>
               <div className="lwz__bignum lwz__bignum--ir">
                 <div className="lwz__bignum-label">Indice</div>
                 <div className="lwz__bignum-val">{ir ?? "—"}</div>
