@@ -203,6 +203,7 @@ async function main() {
         descrizione,
         cs,
         effetti: effetti as never,
+        stato: 'pubblicata',
         salvataIl: sql`NOW()`,
       })
       .where(eq(wazaVersioni.id, versione.id))
