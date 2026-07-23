@@ -2,16 +2,13 @@
 
 ## 1. Mappe
 
-### 1.1 Root map (`map.png`)
+### 1.1 Root map (Giappone interattivo)
 
-- **File:** `public/maps/map.png`
-- **Pin** (posizionabili da te) → **Mappe di gioco:**
-  - **Ogon**
-  - **Izayoi**
-  - **Onimori**
-  - **Ezochi**
-  - **Altrove**
-- **Clic su pin** → si apre la mappa di gioco corrispondente.
+- **Componente:** `apps/client/src/components/dashboard/map/JapanInteractiveMap.tsx` (Leaflet + GeoJSON)
+- **GeoJSON:** `public/maps/geo/japan-prefectures.geojson` (prefetture, semplificato; fonte `dataofjapan/land`)
+- **Regioni di gioco:** mappate in `japan-regions.ts` (Ogon←Tokyo hub, Izayoi←Kyoto/Kansai, Onimori, Ezochi, Altrove)
+- **Rollback asset statico:** `public/maps/map-legacy.png` / `worldmap.png`
+- **Clic regione / prefettura** → zoom `fitBounds` + pannello «Entra» → mappa di gioco.
 
 ### 1.2 Mappa di gioco (es. Ogon)
 

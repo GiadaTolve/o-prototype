@@ -1,0 +1,510 @@
+/* Japan Interactive Map — Dark Fantasy mockup */
+
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Shippori+Mincho:wght@500;700&display=swap");
+
+.jim {
+  --jim-pitch: #08070a;
+  --jim-obsidian: #110f15;
+  --jim-ink: #0a090c;
+  --jim-panel: var(--panel-bg, #16121c);
+  --jim-gold: #ffd700;
+  --jim-gold-burnished: #8a7343;
+  --jim-antique: #5e4d27;
+  --jim-spectral: #ffd700;
+  --jim-mystic: #4a154b;
+  --jim-mystic-glow: #b832b8;
+  --jim-violet-light: var(--accent-violet-light, #b39ddb);
+  --jim-border: var(--border-color, #2a2433);
+  --jim-glow: rgba(255, 215, 0, 0.28);
+  --jim-font-ja: "Shippori Mincho", "EB Garamond", serif;
+  --jim-font-la: "Cinzel", "Philosopher", serif;
+  --jim-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  color: var(--jim-violet-light);
+  background-color: var(--jim-pitch);
+  background-image:
+    radial-gradient(ellipse 80% 70% at 50% 45%, #1a1620 0%, var(--jim-pitch) 72%),
+    url("/backgrounds/darkstone.png");
+  background-repeat: no-repeat, repeat;
+  background-size: cover, 160px 160px;
+  border: 1px solid color-mix(in srgb, var(--jim-gold-burnished) 45%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--jim-gold-burnished) 12%, transparent),
+    0 0 28px rgba(0, 0, 0, 0.55);
+}
+
+.jim__canvas-rotator {
+  /* Overflow oltre il frame: evita cunei scuri dopo rotate/translate */
+  position: absolute;
+  top: -22%;
+  left: -22%;
+  width: 144%;
+  height: 144%;
+  max-height: none;
+  overflow: hidden;
+  z-index: 0;
+  transform-origin: 50% 48%;
+  transition: transform 1.35s cubic-bezier(0.33, 0.1, 0.2, 1);
+  will-change: transform;
+}
+
+/* Mondo: rotazione oraria + zoom */
+.jim__canvas-rotator--mondo {
+  transform: rotate(15deg) scale(1.15);
+}
+
+/* Focus Ogon: 250px a sinistra, 200px in basso — scale alto per coprire i bordi */
+.jim__canvas-rotator--focus-ogon {
+  transform: translate(calc(12% - 250px), calc(1% + 200px)) rotate(10deg) scale(1.28);
+  transform-origin: 50% 50%;
+}
+
+/* Focus Izayoi */
+.jim__canvas-rotator--focus-izayoi {
+  transform: translate(5%, 0) rotate(10deg) scale(1.2);
+  transform-origin: 50% 50%;
+}
+
+/* Fallback focus generico */
+.jim__canvas-rotator--focus {
+  transform: translate(6%, 0) rotate(10deg) scale(1.18);
+  transform-origin: 50% 50%;
+}
+
+/*
+ * Leaflet imposta inline position:relative sul container → rompe inset:0
+ * e può far esplodere l'altezza. Forziamo fill del parent.
+ */
+.jim__canvas,
+.jim .leaflet-container.jim__canvas,
+.jim .jim__canvas.leaflet-container {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  z-index: 0;
+  background: transparent !important;
+  font: inherit;
+}
+
+.jim .leaflet-container {
+  background: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jim__canvas-rotator {
+    transition: none;
+  }
+}
+
+/* Nasconde zoom Leaflet — rosa dei venti + rotella */
+.jim .leaflet-control-zoom {
+  display: none !important;
+}
+
+/* ── Region path styles ── */
+.jim .jim-region {
+  transition: fill 220ms ease, stroke 220ms ease, filter 280ms ease, opacity 280ms ease;
+  stroke-opacity: 0.55;
+}
+
+.jim .jim-region--dim {
+  opacity: 0.72;
+  filter: saturate(0.7) brightness(0.85);
+}
+
+.jim .jim-region--hover {
+  stroke-opacity: 0.95;
+  filter:
+    drop-shadow(0 0 10px rgba(255, 215, 0, 0.35))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
+}
+
+.jim .jim-region--selected.jim-region--gold {
+  stroke-opacity: 1;
+  filter:
+    drop-shadow(0 0 14px rgba(255, 215, 0, 0.55))
+    drop-shadow(0 0 28px rgba(94, 77, 39, 0.45))
+    drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+
+.jim .jim-region--selected.jim-region--violet {
+  stroke-opacity: 1;
+  filter:
+    drop-shadow(0 0 14px rgba(184, 50, 184, 0.55))
+    drop-shadow(0 0 26px rgba(74, 21, 75, 0.55))
+    drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+
+.jim .jim-ogon-pref {
+  pointer-events: none;
+  fill: none !important;
+}
+
+.jim-ogon-pref-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-align: center;
+  pointer-events: none !important;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+.jim-ogon-pref-label__ja {
+  display: block;
+  font-family: var(--jim-font-ja);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--jim-gold-burnished) 82%, #c4b07a);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  line-height: 1.15;
+  opacity: 0.72;
+}
+
+.jim-ogon-pref-label__la {
+  display: block;
+  margin-top: 1px;
+  font-family: var(--jim-font-la);
+  font-size: 7.5px;
+  font-weight: 600;
+  letter-spacing: 0.38em;
+  text-indent: 0.38em;
+  color: color-mix(in srgb, var(--jim-antique) 70%, var(--jim-gold-burnished));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.jim .jim-altrove-marker {
+  filter: drop-shadow(0 0 8px rgba(184, 50, 184, 0.4));
+}
+
+/* Region name labels on map */
+.jim-region-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-align: center;
+  pointer-events: none !important;
+}
+
+.jim-region-label__ja {
+  display: block;
+  font-family: var(--jim-font-ja);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(220, 214, 205, 0.7);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95);
+  line-height: 1.2;
+}
+
+.jim-region-label__ja::before {
+  content: "【 ";
+  opacity: 0.55;
+  font-weight: 500;
+}
+.jim-region-label__ja::after {
+  content: " 】";
+  opacity: 0.55;
+  font-weight: 500;
+}
+
+.jim-region-label__la {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--jim-font-la);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: color-mix(in srgb, var(--jim-gold-burnished) 85%, #ffd700);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  text-transform: uppercase;
+}
+
+/* ── FX overlays (pointer-events: none) ── */
+.jim__fx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.jim__grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.05 0 0 0 0 0.04 0 0 0 0 0.03 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: overlay;
+  opacity: 0.28;
+}
+
+.jim__paper {
+  background:
+    radial-gradient(ellipse 90% 80% at 30% 20%, rgba(138, 115, 67, 0.1), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 80% 70%, rgba(74, 21, 75, 0.08), transparent 50%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+
+.jim__fog {
+  /* Nebbia leggera solo sui bordi della visuale — niente blob interni */
+  background:
+    linear-gradient(to top, rgba(8, 7, 10, 0.5) 0%, rgba(8, 7, 10, 0.18) 12%, transparent 32%),
+    linear-gradient(to bottom, rgba(8, 7, 10, 0.38) 0%, rgba(8, 7, 10, 0.12) 10%, transparent 26%),
+    linear-gradient(to right, rgba(8, 7, 10, 0.32) 0%, transparent 20%),
+    linear-gradient(to left, rgba(8, 7, 10, 0.32) 0%, transparent 20%);
+  mix-blend-mode: normal;
+  opacity: 1;
+  animation: none;
+}
+
+.jim__vignette {
+  /* Soft, senza banda netta in basso */
+  background: radial-gradient(
+    ellipse 72% 68% at 50% 48%,
+    transparent 55%,
+    rgba(8, 7, 10, 0.14) 78%,
+    rgba(0, 0, 0, 0.32) 100%
+  );
+}
+
+.jim__ash {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@keyframes jim-fog-drift {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1.02);
+  }
+  100% {
+    transform: translate3d(3%, 2%, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jim .jim-region {
+    transition: none;
+  }
+  .jim__fog {
+    animation: none;
+  }
+  .jim__ash {
+    display: none;
+  }
+}
+
+/* ── HUD / decorative UI ── */
+.jim__hud {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.jim__coords {
+  top: 0.65rem;
+  right: 6.5rem;
+  font-family: var(--jim-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--jim-gold-burnished) 70%, #aaa);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  line-height: 1.45;
+  text-align: right;
+}
+
+.jim__coords span {
+  opacity: 0.55;
+  margin: 0 0.2rem;
+}
+
+/* Bussola vision — alto destra */
+.jim__compass {
+  position: absolute;
+  z-index: 4;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 80px;
+  height: 80px;
+  border: 1px solid rgba(138, 115, 67, 0.35);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "Shippori Mincho", serif;
+  color: #8a7343;
+  background: rgba(8, 7, 10, 0.7);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.55);
+}
+
+.jim__compass::before {
+  content: "北";
+  position: absolute;
+  top: 4px;
+  font-size: 10px;
+}
+
+.jim__compass::after {
+  content: "南";
+  position: absolute;
+  bottom: 4px;
+  font-size: 10px;
+}
+
+.jim__compass-e {
+  position: absolute;
+  right: 6px;
+  font-size: 10px;
+}
+
+.jim__compass-w {
+  position: absolute;
+  left: 6px;
+  font-size: 10px;
+}
+
+.jim__compass-center {
+  width: 4px;
+  height: 4px;
+  background: #e2c07b;
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(226, 192, 123, 0.8);
+}
+
+.jim__kamon {
+  top: 6.2rem;
+  right: 0.85rem;
+  width: 56px;
+  height: 56px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--jim-gold-burnished) 40%, transparent);
+  background: color-mix(in srgb, var(--jim-obsidian) 75%, transparent);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 215, 0, 0.06);
+  animation: jim-kamon-in 0.55s ease-out;
+}
+
+.jim__kamon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes jim-kamon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.jim__topbar {
+  position: absolute;
+  z-index: 5;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  gap: 0.4rem;
+  pointer-events: auto;
+}
+
+.jim__mondo-btn,
+.jim__mute-btn {
+  min-height: 44px;
+  padding: 0.45rem 0.9rem;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--jim-gold-burnished) 50%, var(--jim-border));
+  background: color-mix(in srgb, var(--jim-obsidian) 88%, black);
+  color: color-mix(in srgb, var(--jim-gold-burnished) 80%, #ffd700);
+  font-family: var(--jim-font-la);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.45);
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.jim__mute-btn {
+  min-width: 44px;
+  padding: 0.45rem 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+.jim__mondo-btn:hover,
+.jim__mute-btn:hover {
+  background: color-mix(in srgb, var(--jim-antique) 35%, black);
+  box-shadow: 0 0 14px var(--jim-glow);
+  color: var(--jim-gold);
+}
+
+.jim__loading,
+.jim__error {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-family: var(--jim-font-la);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--jim-gold-burnished);
+  background: color-mix(in srgb, var(--jim-pitch) 55%, transparent);
+}
+
+.jim__error {
+  color: #c07070;
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .jim__topbar {
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .jim__compass {
+    width: 64px;
+    height: 64px;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .jim__kamon {
+    width: 44px;
+    height: 44px;
+    top: 5.2rem;
+    right: 0.5rem;
+  }
+
+  .jim__coords {
+    font-size: 8px;
+    top: auto;
+    bottom: 0.5rem;
+    right: 0.5rem;
+  }
+}

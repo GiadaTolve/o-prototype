@@ -1,6 +1,6 @@
 /**
  * Config mappe: root → game maps → zone → locations (chat).
- * Pin root: x,y in % (0–100) su map.png. Modificabile in fase admin.
+ * Pin root: x,y in % (0–100) su ROOT_MAP_IMAGE. Rollback: map-legacy.png.
  */
 
 export type GameMapId = "ogon" | "izayoi" | "onimori" | "ezochi" | "altrove";
@@ -21,7 +21,7 @@ export function isPartychat(roomId: RoomId): boolean {
 export type RootPin = {
   gameMapId: GameMapId;
   label: string;
-  /** Posizione su map.png, in percentuale (0–100). */
+  /** Posizione sullo sfondo mondo, in percentuale (0–100). */
   x: number;
   y: number;
 };
@@ -122,13 +122,20 @@ export function getChatLocationByRoomId(roomId: RoomId): ChatLocation | null {
   return null;
 }
 
-// ─── Root pins (map.png). Modificabile in creazione mappe. ───
+/**
+ * Pin sulla mappa mondo.
+ *  - Ogon → Tokyo (Kanto)
+ *  - Izayoi → Kyoto (Kansai)
+ *  - Onimori → Honshu nord / Tohoku montano
+ *  - Ezochi → isola nord
+ *  - Altrove → continente oltre il mare
+ */
 export const ROOT_PINS: RootPin[] = [
-  { gameMapId: "ogon", label: "Ogon", x: 30, y: 45 },
-  { gameMapId: "izayoi", label: "Izayoi", x: 50, y: 35 },
-  { gameMapId: "onimori", label: "Onimori", x: 70, y: 40 },
-  { gameMapId: "ezochi", label: "Ezochi", x: 55, y: 60 },
-  { gameMapId: "altrove", label: "Altrove", x: 80, y: 70 },
+  { gameMapId: "ezochi", label: "Ezochi", x: 80, y: 16 },
+  { gameMapId: "onimori", label: "Onimori", x: 73, y: 32 },
+  { gameMapId: "ogon", label: "Ogon", x: 69, y: 51 }, // Tokyo
+  { gameMapId: "izayoi", label: "Izayoi", x: 54, y: 55 }, // Kyoto
+  { gameMapId: "altrove", label: "Altrove", x: 15, y: 22 },
 ];
 
 // ─── Ogon: zone e location (chat) ───
@@ -193,4 +200,8 @@ export const GAME_MAPS: Record<GameMapId, GameMapConfig> = {
   altrove: { id: "altrove", label: "Altrove", zones: [] },
 };
 
-export const ROOT_MAP_IMAGE = "/maps/map.png";
+/** Sfondo mappa mondo. Rollback: `/maps/map-legacy.png`. */
+export const ROOT_MAP_IMAGE = "/maps/worldmap.png";
+
+/** Dimensioni native dello sfondo (pin % sono relative a queste). */
+export const ROOT_MAP_NATIVE = { width: 1672, height: 941 } as const;
