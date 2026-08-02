@@ -17,13 +17,188 @@ import {
 import { playRegionHover, playRegionSelect, unlockMapAudio } from "./map-audio";
 import { kamonSvg } from "./map-kamon";
 import type { MapScope } from "./map-place-memory";
+import {
+  fetchCityOverlay,
+  mountCityOverlay,
+  type CityOverlayPayload,
+} from "./city-overlay";
 import "./japan-interactive-map.css";
+import { CapoluogoPanel, type CapoluogoData } from "./CapoluogoPanel";
+import { GAME_MAPS } from "@/config/map-config";
+
+// Costruisce la lista chat da una zona del config
+function chatListFromZone(zoneId: string): CapoluogoData["chats"] {
+  const zone = GAME_MAPS.ogon.zones.find((z) => z.id === zoneId);
+  if (!zone) return [];
+  const out: CapoluogoData["chats"] = [];
+  for (const loc of zone.locations) {
+    if ("roomId" in loc) {
+      out.push({ id: loc.roomId, name: loc.label, description: loc.description });
+    } else {
+      for (const child of loc.children) {
+        out.push({ id: child.roomId, name: child.label, description: child.description });
+      }
+    }
+  }
+  return out;
+}
+
+const CAPOLUOGHI: Record<string, CapoluogoData> = {
+  kessen_0: {
+    id: "kessen_0",
+    mapName: "Cosmicon Complex",
+    mapNameJa: "宇宙絵",
+    image: "/maps/textures/tex-kessen.png",
+    description: "Crocevia commerciale e culturale di Kessen. Tre anime distinte convivono tra mercati, sale giochi e vie illuminate.",
+    chats: chatListFromZone("kessen"),
+  },
+  edo_0: {
+    id: "edo_0",
+    mapName: "Edo",
+    mapNameJa: "江戸",
+    image: "/maps/textures/tex-edo.png",
+    description: "La capitale. Città di ponti e canali, sede del Consiglio degli Shogun e fulcro politico dell'intero arcipelago.",
+    chats: [],
+  },
+  edo_1: {
+    id: "edo_1",
+    mapName: "Paradise",
+    mapNameJa: "楽園",
+    image: "/maps/textures/tex-edo.png",
+    description: "Il distretto del piacere e dello spettacolo. Tra Circus e Ginza o'Clock, la notte di Edo non finisce mai.",
+    chats: chatListFromZone("edo"), // Circus + Ginza o'Clock
+  },
+  hamanachi_0: {
+    id: "hamanachi_0",
+    mapName: "Hamanachi",
+    mapNameJa: "浜町",
+    image: "/maps/textures/tex-hamanachi.png",
+    description: "Città costiera di nebbie e silenzio. Tra una casa da tè e i corridoi dell'ospedale, le storie si intrecciano.",
+    chats: chatListFromZone("hamanachi"),
+  },
+  kotowari_0: {
+    id: "kotowari_0",
+    mapName: "Astrolabio",
+    mapNameJa: "理",
+    image: "/maps/textures/tex-kotowari.png",
+    description: "Terra di osservatori e studiosi. L'Astrolabio e l'Osservatorio vigilano sul cielo di Kotowari da secoli.",
+    chats: chatListFromZone("kotowari"),
+  },
+};
+
+// SVG path FA tree (solid), viewBox 448×512
+const FA_TREE_PATH =
+  "M210.6 5.9L62 169.4c-3.9 4.2-6 9.8-6 15.5C56 197.7 66.3 208 79.1 208l24.9 0L30.6 281.4c-4.2 4.2-6.6 10-6.6 16C24 309.9 34.1 320 46.6 320L80 320 5.4 409.5C1.9 413.7 0 419 0 424.5c0 13 10.5 23.5 23.5 23.5L192 448l0 32c0 17.7 14.3 32 32 32s32-14.3 32-32l0-32 168.5 0c13 0 23.5-10.5 23.5-23.5c0-5.5-1.9-10.8-5.4-15L368 320l33.4 0c12.5 0 22.6-10.1 22.6-22.6c0-6-2.4-11.8-6.6-16L344 208l24.9 0c12.7 0 23.1-10.3 23.1-23.1c0-5.7-2.1-11.3-6-15.5L237.4 5.9C234 2.1 229.1 0 224 0s-10 2.1-13.4 5.9z";
+
+// Luoghi di culto (templi) — sub-mappe con chat
+const TEMPLI_DATA: Record<string, CapoluogoData> = {
+  tempio_kessen: {
+    id: "tempio_kessen",
+    mapName: "Tempio di Kessen",
+    mapNameJa: "結戦の社",
+    image: "/maps/textures/tex-kessen.png",
+    description: "Antico luogo di culto nascosto tra le vette di Kessen. Le preghiere dei guerrieri risuonano ancora tra le rocce.",
+    chats: [],
+  },
+  tempio_kotowari: {
+    id: "tempio_kotowari",
+    mapName: "Tempio della Costa",
+    mapNameJa: "海岸の社",
+    image: "/maps/textures/tex-kotowari.png",
+    description: "Santuario affacciato sull'oceano di Kotowari. Le onde portano offerte al di là del velo.",
+    chats: [],
+  },
+  tempio_confine: {
+    id: "tempio_confine",
+    mapName: "Tempio del Confine",
+    mapNameJa: "境界の社",
+    image: "/maps/textures/tex-hamanachi.png",
+    description: "Punto neutro tra Edo e Hamanachi. Né l'uno né l'altro possono rivendicare questo suolo sacro.",
+    chats: [],
+  },
+};
+
+// Città minori — shining-line
+const CITTA_DATA: Record<string, CapoluogoData> = {
+  citta_kessen_nord: {
+    id: "citta_kessen_nord",
+    mapName: "Costa Superiore",
+    mapNameJa: "上浦",
+    image: "/maps/textures/tex-kessen.png",
+    description: "Insediamento costiero sul margine settentrionale di Kessen.",
+    chats: [],
+  },
+  citta_kessen_sud: {
+    id: "citta_kessen_sud",
+    mapName: "Costa Inferiore",
+    mapNameJa: "下浦",
+    image: "/maps/textures/tex-kessen.png",
+    description: "Insediamento costiero sul margine meridionale di Kessen.",
+    chats: [],
+  },
+  citta_kessen_est: {
+    id: "citta_kessen_est",
+    mapName: "Roccaforte Est",
+    mapNameJa: "東砦",
+    image: "/maps/textures/tex-kessen.png",
+    description: "Avamposto orientale di Kessen, a est della foresta.",
+    chats: [],
+  },
+  citta_kessen_ovest: {
+    id: "citta_kessen_ovest",
+    mapName: "Valico Ovest",
+    mapNameJa: "西峠",
+    image: "/maps/textures/tex-kessen.png",
+    description: "Punto di transito a ovest del bosco di Kessen.",
+    chats: [],
+  },
+  citta_triplice: {
+    id: "citta_triplice",
+    mapName: "Crocevia",
+    mapNameJa: "三叉路",
+    image: "/maps/textures/tex-hamanachi.png",
+    description: "Punto d'incontro sul confine tra Kotowari, Edo e Hamanachi.",
+    chats: [],
+  },
+  citta_kotowari_nord: {
+    id: "citta_kotowari_nord",
+    mapName: "Danchi 404",
+    mapNameJa: "団地404",
+    image: "/maps/textures/tex-kotowari.png",
+    description: "Insediamento costiero a nord di Kotowari, oltre il tempio della costa.",
+    chats: [],
+  },
+};
+
+// Boschi / foreste selvagge — chat dirette
+const BOSCHI_DATA: Record<string, CapoluogoData> = {
+  bosco_kessen: {
+    id: "bosco_kessen",
+    mapName: "Foresta di Kessen",
+    mapNameJa: "結戦の森",
+    image: "/maps/textures/tex-kessen.png",
+    description: "Foresta montana selvaggia sulle cime di Kessen. Le nebbie mattutine nascondono creature antiche tra i pini.",
+    chats: [],
+  },
+  bosco_kotowari: {
+    id: "bosco_kotowari",
+    mapName: "Bosco di Kotowari",
+    mapNameJa: "理の森",
+    image: "/maps/textures/tex-kotowari.png",
+    description: "Fitto bosco sulle montagne di Kotowari. Qui gli spiriti della natura vegliano ancora.",
+    chats: [],
+  },
+};
 
 type Props = {
   onSelectGameMap: (id: GameMapId) => void;
   initialScope?: MapScope;
   onScopeChange?: (scope: MapScope) => void;
   className?: string;
+  /** Espone l'istanza Leaflet (es. overlay editor città). */
+  onMapReady?: (map: L.Map) => void;
+  /** Disabilita select regioni (modalità disegno). */
+  suppressRegionSelect?: boolean;
 };
 
 const FILL = {
@@ -86,7 +261,11 @@ function unlockZoomLimits(map: L.Map): void {
 function lockNoZoomOut(map: L.Map): void {
   const floor = Math.round(map.getZoom() * 4) / 4;
   map.setMinZoom(floor);
-  map.setMaxZoom(BASE_MAX_ZOOM);
+  map.setMaxZoom(floor);
+  map.scrollWheelZoom.disable();
+  map.doubleClickZoom.disable();
+  map.touchZoom.disable();
+  map.boxZoom.disable();
 }
 function glowOf(id: GameMapId): RegionGlowTheme {
   return regionDef(id)?.glow ?? "spectral-gold";
@@ -106,10 +285,10 @@ function pathStyle(state: "base" | "hover" | "selected", id?: GameMapId): L.Path
   }
   if (state === "hover") {
     return {
-      fillColor: FILL.hover,
+      fillColor: FILL.base,
       fillOpacity: 1,
-      color: STROKE.hover,
-      weight: 1.25,
+      color: "rgba(201, 168, 74, 0.92)",
+      weight: 2,
       className: "jim-region jim-region--hover",
     };
   }
@@ -216,6 +395,72 @@ function safeFitBounds(
   }
 }
 
+/** Icona SVG per-prefettura con testo curvo e alone scuro. */
+function makePrefLabelIcon(def: { id: string; label: string }): L.DivIcon {
+  const text = def.label.toUpperCase();
+  const fill = "#c4a95a";
+  const halo = "#0d0b14";
+  const base = `font-family:var(--jim-font-la,'Cormorant Garamond',serif);font-size:11px;font-weight:700;fill:${fill};stroke:${halo};stroke-width:3.5;paint-order:stroke;`;
+
+  if (def.id === "kessen") {
+    const w = 210, h = 90;
+    const html = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+      <defs><path id="lp-kessen" d="M 5,65 Q 105,20 205,65"/></defs>
+      <g transform="rotate(-70,105,45)">
+        <text style="${base}letter-spacing:5px;">
+          <textPath href="#lp-kessen" startOffset="50%" text-anchor="middle">${text}</textPath>
+        </text>
+      </g></svg>`;
+    return L.divIcon({ className: "", html, iconSize: [w, h], iconAnchor: [105, 45] });
+  }
+
+  if (def.id === "edo") {
+    const w = 210, h = 90;
+    const html = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+      <defs><path id="lp-edo" d="M 5,65 Q 105,20 205,65"/></defs>
+      <g transform="rotate(-30,105,45)">
+        <text style="${base}letter-spacing:10px;">
+          <textPath href="#lp-edo" startOffset="50%" text-anchor="middle">${text}</textPath>
+        </text>
+      </g></svg>`;
+    // +100px sx → anchorX += 100; +30px su → anchorY -= 30
+    return L.divIcon({ className: "", html, iconSize: [w, h], iconAnchor: [205, 15] });
+  }
+
+  if (def.id === "hamanachi") {
+    const w = 90, h = 230;
+    const cx = 45, cy = 115;
+    const html = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+      <defs><path id="lp-hamanachi" d="M 42,8 C 72,52 18,90 42,130 C 68,170 20,205 42,222"/></defs>
+      <g transform="rotate(-130,${cx},${cy})">
+        <text style="${base}letter-spacing:3px;">
+          <textPath href="#lp-hamanachi" startOffset="50%" text-anchor="middle">${text}</textPath>
+        </text>
+      </g></svg>`;
+    return L.divIcon({ className: "", html, iconSize: [w, h], iconAnchor: [cx, cy - 15] });
+  }
+
+  if (def.id === "kotowari") {
+    const w = 90, h = 250;
+    const cx = 45, cy = 125;
+    const html = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+      <defs><path id="lp-kotowari" d="M 42,8 C 75,60 14,108 44,155 C 74,202 16,228 44,242"/></defs>
+      <g transform="rotate(-90,${cx},${cy})">
+        <text style="${base}letter-spacing:3px;">
+          <textPath href="#lp-kotowari" startOffset="50%" text-anchor="middle">${text}</textPath>
+        </text>
+      </g></svg>`;
+    return L.divIcon({ className: "", html, iconSize: [w, h], iconAnchor: [cx, cy + 10] });
+  }
+
+  return L.divIcon({
+    className: "jim-ogon-pref-label",
+    html: `<span class="jim-ogon-pref-label__la">${def.label}</span>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+}
+
 function formatCoord(lat: number, lng: number): { lat: string; lng: string } {
   const ns = lat >= 0 ? "N" : "S";
   const ew = lng >= 0 ? "E" : "W";
@@ -225,34 +470,34 @@ function formatCoord(lat: number, lng: number): { lat: string; lng: string } {
   };
 }
 
-/** Bussola vision-style (cerchio + Kanji), in alto a destra. */
-function VisionCompass() {
-  return (
-    <div className="jim__compass" aria-hidden>
-      <span className="jim__compass-w">西</span>
-      <span className="jim__compass-center" />
-      <span className="jim__compass-e">東</span>
-    </div>
-  );
-}
 
 export function JapanInteractiveMap({
   onSelectGameMap,
   initialScope = "ogon",
   onScopeChange,
   className,
+  onMapReady,
+  suppressRegionSelect = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const ashRef = useRef<HTMLCanvasElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.GeoJSON | null>(null);
   const ogonPrefsLayerRef = useRef<L.LayerGroup | null>(null);
+  const cityOverlayRef = useRef<L.LayerGroup | null>(null);
+  const cityOverlayDataRef = useRef<CityOverlayPayload | null>(null);
   const layerByRegionRef = useRef<Map<GameMapId, L.Layer>>(new Map());
   const pendingFitRef = useRef<{ scope: MapScope } | null>(null);
   const mutedRef = useRef(false);
   const mountedRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeCapoluogo, setActiveCapoluogo] = useState<{
+    data: CapoluogoData;
+    x: number;
+    y: number;
+  } | null>(null);
+  const activeCapoluogoRef = useRef<typeof activeCapoluogo>(null);
   const [scope, setScope] = useState<MapScope>(initialScope);
   const scopeRef = useRef<MapScope>(initialScope);
   const [selectedRegion, setSelectedRegion] = useState<GameMapId | null>(null);
@@ -264,11 +509,17 @@ export function JapanInteractiveMap({
   const focusRegionRef = useRef<GameMapId | null>(focusRegion);
   const onSelectRef = useRef(onSelectGameMap);
   const onScopeChangeRef = useRef(onScopeChange);
+  const onMapReadyRef = useRef(onMapReady);
+  const suppressSelectRef = useRef(suppressRegionSelect);
   const [coords, setCoords] = useState(() => {
     const d = regionDef("ogon")?.coords ?? { lat: 35.6762, lng: 139.6503 };
     return formatCoord(d.lat, d.lng);
   });
   const [muted, setMuted] = useState(false);
+  /** Prototipo: overlay città da city-overlay.json (toggle / assente = off). */
+  const [cityOverlayOn, setCityOverlayOn] = useState(true);
+  const [cityOverlayAvailable, setCityOverlayAvailable] = useState(false);
+  const [cityOverlayInfo, setCityOverlayInfo] = useState<string | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -289,6 +540,14 @@ export function JapanInteractiveMap({
   useEffect(() => {
     onScopeChangeRef.current = onScopeChange;
   }, [onScopeChange]);
+
+  useEffect(() => {
+    onMapReadyRef.current = onMapReady;
+  }, [onMapReady]);
+
+  useEffect(() => {
+    suppressSelectRef.current = suppressRegionSelect;
+  }, [suppressRegionSelect]);
 
   useEffect(() => {
     selectedRef.current = selectedRegion;
@@ -584,6 +843,7 @@ export function JapanInteractiveMap({
       markerZoomAnimation: true,
     });
     mapRef.current = map;
+    onMapReadyRef.current?.(map);
 
     // Re-applica fill (Leaflet setta position:relative inline)
     el.style.position = "absolute";
@@ -625,9 +885,37 @@ export function JapanInteractiveMap({
     map.createPane("jimOgonPrefs");
     const ogonPrefsPane = map.getPane("jimOgonPrefs");
     if (ogonPrefsPane) {
-      ogonPrefsPane.style.zIndex = "460";
+      ogonPrefsPane.style.zIndex = "700";
       ogonPrefsPane.style.pointerEvents = "none";
     }
+
+    // Pane maschera oceano (sopra il terrain, sotto le regioni GeoJSON)
+    map.createPane("jimOceanMask");
+    const oceanMaskPane = map.getPane("jimOceanMask");
+    if (oceanMaskPane) {
+      oceanMaskPane.style.zIndex = "415";
+      oceanMaskPane.style.pointerEvents = "none";
+    }
+
+    // Pane terreno fisico — sotto tutto, sopra lo sfondo CSS
+    map.createPane("jimTerrain");
+    const terrainPane = map.getPane("jimTerrain");
+    if (terrainPane) {
+      terrainPane.style.zIndex = "410";
+      terrainPane.style.pointerEvents = "none";
+    }
+    // ESRI World Physical Map — terreno naturale, nessuna label
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
+      {
+        pane: "jimTerrain",
+        maxZoom: 18,
+        maxNativeZoom: 8,
+        attribution: "",
+        className: "jim-terrain-tiles",
+      },
+    ).addTo(map);
+
 
     (async () => {
       try {
@@ -669,6 +957,7 @@ export function JapanInteractiveMap({
               );
             });
             path.on("click", () => {
+              if (suppressSelectRef.current) return;
               void unlockMapAudio();
               playRegionSelect(mutedRef.current);
               selectedRef.current = regionId;
@@ -691,11 +980,52 @@ export function JapanInteractiveMap({
         layerRef.current = layer;
         layerByRegionRef.current = byRegion;
 
+        // Maschera oceano: mondo intero con buchi sulle isole del Giappone
+        // Even-odd fill: 1 ring = pieno (oceano), 2 ring annidati = buco (terra)
+        {
+          const worldRing: GeoJSON.Position[] = [
+            [-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90],
+          ];
+          const japanRings: GeoJSON.Position[][] = [];
+          for (const feat of data.features) {
+            const geom = feat.geometry;
+            if (geom.type === "Polygon") {
+              japanRings.push(geom.coordinates[0]);
+            } else if (geom.type === "MultiPolygon") {
+              for (const poly of geom.coordinates) {
+                japanRings.push(poly[0]);
+              }
+            }
+          }
+          const maskFeature: GeoJSON.Feature = {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "Polygon",
+              coordinates: [worldRing, ...japanRings],
+            } as GeoJSON.Polygon,
+          };
+          L.geoJSON(maskFeature, {
+            pane: "jimOceanMask",
+            interactive: false,
+            style: {
+              fill: true,
+              fillColor: "#0d0b16",
+              fillOpacity: 1,
+              color: "none",
+              weight: 0,
+              fillRule: "evenodd",
+            },
+          }).addTo(map);
+        }
+
         // Prefetture interne Ogon (Edo, …) — solo bordo tratteggiato
         if (ogonPrefsRes.ok) {
           const prefsData = (await ogonPrefsRes.json()) as GeoJSON.FeatureCollection;
           if (!cancelled) {
             const prefsGroup = L.layerGroup();
+
+            // Layer bordi tratteggiati
             L.geoJSON(prefsData, {
               pane: "jimOgonPrefs",
               interactive: false,
@@ -711,18 +1041,125 @@ export function JapanInteractiveMap({
             }).addTo(prefsGroup);
 
             for (const def of OGON_PREFECTURES) {
-              const icon = L.divIcon({
-                className: "jim-ogon-pref-label",
-                html: `<span class="jim-ogon-pref-label__ja">${def.labelJa}</span><span class="jim-ogon-pref-label__la">${def.label}</span>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0],
-              });
+              const icon = makePrefLabelIcon(def);
               L.marker(def.labelLatLng, {
                 pane: "jimOgonPrefs",
                 icon,
                 interactive: false,
                 keyboard: false,
               }).addTo(prefsGroup);
+            }
+
+            // Marker capitali — icona shining-fill (RemixIcon), dimensione fissa
+            const capitalIcon = (size = 9) =>
+              L.divIcon({
+                className: "",
+                html: `<i class="ri-shining-fill jim-capital-icon" style="font-size:${size}px"></i>`,
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
+              });
+
+            // Marker templi — ancient-gate-fill (RemixIcon), 15px
+            const templeIcon = (size = 15) =>
+              L.divIcon({
+                className: "",
+                html: `<i class="ri-ancient-gate-fill jim-temple-icon" style="font-size:${size}px"></i>`,
+                iconSize: [size + 4, size + 4],
+                iconAnchor: [(size + 4) / 2, (size + 4) / 2],
+              });
+
+            // Marker città — shining-line (RemixIcon), 13px
+            const cityIcon = (size = 13) =>
+              L.divIcon({
+                className: "",
+                html: `<i class="ri-shining-line jim-city-marker-icon" style="font-size:${size}px"></i>`,
+                iconSize: [size + 4, size + 4],
+                iconAnchor: [(size + 4) / 2, (size + 4) / 2],
+              });
+
+            // Marker boschi — FA tree SVG, 15px
+            const forestIcon = (size = 15) =>
+              L.divIcon({
+                className: "",
+                html: `<svg width="${size}" height="${size}" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg" class="jim-forest-icon"><path d="${FA_TREE_PATH}" fill="currentColor"/></svg>`,
+                iconSize: [size + 4, size + 4],
+                iconAnchor: [(size + 4) / 2, (size + 4) / 2],
+              });
+
+            const CAPITALS: { latlng: [number, number]; dataId: string }[] = [
+              { latlng: [35.12, 137.535], dataId: "kessen_0" },
+              { latlng: [36.33, 139.63], dataId: "edo_0" },
+              { latlng: [35.71, 140.10], dataId: "edo_1" },
+              { latlng: [37.60, 138.95], dataId: "hamanachi_0" },
+              { latlng: [38.87, 140.40], dataId: "kotowari_0" },
+            ];
+
+            // Templi — luoghi di culto (3 posizioni)
+            const TEMPLI: { latlng: [number, number]; dataId: string }[] = [
+              { latlng: [35.59, 137.275], dataId: "tempio_kessen" },  // -30px sx, +15px top
+              { latlng: [39.10, 140.40], dataId: "tempio_kotowari" }, // 30px top rispetto Astrolabio [38.87,140.40]
+              { latlng: [37.18, 139.10], dataId: "tempio_confine" },  // Confine Edo–Hamanachi
+            ];
+
+            // Boschi — foreste selvatiche (cluster)
+            const BOSCHI: { latlng: [number, number]; dataId: string }[] = [
+              // Kessen montagna (~4 alberi): +25px top
+              { latlng: [35.97, 137.10], dataId: "bosco_kessen" },
+              { latlng: [36.00, 137.17], dataId: "bosco_kessen" },
+              { latlng: [35.94, 137.20], dataId: "bosco_kessen" },
+              { latlng: [35.98, 137.25], dataId: "bosco_kessen" },
+              // Kotowari montagne
+              { latlng: [38.52, 140.10], dataId: "bosco_kotowari" },
+              { latlng: [38.55, 140.18], dataId: "bosco_kotowari" },
+            ];
+
+            // Città minori — shining-line (5 posizioni)
+            // Alberi Kessen centrati circa [35.97, 137.17]
+            const CITTA: { latlng: [number, number]; dataId: string }[] = [
+              { latlng: [36.75, 136.9375], dataId: "citta_kessen_nord" }, // -35px sx, -20px bottom
+              { latlng: [34.65, 138.800], dataId: "citta_kessen_sud" },  // +200px destra totali
+              { latlng: [36.42, 137.995], dataId: "citta_kessen_est" },  // +40px top
+              { latlng: [35.895, 136.495], dataId: "citta_kessen_ovest" }, // -40px sx
+              { latlng: [36.750, 139.00], dataId: "citta_triplice" },    // +50px top
+              { latlng: [39.775, 140.40], dataId: "citta_kotowari_nord" }, // +30px top
+            ];
+
+            // Helper per aggiungere marker con CapoluogoPanel
+            const addPanelMarker = (
+              latlng: [number, number],
+              icon: L.DivIcon,
+              dataRecord: Record<string, CapoluogoData>,
+              dataId: string,
+            ) => {
+              const marker = L.marker(latlng, {
+                pane: "jimOgonPrefs",
+                icon,
+                interactive: true,
+                keyboard: false,
+              });
+              marker.on("click", (e) => {
+                L.DomEvent.stopPropagation(e);
+                const pt = map.latLngToContainerPoint(L.latLng(latlng));
+                setActiveCapoluogo({
+                  data: dataRecord[dataId],
+                  x: pt.x,
+                  y: pt.y,
+                });
+              });
+              marker.addTo(prefsGroup);
+            };
+
+            for (const cap of CAPITALS) {
+              addPanelMarker(cap.latlng, capitalIcon(9), CAPOLUOGHI, cap.dataId);
+            }
+            for (const t of TEMPLI) {
+              addPanelMarker(t.latlng, templeIcon(15), TEMPLI_DATA, t.dataId);
+            }
+            for (const b of BOSCHI) {
+              addPanelMarker(b.latlng, forestIcon(15), BOSCHI_DATA, b.dataId);
+            }
+            for (const c of CITTA) {
+              addPanelMarker(c.latlng, cityIcon(13), CITTA_DATA, c.dataId);
             }
 
             prefsGroup.addTo(map);
@@ -734,9 +1171,25 @@ export function JapanInteractiveMap({
           (p as L.Path).setStyle?.(pathStyle("base", id));
         });
 
+        // Prototipo città (se presente city-overlay.json) — mount via effect/toggle
+        const cityData = await fetchCityOverlay();
+        if (!cancelled && cityData) {
+          cityOverlayDataRef.current = cityData;
+          if (mountedRef.current) {
+            setCityOverlayAvailable(true);
+            const label = cityData.name ?? "Città";
+            const nb = cityData.buildings?.length ?? 0;
+            setCityOverlayInfo(`${label} · ${nb} edifici`);
+          }
+        }
+
         const doInitialFit = () => {
           if (cancelled || !mapRef.current) return;
-          fitScopeRef.current(initialScope, false);
+          fitScopeRef.current("ogon", false);
+          // Blocca zoom-out: l'utente non può tornare alla vista mondo
+          window.setTimeout(() => {
+            if (mapRef.current) lockNoZoomOut(mapRef.current);
+          }, 100);
           onMove();
         };
 
@@ -768,15 +1221,75 @@ export function JapanInteractiveMap({
       mapRef.current = null;
       layerRef.current = null;
       ogonPrefsLayerRef.current = null;
+      cityOverlayRef.current = null;
+      cityOverlayDataRef.current = null;
       layerByRegionRef.current = new Map();
       pendingFitRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Modalità disegno: regioni non catturano i click
+  useEffect(() => {
+    layerByRegionRef.current.forEach((layer) => {
+      const path = layer as L.Path & { _path?: SVGElement };
+      path.options.interactive = !suppressRegionSelect;
+      if (path._path) {
+        path._path.style.pointerEvents = suppressRegionSelect ? "none" : "";
+      }
+    });
+  }, [suppressRegionSelect, ready]);
+
   useEffect(() => {
     paintAll();
   }, [selectedRegion, paintAll]);
+
+  // Nascondi etichette prefetture quando non si è in vista Ogon
+  useEffect(() => {
+    const map = mapRef.current;
+    const group = ogonPrefsLayerRef.current;
+    if (!map || !group || !ready) return;
+    if (scope === "ogon") {
+      if (!map.hasLayer(group)) group.addTo(map);
+    } else {
+      group.remove();
+    }
+  }, [scope, ready]);
+
+  // Toggle overlay città (prototipo)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    if (!cityOverlayOn || !cityOverlayAvailable) {
+      cityOverlayRef.current?.remove();
+      cityOverlayRef.current = null;
+      return;
+    }
+    if (cityOverlayRef.current) return;
+    const data = cityOverlayDataRef.current;
+    if (!data) return;
+    cityOverlayRef.current = mountCityOverlay(L, map, data);
+  }, [cityOverlayOn, cityOverlayAvailable, ready]);
+
+  const reloadCityOverlay = useCallback(async () => {
+    const map = mapRef.current;
+    const data = await fetchCityOverlay();
+    cityOverlayRef.current?.remove();
+    cityOverlayRef.current = null;
+    if (!data) {
+      cityOverlayDataRef.current = null;
+      setCityOverlayAvailable(false);
+      setCityOverlayInfo(null);
+      return;
+    }
+    cityOverlayDataRef.current = data;
+    setCityOverlayAvailable(true);
+    setCityOverlayOn(true);
+    const label = data.name ?? "Città";
+    const nb = data.buildings?.length ?? 0;
+    setCityOverlayInfo(`${label} · ${nb} edifici`);
+    if (map) cityOverlayRef.current = mountCityOverlay(L, map, data);
+  }, []);
 
   return (
     <div className={`jim ${className ?? ""}`}>
@@ -809,14 +1322,6 @@ export function JapanInteractiveMap({
         <span>/</span>
         {coords.lng}
       </div>
-      <VisionCompass />
-      {focusRegion && (
-        <div
-          className="jim__hud jim__kamon"
-          aria-hidden
-          dangerouslySetInnerHTML={{ __html: kamonSvg(focusRegion) }}
-        />
-      )}
 
       {!ready && !error && (
         <div className="jim__loading" aria-live="polite">
@@ -826,15 +1331,6 @@ export function JapanInteractiveMap({
       {error && <div className="jim__error">{error}</div>}
 
       <div className="jim__topbar">
-        {scope === "ogon" ? (
-          <button type="button" className="jim__mondo-btn" onClick={() => setScopeAndNotify("mondo")}>
-            Mondo
-          </button>
-        ) : (
-          <button type="button" className="jim__mondo-btn" onClick={() => setScopeAndNotify("ogon")}>
-            Torna a Ogon
-          </button>
-        )}
         <button
           type="button"
           className="jim__mute-btn"
@@ -848,6 +1344,18 @@ export function JapanInteractiveMap({
           {muted ? "Audio ·" : "Audio ♪"}
         </button>
       </div>
+
+      {/* Panel capoluogo */}
+      {activeCapoluogo && (
+        <CapoluogoPanel
+          data={activeCapoluogo.data}
+          onClose={() => setActiveCapoluogo(null)}
+          onChatEnter={(chatId) => {
+            window.dispatchEvent(new CustomEvent("openChatRoom", { detail: { roomId: chatId } }));
+            setActiveCapoluogo(null);
+          }}
+        />
+      )}
     </div>
   );
 }

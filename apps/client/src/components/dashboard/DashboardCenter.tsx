@@ -65,7 +65,7 @@ const JapanInteractiveMap = dynamic(
     ssr: false,
     loading: () => (
       <div className="absolute inset-0 flex items-center justify-center bg-[#0d0b10] text-[var(--accent-gold)] text-[11px] font-display uppercase tracking-[0.14em]">
-        Caricamento reticolo…
+        Caricamento mappa…
       </div>
     ),
   },
@@ -324,9 +324,16 @@ export function DashboardCenter({
   };
 
   const backFromChat = () => {
-    setView("zone-list");
     setSelectedRoomId(null);
     onRoomChange(null);
+    // Se non c'è contesto zona (chat aperta dalla mappa), torna alla mappa
+    if (zone) {
+      setView("zone-list");
+    } else if (gameMapId) {
+      setView("game-map");
+    } else {
+      setView("root");
+    }
   };
 
   const backFromZoneList = () => {

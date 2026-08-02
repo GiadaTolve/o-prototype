@@ -328,6 +328,50 @@ export function oyasumiWriteFilePlugin(testerRootAbs) {
                         });
                         return [2 /*return*/];
                     }
+                    if (req.url === '/__oyasumi/city-overlay' && req.method === 'POST') {
+                        raw = '';
+                        req.on('data', function (c) {
+                            raw += c;
+                        });
+                        req.on('end', function () {
+                            try {
+                                var parsed = JSON.parse(raw);
+                                var absTarget = path.resolve(testerRootAbs, '../client/public/maps/city-overlay.json');
+                                var clientPublic = path.resolve(testerRootAbs, '../client/public');
+                                if (!absTarget.startsWith(clientPublic + path.sep)) {
+                                    res.statusCode = 403;
+                                    res.end('Path outside client/public');
+                                    return;
+                                }
+                                if (parsed.clear) {
+                                    if (fs.existsSync(absTarget))
+                                        fs.unlinkSync(absTarget);
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.end(JSON.stringify({ ok: true, cleared: true }));
+                                    return;
+                                }
+                                if (!parsed.payload || typeof parsed.payload !== 'object') {
+                                    res.statusCode = 400;
+                                    res.end('Invalid body: payload required (or clear:true)');
+                                    return;
+                                }
+                                fs.mkdirSync(path.dirname(absTarget), { recursive: true });
+                                fs.writeFileSync(absTarget, JSON.stringify(parsed.payload, null, 2), 'utf8');
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.end(JSON.stringify({
+                                    ok: true,
+                                    path: 'apps/client/public/maps/city-overlay.json',
+                                }));
+                            }
+                            catch (e) {
+                                res.statusCode = 500;
+                                res.end(e instanceof Error ? e.message : String(e));
+                            }
+                        });
+                        return [2 /*return*/];
+                    }
                     if (req.url !== '/__oyasumi/write-file' || req.method !== 'POST') {
                         next();
                         return [2 /*return*/];

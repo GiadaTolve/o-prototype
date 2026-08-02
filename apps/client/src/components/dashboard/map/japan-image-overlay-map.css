@@ -1,0 +1,184 @@
+/* Mappa immagine CRS.Simple — Dark Arcane / game overlay */
+
+.jim-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--background, #0a0a0f);
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 40%, var(--border-color));
+  box-shadow: var(--shadow-violet);
+  color: var(--accent-violet-light);
+}
+
+.jim-img__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.jim-img__stage .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #05040a;
+  font: inherit;
+}
+
+.jim-img-overlay {
+  image-rendering: auto;
+}
+
+/* Regioni tono-su-tono + glow hover/selected */
+.jim-img-region {
+  transition: fill 0.15s ease, stroke 0.15s ease, filter 0.2s ease;
+}
+
+.jim-img-region--hover.jim-img-region--gold,
+.jim-img-region--selected.jim-img-region--gold {
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.55)) drop-shadow(0 0 22px rgba(201, 168, 74, 0.35));
+}
+
+.jim-img-region--hover.jim-img-region--violet,
+.jim-img-region--selected.jim-img-region--violet {
+  filter: drop-shadow(0 0 10px rgba(184, 50, 184, 0.55)) drop-shadow(0 0 22px rgba(162, 112, 255, 0.35));
+}
+
+.jim-img-route {
+  pointer-events: none;
+}
+
+/* POI HTML */
+.jim-img-poi {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: translate(-50%, -100%);
+  pointer-events: auto;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.jim-img-poi__glyph {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 2px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 55%, transparent);
+  background: color-mix(in srgb, var(--panel-bg) 88%, transparent);
+  color: var(--accent-gold);
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-gold);
+}
+
+.jim-img-poi--temple .jim-img-poi__glyph {
+  color: var(--accent-violet-light);
+  border-color: color-mix(in srgb, var(--accent-violet) 55%, transparent);
+}
+
+.jim-img-poi--academy .jim-img-poi__glyph {
+  color: #e6c35c;
+}
+
+.jim-img-poi--landmark .jim-img-poi__glyph {
+  color: #f4f0ea;
+  border-color: #d8d0c4;
+}
+
+.jim-img-poi__label {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent-gold) 80%, #fff);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  opacity: 0.85;
+}
+
+.jim-img-tooltip {
+  background: var(--panel-bg-elevated, #161222) !important;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 40%, var(--border-color)) !important;
+  color: var(--text-body, #e8e4f0) !important;
+  border-radius: 4px !important;
+  box-shadow: var(--shadow-violet) !important;
+  font-size: 0.72rem !important;
+  padding: 0.35rem 0.55rem !important;
+}
+
+.jim-img-tooltip::before {
+  border-top-color: color-mix(in srgb, var(--accent-gold) 40%, var(--border-color)) !important;
+}
+
+.jim-img__hud {
+  position: absolute;
+  z-index: 500;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  pointer-events: none;
+}
+
+.jim-img__hud--top {
+  top: 0;
+  background: linear-gradient(180deg, rgba(8, 6, 12, 0.82), transparent);
+}
+
+.jim-img__hud--bottom {
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(8, 6, 12, 0.85), transparent);
+  font-size: 0.72rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.jim-img__hud strong {
+  display: block;
+  letter-spacing: 0.18em;
+  color: var(--accent-gold);
+  font-size: 0.9rem;
+}
+
+.jim-img__hud span {
+  font-size: 0.68rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.jim-img__hud-coords {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--accent-violet-light);
+}
+
+.jim-img__hud em {
+  font-style: normal;
+  color: var(--accent-gold);
+  letter-spacing: 0.06em;
+}
+
+.jim-img__boot {
+  position: absolute;
+  inset: 0;
+  z-index: 600;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  color: var(--accent-gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.jim-img__boot--err {
+  color: #e8a0a0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jim-img-region {
+    transition: none;
+  }
+}

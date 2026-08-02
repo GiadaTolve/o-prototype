@@ -50,8 +50,7 @@ export const presenceRoutes = new Elysia({ prefix: '/presence' })
             .filter((u) => u.room !== PARADISE_ROOM) // Partecipanti Paradise non compaiono in mappa
         } catch (error) {
           console.error('[Presence] Errore recupero utenti online:', error)
-          set.status = 500
-          // Restituiamo un array vuoto invece di un errore per evitare problemi nel frontend
+          // Soft-fail: array vuoto con 200 — non 500+[], altrimenti il client lancia Error("[]")
           return []
         }
       })

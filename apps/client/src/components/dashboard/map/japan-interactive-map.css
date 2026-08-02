@@ -154,6 +154,70 @@
   fill: none !important;
 }
 
+/* Marker capitali — shining-fill, oro antico, dimensione fissa */
+.jim-capital-icon {
+  color: #c9a84a;
+  text-shadow:
+    0 0 6px rgba(201, 168, 74, 0.7),
+    0 0 14px rgba(201, 168, 74, 0.35);
+  display: block;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Ombra leggera sotto gli edifici città */
+.jim-city-building {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+/* Marker città — shining-line, palette oro progetto */
+.jim-city-marker-icon {
+  color: #c9a84a;
+  text-shadow:
+    -0.6px -0.6px 0 rgba(0, 0, 0, 0.9),
+     0.6px -0.6px 0 rgba(0, 0, 0, 0.9),
+    -0.6px  0.6px 0 rgba(0, 0, 0, 0.9),
+     0.6px  0.6px 0 rgba(0, 0, 0, 0.9);
+  display: block;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Marker templi — ancient-gate-fill, palette oro progetto */
+.jim-temple-icon {
+  color: #c9a84a;
+  text-shadow:
+    -0.6px -0.6px 0 rgba(0, 0, 0, 0.9),
+     0.6px -0.6px 0 rgba(0, 0, 0, 0.9),
+    -0.6px  0.6px 0 rgba(0, 0, 0, 0.9),
+     0.6px  0.6px 0 rgba(0, 0, 0, 0.9);
+  display: block;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Marker boschi — FA tree, palette oro progetto */
+.jim-forest-icon {
+  color: #c9a84a;
+  filter:
+    drop-shadow(-0.6px -0.6px 0 rgba(0, 0, 0, 0.9))
+    drop-shadow( 0.6px -0.6px 0 rgba(0, 0, 0, 0.9))
+    drop-shadow(-0.6px  0.6px 0 rgba(0, 0, 0, 0.9))
+    drop-shadow( 0.6px  0.6px 0 rgba(0, 0, 0, 0.9));
+  display: block;
+  pointer-events: none;
+}
+
+/* Terrain tile layer — tinta viola scura, molto trasparente */
+.jim .leaflet-jimTerrain-pane {
+  opacity: 0.14;
+  mix-blend-mode: multiply;
+}
+.jim .jim-terrain-tiles {
+  filter: grayscale(1) sepia(0.9) hue-rotate(240deg) saturate(0.55) brightness(0.45) contrast(1.4);
+}
+
+
 .jim-ogon-pref-label {
   background: transparent !important;
   border: none !important;
@@ -165,29 +229,29 @@
 }
 
 .jim-ogon-pref-label__ja {
-  display: block;
-  font-family: var(--jim-font-ja);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: color-mix(in srgb, var(--jim-gold-burnished) 82%, #c4b07a);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
-  line-height: 1.15;
-  opacity: 0.72;
+  display: none;
 }
 
 .jim-ogon-pref-label__la {
   display: block;
-  margin-top: 1px;
   font-family: var(--jim-font-la);
-  font-size: 7.5px;
-  font-weight: 600;
-  letter-spacing: 0.38em;
-  text-indent: 0.38em;
-  color: color-mix(in srgb, var(--jim-antique) 70%, var(--jim-gold-burnished));
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: color-mix(in srgb, var(--jim-antique) 85%, var(--jim-gold-burnished));
+  text-shadow:
+    0 0 6px #0d0b14,
+    0 0 10px #0d0b14,
+    1px 1px 0 #0d0b14,
+    -1px -1px 0 #0d0b14,
+    1px -1px 0 #0d0b14,
+    -1px 1px 0 #0d0b14,
+    2px 2px 0 #0d0b14,
+    -2px -2px 0 #0d0b14,
+    0 0 18px rgba(0, 0, 0, 0.98);
   text-transform: uppercase;
-  opacity: 0.65;
+  opacity: 1;
 }
 
 .jim .jim-altrove-marker {

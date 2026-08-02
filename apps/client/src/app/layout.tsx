@@ -4,6 +4,7 @@ import "animate.css/animate.min.css";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "./globals.css";
+import "remixicon/fonts/remixicon.css";
 import { ToastContainer } from "@/components/ui/Toast";
 import { ClientViewGuard } from "@/components/security/ClientViewGuard";
 import { SessionIpPing } from "@/components/security/SessionIpPing";

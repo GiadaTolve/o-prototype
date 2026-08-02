@@ -1,0 +1,157 @@
+/* Japan city painter — Dark Arcane chrome + mappa */
+
+.jcp {
+  display: grid;
+  grid-template-columns: 1fr min(300px, 100%);
+  width: 100%;
+  height: calc(100vh - 6.5rem);
+  min-height: 480px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.jcp__map {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.jcp__jim,
+.jcp__jim.jim {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 0;
+}
+
+.jcp__status {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 600;
+  max-width: min(70%, 480px);
+  padding: 0.45rem 0.7rem;
+  font-size: 0.75rem;
+  color: var(--accent-gold);
+  background: color-mix(in srgb, var(--panel-bg) 90%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.jcp__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 1rem;
+  border-left: 1px solid var(--border-color);
+  background: var(--panel-bg);
+  overflow-y: auto;
+}
+
+.jcp__head h2 {
+  margin: 0;
+  font-family: Philosopher, serif;
+  font-size: 1.1rem;
+  color: var(--accent-gold);
+}
+
+.jcp__head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  color: var(--accent-violet-light);
+  opacity: 0.8;
+}
+
+.jcp__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.jcp__btn {
+  min-height: 42px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--button-bg);
+  color: var(--accent-violet-light);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.jcp__btn:hover {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+}
+
+.jcp__btn.is-active {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+  box-shadow: var(--glow-gold);
+}
+
+.jcp__btn--accent {
+  border-color: color-mix(in srgb, var(--accent-violet) 50%, var(--border-color));
+}
+
+.jcp__slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--accent-violet-light);
+}
+
+.jcp__slider em {
+  font-style: normal;
+  color: var(--accent-gold);
+  float: right;
+}
+
+.jcp__slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent-gold);
+  min-height: 28px;
+}
+
+.jcp__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.jcp__hint {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  opacity: 0.75;
+  color: var(--accent-violet-light);
+}
+
+.jcp.is-busy {
+  cursor: progress;
+}
+
+.jcp.is-busy .jcp__btn:disabled,
+.jcp.is-busy input:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+@media (max-width: 900px) {
+  .jcp {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(280px, 50vh) 1fr;
+  }
+
+  .jcp__sidebar {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+}

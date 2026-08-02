@@ -1,0 +1,67 @@
+.dash-map {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(100vh - 6.5rem);
+  min-height: 480px;
+  margin: 0 -0.5rem;
+  border: 1px solid rgba(138, 115, 67, 0.45);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1a1e;
+}
+
+.dash-map--fcb {
+  background: #1a1714;
+}
+
+.dash-map--fcb .dash-map__stage--editor {
+  padding: 0;
+}
+
+.dash-map--fcb .fcb {
+  height: 100%;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.dash-map__bar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #16121c;
+  color: #d8d0e8;
+  flex-shrink: 0;
+}
+
+.dash-map__bar strong {
+  color: #c9a84a;
+  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+}
+
+.dash-map__bar span {
+  font-size: 0.72rem;
+  color: #8a8299;
+}
+
+.dash-map__stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.dash-map__stage--editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-map__stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
