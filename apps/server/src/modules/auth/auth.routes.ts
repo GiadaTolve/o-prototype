@@ -234,6 +234,13 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   // ===================== RECUPERO PASSWORD (tramite email) =====================
   .post('/forgot-password', async ({ body, set, request, headers, server }) => {
     try {
+      // Validazione email manuale (evita rigidità di TypeBox format:'email')
+      const emailRaw = (body.email ?? '').trim().toLowerCase()
+      if (!emailRaw || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+        set.status = 400
+        return { error: "Indirizzo email non valido." }
+      }
+
       const ip = extractClientIp({ request, headers, server })
       const rate = checkForgotPasswordAllowed(ip)
       if (!rate.allowed) {
@@ -241,7 +248,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       }
 
       const u = await db.query.users.findFirst({
-        where: eq(users.email, body.email),
+        where: eq(users.email, emailRaw),
       })
       if (!u) {
         recordForgotPasswordAttempt(ip)
@@ -274,7 +281,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       return { error: "Errore interno." }
     }
   }, {
-    body: t.Object({ email: t.String({ format: 'email' }) }),
+    body: t.Object({ email: t.String({ minLength: 1 }) }),
   })
 
   // ===================== RESET PASSWORD (con token) =====================
