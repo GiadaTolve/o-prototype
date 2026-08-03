@@ -61,7 +61,10 @@ async function fetcher(endpoint: string, options: RequestInit = {}) {
       errorMessage = data;
     } else if (data && typeof data === "object") {
       const o = data as Record<string, unknown>;
-      if (typeof o.error === "string") {
+      if (Array.isArray(data)) {
+        // Evita Error("[]") quando il server risponde 5xx con body array
+        errorMessage = `Errore ${response.status}`;
+      } else if (typeof o.error === "string") {
         errorMessage = o.error;
       } else if (o.message != null) {
         errorMessage = String(o.message);

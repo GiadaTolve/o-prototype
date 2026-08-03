@@ -35,6 +35,10 @@ yarn-error.log*
 .env.production.local
 **/.altervista-deploy.env
 
+# prototipo overlay città (draft attivo)
+apps/client/public/maps/city-overlay.json
+# i blocchi nominati (es. paradise) restano versionabili in city-blocks/
+
 # vercel
 .vercel
 

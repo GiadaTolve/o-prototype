@@ -329,6 +329,9 @@ export default function DashboardPage() {
       } catch (e) {
         if (e instanceof Error && e.message.includes("non raggiungibile")) {
           console.warn("[Presenti] Server non raggiungibile, uso mock");
+        } else if (e instanceof Error && (e.message === "[]" || e.message.trim() === "[]")) {
+          // Risposta legacy 500+[] — silenziosa, mock
+          console.warn("[Presenti] Endpoint presence non disponibile, uso mock");
         } else {
           console.error("[Presenti] Errore caricamento:", e);
         }

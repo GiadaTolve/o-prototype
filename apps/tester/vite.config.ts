@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { oyasumiWriteFilePlugin } from './plugins/oyasumiWriteFile'
 
 const testerRoot = path.dirname(fileURLToPath(import.meta.url))
+const domainSrc = path.resolve(testerRoot, '../../packages/domain/src')
+const clientSrc = path.resolve(testerRoot, '../client/src')
 
 export default defineConfig({
   // Percorsi relativi: ok su Altervista (root o sottocartella) senza riconfigurare l’URL.
@@ -12,26 +14,16 @@ export default defineConfig({
   plugins: [react(), oyasumiWriteFilePlugin(testerRoot)],
   resolve: {
     alias: [
-      {
-        find: '@domain/combat',
-        replacement: path.resolve(__dirname, '../../packages/domain/src/combat/index.ts'),
-      },
-      {
-        find: '@domain/skiru',
-        replacement: path.resolve(__dirname, '../../packages/domain/src/skiru/index.ts'),
-      },
-      {
-        find: '@domain/progression',
-        replacement: path.resolve(__dirname, '../../packages/domain/src/progression/index.ts'),
-      },
-      {
-        find: '@domain',
-        replacement: path.resolve(__dirname, '../../packages/domain/src'),
-      },
+      { find: '@domain', replacement: domainSrc },
+      // Stessa mappa della dashboard (apps/client)
+      { find: /^@\//, replacement: `${clientSrc}/` },
     ],
   },
   server: {
     port: 3002,
-    open: true,
+    open: false,
+    fs: {
+      allow: [testerRoot, clientSrc, domainSrc, path.resolve(testerRoot, '../client')],
+    },
   },
 })

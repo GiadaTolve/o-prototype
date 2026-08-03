@@ -1,0 +1,316 @@
+/* Map editor layout — Dark Arcane */
+
+.map-ed-app {
+  display: grid;
+  grid-template-columns: 1fr min(340px, 100%);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--background);
+  color: var(--accent-violet-light);
+  overflow: hidden;
+}
+
+.map-ed-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #D4CFC4;
+  cursor: crosshair;
+}
+
+.map-ed-stage[data-mode='idle'] {
+  cursor: default;
+}
+
+.map-ed-stage[data-mode='edit-labels'] {
+  cursor: grab;
+}
+
+.map-ed-stage[data-mode='edit-labels']:active {
+  cursor: grabbing;
+}
+
+.map-ed-stage[data-mode='draw-road'],
+.map-ed-stage[data-mode='draw-walls'] {
+  cursor: crosshair;
+}
+
+.map-ed-stage[data-mode='forest-brush'] {
+  cursor: cell;
+}
+
+.map-ed-stage[data-mode='eraser'] {
+  cursor: not-allowed;
+}
+
+.map-ed-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.map-ed-draft {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.map-ed-handle {
+  stroke: var(--background);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.map-ed-handle--end {
+  fill: var(--accent-gold);
+}
+
+.map-ed-handle--ctrl {
+  fill: var(--accent-violet);
+}
+
+.map-ed-hint {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  opacity: 0.75;
+}
+
+.map-ed-status {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  max-width: min(70%, 420px);
+  padding: 0.4rem 0.65rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--accent-gold);
+  background: color-mix(in srgb, var(--panel-bg) 88%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.map-ed-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border-color);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-violet);
+}
+
+.map-ed-sidebar__head {
+  flex-shrink: 0;
+  padding: 0.85rem 1rem 0.7rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.map-ed-sidebar__head h2 {
+  margin: 0;
+  font-family: Philosopher, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+  letter-spacing: 0.02em;
+}
+
+.map-ed-sidebar__head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.map-ed-sidebar__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.4rem 0 0.8rem;
+}
+
+.map-ed-section {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.map-ed-section__title {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.7rem 1rem;
+  font-family: Philosopher, serif;
+  font-size: 0.88rem;
+  color: var(--accent-violet-light);
+  user-select: none;
+}
+
+.map-ed-section__title::-webkit-details-marker {
+  display: none;
+}
+
+.map-ed-section__title::before {
+  content: '▸ ';
+  color: var(--accent-gold);
+  font-size: 0.75rem;
+}
+
+.map-ed-section[open] > .map-ed-section__title::before {
+  content: '▾ ';
+}
+
+.map-ed-section__title:hover {
+  color: var(--accent-gold);
+}
+
+.map-ed-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0 1rem 0.9rem;
+}
+
+.map-ed-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.map-ed-slider__label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.map-ed-slider__label em {
+  font-style: normal;
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.map-ed-slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent-gold);
+  min-height: 28px;
+}
+
+.map-ed-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.map-ed-check input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent-violet);
+}
+
+.map-ed-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+}
+
+.map-ed-field input,
+.map-ed-field select {
+  min-height: 40px;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--button-bg);
+  color: var(--accent-violet-light);
+  font-size: 0.8rem;
+}
+
+.map-ed-field input:focus,
+.map-ed-field select:focus {
+  outline: 1px solid var(--accent-gold);
+  border-color: var(--accent-gold);
+}
+
+.map-ed-btn {
+  min-height: 40px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--button-bg);
+  color: var(--accent-violet-light);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.map-ed-btn:hover {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+  box-shadow: var(--glow-gold);
+}
+
+.map-ed-btn.is-active {
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+  box-shadow: var(--glow-gold);
+}
+
+.map-ed-btn--accent {
+  border-color: color-mix(in srgb, var(--accent-violet) 55%, var(--border-color));
+  color: var(--accent-violet-light);
+}
+
+.map-ed-btn--accent:hover {
+  border-color: var(--accent-violet);
+  box-shadow: var(--glow-violet);
+}
+
+.map-ed-sidebar__gen {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--background) 55%, var(--panel-bg));
+}
+
+.map-ed-btn--regen {
+  min-height: 48px;
+  font-family: Philosopher, serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+  box-shadow: var(--shadow-gold);
+}
+
+.map-ed-btn--regen:hover {
+  box-shadow: var(--glow-gold);
+}
+
+.map-ed-sidebar__gen-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+@media (max-width: 900px) {
+  .map-ed-app {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(240px, 45vh) 1fr;
+  }
+
+  .map-ed-sidebar {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-ed-btn {
+    transition: none;
+  }
+}

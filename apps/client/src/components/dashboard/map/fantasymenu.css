@@ -1,0 +1,111 @@
+/* FantasyMenu — Dark Fantasy sidebar (riuso vision Kessen) */
+
+.fantasymenu {
+  --fm-gold: #e2c07b;
+  --fm-gold-dim: #8a7343;
+  --fm-font-la: "Palatino Linotype", Palatino, "Cinzel", "Times New Roman", serif;
+  --fm-font-jp: "Hiragino Mincho ProN", "Yu Mincho", "Shippori Mincho", "MS PMincho", serif;
+
+  width: 220px;
+  background: rgba(13, 11, 16, 0.82);
+  border: 1px solid rgba(138, 115, 67, 0.35);
+  backdrop-filter: blur(8px);
+  padding: 20px 0;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+  color: #a09bab;
+  font-family: var(--fm-font-la);
+}
+
+.fantasymenu__header {
+  padding: 0 20px 15px;
+  border-bottom: 1px solid rgba(138, 115, 67, 0.2);
+  margin-bottom: 15px;
+}
+
+.fantasymenu__title {
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.fantasymenu__jp {
+  font-family: var(--fm-font-jp);
+  font-size: 16px;
+  margin-left: 8px;
+  color: var(--fm-gold);
+  font-weight: 500;
+}
+
+.fantasymenu__subtitle {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--fm-gold-dim);
+  margin-top: 4px;
+}
+
+.fantasymenu__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fantasymenu__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  position: relative;
+  color: #7a7585;
+  transition: color 0.3s ease, background 0.3s ease;
+}
+
+.fantasymenu__item-jp {
+  font-family: var(--fm-font-jp);
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.fantasymenu__item-la {
+  font-family: var(--fm-font-la);
+}
+
+.fantasymenu__item:hover {
+  color: #ccc;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fantasymenu__item.is-active {
+  color: var(--fm-gold);
+  background: rgba(226, 192, 123, 0.06);
+  border-top: 1px solid rgba(226, 192, 123, 0.4);
+  border-bottom: 1px solid rgba(226, 192, 123, 0.4);
+}
+
+.fantasymenu__item.is-active::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background-color: #fff5d0;
+  border: 1px solid var(--fm-gold);
+  box-shadow: 0 0 8px var(--fm-gold), 0 0 15px #ffae00;
+}
+
+@media (max-width: 640px) {
+  .fantasymenu {
+    width: min(220px, calc(100vw - 24px));
+    padding: 14px 0;
+  }
+}

@@ -318,6 +318,64 @@ export function oyasumiWriteFilePlugin(testerRootAbs: string): Plugin {
           })
           return
         }
+        // Prototipo city overlay → apps/client/public/maps/city-overlay.json
+        if (req.url === '/__oyasumi/city-overlay' && req.method === 'POST') {
+          let raw = ''
+          req.on('data', (c) => {
+            raw += c
+          })
+          req.on('end', () => {
+            try {
+              const parsed = JSON.parse(raw) as { payload?: unknown; clear?: boolean }
+              const absTarget = path.resolve(
+                testerRootAbs,
+                '../client/public/maps/city-overlay.json',
+              )
+              const clientPublic = path.resolve(testerRootAbs, '../client/public')
+              if (!absTarget.startsWith(clientPublic + path.sep)) {
+                res.statusCode = 403
+                res.end('Path outside client/public')
+                return
+              }
+              if (parsed.clear) {
+                if (fs.existsSync(absTarget)) fs.unlinkSync(absTarget)
+                res.statusCode = 200
+                res.setHeader('Content-Type', 'application/json')
+                res.end(JSON.stringify({ ok: true, cleared: true }))
+                return
+              }
+              if (!parsed.payload || typeof parsed.payload !== 'object') {
+                res.statusCode = 400
+                res.end('Invalid body: payload required (or clear:true)')
+                return
+              }
+              fs.mkdirSync(path.dirname(absTarget), { recursive: true })
+              const json = JSON.stringify(parsed.payload, null, 2)
+              fs.writeFileSync(absTarget, json, 'utf8')
+              const paths = ['apps/client/public/maps/city-overlay.json']
+              if (typeof parsed.saveAs === 'string' && parsed.saveAs.trim()) {
+                const safe = parsed.saveAs.replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'block'
+                const named = path.resolve(testerRootAbs, `../client/public/maps/city-blocks/${safe}.json`)
+                if (!named.startsWith(clientPublic + path.sep)) {
+                  res.statusCode = 403
+                  res.end('Path outside client/public')
+                  return
+                }
+                fs.mkdirSync(path.dirname(named), { recursive: true })
+                fs.writeFileSync(named, json, 'utf8')
+                paths.push(`apps/client/public/maps/city-blocks/${safe}.json`)
+              }
+              res.statusCode = 200
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ ok: true, path: paths.join(' + ') }))
+              return
+            } catch (e) {
+              res.statusCode = 500
+              res.end(e instanceof Error ? e.message : String(e))
+            }
+          })
+          return
+        }
         if (req.url !== '/__oyasumi/write-file' || req.method !== 'POST') {
           next()
           return

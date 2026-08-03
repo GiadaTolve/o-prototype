@@ -35,8 +35,6 @@ import {
   type PixelIconOrdine,
 } from "./pixel-icons";
 import {
-  ROOT_PINS,
-  ROOT_MAP_IMAGE,
   GAME_MAPS,
   type GameMapId,
   type ZoneConfig,
@@ -45,6 +43,8 @@ import {
   getChatLocationByRoomId,
   isPartychat,
 } from "@/config/map-config";
+import dynamic from "next/dynamic";
+import { readLastPlace, writeLastPlace, type MapScope } from "./map/map-place-memory";
 import type { ChatMessage, Presente, CharacterSummary } from "./types";
 import { QuarterTurnHud } from "./QuarterTurnHud";
 import { ChatInfoPanel } from "./ChatInfoPanel";
@@ -57,6 +57,19 @@ import { ChatItemUseCard, extractItemUseCard } from "./chat-combat/ChatItemUseCa
 import { ChatDropEventCard, extractDropEventData } from "./chat-loot/ChatDropEventCard";
 import { ChatGroundLootPanel } from "./chat-loot/ChatGroundLootPanel";
 import { OrdineContent } from "./OrdineContent";
+
+const JapanInteractiveMap = dynamic(
+  () =>
+    import("./map/JapanInteractiveMap").then((m) => m.JapanInteractiveMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="absolute inset-0 flex items-center justify-center bg-[#0d0b10] text-[var(--accent-gold)] text-[11px] font-display uppercase tracking-[0.14em]">
+        Caricamento mappa…
+      </div>
+    ),
+  },
+);
 
 /** Limite caratteri messaggio chat da mobile. */
 const MOBILE_CHAT_MAX_LENGTH = 800;
@@ -147,16 +160,75 @@ export function DashboardCenter({
   const [gameMapId, setGameMapId] = useState<GameMapId | null>(null);
   const [zone, setZone] = useState<ZoneConfig | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<RoomId | null>(null);
+  const [mapScope, setMapScope] = useState<MapScope>("ogon");
+  const [placeRestored, setPlaceRestored] = useState(false);
   /** Banner per mappa (da Gestione → Modifica mappa). Chiave = gameMapId. */
   const [mapBanners, setMapBanners] = useState<Record<string, { url: string; position?: string }>>({});
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const tagLuogoRef = useRef<HTMLInputElement>(null);
+  const charId = char?.id ?? null;
 
   useEffect(() => {
     listRef.current?.scrollTo(0, listRef.current.scrollHeight);
   }, [messages]);
+
+  // Ripristina ultimo luogo dopo login (stesso browser / personaggio)
+  useEffect(() => {
+    if (placeRestored) return;
+    const mem = readLastPlace(charId);
+    setPlaceRestored(true);
+    if (!mem) return;
+
+    if (mem.mapScope === "ogon" || mem.mapScope === "mondo") {
+      setMapScope(mem.mapScope);
+    }
+
+    if (mem.view === "chat" && mem.roomId && mem.gameMapId && mem.zoneId) {
+      const gm = GAME_MAPS[mem.gameMapId];
+      const z = gm?.zones.find((zoneRow) => zoneRow.id === mem.zoneId) ?? null;
+      if (gm && z) {
+        setGameMapId(mem.gameMapId);
+        setZone(z);
+        setSelectedRoomId(mem.roomId);
+        setView("chat");
+        onRoomChange(mem.roomId);
+        return;
+      }
+    }
+
+    if (mem.view === "zone-list" && mem.gameMapId && mem.zoneId) {
+      const gm = GAME_MAPS[mem.gameMapId];
+      const z = gm?.zones.find((zoneRow) => zoneRow.id === mem.zoneId) ?? null;
+      if (gm && z) {
+        setGameMapId(mem.gameMapId);
+        setZone(z);
+        setView("zone-list");
+        return;
+      }
+    }
+
+    if (mem.view === "game-map" && mem.gameMapId && GAME_MAPS[mem.gameMapId]) {
+      setGameMapId(mem.gameMapId);
+      setView("game-map");
+    }
+  }, [charId, placeRestored, onRoomChange]);
+
+  // Persiste ultimo luogo mentre navighi in mappa/chat
+  useEffect(() => {
+    if (!placeRestored) return;
+    if (view !== "root" && view !== "game-map" && view !== "zone-list" && view !== "chat") {
+      return;
+    }
+    writeLastPlace(charId, {
+      view,
+      mapScope,
+      gameMapId,
+      zoneId: zone?.id ?? null,
+      roomId: selectedRoomId,
+    });
+  }, [view, mapScope, gameMapId, zone?.id, selectedRoomId, charId, placeRestored]);
 
   useEffect(() => {
     const onChatError = (event: Event) => {
@@ -252,9 +324,16 @@ export function DashboardCenter({
   };
 
   const backFromChat = () => {
-    setView("zone-list");
     setSelectedRoomId(null);
     onRoomChange(null);
+    // Se non c'è contesto zona (chat aperta dalla mappa), torna alla mappa
+    if (zone) {
+      setView("zone-list");
+    } else if (gameMapId) {
+      setView("game-map");
+    } else {
+      setView("root");
+    }
   };
 
   const backFromZoneList = () => {
@@ -355,8 +434,20 @@ export function DashboardCenter({
               <p className="text-[10px] text-gray-500">Tocca un pin</p>
             </div>
           )}
-          <div className={`relative flex-1 min-h-0 overflow-hidden ${compact ? "" : "rounded-lg border border-[var(--border-color)]"}`}>
-            <MapViewRoot onSelectGameMap={goGameMap} alwaysShowLabels={compact} />
+          <div className={`relative flex-1 min-h-0 h-full overflow-hidden ${compact ? "" : "rounded-lg border border-[var(--border-color)]"}`}>
+            {/* Attendi restore last-place così initialScope/mount Leaflet hanno size reale */}
+            {placeRestored ? (
+              <MapViewRoot
+                onSelectGameMap={goGameMap}
+                alwaysShowLabels={compact}
+                mapScope={mapScope}
+                onMapScopeChange={setMapScope}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-[var(--accent-gold)] text-[11px] font-display uppercase tracking-[0.14em]">
+                Sincronizzazione reticolo…
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -736,57 +827,25 @@ export function DashboardCenter({
   );
 }
 
-// ─── Root map (map.png + pins) ───
+// ─── Root map (Giappone interattivo) ───
 function MapViewRoot({
   onSelectGameMap,
   alwaysShowLabels = false,
+  mapScope = "ogon",
+  onMapScopeChange,
 }: {
   onSelectGameMap: (id: GameMapId) => void;
   alwaysShowLabels?: boolean;
+  mapScope?: MapScope;
+  onMapScopeChange?: (scope: MapScope) => void;
 }) {
+  void alwaysShowLabels;
   return (
-    <div className="absolute inset-0 bg-black/40">
-      <Image
-        src={ROOT_MAP_IMAGE}
-        alt="Mappa root"
-        fill
-        className="object-cover"
-        sizes="(max-width: 900px) 100vw, 60vw"
-      />
-      {ROOT_PINS.map((pin) => (
-        <button
-          key={pin.gameMapId}
-          type="button"
-          onClick={() => onSelectGameMap(pin.gameMapId)}
-          className={`group absolute z-10 flex flex-col items-center ${alwaysShowLabels ? "" : "hover:scale-110 transition-transform"}`}
-          style={{
-            left: `${pin.x}%`,
-            top: `${pin.y}%`,
-            transform: alwaysShowLabels ? "translate(-50%, -100%)" : "translate(-50%, -100%)",
-          }}
-        >
-          {!alwaysShowLabels && (
-            <span
-              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 px-2.5 py-1.5 rounded-lg bg-gray-900/95 text-gray-100 text-sm font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg border border-gray-700/80 z-20"
-              style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }}
-            >
-              {pin.label}
-              <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-gray-900/95" />
-            </span>
-          )}
-          <img
-            src="/icone/map-pin.png"
-            alt={pin.label}
-            className={`${alwaysShowLabels ? "w-8" : "w-10"} h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] pointer-events-none`}
-          />
-          {alwaysShowLabels && (
-            <span className="mt-0.5 max-w-[5rem] truncate text-[10px] font-display uppercase tracking-wide text-[var(--accent-gold)] text-center drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] px-0.5 py-0.5 rounded bg-black/50 border border-[var(--border-color)]/60">
-              {pin.label}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
+    <JapanInteractiveMap
+      onSelectGameMap={onSelectGameMap}
+      initialScope={mapScope}
+      onScopeChange={onMapScopeChange}
+    />
   );
 }
 

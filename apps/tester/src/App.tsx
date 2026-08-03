@@ -7,16 +7,40 @@ import WazaBrowser from './WazaBrowser'
 import MadoshoBrowser from './MadoshoBrowser'
 import SkiruBrowser from './SkiruBrowser'
 import IdeeESviluppo from './IdeeESviluppo'
+import SvgMapEditor from './SvgMapEditor'
 import { canPersistAuthoringToPool, deleteOyasumiPoolEntry } from './authoringApi'
 import { useRuntimeWaza } from './RuntimeWazaContext'
 import type { WazaDef } from './wazaPool'
 
-type TabId = 'levelup' | 'combat' | 'damage' | 'status' | 'waza' | 'madosho' | 'skiru' | 'idee'
+type TabId = 'levelup' | 'combat' | 'damage' | 'status' | 'waza' | 'madosho' | 'skiru' | 'idee' | 'svg'
+
+const TAB_IDS: TabId[] = ['levelup', 'combat', 'damage', 'status', 'waza', 'madosho', 'skiru', 'idee', 'svg']
+
+function tabFromUrl(): TabId {
+  try {
+    const q = new URLSearchParams(window.location.search).get('tab')
+    if (q && TAB_IDS.includes(q as TabId)) return q as TabId
+  } catch {
+    /* ignore */
+  }
+  return 'levelup'
+}
 
 function App() {
   const { refetch: refetchRuntimeWaza } = useRuntimeWaza()
-  const [activeTab, setActiveTab] = useState<TabId>('levelup')
+  const [activeTab, setActiveTab] = useState<TabId>(tabFromUrl)
   const [wazaEditPayload, setWazaEditPayload] = useState<{ w: WazaDef; key: number } | null>(null)
+
+  const selectTab = useCallback((tab: TabId) => {
+    setActiveTab(tab)
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('tab', tab)
+      window.history.replaceState({}, '', url)
+    } catch {
+      /* ignore */
+    }
+  }, [])
 
   const handleConsumedWazaEditPayload = useCallback(() => {
     setWazaEditPayload(null)
@@ -24,8 +48,8 @@ function App() {
 
   const handleEditWazaFromBrowser = useCallback((w: WazaDef) => {
     setWazaEditPayload({ w, key: Date.now() })
-    setActiveTab('idee')
-  }, [])
+    selectTab('idee')
+  }, [selectTab])
 
   const handleDeleteWazaFromBrowser = useCallback(async (w: WazaDef) => {
     if (!canPersistAuthoringToPool()) {
@@ -42,7 +66,7 @@ function App() {
   }, [refetchRuntimeWaza])
 
   return (
-    <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+    <div style={{ maxWidth: activeTab === 'svg' ? 1600 : 1120, margin: '0 auto', padding: activeTab === 'svg' ? '0 0.5rem' : undefined }}>
       <header
         style={{
           marginBottom: '1.5rem',
@@ -50,10 +74,10 @@ function App() {
           paddingBottom: '1rem',
         }}
       >
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => setActiveTab('levelup')}
+            onClick={() => selectTab('levelup')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -73,7 +97,7 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('combat')}
+            onClick={() => selectTab('combat')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -93,7 +117,7 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('damage')}
+            onClick={() => selectTab('damage')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -113,7 +137,7 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('status')}
+            onClick={() => selectTab('status')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -133,7 +157,7 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('waza')}
+            onClick={() => selectTab('waza')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -153,7 +177,7 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('madosho')}
+            onClick={() => selectTab('madosho')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -173,7 +197,7 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('skiru')}
+            onClick={() => selectTab('skiru')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -193,7 +217,7 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('idee')}
+            onClick={() => selectTab('idee')}
             style={{
               padding: '0.5rem 1rem',
               background:
@@ -211,6 +235,26 @@ function App() {
           >
             Idee e sviluppo
           </button>
+          <button
+            type="button"
+            onClick={() => selectTab('svg')}
+            style={{
+              padding: '0.5rem 1rem',
+              background:
+                activeTab === 'svg'
+                  ? 'rgba(162,112,255,0.25)'
+                  : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${
+                activeTab === 'svg' ? '#a270ff' : 'rgba(255,255,255,0.2)'
+              }`,
+              borderRadius: 6,
+              color: activeTab === 'svg' ? '#fff' : '#888',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+            }}
+          >
+            Mappa
+          </button>
         </div>
         <h1 style={{ margin: 0, fontSize: '1.4rem', color: '#c9a84a' }}>
           Oyasumi Tester
@@ -224,6 +268,7 @@ function App() {
           {activeTab === 'madosho' && 'Catalogo waza Madoshō per lignaggio (Parte IV PDF).'}
           {activeTab === 'skiru' && 'Lista competenze e abilità Skiru per categoria.'}
           {activeTab === 'idee' && 'Authoring: Waza, Madōsho, Patti, Skiru, categorie e tassonomie.'}
+          {activeTab === 'svg' && 'Step 2: renderer Canvas stile Watabou (Millhaven).'}
         </p>
       </header>
 
@@ -242,6 +287,7 @@ function App() {
           onConsumedWazaEditPayload={handleConsumedWazaEditPayload}
         />
       )}
+      {activeTab === 'svg' && <SvgMapEditor />}
     </div>
   )
 }

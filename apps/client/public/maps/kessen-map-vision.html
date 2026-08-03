@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kessen — Vision Mockup (Dark Fantasy)</title>
+  <!--
+    VISIONE ONLY — non collegato alla dashboard.
+    Asset locali (Leaflet in /maps/vendor) perché la CSP Next blocca unpkg/Google Fonts.
+    Apri: http://localhost:3000/maps/kessen-map-vision.html
+  -->
+  <link rel="stylesheet" href="/maps/vendor/leaflet/leaflet.css" />
+  <style>
+    :root {
+      --bg-dark: #08070a;
+      --gold-primary: #e2c07b;
+      --gold-dim: #8a7343;
+      --purple-glow: #8a2be2;
+      --font-latin: "Palatino Linotype", Palatino, "Times New Roman", serif;
+      --font-jp: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: var(--font-latin);
+      color: #a09bab;
+    }
+
+    #stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-dark);
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: var(--bg-dark);
+    }
+
+    .leaflet-container {
+      background: var(--bg-dark) !important;
+      font: inherit;
+    }
+
+    /* Banner istruzioni */
+    .vision-banner {
+      position: absolute;
+      z-index: 30;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      max-width: min(520px, calc(100% - 24px));
+      padding: 10px 16px;
+      background: rgba(13, 11, 16, 0.92);
+      border: 1px solid rgba(226, 192, 123, 0.45);
+      color: var(--gold-primary);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-align: center;
+      line-height: 1.45;
+      pointer-events: none;
+      box-shadow: 0 0 24px rgba(0,0,0,0.7);
+    }
+    .vision-banner strong { color: #fff; letter-spacing: 0.18em; }
+
+    /* Vignetta */
+    .vignette-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      background: radial-gradient(
+        circle,
+        transparent 35%,
+        rgba(5, 4, 7, 0.7) 75%,
+        rgba(0, 0, 0, 0.95) 100%
+      );
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.85);
+    }
+
+    #particles-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 11;
+    }
+
+    .ui-sidebar {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+      z-index: 20;
+      width: 220px;
+      background: rgba(13, 11, 16, 0.82);
+      border: 1px solid rgba(138, 115, 67, 0.35);
+      backdrop-filter: blur(8px);
+      padding: 20px 0;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    }
+
+    .ui-header {
+      padding: 0 20px 15px 20px;
+      border-bottom: 1px solid rgba(138, 115, 67, 0.2);
+      margin-bottom: 15px;
+    }
+
+    .ui-title {
+      font-size: 20px;
+      letter-spacing: 3px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .ui-title .jp {
+      font-family: var(--font-jp);
+      font-size: 16px;
+      margin-left: 8px;
+      color: var(--gold-primary);
+    }
+
+    .ui-subtitle {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--gold-dim);
+      margin-top: 4px;
+    }
+
+    .ui-menu { list-style: none; }
+
+    .ui-menu-item {
+      padding: 10px 20px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      cursor: default;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      color: #7a7585;
+    }
+
+    .ui-menu-item .jp {
+      font-family: var(--font-jp);
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .ui-menu-item.active {
+      color: var(--gold-primary);
+      background: rgba(226, 192, 123, 0.06);
+      border-top: 1px solid rgba(226, 192, 123, 0.4);
+      border-bottom: 1px solid rgba(226, 192, 123, 0.4);
+    }
+
+    .ui-menu-item.active::after {
+      content: '';
+      position: absolute;
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      width: 8px;
+      height: 8px;
+      background-color: #fff5d0;
+      border: 1px solid var(--gold-primary);
+      box-shadow: 0 0 8px var(--gold-primary), 0 0 15px #ffae00;
+    }
+
+    .compass {
+      position: absolute;
+      top: 40px;
+      right: 40px;
+      z-index: 20;
+      width: 80px;
+      height: 80px;
+      border: 1px solid rgba(138, 115, 67, 0.35);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-jp);
+      color: var(--gold-dim);
+      background: rgba(8, 7, 10, 0.7);
+      backdrop-filter: blur(4px);
+    }
+    .compass::before { content: '北'; position: absolute; top: 4px; font-size: 10px; }
+    .compass::after { content: '南'; position: absolute; bottom: 4px; font-size: 10px; }
+    .compass-e { position: absolute; right: 6px; font-size: 10px; }
+    .compass-w { position: absolute; left: 6px; font-size: 10px; }
+    .compass-center {
+      width: 4px;
+      height: 4px;
+      background: var(--gold-primary);
+      transform: rotate(45deg);
+      box-shadow: 0 0 8px var(--gold-primary);
+    }
+
+    .leaflet-tooltip-dark {
+      background: rgba(10, 8, 14, 0.92) !important;
+      border: 1px solid var(--gold-dim) !important;
+      color: var(--gold-primary) !important;
+      font-family: var(--font-latin) !important;
+      letter-spacing: 2px !important;
+      font-size: 12px !important;
+      padding: 8px 14px !important;
+      border-radius: 0 !important;
+      box-shadow: 0 0 15px rgba(0,0,0,0.8) !important;
+    }
+    .leaflet-tooltip-dark::before { display: none; }
+
+    .err {
+      position: absolute;
+      z-index: 40;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      padding: 16px 20px;
+      background: #1a1010;
+      border: 1px solid #a44;
+      color: #f0c0c0;
+      font-size: 13px;
+      max-width: 90%;
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .ui-sidebar { top: 12px; left: 12px; width: 180px; padding: 12px 0; }
+      .compass { top: 12px; right: 12px; width: 64px; height: 64px; }
+      .vision-banner { bottom: 10px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="map" role="application" aria-label="Mappa vision mockup"></div>
+
+    <div class="vignette-overlay" aria-hidden="true"></div>
+    <canvas id="particles-canvas" aria-hidden="true"></canvas>
+
+    <aside class="ui-sidebar">
+      <div class="ui-header">
+        <div class="ui-title">KESSEN <span class="jp">決戦</span></div>
+        <div class="ui-subtitle">NIPPON RETTŌ / 日本列島</div>
+      </div>
+      <ul class="ui-menu">
+        <li class="ui-menu-item active"><span class="jp">地図</span> MAPPA</li>
+        <li class="ui-menu-item"><span class="jp">地区</span> REGIONI</li>
+        <li class="ui-menu-item"><span class="jp">勢力</span> FAZIONI</li>
+        <li class="ui-menu-item"><span class="jp">設定</span> IMPOSTAZIONI</li>
+      </ul>
+    </aside>
+
+    <div class="compass" aria-hidden="true">
+      <span class="compass-w">西</span>
+      <div class="compass-center"></div>
+      <span class="compass-e">東</span>
+    </div>
+
+    <div class="vision-banner">
+      <strong>VISION MOCKUP</strong><br>
+      Hover regione → glow + audio · Click → zoom 1.5s · Cenere + vignetta attive
+    </div>
+
+    <div id="boot-error" class="err"></div>
+  </div>
+
+  <script src="/maps/vendor/leaflet/leaflet.js"></script>
+  <script>
+    (function () {
+      const errEl = document.getElementById("boot-error");
+      function showError(msg) {
+        errEl.style.display = "block";
+        errEl.textContent = msg;
+        console.error(msg);
+      }
+
+      /* --- Audio (lazy: non blocca se AudioContext manca) --- */
+      let audioCtx = null;
+      function getAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          audioCtx = new AC();
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+      }
+
+      function playSound(type) {
+        try {
+          const ctx = getAudio();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          const t = ctx.currentTime;
+          if (type === "hover") {
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(180, t);
+            osc.frequency.exponentialRampToValueAtTime(110, t + 0.08);
+            gain.gain.setValueAtTime(0.04, t);
+            gain.gain.linearRampToValueAtTime(0.001, t + 0.08);
+            osc.start(t);
+            osc.stop(t + 0.08);
+          } else {
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(220, t);
+            osc.frequency.exponentialRampToValueAtTime(440, t + 0.3);
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.linearRampToValueAtTime(0.001, t + 0.3);
+            osc.start(t);
+            osc.stop(t + 0.3);
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      /* --- Particelle (sempre, indipendenti dalla mappa) --- */
+      const canvas = document.getElementById("particles-canvas");
+      const ctx2d = canvas.getContext("2d");
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+
+      const particles = Array.from({ length: 48 }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        size: Math.random() * 2.2 + 0.6,
+        speedY: -(Math.random() * 0.45 + 0.18),
+        speedX: Math.random() * 0.35 - 0.175,
+        opacity: Math.random() * 0.55 + 0.25,
+      }));
+
+      function animateParticles() {
+        if (!ctx2d) return;
+        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+        for (const p of particles) {
+          p.y += p.speedY / canvas.height;
+          p.x += p.speedX / canvas.width;
+          if (p.y < -0.02) {
+            p.y = 1.02;
+            p.x = Math.random();
+          }
+          if (p.x < 0) p.x += 1;
+          if (p.x > 1) p.x -= 1;
+          ctx2d.fillStyle = "rgba(226, 192, 123, " + p.opacity + ")";
+          ctx2d.beginPath();
+          ctx2d.arc(p.x * canvas.width, p.y * canvas.height, p.size, 0, Math.PI * 2);
+          ctx2d.fill();
+        }
+        requestAnimationFrame(animateParticles);
+      }
+      animateParticles();
+
+      /* --- Mappa Leaflet --- */
+      if (typeof L === "undefined") {
+        showError("Leaflet non caricato. Controlla /maps/vendor/leaflet/leaflet.js");
+        return;
+      }
+
+      const map = L.map("map", {
+        center: [36.2, 138.25],
+        zoom: 5.5,
+        zoomControl: false,
+        attributionControl: false,
+        minZoom: 4,
+        maxZoom: 9,
+      });
+
+      const defaultStyle = {
+        fillColor: "#1a1520",
+        fillOpacity: 0.88,
+        color: "#8a7343",
+        weight: 1.5,
+        opacity: 0.75,
+      };
+      const hoverStyle = {
+        fillColor: "#3a1c4a",
+        fillOpacity: 0.92,
+        color: "#e2c07b",
+        weight: 2.5,
+        opacity: 1,
+      };
+      const selectStyle = {
+        fillColor: "#5c451d",
+        fillOpacity: 0.92,
+        color: "#ffd700",
+        weight: 2.5,
+        opacity: 1,
+      };
+
+      let selectedLayer = null;
+
+      const LABEL = {
+        ogon: { name: "OGON", kanji: "黄金" },
+        izayoi: { name: "IZAYOI", kanji: "十六夜" },
+        onimori: { name: "ONIMORI", kanji: "鬼の森" },
+        ezochi: { name: "EZOCHI", kanji: "蝦夷地" },
+      };
+
+      function bindRegion(feature, layer) {
+        const region = (feature.properties && feature.properties.region) || "";
+        const meta = LABEL[region] || {
+          name: (feature.properties && feature.properties.regionLabel) || region || "?",
+          kanji: "",
+        };
+        layer.bindTooltip(
+          (meta.kanji ? meta.kanji + "  " : "") + meta.name,
+          { className: "leaflet-tooltip-dark", sticky: true }
+        );
+
+        layer.on({
+          mouseover: function (e) {
+            if (e.target !== selectedLayer) {
+              e.target.setStyle(hoverStyle);
+              playSound("hover");
+            }
+          },
+          mouseout: function (e) {
+            if (e.target !== selectedLayer) geoLayer.resetStyle(e.target);
+          },
+          click: function (e) {
+            playSound("select");
+            if (selectedLayer) geoLayer.resetStyle(selectedLayer);
+            selectedLayer = e.target;
+            selectedLayer.setStyle(selectStyle);
+            map.flyToBounds(e.target.getBounds(), {
+              padding: [80, 80],
+              duration: 1.5,
+              maxZoom: 7.5,
+            });
+          },
+        });
+      }
+
+      let geoLayer = L.geoJSON(null, { style: defaultStyle, onEachFeature: bindRegion });
+      geoLayer.addTo(map);
+
+      // Regioni di gioco reali (stesso file della dashboard)
+      fetch("/maps/geo/japan-regions.geojson")
+        .then(function (r) {
+          if (!r.ok) throw new Error("GeoJSON " + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          geoLayer.addData(data);
+          // Confini prefetture (tratteggio oro tenue)
+          return fetch("/maps/geo/japan-prefectures.geojson");
+        })
+        .then(function (r) {
+          if (!r || !r.ok) return null;
+          return r.json();
+        })
+        .then(function (prefs) {
+          if (prefs) {
+            L.geoJSON(prefs, {
+              interactive: false,
+              style: {
+                fill: false,
+                color: "rgba(138, 115, 67, 0.4)",
+                weight: 0.7,
+                dashArray: "3 4",
+              },
+            }).addTo(map);
+          }
+          map.invalidateSize();
+          if (geoLayer.getBounds().isValid()) {
+            map.fitBounds(geoLayer.getBounds().pad(0.08), { animate: false });
+          }
+        })
+        .catch(function (e) {
+          showError("Errore GeoJSON: " + (e && e.message ? e.message : e));
+        });
+    })();
+  </script>
+</body>
+</html>
