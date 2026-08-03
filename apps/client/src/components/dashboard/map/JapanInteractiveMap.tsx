@@ -215,7 +215,7 @@ const STROKE = {
   selectedViolet: "rgba(184, 50, 184, 0.9)",
 } as const;
 
-const CINEMA_DURATION = 1.5;
+const CINEMA_DURATION = 0.65;
 const BASE_MIN_ZOOM = 4;
 const BASE_MAX_ZOOM = 10;
 
@@ -765,7 +765,7 @@ export function JapanInteractiveMap({
 
     let raf = 0;
     let running = true;
-    const particles = Array.from({ length: 36 }, () => ({
+    const particles = Array.from({ length: 18 }, () => ({
       x: Math.random(),
       y: Math.random(),
       r: 0.4 + Math.random() * 1.4,
@@ -830,11 +830,12 @@ export function JapanInteractiveMap({
     const map = L.map(el, {
       zoomControl: false,
       attributionControl: false,
+      preferCanvas: true,
       minZoom: BASE_MIN_ZOOM,
       maxZoom: BASE_MAX_ZOOM,
       zoomSnap: 0.25,
       zoomDelta: 0.5,
-      wheelPxPerZoomLevel: 90,
+      wheelPxPerZoomLevel: 120,
       worldCopyJump: false,
       center: [36.2, 138.2],
       zoom: 5,
